@@ -40,6 +40,7 @@ export function RepairForm() {
   const {toast} = useToast();
   const {addRepair} = useRepairContext();
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [repairId, setRepairId] = useState<string>(Date.now().toString()); // Generate ID on the client
 
   const form = useForm<RepairFormValues>({
     resolver: zodResolver(repairFormSchema),
@@ -73,7 +74,7 @@ export function RepairForm() {
 
     addRepair({
       ...values,
-      id: Date.now().toString(), // Simple ID generation for demo
+      id: repairId, // Using client-generated ID
       dateReceived: new Date(), //adding date here
     });
     toast({
@@ -82,6 +83,7 @@ export function RepairForm() {
     });
     form.reset();
     setAiSuggestions([]);
+    setRepairId(Date.now().toString()); // Generate new ID for the next repair
   }
 
   return (

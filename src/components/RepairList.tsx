@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, {useState} from 'react';
@@ -30,7 +29,6 @@ export function RepairList() {
             <TableHead>Device</TableHead>
             <TableHead>Issue</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Date Received</TableHead>
             <TableHead>Cost</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -44,7 +42,6 @@ export function RepairList() {
               <TableCell>
                 <StatusBadge status={repair.repairStatus} />
               </TableCell>
-              <TableCell>{new Date(repair.dateReceived).toLocaleDateString()}</TableCell>
               <TableCell>${repair.estimatedCost}</TableCell>
               <TableCell>
                 <Button onClick={() => setSelectedRepair(repair)}>View</Button>
@@ -76,4 +73,5 @@ function StatusBadge({status}: { status: string }) {
     </div>
   );
 }
+
 

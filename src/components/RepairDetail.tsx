@@ -1,10 +1,14 @@
-
 'use client';
 
 import React from 'react';
+import {Button} from '@/components/ui/button';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 
 export function RepairDetail({repair, onClose}: { repair: any, onClose: () => void }) {
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <Dialog open={!!repair} onOpenChange={onClose}>
       <DialogContent>
@@ -75,9 +79,8 @@ export function RepairDetail({repair, onClose}: { repair: any, onClose: () => vo
             />
           </div>
         </div>
+        <Button onClick={handlePrint}>Print Receipt</Button>
       </DialogContent>
     </Dialog>
   );
 }
-
-

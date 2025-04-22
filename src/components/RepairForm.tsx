@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, {useState} from 'react';
@@ -32,7 +31,6 @@ const repairFormSchema = z.object({
   estimatedCost: z.string().regex(/^\d+(\.\d{1,2})?$/, {
     message: 'Invalid Cost',
   }),
-  dateReceived: z.date(),
   repairStatus: z.enum(['Pending', 'In Progress', 'Completed', 'Cancelled']),
 });
 
@@ -52,7 +50,6 @@ export function RepairForm() {
       deviceModel: '',
       issueDescription: '',
       estimatedCost: '',
-      dateReceived: new Date(),
       repairStatus: 'Pending',
     },
   });
@@ -77,6 +74,7 @@ export function RepairForm() {
     addRepair({
       ...values,
       id: Date.now().toString(), // Simple ID generation for demo
+      dateReceived: new Date(), //adding date here
     });
     toast({
       title: 'Success',
@@ -91,58 +89,62 @@ export function RepairForm() {
       <h2 className="text-xl font-semibold mb-2">Add New Repair</h2>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="customerName"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Customer Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="phoneNumber"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Phone Number</FormLabel>
-                <FormControl>
-                  <Input placeholder="123-456-7890" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="deviceBrand"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Device Brand</FormLabel>
-                <FormControl>
-                  <Input placeholder="Apple" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="deviceModel"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Device Model</FormLabel>
-                <FormControl>
-                  <Input placeholder="iPhone 13" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="customerName"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Customer Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123-456-7890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="deviceBrand"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Device Brand</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Apple" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="deviceModel"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Device Model</FormLabel>
+                  <FormControl>
+                    <Input placeholder="iPhone 13" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <FormField
             control={form.control}
             name="issueDescription"
@@ -156,51 +158,39 @@ export function RepairForm() {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="estimatedCost"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Estimated Cost</FormLabel>
-                <FormControl>
-                  <Input placeholder="150.00" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="dateReceived"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Date Received</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-                <FormDescription>Please enter the date the device was received.</FormDescription>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="repairStatus"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Repair Status</FormLabel>
-                <FormControl>
-                  <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" {...field}>
-                    <option value="Pending">Pending</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="estimatedCost"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Estimated Cost</FormLabel>
+                  <FormControl>
+                    <Input placeholder="150.00" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="repairStatus"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Repair Status</FormLabel>
+                  <FormControl>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" {...field}>
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <Button type="submit">Submit</Button>
         </form>
@@ -218,4 +208,3 @@ export function RepairForm() {
     </div>
   );
 }
-

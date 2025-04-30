@@ -12,11 +12,41 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {RepairDetail} from './RepairDetail';
+import {cn} from '@/lib/utils';
+import type {Repair, RepairStatus} from '@/types/repair'; // Assuming types are defined here
 
 export function RepairList() {
-  const {repairs} = useRepairContext();
-  const [selectedRepair, setSelectedRepair] = useState(null);
+  const {repairs, updateRepair} = useRepairContext();
+  const [selectedRepair, setSelectedRepair] = useState<Repair | null>(null);
+
+  const handleStatusChange = (repairId: string, newStatus: RepairStatus) => {
+    const repairToUpdate = repairs.find(r => r.id === repairId);
+    if (repairToUpdate) {
+      updateRepair({...repairToUpdate, repairStatus: newStatus});
+    }
+  };
+
+  const getStatusColorClass = (status: RepairStatus): string => {
+    switch (status) {
+      case 'Completed':
+        return 'border-l-green-500'; // Direct color for emphasis
+      case 'In Progress':
+        return 'border-l-orange-500'; // Direct color for emphasis
+      case 'Cancelled':
+        return 'border-l-destructive'; // Theme color
+      case 'Pending':
+      default:
+        return 'border-l-muted-foreground'; // Theme color
+    }
+  };
 
   return (
     <div>
@@ -35,16 +65,35 @@ export function RepairList() {
         </TableHeader>
         <TableBody>
           {repairs.map((repair) => (
-            <TableRow key={repair.id}>
+            <TableRow
+              key={repair.id}
+              className={cn(
+                'border-l-4', // Base border style
+                getStatusColorClass(repair.repairStatus) // Apply status color
+              )}
+            >
               <TableCell>{repair.customerName}</TableCell>
               <TableCell>{repair.deviceBrand} {repair.deviceModel}</TableCell>
-              <TableCell>{repair.issueDescription}</TableCell>
+              <TableCell className="max-w-xs truncate">{repair.issueDescription}</TableCell>
               <TableCell>
-                <StatusBadge status={repair.repairStatus} />
+                <Select
+                  value={repair.repairStatus}
+                  onValueChange={(newStatus: RepairStatus) => handleStatusChange(repair.id, newStatus)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
               </TableCell>
               <TableCell>${repair.estimatedCost}</TableCell>
               <TableCell>
-                <Button onClick={() => setSelectedRepair(repair)}>View</Button>
+                <Button variant="outline" size="sm" onClick={() => setSelectedRepair(repair)}>View</Button>
               </TableCell>
             </TableRow>
           ))}
@@ -57,20 +106,5 @@ export function RepairList() {
   );
 }
 
-function StatusBadge({status}: { status: string }) {
-  let color = 'gray';
-  if (status === 'Completed') {
-    color = 'green';
-  } else if (status === 'In Progress') {
-    color = 'orange';
-  } else if (status === 'Cancelled') {
-    color = 'red';
-  }
-
-  return (
-    <div className={`rounded-full px-2 py-1 text-xs font-semibold text-white bg-${color}`}>
-      {status}
-    </div>
-  );
-}
-
+// StatusBadge component removed as Select is used directly in the table now.
+// If needed elsewhere, it can remain, but it's not used in this list component anymore.

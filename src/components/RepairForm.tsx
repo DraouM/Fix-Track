@@ -1,37 +1,44 @@
 'use client';
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {useForm} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {Textarea} from '@/components/ui/textarea';
-import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {useToast} from '@/hooks/use-toast';
 import {useRepairContext} from '@/context/RepairContext';
-import {analyzeRepairIssue} from '@/ai/flows/analyze-repair-issue';
+import {analyzeRepairIssue, AnalyzeRepairIssueOutput} from '@/ai/flows/analyze-repair-issue';
+import type { RepairStatus } from '@/types/repair'; // Import shared type
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Icons } from '@/components/icons'; // Assuming icons are available
+
+// Define the possible statuses explicitly for the schema and dropdown
+const repairStatuses: [RepairStatus, ...RepairStatus[]] = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
 
 const repairFormSchema = z.object({
   customerName: z.string().min(2, {
     message: 'Customer Name must be at least 2 characters.',
   }),
-  phoneNumber: z.string().regex(/^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/, {
-    message: 'Invalid Phone Number',
+  phoneNumber: z.string().regex(/^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/, {
+    message: 'Invalid Phone Number format.',
   }),
   deviceBrand: z.string().min(2, {
     message: 'Device Brand must be at least 2 characters.',
   }),
-  deviceModel: z.string().min(2, {
-    message: 'Device Model must be at least 2 characters.',
+  deviceModel: z.string().min(1, { // Allow single character model names
+    message: 'Device Model must be at least 1 character.',
   }),
   issueDescription: z.string().min(10, {
     message: 'Issue Description must be at least 10 characters.',
   }),
-  estimatedCost: z.string().regex(/^\d+(\.\d{1,2})?$/, {
-    message: 'Invalid Cost',
+  estimatedCost: z.string().regex(/^\d+(\.\d{1,2})?$/, { // Ensure it's a valid currency format
+    message: 'Invalid Cost format (e.g., 150.00).',
   }),
-  repairStatus: z.enum(['Pending', 'In Progress', 'Completed', 'Cancelled']),
+  repairStatus: z.enum(repairStatuses), // Use the defined statuses
 });
 
 type RepairFormValues = z.infer<typeof repairFormSchema>;
@@ -39,8 +46,8 @@ type RepairFormValues = z.infer<typeof repairFormSchema>;
 export function RepairForm() {
   const {toast} = useToast();
   const {addRepair} = useRepairContext();
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
-  const [repairId, setRepairId] = useState<string>(Date.now().toString()); // Generate ID on the client
+  const [aiSuggestions, setAiSuggestions] = useState<AnalyzeRepairIssueOutput | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const form = useForm<RepairFormValues>({
     resolver: zodResolver(repairFormSchema),
@@ -51,163 +58,250 @@ export function RepairForm() {
       deviceModel: '',
       issueDescription: '',
       estimatedCost: '',
-      repairStatus: 'Pending',
+      repairStatus: 'Pending', // Default status
     },
+    mode: 'onChange', // Validate on change for better UX
   });
 
-  async function onSubmit(values: RepairFormValues) {
-    try {
-      const analysis = await analyzeRepairIssue({
-        deviceBrand: values.deviceBrand,
-        deviceModel: values.deviceModel,
-        issueDescription: values.issueDescription,
-      });
-      setAiSuggestions(analysis?.suggestedSolutions || []);
-    } catch (error) {
-      console.error('AI Analysis Error:', error);
-      toast({
-        title: 'AI Analysis Failed',
-        description: 'Failed to generate AI suggestions. Please try again.',
-        variant: 'destructive',
-      });
+  const issueDescription = form.watch('issueDescription');
+  const deviceBrand = form.watch('deviceBrand');
+  const deviceModel = form.watch('deviceModel');
+
+  // Debounced AI analysis trigger
+  useEffect(() => {
+    if (issueDescription && issueDescription.length >= 10 && deviceBrand && deviceModel) {
+      const handler = setTimeout(async () => {
+        setIsAiLoading(true);
+        try {
+          const analysis = await analyzeRepairIssue({
+            deviceBrand: deviceBrand,
+            deviceModel: deviceModel,
+            issueDescription: issueDescription,
+          });
+          setAiSuggestions(analysis);
+        } catch (error) {
+          console.error('AI Analysis Error:', error);
+           toast({
+             title: 'AI Analysis Failed',
+             description: 'Could not fetch AI suggestions.',
+             variant: 'destructive',
+           });
+          setAiSuggestions(null); // Clear suggestions on error
+        } finally {
+          setIsAiLoading(false);
+        }
+      }, 1000); // Debounce for 1 second
+
+      return () => {
+        clearTimeout(handler); // Clear timeout if inputs change
+         // setIsAiLoading(false); // Optionally reset loading state immediately
+      };
+    } else {
+        setAiSuggestions(null); // Clear suggestions if criteria not met
     }
+  }, [issueDescription, deviceBrand, deviceModel, toast]);
+
+
+  function onSubmit(values: RepairFormValues) {
+     // Convert estimatedCost back to number if needed, but context expects string
+     // const costAsNumber = parseFloat(values.estimatedCost);
+     // if (isNaN(costAsNumber)) {
+     //   toast({ title: "Invalid Cost", description: "Estimated cost must be a number.", variant: "destructive" });
+     //   return;
+     // }
 
     addRepair({
       ...values,
-      id: repairId, // Using client-generated ID
-      dateReceived: new Date(), //adding date here
+      // id and dateReceived are handled by the context now
+      // estimatedCost: costAsNumber.toFixed(2), // Keep as string if context expects it
     });
     toast({
       title: 'Success',
       description: 'Repair added successfully.',
     });
-    form.reset();
-    setAiSuggestions([]);
-    setRepairId(Date.now().toString()); // Generate new ID for the next repair
+    form.reset(); // Reset form fields to default values
+    setAiSuggestions(null); // Clear AI suggestions after submission
   }
 
   return (
-    <div className="mb-8">
-      <h2 className="text-xl font-semibold mb-2">Add New Repair</h2>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <Card className="mb-8">
+       <CardHeader>
+        <CardTitle>Add New Repair</CardTitle>
+        <CardDescription>Enter the details for the new repair order.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="customerName"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Customer Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., 123-456-7890" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="deviceBrand"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Device Brand</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Apple" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="deviceModel"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Device Model</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., iPhone 13" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
-              name="customerName"
+              name="issueDescription"
               render={({field}) => (
                 <FormItem>
-                  <FormLabel>Customer Name</FormLabel>
+                  <FormLabel>Issue Description</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} />
+                    <Textarea placeholder="Describe the issue (min 10 chars)..." {...field} />
                   </FormControl>
                   <FormMessage />
+                   {/* AI Suggestions Section */}
+                  {isAiLoading && (
+                    <div className="flex items-center text-sm text-muted-foreground mt-2">
+                      <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing issue...
+                    </div>
+                  )}
+                  {aiSuggestions && !isAiLoading && (
+                    <Card className="mt-4 bg-secondary/50">
+                      <CardHeader className="pb-2 pt-4">
+                        <CardTitle className="text-base">AI Analysis</CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-sm space-y-2">
+                        {aiSuggestions.possibleCauses?.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold">Possible Causes:</h4>
+                            <ul className="list-disc pl-5 text-muted-foreground">
+                              {aiSuggestions.possibleCauses.map((cause, index) => (
+                                <li key={`cause-${index}`}>{cause}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                         {aiSuggestions.suggestedSolutions?.length > 0 && (
+                           <div>
+                             <h4 className="font-semibold">Suggested Solutions:</h4>
+                             <ul className="list-disc pl-5 text-muted-foreground">
+                               {aiSuggestions.suggestedSolutions.map((solution, index) => (
+                                 <li key={`solution-${index}`}>{solution}</li>
+                               ))}
+                             </ul>
+                           </div>
+                         )}
+                        {aiSuggestions.partsNeeded?.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold">Potential Parts Needed:</h4>
+                            <ul className="list-disc pl-5 text-muted-foreground">
+                              {aiSuggestions.partsNeeded.map((part, index) => (
+                                <li key={`part-${index}`}>{part}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {(aiSuggestions.possibleCauses?.length === 0 &&
+                          aiSuggestions.suggestedSolutions?.length === 0 &&
+                           aiSuggestions.partsNeeded?.length === 0) && (
+                             <p className="text-muted-foreground">No specific suggestions found based on the description.</p>
+                           )}
+                      </CardContent>
+                    </Card>
+                  )}
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="phoneNumber"
-              render={({field}) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="123-456-7890" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="deviceBrand"
-              render={({field}) => (
-                <FormItem>
-                  <FormLabel>Device Brand</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Apple" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="deviceModel"
-              render={({field}) => (
-                <FormItem>
-                  <FormLabel>Device Model</FormLabel>
-                  <FormControl>
-                    <Input placeholder="iPhone 13" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <FormField
-            control={form.control}
-            name="issueDescription"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Issue Description</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Cracked screen, won't turn on" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="estimatedCost"
-              render={({field}) => (
-                <FormItem>
-                  <FormLabel>Estimated Cost</FormLabel>
-                  <FormControl>
-                    <Input placeholder="150.00" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="repairStatus"
-              render={({field}) => (
-                <FormItem>
-                  <FormLabel>Repair Status</FormLabel>
-                  <FormControl>
-                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" {...field}>
-                      <option value="Pending">Pending</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Cancelled">Cancelled</option>
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
 
-          <Button type="submit">Submit</Button>
-        </form>
-      </Form>
-      {aiSuggestions.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-md font-semibold">AI Suggested Solutions:</h3>
-          <ul className="list-disc pl-5">
-            {aiSuggestions.map((suggestion, index) => (
-              <li key={index}>{suggestion}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="estimatedCost"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Estimated Cost ($)</FormLabel>
+                    <FormControl>
+                      <Input type="text" placeholder="e.g., 150.00" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="repairStatus"
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel>Initial Status</FormLabel>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select initial status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {repairStatuses.map(status => (
+                           <SelectItem key={status} value={status}>{status}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Button type="submit" disabled={form.formState.isSubmitting || isAiLoading}>
+              {form.formState.isSubmitting ? (
+                 <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Icons.plusCircle className="mr-2 h-4 w-4" />
+              )}
+              Add Repair
+              </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 }
-

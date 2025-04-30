@@ -7,6 +7,13 @@ export default {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+   safelist: [ // Add safelist for dynamic classes
+    'border-l-green-500',
+    'border-l-orange-500',
+    // Add other status colors if needed directly here or use theme colors
+    // 'border-l-red-500', // Example if using direct red
+    // 'border-l-gray-500', // Example if using direct gray
+  ],
   theme: {
   	extend: {
   		colors: {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, {useState, useEffect} from 'react';
@@ -13,7 +14,7 @@ import {useToast} from '@/hooks/use-toast';
 import {useRepairContext} from '@/context/RepairContext';
 import {analyzeRepairIssue, AnalyzeRepairIssueOutput} from '@/ai/flows/analyze-repair-issue';
 import type { RepairStatus } from '@/types/repair'; // Import shared type
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Keep Card for AI suggestions
 import { Icons } from '@/components/icons'; // Assuming icons are available
 
 // Define the possible statuses explicitly for the schema and dropdown
@@ -43,7 +44,12 @@ const repairFormSchema = z.object({
 
 type RepairFormValues = z.infer<typeof repairFormSchema>;
 
-export function RepairForm() {
+interface RepairFormProps {
+  onSuccess?: () => void; // Optional callback for successful submission
+}
+
+
+export function RepairForm({ onSuccess }: RepairFormProps) {
   const {toast} = useToast();
   const {addRepair} = useRepairContext();
   const [aiSuggestions, setAiSuggestions] = useState<AnalyzeRepairIssueOutput | null>(null);
@@ -103,17 +109,8 @@ export function RepairForm() {
 
 
   function onSubmit(values: RepairFormValues) {
-     // Convert estimatedCost back to number if needed, but context expects string
-     // const costAsNumber = parseFloat(values.estimatedCost);
-     // if (isNaN(costAsNumber)) {
-     //   toast({ title: "Invalid Cost", description: "Estimated cost must be a number.", variant: "destructive" });
-     //   return;
-     // }
-
     addRepair({
       ...values,
-      // id and dateReceived are handled by the context now
-      // estimatedCost: costAsNumber.toFixed(2), // Keep as string if context expects it
     });
     toast({
       title: 'Success',
@@ -121,187 +118,181 @@ export function RepairForm() {
     });
     form.reset(); // Reset form fields to default values
     setAiSuggestions(null); // Clear AI suggestions after submission
+    onSuccess?.(); // Call the success callback to close the dialog
   }
 
   return (
-    <Card className="mb-8">
-       <CardHeader>
-        <CardTitle>Add New Repair</CardTitle>
-        <CardDescription>Enter the details for the new repair order.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="customerName"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Customer Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., 123-456-7890" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="deviceBrand"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Device Brand</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Apple" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="deviceModel"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Device Model</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., iPhone 13" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+    // Removed the outer Card component, form is now directly in DialogContent
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name="issueDescription"
+              name="customerName"
               render={({field}) => (
                 <FormItem>
-                  <FormLabel>Issue Description</FormLabel>
+                  <FormLabel>Customer Name</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe the issue (min 10 chars)..." {...field} />
+                    <Input placeholder="John Doe" {...field} />
                   </FormControl>
                   <FormMessage />
-                   {/* AI Suggestions Section */}
-                  {isAiLoading && (
-                    <div className="flex items-center text-sm text-muted-foreground mt-2">
-                      <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing issue...
-                    </div>
-                  )}
-                  {aiSuggestions && !isAiLoading && (
-                    <Card className="mt-4 bg-secondary/50">
-                      <CardHeader className="pb-2 pt-4">
-                        <CardTitle className="text-base">AI Analysis</CardTitle>
-                      </CardHeader>
-                      <CardContent className="text-sm space-y-2">
-                        {aiSuggestions.possibleCauses?.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold">Possible Causes:</h4>
-                            <ul className="list-disc pl-5 text-muted-foreground">
-                              {aiSuggestions.possibleCauses.map((cause, index) => (
-                                <li key={`cause-${index}`}>{cause}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                         {aiSuggestions.suggestedSolutions?.length > 0 && (
-                           <div>
-                             <h4 className="font-semibold">Suggested Solutions:</h4>
-                             <ul className="list-disc pl-5 text-muted-foreground">
-                               {aiSuggestions.suggestedSolutions.map((solution, index) => (
-                                 <li key={`solution-${index}`}>{solution}</li>
-                               ))}
-                             </ul>
-                           </div>
-                         )}
-                        {aiSuggestions.partsNeeded?.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold">Potential Parts Needed:</h4>
-                            <ul className="list-disc pl-5 text-muted-foreground">
-                              {aiSuggestions.partsNeeded.map((part, index) => (
-                                <li key={`part-${index}`}>{part}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {(aiSuggestions.possibleCauses?.length === 0 &&
-                          aiSuggestions.suggestedSolutions?.length === 0 &&
-                           aiSuggestions.partsNeeded?.length === 0) && (
-                             <p className="text-muted-foreground">No specific suggestions found based on the description.</p>
-                           )}
-                      </CardContent>
-                    </Card>
-                  )}
                 </FormItem>
               )}
             />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="estimatedCost"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Estimated Cost ($)</FormLabel>
-                    <FormControl>
-                      <Input type="text" placeholder="e.g., 150.00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="repairStatus"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Initial Status</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select initial status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {repairStatuses.map(status => (
-                           <SelectItem key={status} value={status}>{status}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <Button type="submit" disabled={form.formState.isSubmitting || isAiLoading}>
-              {form.formState.isSubmitting ? (
-                 <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Icons.plusCircle className="mr-2 h-4 w-4" />
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., 123-456-7890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-              Add Repair
-              </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="deviceBrand"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Device Brand</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Apple" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="deviceModel"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Device Model</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., iPhone 13" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <FormField
+            control={form.control}
+            name="issueDescription"
+            render={({field}) => (
+              <FormItem>
+                <FormLabel>Issue Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Describe the issue (min 10 chars)..." {...field} />
+                </FormControl>
+                <FormMessage />
+                 {/* AI Suggestions Section */}
+                {isAiLoading && (
+                  <div className="flex items-center text-sm text-muted-foreground mt-2">
+                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing issue...
+                  </div>
+                )}
+                {aiSuggestions && !isAiLoading && (
+                  <Card className="mt-4 bg-secondary/50">
+                    <CardHeader className="pb-2 pt-4">
+                      <CardTitle className="text-base">AI Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm space-y-2">
+                      {aiSuggestions.possibleCauses?.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold">Possible Causes:</h4>
+                          <ul className="list-disc pl-5 text-muted-foreground">
+                            {aiSuggestions.possibleCauses.map((cause, index) => (
+                              <li key={`cause-${index}`}>{cause}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                       {aiSuggestions.suggestedSolutions?.length > 0 && (
+                         <div>
+                           <h4 className="font-semibold">Suggested Solutions:</h4>
+                           <ul className="list-disc pl-5 text-muted-foreground">
+                             {aiSuggestions.suggestedSolutions.map((solution, index) => (
+                               <li key={`solution-${index}`}>{solution}</li>
+                             ))}
+                           </ul>
+                         </div>
+                       )}
+                      {aiSuggestions.partsNeeded?.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold">Potential Parts Needed:</h4>
+                          <ul className="list-disc pl-5 text-muted-foreground">
+                            {aiSuggestions.partsNeeded.map((part, index) => (
+                              <li key={`part-${index}`}>{part}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(aiSuggestions.possibleCauses?.length === 0 &&
+                        aiSuggestions.suggestedSolutions?.length === 0 &&
+                         aiSuggestions.partsNeeded?.length === 0) && (
+                           <p className="text-muted-foreground">No specific suggestions found based on the description.</p>
+                         )}
+                    </CardContent>
+                  </Card>
+                )}
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="estimatedCost"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Estimated Cost ($)</FormLabel>
+                  <FormControl>
+                    <Input type="text" placeholder="e.g., 150.00" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="repairStatus"
+              render={({field}) => (
+                <FormItem>
+                  <FormLabel>Initial Status</FormLabel>
+                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select initial status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {repairStatuses.map(status => (
+                         <SelectItem key={status} value={status}>{status}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <Button type="submit" disabled={form.formState.isSubmitting || isAiLoading}>
+            {form.formState.isSubmitting || isAiLoading ? (
+               <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Icons.plusCircle className="mr-2 h-4 w-4" /> /* Keep icon for consistency */
+            )}
+            Add Repair
+            </Button>
+        </form>
+      </Form>
   );
 }

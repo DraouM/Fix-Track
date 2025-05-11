@@ -3,21 +3,12 @@
 
 import type { ReactNode } from 'react';
 import { RepairProvider } from '@/context/RepairContext';
+// InventoryProvider is scoped to InventoryPageClient, so not needed globally here.
 import { Toaster } from '@/components/ui/toaster';
-import { useEffect, useState } from 'react';
 
 export function ClientProviders({ children }: { children: ReactNode }) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
-    // You can render a loader here or null
-    return null; 
-  }
-
+  // Removed isClient state and useEffect to allow children to be SSR'd.
+  // Providers like RepairProvider should handle their own client-side effects (e.g., localStorage).
   return (
     <RepairProvider>
       {children}
@@ -25,3 +16,4 @@ export function ClientProviders({ children }: { children: ReactNode }) {
     </RepairProvider>
   );
 }
+

@@ -43,11 +43,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <h1 className="text-xl font-semibold text-primary group-data-[collapsible=icon]:hidden">FixTrack</h1>
             </Link>
             <div className="md:hidden"> {/* Show trigger only on mobile */}
-                 <SidebarTrigger asChild>
-                    <Button variant="ghost" size="icon" className="md:hidden">
-                        <Icons.chevronDown /> {/* Using chevronDown as placeholder for menu icon */}
-                    </Button>
-                 </SidebarTrigger>
+                 {/* 
+                   Corrected SidebarTrigger usage:
+                   Removed `asChild` and the inner `Button` component.
+                   SidebarTrigger itself is a Button. If a custom icon is needed,
+                   SidebarTrigger component would need to be modified to accept it.
+                   For now, it will use its default icon (PanelLeft).
+                 */}
+                 <SidebarTrigger />
             </div>
           </SidebarHeader>
           <SidebarContent className="flex-1 overflow-y-auto p-4">
@@ -81,3 +84,4 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   );
 }
+

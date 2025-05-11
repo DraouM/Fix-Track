@@ -1,20 +1,20 @@
 'use client';
 
 import React, {useState, useEffect, useMemo} from 'react';
-import {useForm, FormProvider as RHFFormProvider} from 'react-hook-form'; // Import FormProvider directly
+import {useForm } from 'react-hook-form'; // Removed FormProvider direct import
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {Textarea} from '@/components/ui/textarea';
 import {
+  Form, // Added Form import from shadcn/ui
   FormControl,
-  // Form, // Removed Form alias from ui/form
   FormField,
   FormItem,
   FormLabel,
   FormMessage
-} from '@/components/ui/form'; 
+} from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,7 +57,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const [aiSuggestions, setAiSuggestions] = useState<AnalyzeRepairIssueOutput | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [selectedPartsForRepair, setSelectedPartsForRepair] = useState<UsedPart[]>(repairToEdit?.usedParts || []);
-  const [isPartsDialogValia, setIsPartsDialogValia] = useState(true); 
+  const [isPartsDialogValia, setIsPartsDialogValia] = useState(true);
 
   const form = useForm<RepairFormValues>({
     resolver: zodResolver(repairFormSchema),
@@ -80,7 +80,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     },
     mode: 'onChange',
   });
-  
+
   useEffect(() => {
     if (repairToEdit) {
         form.reset({
@@ -189,7 +189,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
         addRepair(repairData);
         toast({ title: 'Success', description: 'Repair added successfully.' });
     }
-    
+
     form.reset();
     setSelectedPartsForRepair([]);
     setAiSuggestions(null);
@@ -208,7 +208,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
 
 
   return (
-    <RHFFormProvider {...form}> {/* Use FormProvider directly from react-hook-form */}
+    <Form {...form}> {/* Use Form from @/components/ui/form */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
         <ScrollArea className="max-h-[70vh] pr-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -219,7 +219,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             <FormField control={form.control} name="deviceBrand" render={({field}) => (<FormItem><FormLabel>Device Brand</FormLabel><FormControl><Input placeholder="e.g., Apple" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="deviceModel" render={({field}) => (<FormItem><FormLabel>Device Model</FormLabel><FormControl><Input placeholder="e.g., iPhone 13" {...field} /></FormControl><FormMessage /></FormItem>)} />
           </div>
-          
+
           <FormField control={form.control} name="issueDescription" render={({field}) => (
             <FormItem>
               <FormLabel>Issue Description</FormLabel>
@@ -259,7 +259,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                        <DialogDescription>Search and select a part to add to this repair job.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-2">
-                        <Input 
+                        <Input
                             placeholder="Search parts by name..."
                             value={partSearchTerm}
                             onChange={(e) => setPartSearchTerm(e.target.value)}
@@ -303,10 +303,10 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                                 <p className="text-sm font-medium">Selected: <span className="font-normal">{selectedInventoryItem.itemName}</span></p>
                                 <FormItem>
                                     <FormLabel htmlFor="partQuantity">Quantity</FormLabel>
-                                    <Input 
+                                    <Input
                                         id="partQuantity"
-                                        type="number" 
-                                        value={quantityForSelectedPart} 
+                                        type="number"
+                                        value={quantityForSelectedPart}
                                         onChange={(e) => {
                                             const val = parseInt(e.target.value);
                                             setQuantityForSelectedPart(val > 0 ? val : 1);
@@ -328,15 +328,15 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setPartsDialogOpen(false)}>Cancel</Button>
-                        <Button 
-                            type="button" 
-                            disabled={!selectedInventoryItem || quantityForSelectedPart <= 0 || !isPartsDialogValia} 
+                        <Button
+                            type="button"
+                            disabled={!selectedInventoryItem || quantityForSelectedPart <= 0 || !isPartsDialogValia}
                             onClick={() => {
                                 if (selectedInventoryItem && quantityForSelectedPart > 0) {
                                     handleAddPartToRepair(selectedInventoryItem, quantityForSelectedPart);
-                                    setPartsDialogOpen(false); 
-                                    setPartSearchTerm(""); 
-                                    setSelectedInventoryItem(null); 
+                                    setPartsDialogOpen(false);
+                                    setPartSearchTerm("");
+                                    setSelectedInventoryItem(null);
                                 }
                             }}
                         >
@@ -401,6 +401,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
           {repairToEdit ? 'Update Repair' : 'Add Repair'}
         </Button>
       </form>
-    </RHFFormProvider>
+    </Form>
   );
 }

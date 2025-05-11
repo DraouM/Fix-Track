@@ -1,8 +1,7 @@
 'use client';
 
 import React, {useState, useEffect, useMemo} from 'react';
-// Reordered FormProvider and useForm
-import {FormProvider, useForm} from 'react-hook-form'; 
+import {useForm, FormProvider as RHFFormProvider} from 'react-hook-form'; // Import FormProvider directly
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Input} from '@/components/ui/input';
@@ -10,6 +9,7 @@ import {Button} from '@/components/ui/button';
 import {Textarea} from '@/components/ui/textarea';
 import {
   FormControl,
+  // Form, // Removed Form alias from ui/form
   FormField,
   FormItem,
   FormLabel,
@@ -208,7 +208,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
 
 
   return (
-    <FormProvider {...form}> {/* Use FormProvider directly */}
+    <RHFFormProvider {...form}> {/* Use FormProvider directly from react-hook-form */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
         <ScrollArea className="max-h-[70vh] pr-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -401,6 +401,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
           {repairToEdit ? 'Update Repair' : 'Add Repair'}
         </Button>
       </form>
-    </FormProvider>
+    </RHFFormProvider>
   );
 }

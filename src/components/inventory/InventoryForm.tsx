@@ -1,8 +1,7 @@
-
 'use client';
 
 import React from 'react';
-import { useForm, FormProvider } from 'react-hook-form'; // Changed: Use FormProvider directly
+import { useForm } from 'react-hook-form'; // FormProvider will come from ui/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +9,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  Form, // Import Form alias from ui/form
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
@@ -63,7 +63,7 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
   };
 
   return (
-    <FormProvider {...form}> {/* Changed: Use FormProvider directly */}
+    <Form {...form}> {/* Use Form alias */}
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
@@ -186,7 +186,7 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
           {itemToEdit ? 'Update Item' : 'Add Item'}
         </Button>
       </form>
-    </FormProvider>
+    </Form>
   );
 }
 

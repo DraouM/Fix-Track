@@ -5,7 +5,7 @@ import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
 import {
   Controller,
-  FormProvider, // FormProvider is imported but no longer aliased and re-exported as `Form`
+  FormProvider as RHFFormProvider, // Import with an alias
   useFormContext,
   type ControllerProps,
   type FieldPath,
@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
-// const Form = FormProvider; // Removed this alias
+const Form = RHFFormProvider; // Create the alias
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -168,13 +168,11 @@ FormMessage.displayName = "FormMessage"
 
 export {
   useFormField,
-  // Form, // Removed from exports
+  Form, // Export the alias
   FormItem,
   FormLabel,
   FormControl,
   FormDescription,
   FormMessage,
   FormField,
-  // Export FormProvider directly from react-hook-form if needed elsewhere,
-  // or consumers can import it directly as RepairForm will now.
 }

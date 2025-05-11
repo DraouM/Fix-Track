@@ -5,7 +5,7 @@ import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
 import {
   Controller,
-  FormProvider as RHFFormProvider, // Import with an alias
+  FormProvider, // Changed: Import FormProvider directly
   useFormContext,
   type ControllerProps,
   type FieldPath,
@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
-const Form = RHFFormProvider; // Create the alias
+// Removed: const Form = RHFFormProvider; (RHFFormProvider was an alias for FormProvider)
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -168,7 +168,7 @@ FormMessage.displayName = "FormMessage"
 
 export {
   useFormField,
-  Form, // Export the alias
+  FormProvider as Form, // Changed: Export FormProvider directly as Form
   FormItem,
   FormLabel,
   FormControl,

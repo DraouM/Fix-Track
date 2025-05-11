@@ -5,7 +5,7 @@ import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
 import {
   Controller,
-  FormProvider, // Changed: Import FormProvider directly
+  FormProvider as RHFFormProvider, // Import FormProvider from react-hook-form
   useFormContext,
   type ControllerProps,
   type FieldPath,
@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 
-// Removed: const Form = RHFFormProvider; (RHFFormProvider was an alias for FormProvider)
+// const Form = RHFFormProvider; // Removed this intermediate assignment
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -168,7 +168,7 @@ FormMessage.displayName = "FormMessage"
 
 export {
   useFormField,
-  FormProvider as Form, // Changed: Export FormProvider directly as Form
+  RHFFormProvider as Form, // Changed: Export RHFFormProvider directly as Form
   FormItem,
   FormLabel,
   FormControl,

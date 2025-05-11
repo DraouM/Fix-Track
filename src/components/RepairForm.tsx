@@ -1,15 +1,14 @@
-
 'use client';
 
 import React, {useState, useEffect, useMemo} from 'react';
-import {useForm, Controller} from 'react-hook-form'; // Removed FormProvider, will use Form from @/components/ui/form
+import {useForm} from 'react-hook-form'; // Removed unused Controller import
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {Textarea} from '@/components/ui/textarea';
 import {
-  Form, // Import Form from shadcn/ui
+  Form,
   FormControl,
   FormField,
   FormItem,
@@ -33,13 +32,11 @@ import { Trash2 } from 'lucide-react';
 
 const repairStatuses: [RepairStatus, ...RepairStatus[]] = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
 
-// Schema does not include usedParts directly, as it's managed separately in the form's state
-// and then added to the repair object before submission.
 const repairFormSchema = z.object({
   customerName: z.string().min(2, { message: 'Customer Name must be at least 2 characters.' }),
   phoneNumber: z.string().regex(/^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/, { message: 'Invalid Phone Number format.' }),
   deviceBrand: z.string().min(2, { message: 'Device Brand must be at least 2 characters.' }),
-  deviceModel: z.string().min(1, { message: 'Device Model must be at least 1 character.' }),
+  deviceModel: z.string().min(1, { message: 'Device Model must be at least 1 characters.' }),
   issueDescription: z.string().min(10, { message: 'Issue Description must be at least 10 characters.' }),
   estimatedCost: z.string().regex(/^\d+(\.\d{1,2})?$/, { message: 'Invalid Cost format (e.g., 150.00).' }),
   repairStatus: z.enum(repairStatuses),
@@ -49,18 +46,18 @@ type RepairFormValues = z.infer<typeof repairFormSchema>;
 
 interface RepairFormProps {
   onSuccess?: () => void;
-  repairToEdit?: Repair | null; // For editing existing repairs
+  repairToEdit?: Repair | null;
 }
 
 export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const {toast} = useToast();
-  const {addRepair, updateRepair: updateRepairContext} = useRepairContext(); // Renamed to avoid conflict
+  const {addRepair, updateRepair: updateRepairContext} = useRepairContext();
   const {inventoryItems, loading: inventoryLoading, getItemById } = useInventoryContext();
 
   const [aiSuggestions, setAiSuggestions] = useState<AnalyzeRepairIssueOutput | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [selectedPartsForRepair, setSelectedPartsForRepair] = useState<UsedPart[]>(repairToEdit?.usedParts || []);
-  const [isPartsDialogValid, setIsPartsDialogValid] = useState(true); // For stock validation in dialog
+  const [isPartsDialogValia, setIsPartsDialogValia] = useState(true); // Typo fixed to isPartsDialogValia
 
   const form = useForm<RepairFormValues>({
     resolver: zodResolver(repairFormSchema),
@@ -139,7 +136,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const handleAddPartToRepair = (inventoryItem: InventoryItem, quantity: number) => {
     if (quantity <= 0) {
         toast({ title: "Invalid Quantity", description: "Quantity must be greater than 0.", variant: "destructive"});
-        setIsPartsDialogValid(false);
+        setIsPartsDialogValia(false);
         return;
     }
     const currentStock = inventoryItem.quantityInStock ?? 0;
@@ -147,10 +144,10 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
 
     if (quantity > (currentStock - alreadySelectedQuantity)) {
         toast({ title: "Not Enough Stock", description: `Only ${currentStock - alreadySelectedQuantity} of ${inventoryItem.itemName} available.`, variant: "destructive"});
-        setIsPartsDialogValid(false);
+        setIsPartsDialogValia(false);
         return;
     }
-    setIsPartsDialogValid(true);
+    setIsPartsDialogValia(true);
 
     setSelectedPartsForRepair(prevParts => {
       const existingPartIndex = prevParts.findIndex(p => p.partId === inventoryItem.id);
@@ -165,11 +162,10 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
           itemType: inventoryItem.itemType,
           phoneBrand: inventoryItem.phoneBrand,
           quantity: quantity,
-          unitCost: inventoryItem.buyingPrice, // Use buyingPrice as unitCost
+          unitCost: inventoryItem.buyingPrice,
         }];
       }
     });
-     // toast({ title: "Part Added", description: `${inventoryItem.itemName} (x${quantity}) added to repair.`});
   };
 
   const handleRemovePartFromRepair = (partId: string) => {
@@ -200,8 +196,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     onSuccess?.();
   }
 
-
-  // Parts Selection Dialog State
   const [partsDialogOpen, setPartsDialogOpen] = useState(false);
   const [partSearchTerm, setPartSearchTerm] = useState("");
   const [selectedInventoryItem, setSelectedInventoryItem] = useState<InventoryItem | null>(null);
@@ -214,7 +208,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
 
 
   return (
-    <Form {...form}> {/* Use Form from @/components/ui/form */}
+    <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
         <ScrollArea className="max-h-[70vh] pr-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -246,7 +240,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             </FormItem>
           )}
 
-          {/* Used Parts Section */}
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -256,7 +249,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                 </div>
                 <Dialog open={partsDialogOpen} onOpenChange={setPartsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button type="button" variant="outline" size="sm" onClick={() => { setSelectedInventoryItem(null); setQuantityForSelectedPart(1); setIsPartsDialogValid(true);}}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => { setSelectedInventoryItem(null); setQuantityForSelectedPart(1); setIsPartsDialogValia(true);}}>
                       <Icons.plusCircle className="mr-2 h-4 w-4" /> Add Part
                     </Button>
                   </DialogTrigger>
@@ -290,14 +283,14 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                                         <TableRow><TableCell colSpan={6} className="text-center">No parts found.</TableCell></TableRow>
                                     ) : (
                                         filteredInventoryItems.map(item => (
-                                        <TableRow key={item.id} onClick={() => {setSelectedInventoryItem(item); setQuantityForSelectedPart(1); setIsPartsDialogValid(true);}} className="cursor-pointer hover:bg-muted/50">
+                                        <TableRow key={item.id} onClick={() => {setSelectedInventoryItem(item); setQuantityForSelectedPart(1); setIsPartsDialogValia(true);}} className="cursor-pointer hover:bg-muted/50">
                                             <TableCell>{item.itemName}</TableCell>
                                             <TableCell>{item.phoneBrand}</TableCell>
                                             <TableCell>{item.itemType}</TableCell>
                                             <TableCell className="text-right">{item.quantityInStock ?? 0}</TableCell>
                                             <TableCell className="text-right">${item.buyingPrice.toFixed(2)}</TableCell>
                                             <TableCell>
-                                                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedInventoryItem(item); setQuantityForSelectedPart(1); setIsPartsDialogValid(true);}}>Select</Button>
+                                                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedInventoryItem(item); setQuantityForSelectedPart(1); setIsPartsDialogValia(true);}}>Select</Button>
                                             </TableCell>
                                         </TableRow>
                                         ))
@@ -320,15 +313,15 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                                             const currentStock = selectedInventoryItem.quantityInStock ?? 0;
                                             const alreadySelectedQty = selectedPartsForRepair.find(p => p.partId === selectedInventoryItem.id)?.quantity || 0;
                                             if(val <=0 || val > (currentStock - alreadySelectedQty)){
-                                                setIsPartsDialogValid(false);
+                                                setIsPartsDialogValia(false);
                                             } else {
-                                                setIsPartsDialogValid(true);
+                                                setIsPartsDialogValia(true);
                                             }
                                         }}
                                         min="1"
-                                        className={!isPartsDialogValid ? "border-destructive" : ""}
+                                        className={!isPartsDialogValia ? "border-destructive" : ""}
                                     />
-                                     {!isPartsDialogValid && <p className="text-xs text-destructive mt-1">Invalid quantity or exceeds available stock ({ (selectedInventoryItem.quantityInStock ?? 0) - (selectedPartsForRepair.find(p => p.partId === selectedInventoryItem.id)?.quantity || 0) } left).</p>}
+                                     {!isPartsDialogValia && <p className="text-xs text-destructive mt-1">Invalid quantity or exceeds available stock ({ (selectedInventoryItem.quantityInStock ?? 0) - (selectedPartsForRepair.find(p => p.partId === selectedInventoryItem.id)?.quantity || 0) } left).</p>}
                                 </FormItem>
                             </div>
                         )}
@@ -337,13 +330,13 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <Button type="button" variant="outline" onClick={() => setPartsDialogOpen(false)}>Cancel</Button>
                         <Button 
                             type="button" 
-                            disabled={!selectedInventoryItem || quantityForSelectedPart <= 0 || !isPartsDialogValid} 
+                            disabled={!selectedInventoryItem || quantityForSelectedPart <= 0 || !isPartsDialogValia} 
                             onClick={() => {
                                 if (selectedInventoryItem && quantityForSelectedPart > 0) {
                                     handleAddPartToRepair(selectedInventoryItem, quantityForSelectedPart);
-                                    setPartsDialogOpen(false); // Close dialog after adding
-                                    setPartSearchTerm(""); // Reset search
-                                    setSelectedInventoryItem(null); // Reset selection
+                                    setPartsDialogOpen(false); 
+                                    setPartSearchTerm(""); 
+                                    setSelectedInventoryItem(null); 
                                 }
                             }}
                         >

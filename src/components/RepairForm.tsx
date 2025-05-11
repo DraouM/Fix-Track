@@ -1,7 +1,8 @@
 'use client';
 
 import React, {useState, useEffect, useMemo} from 'react';
-import {useForm, FormProvider} from 'react-hook-form'; // Changed: Use FormProvider directly
+// Reordered FormProvider and useForm
+import {FormProvider, useForm} from 'react-hook-form'; 
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Input} from '@/components/ui/input';
@@ -207,7 +208,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
 
 
   return (
-    <FormProvider {...form}> {/* Changed: Use FormProvider directly */}
+    <FormProvider {...form}> {/* Use FormProvider directly */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
         <ScrollArea className="max-h-[70vh] pr-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -403,5 +404,3 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </FormProvider>
   );
 }
-
-    

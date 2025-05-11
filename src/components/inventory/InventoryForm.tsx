@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -188,3 +189,5 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
     </FormProvider>
   );
 }
+
+    

@@ -1,20 +1,19 @@
 'use client';
 
 import React, {useState, useEffect, useMemo} from 'react';
-import {useForm} from 'react-hook-form'; // Removed unused Controller import
+import {useForm, FormProvider} from 'react-hook-form'; // Changed: Use FormProvider directly
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {Textarea} from '@/components/ui/textarea';
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage
-} from '@/components/ui/form';
+} from '@/components/ui/form'; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,7 +56,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const [aiSuggestions, setAiSuggestions] = useState<AnalyzeRepairIssueOutput | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [selectedPartsForRepair, setSelectedPartsForRepair] = useState<UsedPart[]>(repairToEdit?.usedParts || []);
-  const [isPartsDialogValia, setIsPartsDialogValia] = useState(true); // Typo fixed to isPartsDialogValia
+  const [isPartsDialogValia, setIsPartsDialogValia] = useState(true); 
 
   const form = useForm<RepairFormValues>({
     resolver: zodResolver(repairFormSchema),
@@ -208,7 +207,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
 
 
   return (
-    <Form {...form}>
+    <FormProvider {...form}> {/* Changed: Use FormProvider directly */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
         <ScrollArea className="max-h-[70vh] pr-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -401,6 +400,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
           {repairToEdit ? 'Update Repair' : 'Add Repair'}
         </Button>
       </form>
-    </Form>
+    </FormProvider>
   );
 }
+
+    

@@ -1,13 +1,11 @@
-
 'use client';
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form'; // Changed: Use FormProvider directly
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -39,13 +37,13 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
     defaultValues: itemToEdit
       ? {
           ...itemToEdit,
-          buyingPrice: itemToEdit.buyingPrice.toString(), // Convert number to string for input
-          sellingPrice: itemToEdit.sellingPrice.toString(), // Convert number to string for input
+          buyingPrice: itemToEdit.buyingPrice.toString(), 
+          sellingPrice: itemToEdit.sellingPrice.toString(), 
           quantityInStock: itemToEdit.quantityInStock?.toString() ?? '',
         }
       : {
           itemName: '',
-          phoneBrand: undefined, // Ensure dropdowns show placeholder
+          phoneBrand: undefined, 
           itemType: undefined,
           buyingPrice: '',
           sellingPrice: '',
@@ -64,7 +62,7 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
   };
 
   return (
-    <Form {...form}>
+    <FormProvider {...form}> {/* Changed: Use FormProvider directly */}
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
@@ -187,6 +185,6 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
           {itemToEdit ? 'Update Item' : 'Add Item'}
         </Button>
       </form>
-    </Form>
+    </FormProvider>
   );
 }

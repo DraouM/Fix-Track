@@ -1,6 +1,7 @@
+
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react'; // Added useMemo
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,79 +13,105 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import type { Repair } from '@/types/repair'; // Import shared type
-import { format } from 'date-fns'; // For date formatting
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'; // Added Table components
+import type { Repair } from '@/types/repair';
+import { format } from 'date-fns';
 
 interface RepairDetailProps {
-  repair: Repair | null; // Allow null for when no repair is selected
+  repair: Repair | null;
   onClose: () => void;
 }
 
 export function RepairDetail({ repair, onClose }: RepairDetailProps) {
 
   const handlePrint = () => {
-    // Basic print functionality. More advanced receipt generation might need a dedicated library or service.
     const printContent = document.getElementById('receipt-content');
     if (printContent) {
-      const originalContent = document.body.innerHTML;
       const printWindow = window.open('', '', 'height=600,width=800');
-
       if (printWindow) {
         printWindow.document.write('<html><head><title>Repair Receipt</title>');
-        // Optionally link to your global CSS or add specific print styles
-        printWindow.document.write('<link rel="stylesheet" href="/globals.css" type="text/css" />'); // Adjust path if necessary
-        printWindow.document.write('<style> @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 20px; } #print-button { display: none; } } </style>');
+        printWindow.document.write('<link rel="stylesheet" href="/globals.css" type="text/css" media="print" />'); // Ensure media="print"
+        printWindow.document.write('<style> @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 20px; } #print-button, .no-print { display: none !important; } .print-only-block { display: block !important; } .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; } .print-table th, .print-table td { border: 1px solid #ccc; padding: 8px; text-align: left; } .print-table th { background-color: #f2f2f2; } } </style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContent.innerHTML);
         printWindow.document.write('</body></html>');
         printWindow.document.close();
-        printWindow.focus(); // Necessary for some browsers
-        // Use timeout to ensure content is loaded before printing
+        printWindow.focus();
         setTimeout(() => {
           printWindow.print();
           printWindow.close();
-        }, 250); // Adjust delay if needed
+        }, 250);
       } else {
          alert("Could not open print window. Please check your browser's popup settings.");
       }
     }
   };
 
+  const totalPartsCost = useMemo(() => {
+    if (!repair || !repair.usedParts) return 0;
+    return repair.usedParts.reduce((total, part) => total + (part.unitCost * part.quantity), 0);
+  }, [repair]);
 
    if (!repair) {
-    return null; // Don't render the dialog if no repair is selected
+    return null;
   }
+  
+  const estimatedCostValue = parseFloat(repair.estimatedCost) || 0;
+  const profitExcludingParts = estimatedCostValue - totalPartsCost;
 
   return (
     <Dialog open={!!repair} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent className="sm:max-w-[725px]"> {/* Increased width for parts table */}
         {/* Content specifically for printing */}
-        <div id="receipt-content" className="print:block hidden"> {/* Hidden by default, shown only for printing */}
-            <h2 className="text-xl font-bold mb-2">Repair Receipt</h2>
+        <div id="receipt-content" className="print-only-block hidden"> {/* Hidden by default, shown only for printing */}
+            <h2 className="text-xl font-bold mb-2">FixTrack - Repair Receipt</h2>
             <p><strong>Repair ID:</strong> {repair.id}</p>
             <Separator className="my-2" />
             <p><strong>Customer:</strong> {repair.customerName}</p>
             <p><strong>Phone:</strong> {repair.phoneNumber}</p>
-             <Separator className="my-2" />
+            <Separator className="my-2" />
             <p><strong>Device:</strong> {repair.deviceBrand} {repair.deviceModel}</p>
             <p><strong>Issue:</strong> {repair.issueDescription}</p>
-             <Separator className="my-2" />
+            <Separator className="my-2" />
             <p><strong>Date Received:</strong> {format(new Date(repair.dateReceived), 'PPP p')}</p>
             <p><strong>Status:</strong> {repair.repairStatus}</p>
-            <p><strong>Estimated Cost:</strong> ${repair.estimatedCost}</p>
-             <Separator className="my-2" />
-             <p className="text-xs text-muted-foreground mt-4">Thank you for your business!</p>
+            
+            {repair.usedParts && repair.usedParts.length > 0 && (
+              <>
+                <h4 className="text-sm font-medium mt-3 mb-1">Parts Used:</h4>
+                <table className="print-table">
+                  <thead>
+                    <tr><th>Part Name</th><th>Qty</th><th>Unit Cost</th><th>Total</th></tr>
+                  </thead>
+                  <tbody>
+                    {repair.usedParts.map(part => (
+                      <tr key={part.partId}>
+                        <td>{part.name}</td>
+                        <td>{part.quantity}</td>
+                        <td>${part.unitCost.toFixed(2)}</td>
+                        <td>${(part.unitCost * part.quantity).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="mt-1"><strong>Total Parts Cost:</strong> ${totalPartsCost.toFixed(2)}</p>
+              </>
+            )}
+            <Separator className="my-2" />
+            <p><strong>Total Estimated Repair Cost:</strong> ${estimatedCostValue.toFixed(2)}</p>
+            <Separator className="my-2" />
+            <p className="text-xs text-muted-foreground mt-4">Thank you for your business!</p>
         </div>
 
          {/* Visible Dialog Content */}
-        <div className="print:hidden"> {/* Hide this section when printing */}
+        <div className="no-print"> {/* Hide this section when printing */}
           <DialogHeader>
             <DialogTitle>Repair Details</DialogTitle>
             <DialogDescription>
               Full details for repair ID: {repair.id}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh] pr-6"> {/* Added ScrollArea */}
+          <ScrollArea className="max-h-[70vh] pr-6">
             <div className="grid gap-4 py-4">
               <DetailItem label="Customer Name" value={repair.customerName} />
               <DetailItem label="Phone Number" value={repair.phoneNumber} />
@@ -93,11 +120,40 @@ export function RepairDetail({ repair, onClose }: RepairDetailProps) {
               <DetailItem label="Device Model" value={repair.deviceModel} />
               <DetailItem label="Issue Description" value={repair.issueDescription} isTextarea />
               <Separator />
-              <DetailItem label="Estimated Cost" value={`$${repair.estimatedCost}`} />
-               <DetailItem label="Date Received" value={format(new Date(repair.dateReceived), 'PPP p')} />
+              <DetailItem label="Quoted/Estimated Cost" value={`$${estimatedCostValue.toFixed(2)}`} />
+              <DetailItem label="Date Received" value={format(new Date(repair.dateReceived), 'PPP p')} />
               <DetailItem label="Current Status" value={repair.repairStatus} />
 
-              {/* Status History */}
+              {/* Used Parts Table */}
+              {repair.usedParts && repair.usedParts.length > 0 && (
+                <>
+                  <Separator />
+                  <h4 className="text-sm font-medium mt-2 mb-1">Parts Used</h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Part Name</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Unit Cost</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {repair.usedParts.map(part => (
+                        <TableRow key={part.partId}>
+                          <TableCell>{part.name}</TableCell>
+                          <TableCell className="text-right">{part.quantity}</TableCell>
+                          <TableCell className="text-right">${part.unitCost.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">${(part.unitCost * part.quantity).toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <div className="text-right font-semibold">Total Parts Cost: ${totalPartsCost.toFixed(2)}</div>
+                   <div className="text-right font-semibold text-primary">Estimated Profit (Excl. Labor): ${profitExcludingParts.toFixed(2)}</div>
+                </>
+              )}
+
               {repair.statusHistory && repair.statusHistory.length > 0 && (
                 <>
                   <Separator />
@@ -115,7 +171,7 @@ export function RepairDetail({ repair, onClose }: RepairDetailProps) {
           </ScrollArea>
           <DialogFooter className="mt-4">
             <Button id="print-button" onClick={handlePrint}>Print Receipt</Button>
-             <Button variant="outline" onClick={onClose}>Close</Button>
+            <Button variant="outline" onClick={onClose}>Close</Button>
           </DialogFooter>
          </div>
       </DialogContent>
@@ -123,7 +179,6 @@ export function RepairDetail({ repair, onClose }: RepairDetailProps) {
   );
 }
 
-// Helper component for displaying detail items
 interface DetailItemProps {
   label: string;
   value: string;

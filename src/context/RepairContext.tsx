@@ -1,19 +1,19 @@
 
 'use client';
 
-import React, {createContext, useContext, useState, useEffect} from 'react';
-import type { Repair, RepairStatus } from '@/types/repair';
+import React, {createContext, useContext, useState, useEffect, useCallback} from 'react';
+import type { Repair, RepairStatus, UsedPart } from '@/types/repair';
+import { useInventoryContext } from './InventoryContext'; // Import useInventoryContext
 
 interface RepairContextType {
   repairs: Repair[];
-  addRepair: (repair: Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>) => void; // Adjust addRepair signature if needed
-  updateRepair: (repair: Repair) => void;
+  addRepair: (repair: Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>) => void;
+  updateRepair: (updatedRepairData: Repair) => void; // Parameter changed for clarity
   deleteRepair: (id: string) => void;
 }
 
 const RepairContext = createContext<RepairContextType | undefined>(undefined);
 
-// Sample Data for testing
 const sampleRepairs: Repair[] = [
   {
     id: '1',
@@ -26,6 +26,7 @@ const sampleRepairs: Repair[] = [
     dateReceived: new Date('2024-07-28T10:30:00Z'),
     repairStatus: 'Pending',
     statusHistory: [{ status: 'Pending', timestamp: new Date('2024-07-28T10:30:00Z') }],
+    usedParts: [],
   },
   {
     id: '2',
@@ -40,6 +41,9 @@ const sampleRepairs: Repair[] = [
     statusHistory: [
       { status: 'Pending', timestamp: new Date('2024-07-29T14:00:00Z') },
       { status: 'In Progress', timestamp: new Date('2024-07-30T09:15:00Z') },
+    ],
+    usedParts: [
+      { partId: 'inv_2', name: 'Samsung Galaxy S21 Battery', itemType: 'Battery', phoneBrand: 'Samsung', quantity: 1, unitCost: 25 }
     ],
   },
     {
@@ -57,6 +61,9 @@ const sampleRepairs: Repair[] = [
         { status: 'In Progress', timestamp: new Date('2024-07-30T15:30:00Z') },
         { status: 'Completed', timestamp: new Date('2024-07-31T10:00:00Z') }
       ],
+    usedParts: [
+      { partId: 'inv_3', name: 'Google Pixel 6 Charging Port Flex', itemType: 'Charger', phoneBrand: 'Google', quantity: 1, unitCost: 10 }
+    ],
   },
    {
     id: '4',
@@ -69,103 +76,193 @@ const sampleRepairs: Repair[] = [
     dateReceived: new Date('2024-07-31T16:45:00Z'),
     repairStatus: 'Pending',
      statusHistory: [{ status: 'Pending', timestamp: new Date('2024-07-31T16:45:00Z') }],
+     usedParts: [],
   },
 ];
 
-
-// Helper to get initial state from localStorage or use sample data
 const getInitialState = (): Repair[] => {
   if (typeof window === 'undefined') {
-    return []; // Return empty array on server-side
+    return [];
   }
   const savedRepairs = localStorage.getItem('repairs');
   if (savedRepairs) {
     try {
-      // Need to properly parse dates stored as strings
       const parsedRepairs = JSON.parse(savedRepairs).map((repair: any) => ({
         ...repair,
         dateReceived: new Date(repair.dateReceived),
         statusHistory: repair.statusHistory?.map((hist: any) => ({
           ...hist,
           timestamp: new Date(hist.timestamp),
-        })) || [{ status: repair.repairStatus, timestamp: new Date(repair.dateReceived) }], // Ensure statusHistory exists
+        })) || [{ status: repair.repairStatus, timestamp: new Date(repair.dateReceived) }],
+        usedParts: repair.usedParts || [],
       }));
-       // Only return if there are saved repairs, otherwise fall back to sample
       if (parsedRepairs.length > 0) {
         return parsedRepairs;
       }
     } catch (error) {
       console.error("Failed to parse repairs from localStorage", error);
-      // Fall through to return sample data on error
     }
   }
-  // If no saved data or parsing failed, return sample data
-  return sampleRepairs.map(repair => ({ // Ensure sample data dates are Date objects
+  return sampleRepairs.map(repair => ({
      ...repair,
      dateReceived: new Date(repair.dateReceived),
      statusHistory: repair.statusHistory?.map(hist => ({
        ...hist,
        timestamp: new Date(hist.timestamp)
-     })) || [{ status: repair.repairStatus, timestamp: new Date(repair.dateReceived) }]
+     })) || [{ status: repair.repairStatus, timestamp: new Date(repair.dateReceived) }],
+     usedParts: repair.usedParts || [],
    }));
 };
 
 
 export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({children}) => {
   const [repairs, setRepairs] = useState<Repair[]>([]);
+  const { updateItemQuantity, getItemById } = useInventoryContext(); // Get inventory functions
 
-  // Use useEffect to load initial state only on the client-side
   useEffect(() => {
     setRepairs(getInitialState());
   }, []);
 
-
-   // Effect to save repairs to localStorage whenever they change
   useEffect(() => {
-    // Only save to localStorage if repairs state is not the initial empty array
-    // This prevents overwriting potentially loaded sample data before hydration completes
-     if (typeof window !== 'undefined' && repairs.length > 0) {
-        // Need to handle Date objects for JSON serialization
+     if (typeof window !== 'undefined' && repairs.length >= 0) { // Allow saving empty array if all repairs deleted
       localStorage.setItem('repairs', JSON.stringify(repairs));
     }
   }, [repairs]);
 
 
-  const addRepair = (newRepairData: Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>) => {
+  const addRepair = useCallback((newRepairData: Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>) => {
     const now = new Date();
+    const repairId = Date.now().toString();
+    const usedParts = newRepairData.usedParts || [];
+    const initialStatus = newRepairData.repairStatus || 'Pending';
+
     const repairToAdd: Repair = {
       ...newRepairData,
-      id: Date.now().toString(), // Simple ID generation
+      usedParts,
+      id: repairId,
       dateReceived: now,
-      repairStatus: newRepairData.repairStatus || 'Pending', // Ensure status is set
-      statusHistory: [{ status: newRepairData.repairStatus || 'Pending', timestamp: now }],
+      repairStatus: initialStatus,
+      statusHistory: [{ status: initialStatus, timestamp: now }],
     };
-    setRepairs(prevRepairs => [repairToAdd, ...prevRepairs]); // Add to the beginning of the list
-  };
+    setRepairs(prevRepairs => [repairToAdd, ...prevRepairs]);
 
-  const updateRepair = (updatedRepair: Repair) => {
-     const now = new Date();
-    setRepairs(prevRepairs =>
-      prevRepairs.map(r => {
-        if (r.id === updatedRepair.id) {
-          // Add to status history if status changed
-          const previousStatus = r.statusHistory?.[r.statusHistory.length - 1]?.status ?? r.repairStatus;
-          const newStatusHistory = [...(r.statusHistory || [{ status: r.repairStatus, timestamp: r.dateReceived }])]; // Initialize if needed
+    const newStatusIsDeductible = initialStatus === 'In Progress' || initialStatus === 'Completed';
+    if (newStatusIsDeductible && usedParts.length > 0) {
+      usedParts.forEach(part => {
+        const item = getItemById(part.partId); // from InventoryContext
+        if (item) {
+             if ((item.quantityInStock ?? 0) < part.quantity) {
+                console.warn(`Not enough stock for ${item.itemName} to deduct ${part.quantity}. Available: ${item.quantityInStock}. Deducting available stock.`);
+                updateItemQuantity(part.partId, -(item.quantityInStock ?? 0));
+             } else {
+                updateItemQuantity(part.partId, -part.quantity);
+             }
+        } else {
+            console.warn(`Inventory item with ID ${part.partId} not found for deduction.`);
+        }
+      });
+    }
+  }, [updateItemQuantity, getItemById]);
 
-          if (updatedRepair.repairStatus !== previousStatus) {
-            newStatusHistory.push({ status: updatedRepair.repairStatus, timestamp: now });
+  const updateRepair = useCallback((updatedRepairData: Repair) => {
+    const now = new Date();
+    setRepairs(prevRepairs => {
+      const newRepairsState = prevRepairs.map(currentRepairInState => {
+        if (currentRepairInState.id === updatedRepairData.id) {
+          const oldRepair = { ...currentRepairInState }; // Clone to safely access old values
+          const newRepair = { ...updatedRepairData };
+
+          // Ensure usedParts is an array
+          newRepair.usedParts = newRepair.usedParts || [];
+          oldRepair.usedParts = oldRepair.usedParts || [];
+
+
+          const newStatusHistory = [...(oldRepair.statusHistory || [{ status: oldRepair.repairStatus, timestamp: oldRepair.dateReceived }])];
+          if (newRepair.repairStatus !== oldRepair.repairStatus) {
+            newStatusHistory.push({ status: newRepair.repairStatus, timestamp: now });
+          }
+          newRepair.statusHistory = newStatusHistory;
+
+          const oldStatusIsDeductible = oldRepair.repairStatus === 'In Progress' || oldRepair.repairStatus === 'Completed';
+          const newStatusIsDeductible = newRepair.repairStatus === 'In Progress' || newRepair.repairStatus === 'Completed';
+          
+          const adjustments = new Map<string, number>();
+
+          // Determine changes based on comparing old and new usedParts lists
+          // and status transitions.
+
+          // Scenario 1: Status becomes deductible (e.g. Pending -> In Progress)
+          if (!oldStatusIsDeductible && newStatusIsDeductible) {
+            newRepair.usedParts.forEach(part => {
+              adjustments.set(part.partId, (adjustments.get(part.partId) || 0) - part.quantity);
+            });
+          }
+          // Scenario 2: Status becomes non-deductible (e.g. In Progress -> Cancelled)
+          else if (oldStatusIsDeductible && !newStatusIsDeductible) {
+            oldRepair.usedParts.forEach(part => {
+              adjustments.set(part.partId, (adjustments.get(part.partId) || 0) + part.quantity);
+            });
+          }
+          // Scenario 3: Status remains deductible, but parts list might have changed
+          else if (newStatusIsDeductible) { // (oldStatusIsDeductible is also true here)
+            // Parts added:
+            newRepair.usedParts.forEach(newPart => {
+              const oldPart = oldRepair.usedParts!.find(p => p.partId === newPart.partId);
+              if (!oldPart) { // New part added
+                adjustments.set(newPart.partId, (adjustments.get(newPart.partId) || 0) - newPart.quantity);
+              } else if (newPart.quantity > oldPart.quantity) { // Quantity increased
+                adjustments.set(newPart.partId, (adjustments.get(newPart.partId) || 0) - (newPart.quantity - oldPart.quantity));
+              }
+            });
+            // Parts removed or quantity decreased:
+            oldRepair.usedParts.forEach(oldPart => {
+              const newPart = newRepair.usedParts!.find(p => p.partId === oldPart.partId);
+              if (!newPart) { // Part removed
+                adjustments.set(oldPart.partId, (adjustments.get(oldPart.partId) || 0) + oldPart.quantity);
+              } else if (newPart.quantity < oldPart.quantity) { // Quantity decreased
+                adjustments.set(oldPart.partId, (adjustments.get(oldPart.partId) || 0) + (oldPart.quantity - newPart.quantity));
+              }
+            });
           }
 
-          return { ...updatedRepair, statusHistory: newStatusHistory };
+          // Apply all calculated adjustments
+          adjustments.forEach((quantityChange, partId) => {
+            if (quantityChange !== 0) {
+                const item = getItemById(partId);
+                if(item) {
+                    if (quantityChange < 0 && (item.quantityInStock ?? 0) < Math.abs(quantityChange)) {
+                        console.warn(`Not enough stock for ${item.itemName} to deduct ${Math.abs(quantityChange)}. Available: ${item.quantityInStock}. Deducting available stock.`);
+                        updateItemQuantity(partId, -(item.quantityInStock ?? 0) );
+                    } else {
+                        updateItemQuantity(partId, quantityChange);
+                    }
+                } else {
+                     console.warn(`Inventory item with ID ${partId} not found for adjustment.`);
+                }
+            }
+          });
+          return newRepair;
         }
-        return r;
-      })
-    );
-  };
+        return currentRepairInState;
+      });
+      setRepairs(newRepairsState);
+    });
+  }, [updateItemQuantity, getItemById]);
 
-  const deleteRepair = (id: string) => {
+  const deleteRepair = useCallback((id: string) => {
+    // If deleting a repair that was 'In Progress' or 'Completed', parts should be restocked.
+    const repairToDelete = repairs.find(r => r.id === id);
+    if (repairToDelete) {
+        const statusWasDeductible = repairToDelete.repairStatus === 'In Progress' || repairToDelete.repairStatus === 'Completed';
+        if (statusWasDeductible && repairToDelete.usedParts && repairToDelete.usedParts.length > 0) {
+            repairToDelete.usedParts.forEach(part => {
+                updateItemQuantity(part.partId, part.quantity); // Add back
+            });
+        }
+    }
     setRepairs(prevRepairs => prevRepairs.filter(r => r.id !== id));
-  };
+  }, [repairs, updateItemQuantity]);
+
 
   const value: RepairContextType = {
     repairs,

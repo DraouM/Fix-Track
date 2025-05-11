@@ -9,8 +9,9 @@ interface InventoryContextType {
   addInventoryItem: (itemData: InventoryFormValues) => void;
   updateInventoryItem: (id: string, itemData: InventoryFormValues) => void;
   deleteInventoryItem: (id: string) => void;
-  loading: boolean;
   getItemById: (id: string) => InventoryItem | undefined;
+  updateItemQuantity: (id: string, quantityChange: number) => void; // quantityChange can be negative (deduct) or positive (add back)
+  loading: boolean;
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -39,7 +40,7 @@ const sampleInventoryItems: InventoryItem[] = [
     id: 'inv_3',
     itemName: 'Google Pixel 6 Charging Port Flex',
     phoneBrand: 'Google',
-    itemType: 'Charger', // Or 'Cable' or 'Motherboard' component
+    itemType: 'Charger', 
     buyingPrice: 10,
     sellingPrice: 35,
     quantityInStock: 22,
@@ -72,14 +73,23 @@ const getInitialInventoryState = (): InventoryItem[] => {
   if (savedItems) {
     try {
       const parsedItems = JSON.parse(savedItems) as InventoryItem[];
-      if (parsedItems.length > 0) {
-        return parsedItems;
+      // Ensure quantityInStock is a number, default to 0 if undefined or null
+      const validatedItems = parsedItems.map(item => ({
+        ...item,
+        quantityInStock: (item.quantityInStock === undefined || item.quantityInStock === null) ? 0 : Number(item.quantityInStock)
+      }));
+      if (validatedItems.length > 0) {
+        return validatedItems;
       }
     } catch (error) {
       console.error("Failed to parse inventory items from localStorage", error);
     }
   }
-  return sampleInventoryItems;
+  // Ensure sample data also has quantityInStock as number
+  return sampleInventoryItems.map(item => ({
+    ...item,
+    quantityInStock: (item.quantityInStock === undefined || item.quantityInStock === null) ? 0 : Number(item.quantityInStock)
+  }));
 };
 
 
@@ -100,7 +110,11 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const addInventoryItem = useCallback((itemData: InventoryFormValues) => {
     setInventoryItems((prevItems) => [
-      { ...itemData, id: `inv_${Date.now().toString()}` }, // Ensure prices are numbers
+      { 
+        ...itemData, 
+        id: `inv_${Date.now().toString()}`,
+        quantityInStock: itemData.quantityInStock ?? 0 // Ensure quantity is number
+      },
       ...prevItems,
     ]);
   }, []);
@@ -108,7 +122,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const updateInventoryItem = useCallback((id: string, itemData: InventoryFormValues) => {
     setInventoryItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === id ? { ...item, ...itemData } : item
+        item.id === id ? { ...item, ...itemData, quantityInStock: itemData.quantityInStock ?? item.quantityInStock ?? 0 } : item
       )
     );
   }, []);
@@ -117,12 +131,22 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setInventoryItems((prevItems) => prevItems.filter((item) => item.id !== id));
   }, []);
 
-  const getItemById = useCallback((id: string) => {
+  const getItemById = useCallback((id: string): InventoryItem | undefined => {
     return inventoryItems.find(item => item.id === id);
   }, [inventoryItems]);
 
-  // TODO: Implement actual Firebase Firestore interactions for persistence and real-time updates.
-  // TODO: Add Firebase Authentication checks for admin-only access.
+  const updateItemQuantity = useCallback((id: string, quantityChange: number) => {
+    setInventoryItems((prevItems) =>
+      prevItems.map((item) => {
+        if (item.id === id) {
+          const currentStock = item.quantityInStock ?? 0;
+          const newQuantity = Math.max(0, currentStock + quantityChange); // Ensure stock doesn't go below 0
+          return { ...item, quantityInStock: newQuantity };
+        }
+        return item;
+      })
+    );
+  }, []);
 
   const value: InventoryContextType = {
     inventoryItems,
@@ -130,6 +154,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateInventoryItem,
     deleteInventoryItem,
     getItemById,
+    updateItemQuantity,
     loading,
   };
 

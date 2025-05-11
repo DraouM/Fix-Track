@@ -14,41 +14,56 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Icons } from '@/components/icons';
-import { useState } from 'react'; 
+import { useState, useCallback } from 'react'; 
+import type { Repair } from '@/types/repair'; // Import Repair type
 
-export default function RepairsPage() { // Renamed Home to RepairsPage for clarity
+export default function RepairsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false); 
+  const [repairToEdit, setRepairToEdit] = useState<Repair | null>(null);
 
-  const handleFormSuccess = () => {
-    setIsFormOpen(false); 
-  };
+  const handleFormSuccess = useCallback(() => {
+    setIsFormOpen(false);
+    setRepairToEdit(null); // Clear item being edited
+  }, []);
+
+  const openAddForm = () => {
+    setRepairToEdit(null); // Ensure we are adding, not editing
+    setIsFormOpen(true);
+  }
+
+  const openEditForm = useCallback((repair: Repair) => {
+    setRepairToEdit(repair);
+    setIsFormOpen(true);
+  }, []);
+
 
   return (
-    // Removed container mx-auto p-4 as AppLayout might handle this.
-    // If not, it can be re-added here or within AppLayout's SidebarInset.
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Repair Dashboard</h1>
-         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}> 
+         <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
+            setIsFormOpen(isOpen);
+            if (!isOpen) setRepairToEdit(null); // Clear edit state if dialog is closed
+         }}> 
           <DialogTrigger asChild>
-             <Button>
+             <Button onClick={openAddForm}>
                 <Icons.plusCircle className="mr-2 h-4 w-4" />
                 Add New Repair
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[625px]">
+          <DialogContent className="sm:max-w-[725px]"> {/* Increased width for parts */}
             <DialogHeader>
-              <DialogTitle>Add New Repair</DialogTitle>
+              <DialogTitle>{repairToEdit ? 'Edit Repair' : 'Add New Repair'}</DialogTitle>
               <DialogDescription>
-                Enter the details for the new repair order.
+                {repairToEdit ? 'Update the details for this repair order.' : 'Enter the details for the new repair order.'}
               </DialogDescription>
             </DialogHeader>
-            <RepairForm onSuccess={handleFormSuccess} />
+            <RepairForm onSuccess={handleFormSuccess} repairToEdit={repairToEdit} />
           </DialogContent>
         </Dialog>
       </div>
       <Analytics />
-      <RepairList />
+      <RepairList onEditRepair={openEditForm} /> {/* Pass handler to RepairList */}
     </div>
   );
 }

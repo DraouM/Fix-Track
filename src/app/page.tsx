@@ -1,5 +1,5 @@
 
-'use client'; // Add 'use client' directive
+'use client'; 
 
 import { RepairForm } from '@/components/RepairForm';
 import { RepairList } from '@/components/RepairList';
@@ -14,20 +14,22 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Icons } from '@/components/icons';
-import { useState } from 'react'; // Import useState
+import { useState } from 'react'; 
 
-export default function Home() {
-  const [isFormOpen, setIsFormOpen] = useState(false); // State to control dialog
+export default function RepairsPage() { // Renamed Home to RepairsPage for clarity
+  const [isFormOpen, setIsFormOpen] = useState(false); 
 
   const handleFormSuccess = () => {
-    setIsFormOpen(false); // Close dialog on successful submission
+    setIsFormOpen(false); 
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Phone Repair Tracker</h1>
-         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}> {/* Control dialog with state */}
+    // Removed container mx-auto p-4 as AppLayout might handle this.
+    // If not, it can be re-added here or within AppLayout's SidebarInset.
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Repair Dashboard</h1>
+         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}> 
           <DialogTrigger asChild>
              <Button>
                 <Icons.plusCircle className="mr-2 h-4 w-4" />
@@ -41,13 +43,11 @@ export default function Home() {
                 Enter the details for the new repair order.
               </DialogDescription>
             </DialogHeader>
-             {/* Pass onSuccess handler to close dialog */}
             <RepairForm onSuccess={handleFormSuccess} />
           </DialogContent>
         </Dialog>
       </div>
       <Analytics />
-      {/* Removed static RepairForm from here */}
       <RepairList />
     </div>
   );

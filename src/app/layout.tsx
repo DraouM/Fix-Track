@@ -1,11 +1,9 @@
-'use client';
 
-import type {Metadata} from 'next';
-import {Geist, Geist_Mono} from 'next/font/google';
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import {Toaster} from '@/components/ui/toaster';
-import {RepairProvider} from '@/context/RepairContext';
-import {useEffect, useState} from 'react';
+import AppLayout from '@/components/AppLayout';
+import { ClientProviders } from '@/components/ClientProviders';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -17,30 +15,27 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+export const metadata: Metadata = {
+  title: 'FixTrack - Repair Shop Management',
+  description: 'Manage phone repairs and inventory efficiently with FixTrack.',
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning> {/* Added suppressHydrationWarning */}
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <RepairProvider>
-          {children}
-          <Toaster />
-        </RepairProvider>
+        <ClientProviders>
+          <AppLayout>
+            {children}
+          </AppLayout>
+        </ClientProviders>
       </body>
     </html>
   );
 }
-
-// Metadata should be defined outside of client components
-// Metadata should be defined outside of client components

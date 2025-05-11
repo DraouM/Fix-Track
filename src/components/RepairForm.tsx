@@ -1,48 +1,66 @@
+// src/components/RepairForm.tsx
 'use client';
 
-import React, {useState, useEffect, useMemo} from 'react';
-import { useForm } from 'react-hook-form';
-import {z} from 'zod';
-import {zodResolver} from '@hookform/resolvers/zod';
-import {Input} from '@/components/ui/input';
-import {Button} from '@/components/ui/button';
-import {Textarea} from '@/components/ui/textarea';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
-  Form, // Use Form from @/components/ui/form
-  FormControl, 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Form, // Import Form from ui/form
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
 } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {useToast} from '@/hooks/use-toast';
-import {useRepairContext} from '@/context/RepairContext';
-import {useInventoryContext} from '@/context/InventoryContext';
-import {analyzeRepairIssue, AnalyzeRepairIssueOutput} from '@/ai/flows/analyze-repair-issue';
-import type { RepairStatus, UsedPart, Repair } from '@/types/repair';
-import type { InventoryItem } from '@/types/inventory';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
-import { Trash2 } from 'lucide-react';
-
-
-const repairStatuses: [RepairStatus, ...RepairStatus[]] = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
+import { useToast } from '@/hooks/use-toast';
+import { useRepairContext } from '@/context/RepairContext';
+import { useInventoryContext } from '@/context/InventoryContext';
+import type { Repair, RepairStatus, UsedPart } from '@/types/repair';
+import type { InventoryItem } from '@/types/inventory';
+import { analyzeRepairIssue, type AnalyzeRepairIssueInput, type AnalyzeRepairIssueOutput } from '@/ai/flows/analyze-repair-issue';
 
 const repairFormSchema = z.object({
-  customerName: z.string().min(2, { message: 'Customer Name must be at least 2 characters.' }),
-  phoneNumber: z.string().regex(/^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/, { message: 'Invalid Phone Number format.' }),
-  deviceBrand: z.string().min(2, { message: 'Device Brand must be at least 2 characters.' }),
-  deviceModel: z.string().min(1, { message: 'Device Model must be at least 1 characters.' }),
-  issueDescription: z.string().min(10, { message: 'Issue Description must be at least 10 characters.' }),
-  estimatedCost: z.string().regex(/^\d+(\.\d{1,2})?$/, { message: 'Invalid Cost format (e.g., 150.00).' }),
-  repairStatus: z.enum(repairStatuses),
+  customerName: z.string().min(2, { message: "Customer name must be at least 2 characters." }),
+  phoneNumber: z.string().regex(/^\d{3}-\d{3}-\d{4}$/, { message: "Phone number must be in XXX-XXX-XXXX format." }),
+  deviceBrand: z.string().min(1, { message: "Device brand is required." }),
+  deviceModel: z.string().min(1, { message: "Device model is required." }),
+  issueDescription: z.string().min(10, { message: "Issue description must be at least 10 characters." }),
+  estimatedCost: z.preprocess(
+    (val) => parseFloat(z.string().parse(val)),
+    z.number().positive({ message: "Estimated cost must be a positive number." })
+  ),
+  repairStatus: z.enum(['Pending', 'In Progress', 'Completed', 'Cancelled'] as [RepairStatus, ...RepairStatus[]]),
+  usedParts: z.array(z.object({
+    partId: z.string(),
+    name: z.string(),
+    itemType: z.string(),
+    phoneBrand: z.string(),
+    quantity: z.preprocess(
+      (val) => parseInt(z.string().parse(val), 10),
+      z.number().int().min(1, "Quantity must be at least 1.")
+    ),
+    unitCost: z.preprocess(
+      (val) => parseFloat(z.string().parse(val)),
+      z.number().positive("Unit cost must be positive.")
+    ),
+  })).optional(),
 });
 
-type RepairFormValues = z.infer<typeof repairFormSchema>;
+export type RepairFormValues = z.infer<typeof repairFormSchema>;
 
 interface RepairFormProps {
   onSuccess?: () => void;
@@ -50,356 +68,397 @@ interface RepairFormProps {
 }
 
 export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
-  const {toast} = useToast();
-  const {addRepair, updateRepair: updateRepairContext} = useRepairContext();
-  const {inventoryItems, loading: inventoryLoading, getItemById } = useInventoryContext();
+  const { addRepair, updateRepair } = useRepairContext();
+  const { inventoryItems, getItemById } = useInventoryContext();
+  const { toast } = useToast();
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const [aiSuggestions, setAiSuggestions] = useState<AnalyzeRepairIssueOutput | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [selectedPartsForRepair, setSelectedPartsForRepair] = useState<UsedPart[]>(repairToEdit?.usedParts || []);
-  const [isPartsDialogValia, setIsPartsDialogValia] = useState(true);
+  const defaultValues = repairToEdit
+    ? {
+        ...repairToEdit,
+        estimatedCost: repairToEdit.estimatedCost.toString(),
+        // Ensure usedParts quantities and costs are strings for form inputs initially
+        usedParts: repairToEdit.usedParts?.map(p => ({
+          ...p,
+          quantity: p.quantity.toString(),
+          unitCost: p.unitCost.toString(),
+        })) || [],
+      }
+    : {
+        customerName: '',
+        phoneNumber: '',
+        deviceBrand: '',
+        deviceModel: '',
+        issueDescription: '',
+        estimatedCost: '',
+        repairStatus: 'Pending' as RepairStatus,
+        usedParts: [],
+      };
 
   const form = useForm<RepairFormValues>({
     resolver: zodResolver(repairFormSchema),
-    defaultValues: repairToEdit ? {
-        customerName: repairToEdit.customerName,
-        phoneNumber: repairToEdit.phoneNumber,
-        deviceBrand: repairToEdit.deviceBrand,
-        deviceModel: repairToEdit.deviceModel,
-        issueDescription: repairToEdit.issueDescription,
-        estimatedCost: repairToEdit.estimatedCost,
-        repairStatus: repairToEdit.repairStatus,
-    } : {
-      customerName: '',
-      phoneNumber: '',
-      deviceBrand: '',
-      deviceModel: '',
-      issueDescription: '',
-      estimatedCost: '',
-      repairStatus: 'Pending',
-    },
-    mode: 'onChange',
+    defaultValues,
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "usedParts",
+  });
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [availableParts, setAvailableParts] = useState<InventoryItem[]>([]);
 
   useEffect(() => {
     if (repairToEdit) {
-        form.reset({
-            customerName: repairToEdit.customerName,
-            phoneNumber: repairToEdit.phoneNumber,
-            deviceBrand: repairToEdit.deviceBrand,
-            deviceModel: repairToEdit.deviceModel,
-            issueDescription: repairToEdit.issueDescription,
-            estimatedCost: repairToEdit.estimatedCost,
-            repairStatus: repairToEdit.repairStatus,
-        });
-        setSelectedPartsForRepair(repairToEdit.usedParts || []);
-    } else {
-        form.reset({
-            customerName: '',
-            phoneNumber: '',
-            deviceBrand: '',
-            deviceModel: '',
-            issueDescription: '',
-            estimatedCost: '',
-            repairStatus: 'Pending',
-        });
-        setSelectedPartsForRepair([]);
+      form.reset(defaultValues);
     }
-  }, [repairToEdit, form]);
-
-
-  const issueDescription = form.watch('issueDescription');
-  const deviceBrand = form.watch('deviceBrand');
-  const deviceModel = form.watch('deviceModel');
+  }, [repairToEdit, form, defaultValues]);
 
   useEffect(() => {
-    if (issueDescription && issueDescription.length >= 10 && deviceBrand && deviceModel) {
-      const handler = setTimeout(async () => {
-        setIsAiLoading(true);
-        try {
-          const analysis = await analyzeRepairIssue({ deviceBrand, deviceModel, issueDescription });
-          setAiSuggestions(analysis);
-        } catch (error) {
-          console.error('AI Analysis Error:', error);
-          toast({ title: 'AI Analysis Failed', description: 'Could not fetch AI suggestions.', variant: 'destructive' });
-          setAiSuggestions(null);
-        } finally {
-          setIsAiLoading(false);
-        }
-      }, 1000);
-      return () => clearTimeout(handler);
+    if (searchTerm) {
+      setAvailableParts(
+        inventoryItems.filter(item =>
+          item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          (item.quantityInStock ?? 0) > 0 && 
+          !fields.some(usedPart => usedPart.partId === item.id)
+        )
+      );
     } else {
-      setAiSuggestions(null);
+      setAvailableParts([]);
     }
-  }, [issueDescription, deviceBrand, deviceModel, toast]);
+  }, [searchTerm, inventoryItems, fields]);
 
-  const handleAddPartToRepair = (inventoryItem: InventoryItem, quantity: number) => {
-    if (quantity <= 0) {
-        toast({ title: "Invalid Quantity", description: "Quantity must be greater than 0.", variant: "destructive"});
-        setIsPartsDialogValia(false);
-        return;
-    }
-    const currentStock = inventoryItem.quantityInStock ?? 0;
-    const alreadySelectedQuantity = selectedPartsForRepair.find(p => p.partId === inventoryItem.id)?.quantity || 0;
-
-    if (quantity > (currentStock - alreadySelectedQuantity)) {
-        toast({ title: "Not Enough Stock", description: `Only ${currentStock - alreadySelectedQuantity} of ${inventoryItem.itemName} available.`, variant: "destructive"});
-        setIsPartsDialogValia(false);
-        return;
-    }
-    setIsPartsDialogValia(true);
-
-    setSelectedPartsForRepair(prevParts => {
-      const existingPartIndex = prevParts.findIndex(p => p.partId === inventoryItem.id);
-      if (existingPartIndex > -1) {
-        const updatedParts = [...prevParts];
-        updatedParts[existingPartIndex].quantity += quantity;
-        return updatedParts;
-      } else {
-        return [...prevParts, {
-          partId: inventoryItem.id,
-          name: inventoryItem.itemName,
-          itemType: inventoryItem.itemType,
-          phoneBrand: inventoryItem.phoneBrand,
-          quantity: quantity,
-          unitCost: inventoryItem.buyingPrice,
-        }];
-      }
+  const handleAddPart = (part: InventoryItem) => {
+    append({
+      partId: part.id,
+      name: part.itemName,
+      itemType: part.itemType,
+      phoneBrand: part.phoneBrand,
+      quantity: "1", // Default to 1, user can change
+      unitCost: part.buyingPrice.toString(), // Use buying price as cost
     });
+    setSearchTerm(''); 
+  };
+  
+  const handleAnalyzeIssue = async () => {
+    const issueDescription = form.getValues("issueDescription");
+    const deviceModel = form.getValues("deviceModel");
+    const deviceBrand = form.getValues("deviceBrand");
+
+    if (!issueDescription || !deviceModel || !deviceBrand) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in device brand, model, and issue description to analyze.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const input: AnalyzeRepairIssueInput = { issueDescription, deviceModel, deviceBrand };
+      const result: AnalyzeRepairIssueOutput = await analyzeRepairIssue(input);
+      
+      toast({
+        title: "AI Analysis Complete",
+        description: (
+          <div>
+            <p>Possible Causes: {result.possibleCauses.join(', ')}</p>
+            <p>Suggested Solutions: {result.suggestedSolutions.join(', ')}</p>
+            {result.partsNeeded && result.partsNeeded.length > 0 && (
+              <>
+                <p className="font-semibold mt-2">Suggested Parts:</p>
+                <ul className="list-disc list-inside">
+                  {result.partsNeeded.map((part, index) => <li key={index}>{part}</li>)}
+                </ul>
+              </>
+            )}
+          </div>
+        ),
+        duration: 9000,
+      });
+
+    } catch (error) {
+      console.error("Error analyzing repair issue:", error);
+      toast({
+        title: "AI Analysis Failed",
+        description: "Could not analyze the repair issue at this time.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
-  const handleRemovePartFromRepair = (partId: string) => {
-    setSelectedPartsForRepair(prevParts => prevParts.filter(p => p.partId !== partId));
-  };
-
-  const totalPartsCost = useMemo(() => {
-    return selectedPartsForRepair.reduce((total, part) => total + (part.unitCost * part.quantity), 0);
-  }, [selectedPartsForRepair]);
-
-  function onSubmit(values: RepairFormValues) {
-    const repairData = {
-      ...values,
-      usedParts: selectedPartsForRepair,
+  const onSubmit = (data: RepairFormValues) => {
+    const processedData = {
+      ...data,
+      estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(),
+      usedParts: data.usedParts?.map(p => ({
+        ...p,
+        quantity: parseInt(p.quantity as unknown as string, 10), // Convert string quantity to number
+        unitCost: parseFloat(p.unitCost as unknown as string), // Convert string unitCost to number
+      })) || [],
     };
 
     if (repairToEdit) {
-        updateRepairContext({ ...repairToEdit, ...repairData });
-        toast({ title: 'Success', description: 'Repair updated successfully.' });
+      updateRepair({ 
+        ...processedData, 
+        id: repairToEdit.id, 
+        dateReceived: repairToEdit.dateReceived, // Preserve original dateReceived
+        statusHistory: repairToEdit.statusHistory // Preserve original statusHistory
+      });
+      toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
-        addRepair(repairData);
-        toast({ title: 'Success', description: 'Repair added successfully.' });
+      addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
+      toast({ title: 'Repair Added', description: `New repair for ${data.customerName} has been added.` });
     }
-
-    form.reset();
-    setSelectedPartsForRepair([]);
-    setAiSuggestions(null);
+    form.reset(defaultValues);
     onSuccess?.();
-  }
-
-  const [partsDialogOpen, setPartsDialogOpen] = useState(false);
-  const [partSearchTerm, setPartSearchTerm] = useState("");
-  const [selectedInventoryItem, setSelectedInventoryItem] = useState<InventoryItem | null>(null);
-  const [quantityForSelectedPart, setQuantityForSelectedPart] = useState(1);
-
-  const filteredInventoryItems = useMemo(() => {
-    if (!partSearchTerm) return inventoryItems;
-    return inventoryItems.filter(item => item.itemName.toLowerCase().includes(partSearchTerm.toLowerCase()));
-  }, [inventoryItems, partSearchTerm]);
-
+  };
+  
+  const totalPartsCost = form.watch('usedParts')?.reduce((acc, part) => {
+    const quantity = parseInt(part.quantity as unknown as string, 10) || 0;
+    const cost = parseFloat(part.unitCost as unknown as string) || 0;
+    return acc + (quantity * cost);
+  }, 0) || 0;
 
   return (
-    <Form {...form}>
+    <Form {...form}> {/* Use Form from @/components/ui/form */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
         <ScrollArea className="max-h-[70vh] pr-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="customerName" render={({field}) => (<FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="phoneNumber" render={({field}) => (<FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="e.g., 123-456-7890" {...field} /></FormControl><FormMessage /></FormItem>)} />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="deviceBrand" render={({field}) => (<FormItem><FormLabel>Device Brand</FormLabel><FormControl><Input placeholder="e.g., Apple" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="deviceModel" render={({field}) => (<FormItem><FormLabel>Device Model</FormLabel><FormControl><Input placeholder="e.g., iPhone 13" {...field} /></FormControl><FormMessage /></FormItem>)} />
-          </div>
-
-          <FormField control={form.control} name="issueDescription" render={({field}) => (
-            <FormItem>
-              <FormLabel>Issue Description</FormLabel>
-              <FormControl><Textarea placeholder="Describe the issue (min 10 chars)..." {...field} /></FormControl>
-              <FormMessage />
-              {isAiLoading && <div className="flex items-center text-sm text-muted-foreground mt-2"><Icons.spinner className="mr-2 h-4 w-4 animate-spin" />Analyzing issue...</div>}
-              {aiSuggestions && !isAiLoading && (
-                <Card className="mt-4 bg-secondary/50">
-                  <CardHeader className="pb-2 pt-4"><CardTitle className="text-base">AI Analysis</CardTitle></CardHeader>
-                  <CardContent className="text-sm space-y-2">
-                    {aiSuggestions.possibleCauses?.length > 0 && (<div><h4 className="font-semibold">Possible Causes:</h4><ul className="list-disc pl-5 text-muted-foreground">{aiSuggestions.possibleCauses.map((cause, index) => (<li key={`cause-${index}`}>{cause}</li>))}</ul></div>)}
-                    {aiSuggestions.suggestedSolutions?.length > 0 && (<div><h4 className="font-semibold">Suggested Solutions:</h4><ul className="list-disc pl-5 text-muted-foreground">{aiSuggestions.suggestedSolutions.map((solution, index) => (<li key={`solution-${index}`}>{solution}</li>))}</ul></div>)}
-                    {aiSuggestions.partsNeeded?.length > 0 && (<div><h4 className="font-semibold">Potential Parts Needed:</h4><ul className="list-disc pl-5 text-muted-foreground">{aiSuggestions.partsNeeded.map((part, index) => (<li key={`part-${index}`}>{part}</li>))}</ul></div>)}
-                    {(aiSuggestions.possibleCauses?.length === 0 && aiSuggestions.suggestedSolutions?.length === 0 && aiSuggestions.partsNeeded?.length === 0) && (<p className="text-muted-foreground">No specific suggestions found.</p>)}
-                  </CardContent>
-                </Card>
+            <FormField
+              control={form.control}
+              name="customerName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Customer Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </FormItem>
-          )}
-
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-lg">Parts Used</CardTitle>
-                  <CardDescription>Total Parts Cost: ${totalPartsCost.toFixed(2)}</CardDescription>
-                </div>
-                <Dialog open={partsDialogOpen} onOpenChange={setPartsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button type="button" variant="outline" size="sm" onClick={() => { setSelectedInventoryItem(null); setQuantityForSelectedPart(1); setIsPartsDialogValia(true);}}>
-                      <Icons.plusCircle className="mr-2 h-4 w-4" /> Add Part
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[725px]">
-                    <DialogHeader>
-                      <DialogTitle>Select Part from Inventory</DialogTitle>
-                       <DialogDescription>Search and select a part to add to this repair job.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <Input
-                            placeholder="Search parts by name..."
-                            value={partSearchTerm}
-                            onChange={(e) => setPartSearchTerm(e.target.value)}
-                        />
-                        <ScrollArea className="h-[300px] border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Brand</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead className="text-right">Stock</TableHead>
-                                        <TableHead className="text-right">Cost</TableHead>
-                                        <TableHead>Action</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {inventoryLoading ? (
-                                        <TableRow><TableCell colSpan={6} className="text-center">Loading inventory...</TableCell></TableRow>
-                                    ) : filteredInventoryItems.length === 0 ? (
-                                        <TableRow><TableCell colSpan={6} className="text-center">No parts found.</TableCell></TableRow>
-                                    ) : (
-                                        filteredInventoryItems.map(item => (
-                                        <TableRow key={item.id} onClick={() => {setSelectedInventoryItem(item); setQuantityForSelectedPart(1); setIsPartsDialogValia(true);}} className="cursor-pointer hover:bg-muted/50">
-                                            <TableCell>{item.itemName}</TableCell>
-                                            <TableCell>{item.phoneBrand}</TableCell>
-                                            <TableCell>{item.itemType}</TableCell>
-                                            <TableCell className="text-right">{item.quantityInStock ?? 0}</TableCell>
-                                            <TableCell className="text-right">${item.buyingPrice.toFixed(2)}</TableCell>
-                                            <TableCell>
-                                                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedInventoryItem(item); setQuantityForSelectedPart(1); setIsPartsDialogValia(true);}}>Select</Button>
-                                            </TableCell>
-                                        </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </ScrollArea>
-                        {selectedInventoryItem && (
-                            <div className="grid grid-cols-2 gap-4 items-end border-t pt-4">
-                                <p className="text-sm font-medium">Selected: <span className="font-normal">{selectedInventoryItem.itemName}</span></p>
-                                <FormItem>
-                                    <FormLabel htmlFor="partQuantity">Quantity</FormLabel>
-                                    <Input
-                                        id="partQuantity"
-                                        type="number"
-                                        value={quantityForSelectedPart}
-                                        onChange={(e) => {
-                                            const val = parseInt(e.target.value);
-                                            setQuantityForSelectedPart(val > 0 ? val : 1);
-                                            const currentStock = selectedInventoryItem.quantityInStock ?? 0;
-                                            const alreadySelectedQty = selectedPartsForRepair.find(p => p.partId === selectedInventoryItem.id)?.quantity || 0;
-                                            if(val <=0 || val > (currentStock - alreadySelectedQty)){
-                                                setIsPartsDialogValia(false);
-                                            } else {
-                                                setIsPartsDialogValia(true);
-                                            }
-                                        }}
-                                        min="1"
-                                        className={!isPartsDialogValia ? "border-destructive" : ""}
-                                    />
-                                     {!isPartsDialogValia && <p className="text-xs text-destructive mt-1">Invalid quantity or exceeds available stock ({ (selectedInventoryItem.quantityInStock ?? 0) - (selectedPartsForRepair.find(p => p.partId === selectedInventoryItem.id)?.quantity || 0) } left).</p>}
-                                </FormItem>
-                            </div>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setPartsDialogOpen(false)}>Cancel</Button>
-                        <Button
-                            type="button"
-                            disabled={!selectedInventoryItem || quantityForSelectedPart <= 0 || !isPartsDialogValia}
-                            onClick={() => {
-                                if (selectedInventoryItem && quantityForSelectedPart > 0) {
-                                    handleAddPartToRepair(selectedInventoryItem, quantityForSelectedPart);
-                                    setPartsDialogOpen(false);
-                                    setPartSearchTerm("");
-                                    setSelectedInventoryItem(null);
-                                }
-                            }}
-                        >
-                            Add to Repair
-                        </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {selectedPartsForRepair.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No parts added to this repair yet.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Part Name</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Unit Cost</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-center">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedPartsForRepair.map(part => (
-                      <TableRow key={part.partId}>
-                        <TableCell>{part.name}</TableCell>
-                        <TableCell className="text-right">{part.quantity}</TableCell>
-                        <TableCell className="text-right">${part.unitCost.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">${(part.unitCost * part.quantity).toFixed(2)}</TableCell>
-                        <TableCell className="text-center">
-                          <Button type="button" variant="ghost" size="icon" onClick={() => handleRemovePartFromRepair(part.partId)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            />
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="XXX-XXX-XXXX" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </CardContent>
-          </Card>
+            />
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="estimatedCost" render={({field}) => (<FormItem><FormLabel>Estimated Cost ($)</FormLabel><FormControl><Input type="text" placeholder="e.g., 150.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="repairStatus" render={({field}) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
-                  <SelectContent>{repairStatuses.map(status => (<SelectItem key={status} value={status}>{status}</SelectItem>))}</SelectContent>
-                </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <FormField
+              control={form.control}
+              name="deviceBrand"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Device Brand</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Apple, Samsung" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="deviceModel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Device Model</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., iPhone 13, Galaxy S22" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="issueDescription"
+            render={({ field }) => (
+              <FormItem className="mt-4">
+                <FormLabel>Issue Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Describe the issue with the device..." {...field} rows={3} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
-            )} />
+            )}
+          />
+          <Button type="button" onClick={handleAnalyzeIssue} variant="outline" className="mt-2 w-full md:w-auto" disabled={isAnalyzing}>
+              {isAnalyzing ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.search className="mr-2 h-4 w-4" />}
+              Analyze Issue with AI
+          </Button>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <FormField
+              control={form.control}
+              name="estimatedCost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estimated Cost ($)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="e.g., 99.99" {...field} step="0.01" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="repairStatus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Repair Status</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="In Progress">In Progress</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <Separator className="my-6" />
+
+          <div>
+            <h3 className="text-lg font-medium mb-2">Used Parts</h3>
+            <div className="mb-4">
+              <FormLabel htmlFor="part-search">Add Part from Inventory</FormLabel>
+              <div className="flex gap-2">
+                <Input
+                  id="part-search"
+                  placeholder="Search inventory by name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              {availableParts.length > 0 && searchTerm && (
+                <ScrollArea className="h-[150px] mt-2 border rounded-md">
+                  <div className="p-2">
+                    {availableParts.map(part => (
+                      <div key={part.id}
+                           className="flex justify-between items-center p-2 hover:bg-accent/50 rounded-md cursor-pointer"
+                           onClick={() => handleAddPart(part)}>
+                        <span>{part.itemName} (Stock: {part.quantityInStock})</span>
+                        <Button type="button" size="sm" variant="outline" >Add</Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+
+            {fields.map((field, index) => (
+              <div key={field.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end p-3 border rounded-md mb-3">
+                <FormField
+                  control={form.control}
+                  name={`usedParts.${index}.name`}
+                  render={({ field }) => ( 
+                    <FormItem>
+                      <FormLabel>Part Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} readOnly className="bg-muted/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name={`usedParts.${index}.quantity`}
+                  render={({ field }) => {
+                    const partId = form.getValues(`usedParts.${index}.partId`);
+                    const inventoryItem = getItemById(partId);
+                    const maxQuantity = inventoryItem?.quantityInStock ?? 0;
+                     return (
+                        <FormItem>
+                        <FormLabel>Quantity</FormLabel>
+                        <FormControl>
+                            <Input 
+                            type="number" 
+                            {...field} 
+                            min="1" 
+                            max={maxQuantity.toString()} // Current stock as max
+                            onChange={(e) => {
+                                let value = parseInt(e.target.value, 10);
+                                if (isNaN(value)) value = 1; // Default to 1 if input is not a number
+                                if (value > maxQuantity) value = maxQuantity; // Cap at max stock
+                                if (value < 1) value = 1; // Ensure minimum is 1
+                                field.onChange(value.toString());
+                            }}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                        {maxQuantity === 0 && <p className="text-xs text-destructive">Out of stock</p>}
+                        </FormItem>
+                    );
+                  }}
+                />
+                <FormField
+                  control={form.control}
+                  name={`usedParts.${index}.unitCost`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit Cost ($)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} step="0.01" readOnly className="bg-muted/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                  <Icons.trash className="h-4 w-4" />
+                  <span className="sr-only">Remove Part</span>
+                </Button>
+              </div>
+            ))}
+            {fields.length === 0 && <p className="text-sm text-muted-foreground">No parts added yet.</p>}
+            
+             {fields.length > 0 && (
+                <div className="mt-4 text-right font-semibold">
+                    Total Parts Cost: ${totalPartsCost.toFixed(2)}
+                </div>
+            )}
           </div>
         </ScrollArea>
 
-        <Button type="submit" disabled={form.formState.isSubmitting || isAiLoading}>
-          {form.formState.isSubmitting || isAiLoading ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : (repairToEdit ? <Icons.edit className="mr-2 h-4 w-4" /> : <Icons.plusCircle className="mr-2 h-4 w-4" />)}
-          {repairToEdit ? 'Update Repair' : 'Add Repair'}
-        </Button>
+        <div className="flex justify-end pt-4">
+          <Button type="submit" disabled={form.formState.isSubmitting || isAnalyzing}>
+            {form.formState.isSubmitting ? (
+              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+            ) : repairToEdit ? (
+              <Icons.edit className="mr-2 h-4 w-4" />
+            ) : (
+              <Icons.plusCircle className="mr-2 h-4 w-4" />
+            )}
+            {repairToEdit ? 'Update Repair' : 'Add Repair'}
+          </Button>
+        </div>
       </form>
     </Form>
   );

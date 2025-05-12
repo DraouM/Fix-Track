@@ -1,7 +1,7 @@
 // src/app/layout.tsx
 'use client'; // Ensures the layout and its children can use client-side features like Context
 
-import type { Metadata } from 'next'; // Import type for Metadata
+// import type { Metadata } from 'next'; // Import type for Metadata. Not used when 'use client' is present at top level for metadata.
 import { Inter as FontSans } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ const fontSans = FontSans({
 // For this application structure, where providers are initialized high up,
 // keeping RootLayout as 'use client' is common. We will manage metadata exports
 // from specific page files or a root metadata object if not using a client layout.
+// For FixTrack, individual pages define their metadata.
 
 export default function RootLayout({
   children,
@@ -31,6 +32,7 @@ export default function RootLayout({
           'min-h-screen bg-background font-sans antialiased',
           fontSans.variable
         )}
+        suppressHydrationWarning={true} // Added to address hydration issues from browser extensions modifying body
       >
         <ClientProviders>
           <AppLayout>{children}</AppLayout>

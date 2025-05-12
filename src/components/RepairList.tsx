@@ -30,6 +30,7 @@ import { MoreHorizontal, Edit, Trash2 } from 'lucide-react'; // Added Edit and T
 import {RepairDetail} from './RepairDetail';
 import {cn} from '@/lib/utils';
 import type {Repair, RepairStatus} from '@/types/repair';
+import { Icons } from '@/components/icons'; // Added import for Icons
 
 interface RepairListProps {
   onEditRepair: (repair: Repair) => void; // Callback to open edit form
@@ -170,3 +171,4 @@ function Icon({ ...props }) {
         </svg>
     )
 }
+

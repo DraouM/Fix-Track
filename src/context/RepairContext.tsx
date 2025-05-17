@@ -166,88 +166,92 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
 
   const updateRepair = useCallback((updatedRepairData: Repair) => {
     const now = new Date();
-    let oldRepair: Repair | undefined;
+    const repairToUpdate = repairs.find(r => r.id === updatedRepairData.id);
 
-    setRepairs(prevRepairs => {
-      const newRepairsState = prevRepairs.map(currentRepairInState => {
-        if (currentRepairInState.id === updatedRepairData.id) {
-          oldRepair = { ...currentRepairInState }; 
-          const newRepair = { ...updatedRepairData };
+    if (!repairToUpdate) {
+        console.warn(`Repair with ID ${updatedRepairData.id} not found for update.`);
+        return;
+    }
 
-          newRepair.usedParts = newRepair.usedParts || [];
-          oldRepair.usedParts = oldRepair.usedParts || [];
+    // Capture the state of the repair *before* it's updated in the list
+    const oldRepair = { ...repairToUpdate }; 
+    oldRepair.usedParts = oldRepair.usedParts || []; // Ensure oldParts has an array
 
-          const newStatusHistory = [...(oldRepair.statusHistory || [{ status: oldRepair.repairStatus, timestamp: oldRepair.dateReceived }])];
-          if (newRepair.repairStatus !== oldRepair.repairStatus) {
-            newStatusHistory.push({ status: newRepair.repairStatus, timestamp: now });
-          }
-          newRepair.statusHistory = newStatusHistory;
-          
-          return newRepair;
-        }
-        return currentRepairInState;
+    // Prepare the fully updated repair data, including new status history
+    const newStatusHistory = [...(oldRepair.statusHistory || [{ status: oldRepair.repairStatus, timestamp: oldRepair.dateReceived }])];
+    if (updatedRepairData.repairStatus !== oldRepair.repairStatus) {
+        newStatusHistory.push({ status: updatedRepairData.repairStatus, timestamp: now });
+    }
+    
+    const fullyUpdatedRepairData: Repair = {
+        ...updatedRepairData,
+        statusHistory: newStatusHistory,
+        usedParts: updatedRepairData.usedParts || [], // Ensure usedParts is an array
+    };
+
+    // Update the repairs list state
+    setRepairs(prevRepairs => 
+        prevRepairs.map(r => r.id === fullyUpdatedRepairData.id ? fullyUpdatedRepairData : r)
+    );
+
+    // Perform inventory adjustments *after* the repairs state has been updated
+    const oldStatusIsDeductible = oldRepair.repairStatus === 'In Progress' || oldRepair.repairStatus === 'Completed';
+    const newStatusIsDeductible = fullyUpdatedRepairData.repairStatus === 'In Progress' || fullyUpdatedRepairData.repairStatus === 'Completed';
+    
+    const adjustments = new Map<string, number>(); // partId -> quantityChange (negative to deduct, positive to add back)
+
+    const oldPartsArray = oldRepair.usedParts;
+    const newPartsArray = fullyUpdatedRepairData.usedParts;
+
+    if (!oldStatusIsDeductible && newStatusIsDeductible) {
+      // Status changed to deductible: deduct all new parts
+      newPartsArray.forEach(part => {
+        adjustments.set(part.partId, (adjustments.get(part.partId) || 0) - part.quantity);
       });
-      
-      // Perform inventory adjustments after state update, using the captured oldRepair
-      if (oldRepair) {
-        const newRepair = updatedRepairData; // The new state of the specific repair
-        const oldStatusIsDeductible = oldRepair.repairStatus === 'In Progress' || oldRepair.repairStatus === 'Completed';
-        const newStatusIsDeductible = newRepair.repairStatus === 'In Progress' || newRepair.repairStatus === 'Completed';
-        
-        const adjustments = new Map<string, number>();
+    } else if (oldStatusIsDeductible && !newStatusIsDeductible) {
+      // Status changed to non-deductible: restock all old parts
+      oldPartsArray.forEach(part => {
+        adjustments.set(part.partId, (adjustments.get(part.partId) || 0) + part.quantity);
+      });
+    } else if (newStatusIsDeductible) { 
+      // Both old and new status are deductible: compare parts lists for differences
+      const oldPartsMap = new Map(oldPartsArray.map(p => [p.partId, p.quantity]));
+      const newPartsMap = new Map(newPartsArray.map(p => [p.partId, p.quantity]));
 
-        if (!oldStatusIsDeductible && newStatusIsDeductible) {
-          (newRepair.usedParts || []).forEach(part => {
-            adjustments.set(part.partId, (adjustments.get(part.partId) || 0) - part.quantity);
-          });
-        } else if (oldStatusIsDeductible && !newStatusIsDeductible) {
-          (oldRepair.usedParts || []).forEach(part => {
-            adjustments.set(part.partId, (adjustments.get(part.partId) || 0) + part.quantity);
-          });
-        } else if (newStatusIsDeductible) { // Both old and new status are deductible, compare parts lists
-          const oldPartsMap = new Map((oldRepair.usedParts || []).map(p => [p.partId, p]));
-          const newPartsMap = new Map((newRepair.usedParts || []).map(p => [p.partId, p]));
+      const allPartIds = new Set([...oldPartsMap.keys(), ...newPartsMap.keys()]);
 
-          // Parts added or quantity increased
-          newPartsMap.forEach((newPart, partId) => {
-            const oldPart = oldPartsMap.get(partId);
-            if (!oldPart) { // New part added
-              adjustments.set(partId, (adjustments.get(partId) || 0) - newPart.quantity);
-            } else if (newPart.quantity > oldPart.quantity) { // Quantity increased
-              adjustments.set(partId, (adjustments.get(partId) || 0) - (newPart.quantity - oldPart.quantity));
-            }
-          });
+      allPartIds.forEach(partId => {
+        const oldQty = oldPartsMap.get(partId) || 0;
+        const newQty = newPartsMap.get(partId) || 0;
+        const diff = newQty - oldQty; // Positive if quantity increased/added, negative if decreased/removed
 
-          // Parts removed or quantity decreased
-          oldPartsMap.forEach((oldPart, partId) => {
-            const newPart = newPartsMap.get(partId);
-            if (!newPart) { // Part removed
-              adjustments.set(partId, (adjustments.get(partId) || 0) + oldPart.quantity);
-            } else if (newPart.quantity < oldPart.quantity) { // Quantity decreased
-              adjustments.set(partId, (adjustments.get(partId) || 0) + (oldPart.quantity - newPart.quantity));
-            }
-          });
+        if (diff !== 0) {
+          // If diff is positive, newQty > oldQty, meaning more parts are used, so deduct from stock (-diff)
+          // If diff is negative, newQty < oldQty, meaning fewer parts are used, so add back to stock (-diff will be positive)
+          adjustments.set(partId, (adjustments.get(partId) || 0) - diff); 
         }
+      });
+    }
 
-        adjustments.forEach((quantityChange, partId) => {
-          if (quantityChange !== 0) {
-              const item = getItemById(partId);
-              if(item) {
-                  if (quantityChange < 0 && (item.quantityInStock ?? 0) < Math.abs(quantityChange)) {
-                      console.warn(`Not enough stock for ${item.itemName} to deduct ${Math.abs(quantityChange)}. Available: ${item.quantityInStock}. Deducting available stock.`);
-                      updateItemQuantity(partId, -(item.quantityInStock ?? 0) );
-                  } else {
-                      updateItemQuantity(partId, quantityChange);
-                  }
+    adjustments.forEach((quantityChange, partId) => {
+      if (quantityChange !== 0) {
+          const item = getItemById(partId);
+          if(item) {
+              // If quantityChange is negative (deducting)
+              if (quantityChange < 0 && (item.quantityInStock ?? 0) < Math.abs(quantityChange)) {
+                  console.warn(`Not enough stock for ${item.itemName} to deduct ${Math.abs(quantityChange)}. Available: ${item.quantityInStock}. Deducting available stock.`);
+                  updateItemQuantity(partId, -(item.quantityInStock ?? 0)); // Deduct only what's available
               } else {
-                   console.warn(`Inventory item with ID ${partId} not found for adjustment.`);
+                  updateItemQuantity(partId, quantityChange); // Apply the calculated change
               }
+          } else {
+               console.warn(`Inventory item with ID ${partId} not found for adjustment.`);
           }
-        });
       }
-      return newRepairsState;
     });
-  }, [updateItemQuantity, getItemById]);
+
+  }, [repairs, updateItemQuantity, getItemById]); // Added 'repairs' to dependency array
+
 
   const deleteRepair = useCallback((id: string) => {
     const repairToDelete = repairs.find(r => r.id === id);
@@ -255,7 +259,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
         const statusWasDeductible = repairToDelete.repairStatus === 'In Progress' || repairToDelete.repairStatus === 'Completed';
         if (statusWasDeductible && repairToDelete.usedParts && repairToDelete.usedParts.length > 0) {
             repairToDelete.usedParts.forEach(part => {
-                updateItemQuantity(part.partId, part.quantity); 
+                updateItemQuantity(part.partId, part.quantity); // Restock: quantity is positive
             });
         }
     }

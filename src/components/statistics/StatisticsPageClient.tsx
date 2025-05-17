@@ -8,15 +8,19 @@ import type { Repair, UsedPart } from '@/types/repair';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
-import { BarChart, LineChart, PieChart, Users, DollarSign, Package, TrendingUp, BarChart3 } from 'lucide-react';
+import { Users, DollarSign, Package, TrendingUp } from 'lucide-react'; // Removed BarChart, LineChart, PieChart from lucide-react as Recharts provides them
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
+  ChartLegend, // Keep if planning to use ShadCN legend fully
+  ChartLegendContent, // Keep if planning to use ShadCN legend fully
 } from "@/components/ui/chart";
+import type { ChartConfig } from "@/components/ui/chart"; // Import ChartConfig
 import {
+  BarChart, // Recharts BarChart
+  LineChart, // Recharts LineChart
+  PieChart, // Recharts PieChart
   Bar,
   Line,
   Pie,
@@ -24,9 +28,9 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip as RechartsTooltip, // Renamed to avoid conflict
-  Legend as RechartsLegend,   // Renamed to avoid conflict
-  ResponsiveContainer,
+  Tooltip as RechartsTooltip, // Still available if needed, but prefer ShadCN's
+  Legend as RechartsLegend,
+  ResponsiveContainer, // We will remove direct usage of this for ChartContainer
   LabelList,
 } from 'recharts';
 import {
@@ -63,6 +67,15 @@ const DATE_RANGES: Record<DateRangeKey, () => DateRange> = {
 };
 
 const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82Ca9D'];
+
+// Define a default chart configuration for ShadCN ChartContainer
+const defaultChartConfig = {
+  repairs: { label: 'Repairs', color: 'hsl(var(--primary))' },
+  revenue: { label: 'Revenue', color: 'hsl(var(--chart-1))' },
+  cost: { label: 'Cost of Parts', color: 'hsl(var(--chart-2))' },
+  // Add other keys if needed for pie chart segments, etc.
+} satisfies ChartConfig;
+
 
 interface KpiCardProps {
   title: string;
@@ -128,16 +141,11 @@ export default function StatisticsPageClient() {
       dataByMonth[monthYear].cost += repair.usedParts?.reduce((sum, p) => sum + p.unitCost * p.quantity, 0) || 0;
     });
     
-    // Sort by date for line/bar charts
     return Object.values(dataByMonth).sort((a, b) => {
-        const dateA = parseISO(Object.keys(dataByMonth).find(key => dataByMonth[key].name === a.name && dataByMonth[key].repairs === a.repairs)!.split(' ').reverse().join('-')); // Approximation
-        const dateB = parseISO(Object.keys(dataByMonth).find(key => dataByMonth[key].name === b.name && dataByMonth[key].repairs === b.repairs)!.split(' ').reverse().join('-')); // Approximation
-        // This sort is a bit hacky without original dates. Ideally, group by 'yyyy-MM' and sort by that key.
-        // For simplicity now, assuming names are unique enough for 'MMM' or 'MMM yyyy' if data spans years.
-        // A more robust way would be to store the actual month start date and sort by that.
-        const aMonth = new Date(a.name + " 1, 2000"); // Dummy year for month sorting
-        const bMonth = new Date(b.name + " 1, 2000");
-        return aMonth.getMonth() - bMonth.getMonth();
+        // Attempting a sort by actual month order if names are just 'MMM'
+        const monthA = new Date(Date.parse(a.name +" 1, 2000")).getMonth();
+        const monthB = new Date(Date.parse(b.name +" 1, 2000")).getMonth();
+        return monthA - monthB;
     });
 
   }, [filteredRepairs]);
@@ -220,16 +228,16 @@ export default function StatisticsPageClient() {
             <CardDescription>Completed repairs per month for selected period.</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis allowDecimals={false}/>
-                <RechartsTooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}/>
+            <ChartContainer config={defaultChartConfig} className="w-full h-full">
+              <LineChart accessibilityLayer data={monthlyChartData} margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} tickMargin={8} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                <Line dataKey="repairs" type="monotone" stroke="var(--color-repairs)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 <RechartsLegend />
-                <Line type="monotone" dataKey="repairs" stroke="hsl(var(--primary))" activeDot={{ r: 8 }} />
               </LineChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
 
@@ -239,17 +247,17 @@ export default function StatisticsPageClient() {
              <CardDescription>Monthly revenue and cost of parts for selected period.</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <RechartsTooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} />
+            <ChartContainer config={defaultChartConfig} className="w-full h-full">
+              <BarChart accessibilityLayer data={monthlyChartData} margin={{ left: 12, right: 12, top: 5, bottom: 5 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="rectangle" />} />
+                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="cost" fill="var(--color-cost)" radius={[4, 4, 0, 0]} />
                 <RechartsLegend />
-                <Bar dataKey="revenue" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="cost" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </CardContent>
         </Card>
       </div>
@@ -262,26 +270,27 @@ export default function StatisticsPageClient() {
           </CardHeader>
           <CardContent className="h-[300px] flex items-center justify-center">
             {partTypeUsageData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartContainer config={defaultChartConfig} className="w-full h-full max-h-[250px] aspect-square">
                 <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent nameKey="value" hideLabel />} />
                   <Pie
                     data={partTypeUsageData}
+                    dataKey="value"
+                    nameKey="name"
                     cx="50%"
                     cy="50%"
+                    outerRadius={80} // Adjusted radius
                     labelLine={false}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent, value }) => `${name} (${value}, ${(percent * 100).toFixed(0)}%)`}
                   >
                     {partTypeUsageData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
+                     <LabelList dataKey="name" position="outside" offset={10} className="fill-foreground text-xs"/>
                   </Pie>
-                  <RechartsTooltip contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }} />
-                  <RechartsLegend />
+                  {/* <RechartsLegend wrapperStyle={{ marginTop: '20px' }} /> Consider if legend is needed with labels */}
                 </PieChart>
-              </ResponsiveContainer>
+              </ChartContainer>
             ) : (
               <p className="text-muted-foreground">No part usage data for the selected period.</p>
             )}
@@ -350,3 +359,4 @@ export default function StatisticsPageClient() {
     </div>
   );
 }
+

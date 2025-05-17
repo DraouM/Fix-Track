@@ -27,6 +27,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/', label: 'Repairs', icon: <Icons.wrench className="h-5 w-5" /> },
   { href: '/inventory', label: 'Inventory', icon: <Icons.packageIcon className="h-5 w-5" /> },
+  { href: '/statistics', label: 'Statistics', icon: <Icons.barChart className="h-5 w-5" /> },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -84,4 +85,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   );
 }
-

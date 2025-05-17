@@ -1,4 +1,5 @@
-import {ArrowRight, Check, ChevronsUpDown, Circle, Copy, Edit, ExternalLink, File, HelpCircle, Home, Loader2, Mail, MessageSquare, Moon, Plus, PlusCircle, Search, Server, Settings, Share2, Shield, Sun, Trash, User, X, Workflow, Wrench, Package} from 'lucide-react';
+
+import {ArrowRight, Check, ChevronsUpDown, Circle, Copy, Edit, ExternalLink, File, HelpCircle, Home, Loader2, Mail, MessageSquare, Moon, Plus, PlusCircle, Search, Server, Settings, Share2, Shield, Sun, Trash, User, X, Workflow, Wrench, Package, BarChart3 } from 'lucide-react';
 
 const Icons = {
   arrowRight: ArrowRight,
@@ -30,6 +31,7 @@ const Icons = {
   user: User,
   wrench: Wrench,
   packageIcon: Package, // Renamed to avoid conflict with Package component if any
+  barChart: BarChart3, // Added for Statistics
 };
 
 export {Icons};

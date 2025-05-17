@@ -113,7 +113,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       { 
         ...itemData, 
         id: `inv_${Date.now().toString()}`,
-        quantityInStock: itemData.quantityInStock ?? 0 // Ensure quantity is number
+        quantityInStock: itemData.quantityInStock ?? 0 
       },
       ...prevItems,
     ]);
@@ -140,7 +140,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       prevItems.map((item) => {
         if (item.id === id) {
           const currentStock = item.quantityInStock ?? 0;
-          const newQuantity = Math.max(0, currentStock + quantityChange); // Ensure stock doesn't go below 0
+          const newQuantity = Math.max(0, currentStock + quantityChange); 
           return { ...item, quantityInStock: newQuantity };
         }
         return item;
@@ -148,7 +148,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
   }, []);
 
-  const value: InventoryContextType = {
+  const value = React.useMemo(() => ({
     inventoryItems,
     addInventoryItem,
     updateInventoryItem,
@@ -156,7 +156,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     getItemById,
     updateItemQuantity,
     loading,
-  };
+  }), [inventoryItems, addInventoryItem, updateInventoryItem, deleteInventoryItem, getItemById, updateItemQuantity, loading]);
 
   return (
     <InventoryContext.Provider value={value}>
@@ -172,3 +172,4 @@ export const useInventoryContext = () => {
   }
   return context;
 };
+

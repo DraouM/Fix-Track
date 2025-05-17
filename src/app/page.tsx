@@ -51,7 +51,7 @@ export default function RepairsPage() {
                 Add New Repair
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[725px]"> {/* Increased width for parts */}
+          <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto"> {/* Increased width for parts & added scroll */}
             <DialogHeader>
               <DialogTitle>{repairToEdit ? 'Edit Repair' : 'Add New Repair'}</DialogTitle>
               <DialogDescription>

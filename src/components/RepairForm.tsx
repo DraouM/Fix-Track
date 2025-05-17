@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, FormProvider as RHFFormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -16,14 +16,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Form, // Import Form from ui/form
+  Form, // This is RHFFormProvider aliased via components/ui/form
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from '@/components/ui/form'; // These are the ShadCN form components
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +31,7 @@ import { useInventoryContext } from '@/context/InventoryContext';
 import type { Repair, RepairStatus, UsedPart } from '@/types/repair';
 import type { InventoryItem } from '@/types/inventory';
 import { analyzeRepairIssue, type AnalyzeRepairIssueInput, type AnalyzeRepairIssueOutput } from '@/ai/flows/analyze-repair-issue';
+import { ScrollArea } from '@/components/ui/scroll-area'; // Keep for parts search result if needed, or remove if Dialog scroll is enough
 
 const repairFormSchema = z.object({
   customerName: z.string().min(2, { message: "Customer name must be at least 2 characters." }),
@@ -77,7 +77,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     ? {
         ...repairToEdit,
         estimatedCost: repairToEdit.estimatedCost.toString(),
-        // Ensure usedParts quantities and costs are strings for form inputs initially
         usedParts: repairToEdit.usedParts?.map(p => ({
           ...p,
           quantity: p.quantity.toString(),
@@ -134,8 +133,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       name: part.itemName,
       itemType: part.itemType,
       phoneBrand: part.phoneBrand,
-      quantity: "1", // Default to 1, user can change
-      unitCost: part.buyingPrice.toString(), // Use buying price as cost
+      quantity: "1", 
+      unitCost: part.buyingPrice.toString(), 
     });
     setSearchTerm(''); 
   };
@@ -196,8 +195,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(),
       usedParts: data.usedParts?.map(p => ({
         ...p,
-        quantity: parseInt(p.quantity as unknown as string, 10), // Convert string quantity to number
-        unitCost: parseFloat(p.unitCost as unknown as string), // Convert string unitCost to number
+        quantity: parseInt(p.quantity as unknown as string, 10),
+        unitCost: parseFloat(p.unitCost as unknown as string),
       })) || [],
     };
 
@@ -205,8 +204,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       updateRepair({ 
         ...processedData, 
         id: repairToEdit.id, 
-        dateReceived: repairToEdit.dateReceived, // Preserve original dateReceived
-        statusHistory: repairToEdit.statusHistory // Preserve original statusHistory
+        dateReceived: repairToEdit.dateReceived, 
+        statusHistory: repairToEdit.statusHistory 
       });
       toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
@@ -226,228 +225,229 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   return (
     <Form {...form}> {/* Use Form from @/components/ui/form */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-        <ScrollArea className="max-h-[70vh] pr-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="customerName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phoneNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="XXX-XXX-XXXX" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <FormField
-              control={form.control}
-              name="deviceBrand"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Device Brand</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Apple, Samsung" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="deviceModel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Device Model</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., iPhone 13, Galaxy S22" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
+        {/* Removed ScrollArea wrapper from here. DialogContent will handle scrolling. */}
+        {/* Form content starts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="issueDescription"
+            name="customerName"
             render={({ field }) => (
-              <FormItem className="mt-4">
-                <FormLabel>Issue Description</FormLabel>
+              <FormItem>
+                <FormLabel>Customer Name</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Describe the issue with the device..." {...field} rows={3} />
+                  <Input placeholder="John Doe" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button type="button" onClick={handleAnalyzeIssue} variant="outline" className="mt-2 w-full md:w-auto" disabled={isAnalyzing}>
-              {isAnalyzing ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.search className="mr-2 h-4 w-4" />}
-              Analyze Issue with AI
-          </Button>
+          <FormField
+            control={form.control}
+            name="phoneNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                  <Input placeholder="XXX-XXX-XXXX" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <FormField
-              control={form.control}
-              name="estimatedCost"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estimated Cost ($)</FormLabel>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <FormField
+            control={form.control}
+            name="deviceBrand"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Device Brand</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Apple, Samsung" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="deviceModel"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Device Model</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., iPhone 13, Galaxy S22" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="issueDescription"
+          render={({ field }) => (
+            <FormItem className="mt-4">
+              <FormLabel>Issue Description</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Describe the issue with the device..." {...field} rows={3} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="button" onClick={handleAnalyzeIssue} variant="outline" className="mt-2 w-full md:w-auto" disabled={isAnalyzing}>
+            {isAnalyzing ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.search className="mr-2 h-4 w-4" />}
+            Analyze Issue with AI
+        </Button>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <FormField
+            control={form.control}
+            name="estimatedCost"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Estimated Cost ($)</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="e.g., 99.99" {...field} step="0.01" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="repairStatus"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Repair Status</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 99.99" {...field} step="0.01" />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="repairStatus"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Repair Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="Completed">Completed</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-          <Separator className="my-6" />
+        <Separator className="my-6" />
 
-          <div>
-            <h3 className="text-lg font-medium mb-2">Used Parts</h3>
-            <div className="mb-4">
-              <FormLabel htmlFor="part-search">Add Part from Inventory</FormLabel>
-              <div className="flex gap-2">
-                <Input
-                  id="part-search"
-                  placeholder="Search inventory by name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              {availableParts.length > 0 && searchTerm && (
-                <ScrollArea className="h-[150px] mt-2 border rounded-md">
-                  <div className="p-2">
-                    {availableParts.map(part => (
-                      <div key={part.id}
-                           className="flex justify-between items-center p-2 hover:bg-accent/50 rounded-md cursor-pointer"
-                           onClick={() => handleAddPart(part)}>
-                        <span>{part.itemName} (Stock: {part.quantityInStock})</span>
-                        <Button type="button" size="sm" variant="outline" >Add</Button>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
+        <div>
+          <h3 className="text-lg font-medium mb-2">Used Parts</h3>
+          <div className="mb-4">
+            <FormLabel htmlFor="part-search">Add Part from Inventory</FormLabel>
+            <div className="flex gap-2">
+              <Input
+                id="part-search"
+                placeholder="Search inventory by name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-
-            {fields.map((field, index) => (
-              <div key={field.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end p-3 border rounded-md mb-3">
-                <FormField
-                  control={form.control}
-                  name={`usedParts.${index}.name`}
-                  render={({ field }) => ( 
-                    <FormItem>
-                      <FormLabel>Part Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} readOnly className="bg-muted/50" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name={`usedParts.${index}.quantity`}
-                  render={({ field }) => {
-                    const partId = form.getValues(`usedParts.${index}.partId`);
-                    const inventoryItem = getItemById(partId);
-                    const maxQuantity = inventoryItem?.quantityInStock ?? 0;
-                     return (
-                        <FormItem>
-                        <FormLabel>Quantity</FormLabel>
-                        <FormControl>
-                            <Input 
-                            type="number" 
-                            {...field} 
-                            min="1" 
-                            max={maxQuantity.toString()} // Current stock as max
-                            onChange={(e) => {
-                                let value = parseInt(e.target.value, 10);
-                                if (isNaN(value)) value = 1; // Default to 1 if input is not a number
-                                if (value > maxQuantity) value = maxQuantity; // Cap at max stock
-                                if (value < 1) value = 1; // Ensure minimum is 1
-                                field.onChange(value.toString());
-                            }}
-                            />
-                        </FormControl>
-                        <FormMessage />
-                        {maxQuantity === 0 && <p className="text-xs text-destructive">Out of stock</p>}
-                        </FormItem>
-                    );
-                  }}
-                />
-                <FormField
-                  control={form.control}
-                  name={`usedParts.${index}.unitCost`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Unit Cost ($)</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} step="0.01" readOnly className="bg-muted/50" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                  <Icons.trash className="h-4 w-4" />
-                  <span className="sr-only">Remove Part</span>
-                </Button>
-              </div>
-            ))}
-            {fields.length === 0 && <p className="text-sm text-muted-foreground">No parts added yet.</p>}
-            
-             {fields.length > 0 && (
-                <div className="mt-4 text-right font-semibold">
-                    Total Parts Cost: ${totalPartsCost.toFixed(2)}
+            {availableParts.length > 0 && searchTerm && (
+              <ScrollArea className="h-[150px] mt-2 border rounded-md"> {/* ScrollArea for search results is fine */}
+                <div className="p-2">
+                  {availableParts.map(part => (
+                    <div key={part.id}
+                         className="flex justify-between items-center p-2 hover:bg-accent/50 rounded-md cursor-pointer"
+                         onClick={() => handleAddPart(part)}>
+                      <span>{part.itemName} (Stock: {part.quantityInStock})</span>
+                      <Button type="button" size="sm" variant="outline" >Add</Button>
+                    </div>
+                  ))}
                 </div>
+              </ScrollArea>
             )}
           </div>
-        </ScrollArea>
 
-        <div className="flex justify-end pt-4">
+          {fields.map((field, index) => (
+            <div key={field.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end p-3 border rounded-md mb-3">
+              <FormField
+                control={form.control}
+                name={`usedParts.${index}.name`}
+                render={({ field }) => ( 
+                  <FormItem>
+                    <FormLabel>Part Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} readOnly className="bg-muted/50" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name={`usedParts.${index}.quantity`}
+                render={({ field }) => {
+                  const partId = form.getValues(`usedParts.${index}.partId`);
+                  const inventoryItem = getItemById(partId);
+                  const maxQuantity = inventoryItem?.quantityInStock ?? 0;
+                   return (
+                      <FormItem>
+                      <FormLabel>Quantity</FormLabel>
+                      <FormControl>
+                          <Input 
+                          type="number" 
+                          {...field} 
+                          min="1" 
+                          max={maxQuantity.toString()} 
+                          onChange={(e) => {
+                              let value = parseInt(e.target.value, 10);
+                              if (isNaN(value)) value = 1; 
+                              if (value > maxQuantity) value = maxQuantity; 
+                              if (value < 1) value = 1; 
+                              field.onChange(value.toString());
+                          }}
+                          />
+                      </FormControl>
+                      <FormMessage />
+                      {maxQuantity === 0 && <p className="text-xs text-destructive">Out of stock</p>}
+                      </FormItem>
+                  );
+                }}
+              />
+              <FormField
+                control={form.control}
+                name={`usedParts.${index}.unitCost`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unit Cost ($)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} step="0.01" readOnly className="bg-muted/50" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                <Icons.trash className="h-4 w-4" />
+                <span className="sr-only">Remove Part</span>
+              </Button>
+            </div>
+          ))}
+          {fields.length === 0 && <p className="text-sm text-muted-foreground">No parts added yet.</p>}
+          
+           {fields.length > 0 && (
+              <div className="mt-4 text-right font-semibold">
+                  Total Parts Cost: ${totalPartsCost.toFixed(2)}
+              </div>
+          )}
+        </div>
+        {/* Form content ends */}
+        
+        <div className="flex justify-end pt-4 sticky bottom-0 bg-background pb-4"> {/* Made submit button sticky if form scrolls */}
           <Button type="submit" disabled={form.formState.isSubmitting || isAnalyzing}>
             {form.formState.isSubmitting ? (
               <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />

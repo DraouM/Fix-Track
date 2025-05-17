@@ -1,3 +1,4 @@
+
 // src/components/RepairForm.tsx
 'use client';
 
@@ -31,7 +32,7 @@ import { useInventoryContext } from '@/context/InventoryContext';
 import type { Repair, RepairStatus, UsedPart } from '@/types/repair';
 import type { InventoryItem } from '@/types/inventory';
 import { analyzeRepairIssue, type AnalyzeRepairIssueInput, type AnalyzeRepairIssueOutput } from '@/ai/flows/analyze-repair-issue';
-import { ScrollArea } from '@/components/ui/scroll-area'; // Keep for parts search result if needed, or remove if Dialog scroll is enough
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const repairFormSchema = z.object({
   customerName: z.string().min(2, { message: "Customer name must be at least 2 characters." }),
@@ -79,8 +80,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
         estimatedCost: repairToEdit.estimatedCost.toString(),
         usedParts: repairToEdit.usedParts?.map(p => ({
           ...p,
-          quantity: p.quantity.toString(),
-          unitCost: p.unitCost.toString(),
+          quantity: p.quantity.toString(), // Keep as string for form input
+          unitCost: p.unitCost.toString(), // Keep as string for form input
         })) || [],
       }
     : {
@@ -118,7 +119,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       setAvailableParts(
         inventoryItems.filter(item =>
           item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          (item.quantityInStock ?? 0) > 0 && 
+          (item.quantityInStock ?? 0) > 0 &&
           !fields.some(usedPart => usedPart.partId === item.id)
         )
       );
@@ -133,12 +134,12 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       name: part.itemName,
       itemType: part.itemType,
       phoneBrand: part.phoneBrand,
-      quantity: "1", 
-      unitCost: part.buyingPrice.toString(), 
+      quantity: "1",
+      unitCost: part.buyingPrice.toString(),
     });
-    setSearchTerm(''); 
+    setSearchTerm('');
   };
-  
+
   const handleAnalyzeIssue = async () => {
     const issueDescription = form.getValues("issueDescription");
     const deviceModel = form.getValues("deviceModel");
@@ -157,7 +158,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     try {
       const input: AnalyzeRepairIssueInput = { issueDescription, deviceModel, deviceBrand };
       const result: AnalyzeRepairIssueOutput = await analyzeRepairIssue(input);
-      
+
       toast({
         title: "AI Analysis Complete",
         description: (
@@ -192,7 +193,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const onSubmit = (data: RepairFormValues) => {
     const processedData = {
       ...data,
-      estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(),
+      estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(), // Keep as string
       usedParts: data.usedParts?.map(p => ({
         ...p,
         quantity: parseInt(p.quantity as unknown as string, 10),
@@ -201,21 +202,21 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     };
 
     if (repairToEdit) {
-      updateRepair({ 
-        ...processedData, 
-        id: repairToEdit.id, 
-        dateReceived: repairToEdit.dateReceived, 
-        statusHistory: repairToEdit.statusHistory 
-      });
+      updateRepair({
+        ...processedData,
+        id: repairToEdit.id,
+        dateReceived: repairToEdit.dateReceived,
+        statusHistory: repairToEdit.statusHistory
+      } as Repair); // Ensure it matches Repair type
       toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
       toast({ title: 'Repair Added', description: `New repair for ${data.customerName} has been added.` });
     }
-    form.reset(defaultValues);
+    form.reset(defaultValues); // Reset to original default values (empty or edit state)
     onSuccess?.();
   };
-  
+
   const totalPartsCost = form.watch('usedParts')?.reduce((acc, part) => {
     const quantity = parseInt(part.quantity as unknown as string, 10) || 0;
     const cost = parseFloat(part.unitCost as unknown as string) || 0;
@@ -223,10 +224,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   }, 0) || 0;
 
   return (
-    <Form {...form}> {/* Use Form from @/components/ui/form */}
+    <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-        {/* Removed ScrollArea wrapper from here. DialogContent will handle scrolling. */}
-        {/* Form content starts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -357,7 +356,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
               />
             </div>
             {availableParts.length > 0 && searchTerm && (
-              <ScrollArea className="h-[150px] mt-2 border rounded-md"> {/* ScrollArea for search results is fine */}
+              <ScrollArea className="h-[150px] mt-2 border rounded-md">
                 <div className="p-2">
                   {availableParts.map(part => (
                     <div key={part.id}
@@ -372,82 +371,102 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             )}
           </div>
 
-          {fields.map((field, index) => (
-            <div key={field.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end p-3 border rounded-md mb-3">
-              <FormField
-                control={form.control}
-                name={`usedParts.${index}.name`}
-                render={({ field }) => ( 
-                  <FormItem>
-                    <FormLabel>Part Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} readOnly className="bg-muted/50" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name={`usedParts.${index}.quantity`}
-                render={({ field }) => {
-                  const partId = form.getValues(`usedParts.${index}.partId`);
-                  const inventoryItem = getItemById(partId);
-                  const maxQuantity = inventoryItem?.quantityInStock ?? 0;
-                   return (
-                      <FormItem>
-                      <FormLabel>Quantity</FormLabel>
+          {fields.map((field, index) => {
+            const partId = form.getValues(`usedParts.${index}.partId`);
+            const inventoryItem = getItemById(partId);
+            const currentInventoryStock = inventoryItem?.quantityInStock ?? 0;
+
+            let quantityCurrentlyInThisRepair = 0;
+            if (repairToEdit && repairToEdit.usedParts) {
+              const existingPartInThisRepair = repairToEdit.usedParts.find(p => p.partId === partId);
+              if (existingPartInThisRepair) {
+                // Ensure this is a number before adding
+                quantityCurrentlyInThisRepair = Number(existingPartInThisRepair.quantity) || 0;
+              }
+            }
+            
+            const effectiveMaxQuantity = currentInventoryStock + quantityCurrentlyInThisRepair;
+
+            return (
+              <div key={field.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end p-3 border rounded-md mb-3">
+                <FormField
+                  control={form.control}
+                  name={`usedParts.${index}.name`}
+                  render={({ field: nameField }) => (
+                    <FormItem>
+                      <FormLabel>Part Name</FormLabel>
                       <FormControl>
-                          <Input 
-                          type="number" 
-                          {...field} 
-                          min="1" 
-                          max={maxQuantity.toString()} 
-                          onChange={(e) => {
-                              let value = parseInt(e.target.value, 10);
-                              if (isNaN(value)) value = 1; 
-                              if (value > maxQuantity) value = maxQuantity; 
-                              if (value < 1) value = 1; 
-                              field.onChange(value.toString());
-                          }}
-                          />
+                        <Input {...nameField} readOnly className="bg-muted/50" />
                       </FormControl>
                       <FormMessage />
-                      {maxQuantity === 0 && <p className="text-xs text-destructive">Out of stock</p>}
-                      </FormItem>
-                  );
-                }}
-              />
-              <FormField
-                control={form.control}
-                name={`usedParts.${index}.unitCost`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unit Cost ($)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} step="0.01" readOnly className="bg-muted/50" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                <Icons.trash className="h-4 w-4" />
-                <span className="sr-only">Remove Part</span>
-              </Button>
-            </div>
-          ))}
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`usedParts.${index}.quantity`}
+                  render={({ field: quantityField }) => (
+                    <FormItem>
+                      <FormLabel>Quantity</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...quantityField}
+                          min="1"
+                          max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"} // Prevent max 0 if stock is 0 but part was already there
+                          onChange={(e) => {
+                            let value = parseInt(e.target.value, 10);
+                            if (isNaN(value)) value = 1;
+                            // Allow decreasing quantity even if effectiveMaxQuantity is low (e.g. current stock 0, repair had 2, user wants to set to 1)
+                            // The main check is that it shouldn't exceed total available (inventory + what this repair originally had)
+                            if (value > effectiveMaxQuantity && effectiveMaxQuantity > 0) value = effectiveMaxQuantity;
+                            else if (value > 1 && effectiveMaxQuantity <= 0) value = 1; // If no stock and not in repair, cap at 1 if user forces
+                            
+                            if (value < 1) value = 1;
+                            quantityField.onChange(value.toString());
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      {inventoryItem && currentInventoryStock === 0 && quantityCurrentlyInThisRepair === 0 && (
+                        <p className="text-xs text-destructive">Out of stock</p>
+                      )}
+                       {inventoryItem && currentInventoryStock < (parseInt(quantityField.value as string, 10) || 0) - quantityCurrentlyInThisRepair && (
+                        <p className="text-xs text-destructive">Requested quantity exceeds available stock.</p>
+                      )}
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`usedParts.${index}.unitCost`}
+                  render={({ field: costField }) => (
+                    <FormItem>
+                      <FormLabel>Unit Cost ($)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...costField} step="0.01" readOnly className="bg-muted/50" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                  <Icons.trash className="h-4 w-4" />
+                  <span className="sr-only">Remove Part</span>
+                </Button>
+              </div>
+            );
+          })}
           {fields.length === 0 && <p className="text-sm text-muted-foreground">No parts added yet.</p>}
-          
+
            {fields.length > 0 && (
               <div className="mt-4 text-right font-semibold">
                   Total Parts Cost: ${totalPartsCost.toFixed(2)}
               </div>
           )}
         </div>
-        {/* Form content ends */}
-        
-        <div className="flex justify-end pt-4 sticky bottom-0 bg-background pb-4"> {/* Made submit button sticky if form scrolls */}
+
+        <div className="flex justify-end pt-4 sticky bottom-0 bg-background pb-4">
           <Button type="submit" disabled={form.formState.isSubmitting || isAnalyzing}>
             {form.formState.isSubmitting ? (
               <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
@@ -463,3 +482,4 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </Form>
   );
 }
+

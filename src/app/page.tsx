@@ -58,7 +58,11 @@ export default function RepairsPage() {
                 {repairToEdit ? 'Update the details for this repair order.' : 'Enter the details for the new repair order.'}
               </DialogDescription>
             </DialogHeader>
-            <RepairForm onSuccess={handleFormSuccess} repairToEdit={repairToEdit} />
+            <RepairForm 
+              key={repairToEdit ? repairToEdit.id : 'new-repair-form'} 
+              onSuccess={handleFormSuccess} 
+              repairToEdit={repairToEdit} 
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -67,3 +71,4 @@ export default function RepairsPage() {
     </div>
   );
 }
+

@@ -59,7 +59,7 @@ const repairFormSchema = z.object({
   issueDescription: z.string().min(10, { message: "Issue description must be at least 10 characters." }),
   estimatedCost: z.preprocess(
     (val) => parseFloat(z.string().parse(val)),
-    z.number().positive({ message: "Estimated cost must be a positive number." })
+    z.number().nonnegative({ message: "Estimated cost must be a non-negative number." })
   ),
   repairStatus: z.enum(['Pending', 'In Progress', 'Completed', 'Cancelled'] as [RepairStatus, ...RepairStatus[]]),
   paymentStatus: z.enum(['Unpaid', 'Paid', 'Partially Paid', 'Refunded'] as [PaymentStatus, ...PaymentStatus[]]),
@@ -173,8 +173,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [availableParts, setAvailableParts] = useState<InventoryItem[]>([]);
 
-  // The form will re-initialize via the 'key' prop on RepairForm in the parent component.
-  // Explicit form.reset() in useEffect is removed to simplify and rely on key-based re-mount.
 
   useEffect(() => {
     if (searchTerm) {

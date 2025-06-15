@@ -57,10 +57,7 @@ const repairFormSchema = z.object({
   deviceBrand: z.string().min(1, { message: "Device brand is required." }),
   deviceModel: z.string().min(1, { message: "Device model is required." }),
   issueDescription: z.string().min(10, { message: "Issue description must be at least 10 characters." }),
-  estimatedCost: z.preprocess(
-    (val) => parseFloat(z.string().parse(val)),
-    z.number().nonnegative({ message: "Estimated cost must be a non-negative number." })
-  ),
+  estimatedCost: z.number().nonnegative({ message: "Estimated cost must be a non-negative number." }),
   repairStatus: z.enum(['Pending', 'In Progress', 'Completed', 'Cancelled'] as [RepairStatus, ...RepairStatus[]]),
   paymentStatus: z.enum(['Unpaid', 'Paid', 'Partially Paid', 'Refunded'] as [PaymentStatus, ...PaymentStatus[]]),
   usedParts: z.array(z.object({
@@ -68,14 +65,8 @@ const repairFormSchema = z.object({
     name: z.string(),
     itemType: z.string(), // Kept as string for schema, actual value is ItemType
     phoneBrand: z.string(), // Kept as string for schema, actual value is PhoneBrand
-    quantity: z.preprocess(
-      (val) => parseInt(z.string().parse(val), 10),
-      z.number().int().min(1, "Quantity must be at least 1.")
-    ),
-    unitCost: z.preprocess(
-      (val) => parseFloat(z.string().parse(val)),
-      z.number().positive("Unit cost must be positive.")
-    ),
+    quantity: z.number().int().min(1, "Quantity must be at least 1."),
+    unitCost: z.number().positive("Unit cost must be positive."),
   })).optional(),
 });
 
@@ -148,12 +139,12 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       ? {
           ...repairToEdit,
           phoneNumber: repairToEdit.phoneNumber || '',
-          estimatedCost: parseFloat(repairToEdit.estimatedCost) || 0, 
+          estimatedCost: parseFloat(repairToEdit.estimatedCost) || 0,
           paymentStatus: repairToEdit.paymentStatus || 'Unpaid',
           usedParts: repairToEdit.usedParts?.map(p => ({
             ...p,
-            quantity: Number(p.quantity) || 1, 
-            unitCost: Number(p.unitCost) || 0, 
+            quantity: Number(p.quantity) || 1,
+            unitCost: Number(p.unitCost) || 0,
           })) || [],
         }
       : newFormDefaults;
@@ -195,7 +186,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       itemType: part.itemType,
       phoneBrand: part.phoneBrand,
       quantity: 1,
-      unitCost: part.buyingPrice,
+      unitCost: part.buyingPrice, // buyingPrice from InventoryItem is already a number
     });
     setSearchTerm('');
   };
@@ -203,15 +194,15 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const onSubmit = (data: RepairFormValues) => {
     const processedData = {
       ...data,
-      phoneNumber: data.phoneNumber || undefined, 
-      estimatedCost: data.estimatedCost.toString(), 
+      phoneNumber: data.phoneNumber || undefined,
+      estimatedCost: data.estimatedCost.toString(), // Repair type expects string
       paymentStatus: data.paymentStatus,
       usedParts: data.usedParts?.map(p => ({
         ...p,
-        itemType: p.itemType as ItemType, 
-        phoneBrand: p.phoneBrand as PhoneBrand, 
-        quantity: Number(p.quantity),
-        unitCost: Number(p.unitCost),
+        itemType: p.itemType as ItemType,
+        phoneBrand: p.phoneBrand as PhoneBrand,
+        quantity: Number(p.quantity), // Ensure it's number for Repair type
+        unitCost: Number(p.unitCost),   // Ensure it's number for Repair type
       })) || [],
     };
 
@@ -219,7 +210,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       updateRepair({
         ...repairToEdit,
         ...processedData,
-      } as Repair);
+      } as Repair); // Cast to Repair to satisfy type, ID and dateReceived are spread from repairToEdit
       toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
@@ -368,7 +359,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     >
                       <CommandInput
                         placeholder="Search or type model..."
-                        value={field.value} 
+                        value={field.value}
                         onValueChange={(currentInputValue) => {
                            form.setValue("deviceModel", currentInputValue, { shouldValidate: true, shouldDirty: true });
                         }}
@@ -378,9 +369,9 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <CommandGroup>
                           {uniqueDeviceModels.map((model) => (
                             <CommandItem
-                              value={model.label} 
-                              key={model.value}  
-                              onSelect={() => { 
+                              value={model.label}
+                              key={model.value}
+                              onSelect={() => {
                                 form.setValue("deviceModel", model.label);
                                 setModelPopoverOpen(false);
                               }}
@@ -388,7 +379,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                               <Icons.check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  model.label === field.value 
+                                  model.label === field.value
                                     ? "opacity-100"
                                     : "opacity-0"
                                 )}
@@ -429,7 +420,13 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
               <FormItem>
                 <FormLabel>Estimated Cost ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 99.99" {...field} value={String(field.value || '0')} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} step="0.01" />
+                  {/* Input expects string, RHF provides number. RHF onChange expects number. */}
+                  <Input type="number" placeholder="e.g., 99.99"
+                    {...field}
+                    value={String(field.value ?? '0')} // Display as string
+                    onChange={e => field.onChange(parseFloat(e.target.value) || 0)} // Send number to RHF
+                    step="0.01"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -529,7 +526,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                 quantityCurrentlyInThisRepair = Number(existingPartInThisRepair.quantity) || 0;
               }
             }
-            
+
             const effectiveMaxQuantity = currentInventoryStock + quantityCurrentlyInThisRepair;
 
             return (
@@ -557,10 +554,10 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <Input
                           type="number"
                           {...quantityField}
-                          value={String(quantityField.value || '1')}
+                          value={String(quantityField.value ?? '1')} // Display as string
                           min="1"
                           max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"}
-                          onChange={(e) => {
+                          onChange={(e) => { // Send number to RHF
                             let value = parseInt(e.target.value, 10);
                             if (isNaN(value)) value = 1;
 
@@ -589,7 +586,9 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     <FormItem>
                       <FormLabel>Unit Cost ($)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...costField} value={String(costField.value || '0')} step="0.01" readOnly className="bg-muted/50" />
+                        <Input type="number" {...costField}
+                         value={String(costField.value ?? '0')} // Display as string
+                         step="0.01" readOnly className="bg-muted/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -627,4 +626,3 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </Form>
   );
 }
-

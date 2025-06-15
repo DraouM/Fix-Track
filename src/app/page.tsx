@@ -20,26 +20,31 @@ import type { Repair } from '@/types/repair'; // Import Repair type
 export default function RepairsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false); 
   const [repairToEdit, setRepairToEdit] = useState<Repair | null>(null);
+  const [formInstanceKey, setFormInstanceKey] = useState(0); // Key to force form re-mount
 
   const handleFormSuccess = useCallback(() => {
     setIsFormOpen(false);
-    setRepairToEdit(null); // Clear item being edited
+    setRepairToEdit(null); 
   }, []);
 
   const openAddForm = useCallback(() => {
-    setRepairToEdit(null); // Ensure we are adding, not editing
+    setRepairToEdit(null); 
+    setFormInstanceKey(prevKey => prevKey + 1); // Increment key to force re-mount for "add new"
     setIsFormOpen(true);
   }, []);
 
   const openEditForm = useCallback((repair: Repair) => {
     setRepairToEdit(repair);
+    // Optionally, you could reset formInstanceKey here or leave it,
+    // as repair.id will make the key unique for edits.
+    // setFormInstanceKey(0); 
     setIsFormOpen(true);
   }, []);
 
   const handleDialogOpeChange = useCallback((isOpen: boolean) => {
     setIsFormOpen(isOpen);
     if (!isOpen) {
-      setRepairToEdit(null); // Clear edit state if dialog is closed by any means
+      setRepairToEdit(null); 
     }
   }, []);
 
@@ -55,7 +60,7 @@ export default function RepairsPage() {
                 Add New Repair
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto"> {/* Increased width for parts & added scroll */}
+          <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{repairToEdit ? 'Edit Repair' : 'Add New Repair'}</DialogTitle>
               <DialogDescription>
@@ -63,7 +68,7 @@ export default function RepairsPage() {
               </DialogDescription>
             </DialogHeader>
             <RepairForm 
-              key={repairToEdit ? repairToEdit.id : 'new-repair-form'} 
+              key={repairToEdit ? repairToEdit.id : `new-repair-form-${formInstanceKey}`} 
               onSuccess={handleFormSuccess} 
               repairToEdit={repairToEdit} 
             />

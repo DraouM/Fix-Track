@@ -16,7 +16,7 @@ export interface UsedPart {
 export interface Repair {
   id: string;
   customerName: string;
-  phoneNumber: string;
+  phoneNumber?: string; // Made optional to match form behavior
   deviceBrand: string;
   deviceModel: string;
   issueDescription: string;

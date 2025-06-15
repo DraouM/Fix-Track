@@ -16,13 +16,26 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'; 
+} from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +44,7 @@ import { useInventoryContext } from '@/context/InventoryContext';
 import type { Repair, RepairStatus } from '@/types/repair';
 import type { InventoryItem } from '@/types/inventory';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 const repairFormSchema = z.object({
   customerName: z.string().min(2, { message: "Customer name must be at least 2 characters." }),
@@ -66,10 +80,32 @@ interface RepairFormProps {
   repairToEdit?: Repair | null;
 }
 
+const PREDEFINED_BRANDS = [
+  { value: 'Apple', label: 'Apple' },
+  { value: 'Samsung', label: 'Samsung' },
+  { value: 'Google', label: 'Google' },
+  { value: 'OnePlus', label: 'OnePlus' },
+  { value: 'Xiaomi', label: 'Xiaomi' },
+  { value: 'Huawei', label: 'Huawei' },
+  { value: 'Oppo', label: 'Oppo' },
+  { value: 'Vivo', label: 'Vivo' },
+  { value: 'Realme', label: 'Realme' },
+  { value: 'Sony', label: 'Sony' },
+  { value: 'LG', label: 'LG' },
+  { value: 'Motorola', label: 'Motorola' },
+  { value: 'Nokia', label: 'Nokia' },
+  { value: 'Microsoft', label: 'Microsoft' },
+  { value: 'Other', label: 'Other' },
+];
+
+
 export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
-  const { addRepair, updateRepair } = useRepairContext();
+  const { repairs, addRepair, updateRepair } = useRepairContext();
   const { inventoryItems, getItemById } = useInventoryContext();
   const { toast } = useToast();
+
+  const [brandPopoverOpen, setBrandPopoverOpen] = useState(false);
+  const [modelPopoverOpen, setModelPopoverOpen] = useState(false);
 
   const defaultValues = repairToEdit
     ? {
@@ -77,8 +113,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
         estimatedCost: repairToEdit.estimatedCost.toString(),
         usedParts: repairToEdit.usedParts?.map(p => ({
           ...p,
-          quantity: p.quantity.toString(), 
-          unitCost: p.unitCost.toString(), 
+          quantity: p.quantity.toString(),
+          unitCost: p.unitCost.toString(),
         })) || [],
       }
     : {
@@ -140,7 +176,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const onSubmit = (data: RepairFormValues) => {
     const processedData = {
       ...data,
-      estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(), 
+      estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(),
       usedParts: data.usedParts?.map(p => ({
         ...p,
         quantity: parseInt(p.quantity as unknown as string, 10),
@@ -154,13 +190,13 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
         id: repairToEdit.id,
         dateReceived: repairToEdit.dateReceived,
         statusHistory: repairToEdit.statusHistory
-      } as Repair); 
+      } as Repair);
       toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
       toast({ title: 'Repair Added', description: `New repair for ${data.customerName} has been added.` });
     }
-    form.reset(defaultValues); 
+    form.reset(defaultValues);
     onSuccess?.();
   };
 
@@ -169,6 +205,12 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     const cost = parseFloat(part.unitCost as unknown as string) || 0;
     return acc + (quantity * cost);
   }, 0) || 0;
+
+  const uniqueDeviceModels = React.useMemo(() => {
+    const models = new Set<string>();
+    repairs.forEach(repair => models.add(repair.deviceModel));
+    return Array.from(models).map(model => ({ value: model, label: model }));
+  }, [repairs]);
 
   return (
     <Form {...form}>
@@ -207,11 +249,60 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             control={form.control}
             name="deviceBrand"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Device Brand</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Apple, Samsung" {...field} />
-                </FormControl>
+                <Popover open={brandPopoverOpen} onOpenChange={setBrandPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={brandPopoverOpen}
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? PREDEFINED_BRANDS.find(
+                              (brand) => brand.value === field.value
+                            )?.label
+                          : "Select brand"}
+                        <Icons.chevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search brand..." />
+                      <CommandList>
+                        <CommandEmpty>No brand found.</CommandEmpty>
+                        <CommandGroup>
+                          {PREDEFINED_BRANDS.map((brand) => (
+                            <CommandItem
+                              value={brand.label}
+                              key={brand.value}
+                              onSelect={() => {
+                                form.setValue("deviceBrand", brand.value);
+                                setBrandPopoverOpen(false);
+                              }}
+                            >
+                              <Icons.check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  brand.value === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {brand.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -220,11 +311,66 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             control={form.control}
             name="deviceModel"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Device Model</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., iPhone 13, Galaxy S22" {...field} />
-                </FormControl>
+                <Popover open={modelPopoverOpen} onOpenChange={setModelPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={modelPopoverOpen}
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value || "Select or type model"}
+                        <Icons.chevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command filter={(value, search) => {
+                        if (value.toLowerCase().includes(search.toLowerCase())) return 1;
+                        return 0;
+                      }}
+                    >
+                      <CommandInput
+                        placeholder="Search or type model..."
+                        value={field.value}
+                        onValueChange={(currentValue) => {
+                           form.setValue("deviceModel", currentValue);
+                        }}
+                      />
+                      <CommandList>
+                        <CommandEmpty>No model found. Type to add new.</CommandEmpty>
+                        <CommandGroup>
+                          {uniqueDeviceModels.map((model) => (
+                            <CommandItem
+                              value={model.label}
+                              key={model.value}
+                              onSelect={(currentValue) => {
+                                form.setValue("deviceModel", currentValue === field.value ? "" : currentValue);
+                                setModelPopoverOpen(false);
+                              }}
+                            >
+                              <Icons.check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  model.value === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {model.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -244,7 +390,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             </FormItem>
           )}
         />
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <FormField
             control={form.control}
@@ -326,7 +472,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                 quantityCurrentlyInThisRepair = Number(existingPartInThisRepair.quantity) || 0;
               }
             }
-            
+
             const effectiveMaxQuantity = currentInventoryStock + quantityCurrentlyInThisRepair;
 
             return (
@@ -355,13 +501,13 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                           type="number"
                           {...quantityField}
                           min="1"
-                          max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"} 
+                          max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"}
                           onChange={(e) => {
                             let value = parseInt(e.target.value, 10);
                             if (isNaN(value)) value = 1;
                             if (value > effectiveMaxQuantity && effectiveMaxQuantity > 0) value = effectiveMaxQuantity;
-                            else if (value > 1 && effectiveMaxQuantity <= 0) value = 1; 
-                            
+                            else if (value > 1 && effectiveMaxQuantity <= 0) value = 1;
+
                             if (value < 1) value = 1;
                             quantityField.onChange(value.toString());
                           }}

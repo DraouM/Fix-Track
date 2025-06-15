@@ -431,7 +431,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Repair Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />

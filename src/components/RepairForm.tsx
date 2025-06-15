@@ -42,7 +42,7 @@ import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { useRepairContext } from '@/context/RepairContext';
 import { useInventoryContext } from '@/context/InventoryContext';
-import type { Repair, RepairStatus } from '@/types/repair';
+import type { Repair, RepairStatus, PaymentStatus } from '@/types/repair'; // Import PaymentStatus
 import type { InventoryItem } from '@/types/inventory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -61,6 +61,7 @@ const repairFormSchema = z.object({
     z.number().positive({ message: "Estimated cost must be a positive number." })
   ),
   repairStatus: z.enum(['Pending', 'In Progress', 'Completed', 'Cancelled'] as [RepairStatus, ...RepairStatus[]]),
+  paymentStatus: z.enum(['Unpaid', 'Paid', 'Partially Paid', 'Refunded'] as [PaymentStatus, ...PaymentStatus[]]), // Added paymentStatus
   usedParts: z.array(z.object({
     partId: z.string(),
     name: z.string(),
@@ -119,11 +120,12 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       ? {
           ...repairToEdit,
           phoneNumber: repairToEdit.phoneNumber || '',
-          estimatedCost: parseFloat(repairToEdit.estimatedCost), // Zod preprocesses to number, RHF expects number here
+          estimatedCost: parseFloat(repairToEdit.estimatedCost),
+          paymentStatus: repairToEdit.paymentStatus || 'Unpaid', // Added paymentStatus
           usedParts: repairToEdit.usedParts?.map(p => ({
             ...p,
-            quantity: p.quantity, // Already number
-            unitCost: p.unitCost, // Already number
+            quantity: p.quantity,
+            unitCost: p.unitCost,
           })) || [],
         }
       : {
@@ -132,21 +134,22 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
           deviceBrand: '',
           deviceModel: '',
           issueDescription: '',
-          estimatedCost: 0, // Default to number for RHF
+          estimatedCost: 0,
           repairStatus: 'Pending' as RepairStatus,
+          paymentStatus: 'Unpaid' as PaymentStatus, // Added paymentStatus
           usedParts: [],
         };
   }, [repairToEdit]);
 
-  // Define newFormDefaults at the top level and memoize it
   const newFormDefaults = useMemo(() => ({
       customerName: '',
       phoneNumber: '',
       deviceBrand: '',
       deviceModel: '',
       issueDescription: '',
-      estimatedCost: 0, // Default to number for RHF
+      estimatedCost: 0,
       repairStatus: 'Pending' as RepairStatus,
+      paymentStatus: 'Unpaid' as PaymentStatus, // Added paymentStatus
       usedParts: [],
   }), []);
 
@@ -188,8 +191,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       name: part.itemName,
       itemType: part.itemType,
       phoneBrand: part.phoneBrand,
-      quantity: 1, // RHF expects number
-      unitCost: part.buyingPrice, // RHF expects number
+      quantity: 1,
+      unitCost: part.buyingPrice,
     });
     setSearchTerm('');
   };
@@ -197,34 +200,32 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const onSubmit = (data: RepairFormValues) => {
     const processedData = {
       ...data,
-      phoneNumber: data.phoneNumber || undefined, 
-      estimatedCost: data.estimatedCost.toString(), // Convert back to string for Repair type
+      phoneNumber: data.phoneNumber || undefined,
+      estimatedCost: data.estimatedCost.toString(),
+      paymentStatus: data.paymentStatus, // Ensure paymentStatus is included
       usedParts: data.usedParts?.map(p => ({
         ...p,
-        // quantity and unitCost are already numbers from Zod schema
       })) || [],
     };
 
     if (repairToEdit) {
       updateRepair({
-        ...repairToEdit, // Keep original id, dateReceived, statusHistory
-        ...processedData, // Apply form data
+        ...repairToEdit,
+        ...processedData,
       } as Repair);
       toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
       toast({ title: 'Repair Added', description: `New repair for ${data.customerName} has been added.` });
     }
-    
-    // Reset to a "new form" state after successful submission
-    form.reset(newFormDefaults); // Use the top-level newFormDefaults
-    
+
+    form.reset(newFormDefaults);
     onSuccess?.();
   };
 
   const totalPartsCost = form.watch('usedParts')?.reduce((acc, part) => {
-    const quantity = part.quantity || 0; // Already number
-    const cost = part.unitCost || 0; // Already number
+    const quantity = part.quantity || 0;
+    const cost = part.unitCost || 0;
     return acc + (quantity * cost);
   }, 0) || 0;
 
@@ -362,9 +363,9 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     >
                       <CommandInput
                         placeholder="Search or type model..."
-                        value={field.value} 
+                        value={field.value}
                         onValueChange={(currentInputValue) => {
-                           form.setValue("deviceModel", currentInputValue); 
+                           form.setValue("deviceModel", currentInputValue);
                         }}
                       />
                       <CommandList>
@@ -372,9 +373,9 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <CommandGroup>
                           {uniqueDeviceModels.map((model) => (
                             <CommandItem
-                              value={model.label} 
+                              value={model.label}
                               key={model.value}
-                              onSelect={(currentValue) => { 
+                              onSelect={(currentValue) => {
                                 form.setValue("deviceModel", currentValue);
                                 setModelPopoverOpen(false);
                               }}
@@ -382,7 +383,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                               <Icons.check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  model.label === field.value 
+                                  model.label === field.value
                                     ? "opacity-100"
                                     : "opacity-0"
                                 )}
@@ -415,7 +416,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4"> {/* Adjusted for 3 columns */}
           <FormField
             control={form.control}
             name="estimatedCost"
@@ -446,6 +447,29 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     <SelectItem value="In Progress">In Progress</SelectItem>
                     <SelectItem value="Completed">Completed</SelectItem>
                     <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="paymentStatus"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Payment Status</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Unpaid">Unpaid</SelectItem>
+                    <SelectItem value="Paid">Paid</SelectItem>
+                    <SelectItem value="Partially Paid">Partially Paid</SelectItem>
+                    <SelectItem value="Refunded">Refunded</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -530,12 +554,12 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                           onChange={(e) => {
                             let value = parseInt(e.target.value, 10);
                             if (isNaN(value)) value = 1;
-                            
+
                             const maxQty = effectiveMaxQuantity > 0 ? effectiveMaxQuantity : 1;
                             if (value > maxQty) value = maxQty;
                             if (value < 1) value = 1;
-                            
-                            quantityField.onChange(value); // RHF expects number
+
+                            quantityField.onChange(value);
                           }}
                         />
                       </FormControl>
@@ -594,6 +618,3 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </Form>
   );
 }
-
-
-    

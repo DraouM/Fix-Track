@@ -4,6 +4,7 @@
 import React, {useState} from 'react';
 import {useRepairContext} from '@/context/RepairContext';
 import {Button} from '@/components/ui/button';
+import {Badge} from '@/components/ui/badge'; // Import Badge
 import {
   Table,
   TableBody,
@@ -26,31 +27,32 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react'; // Added Edit and Trash2
+import { MoreHorizontal, Edit, Trash2, DollarSign } from 'lucide-react'; // Added Edit and Trash2
 import {RepairDetail} from './RepairDetail';
 import {cn} from '@/lib/utils';
-import type {Repair, RepairStatus} from '@/types/repair';
-import { Icons } from '@/components/icons'; // Added import for Icons
+import type {Repair, RepairStatus, PaymentStatus} from '@/types/repair'; // Import PaymentStatus
+import { Icons } from '@/components/icons';
 
 interface RepairListProps {
-  onEditRepair: (repair: Repair) => void; // Callback to open edit form
+  onEditRepair: (repair: Repair) => void;
 }
 
 export function RepairList({ onEditRepair }: RepairListProps) {
-  const {repairs, updateRepair, deleteRepair} = useRepairContext(); // Added deleteRepair
+  const {repairs, updateRepair, deleteRepair} = useRepairContext();
   const [selectedRepairDetail, setSelectedRepairDetail] = useState<Repair | null>(null);
 
   const handleStatusChange = (repairId: string, newStatus: RepairStatus) => {
     const repairToUpdate = repairs.find(r => r.id === repairId);
     if (repairToUpdate) {
-      // The updateRepair in context now handles inventory adjustments
       updateRepair({...repairToUpdate, repairStatus: newStatus});
     }
   };
-  
-  const handleDeleteRepair = (repairId: string) => {
-    // Consider adding a confirmation dialog here
-    deleteRepair(repairId);
+
+  const handlePaymentStatusChange = (repairId: string, newPaymentStatus: PaymentStatus) => {
+    const repairToUpdate = repairs.find(r => r.id === repairId);
+    if (repairToUpdate) {
+      updateRepair({...repairToUpdate, paymentStatus: newPaymentStatus});
+    }
   };
 
   const getStatusColorClass = (status: RepairStatus): string => {
@@ -67,6 +69,22 @@ export function RepairList({ onEditRepair }: RepairListProps) {
     }
   };
 
+  const getPaymentStatusVariant = (status: PaymentStatus): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status) {
+      case 'Paid':
+        return 'default'; // Typically green, but using primary for consistency with theme
+      case 'Unpaid':
+        return 'destructive';
+      case 'Partially Paid':
+        return 'secondary'; // Yellow/Orange
+      case 'Refunded':
+        return 'outline'; // Grey
+      default:
+        return 'outline';
+    }
+  };
+
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-2">Current Repairs</h2>
@@ -75,10 +93,12 @@ export function RepairList({ onEditRepair }: RepairListProps) {
           <TableCaption>A list of your current repairs.</TableCaption>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[80px]">ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Device</TableHead>
               <TableHead className="hidden md:table-cell">Issue</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Repair Status</TableHead>
+              <TableHead>Payment</TableHead>
               <TableHead className="text-right">Cost</TableHead>
               <TableHead className="text-center">Actions</TableHead>
             </TableRow>
@@ -86,7 +106,7 @@ export function RepairList({ onEditRepair }: RepairListProps) {
           <TableBody>
             {repairs.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={6} className="text-center h-24">
+                    <TableCell colSpan={8} className="text-center h-24"> {/* Adjusted colSpan */}
                         No repairs found. Click "Add New Repair" to get started.
                     </TableCell>
                 </TableRow>
@@ -95,10 +115,11 @@ export function RepairList({ onEditRepair }: RepairListProps) {
                 <TableRow
                     key={repair.id}
                     className={cn(
-                    'border-l-4', 
+                    'border-l-4',
                     getStatusColorClass(repair.repairStatus)
                     )}
                 >
+                    <TableCell className="font-mono text-xs">{repair.id.slice(-6)}</TableCell> {/* Display last 6 chars of ID */}
                     <TableCell>{repair.customerName}</TableCell>
                     <TableCell>{repair.deviceBrand} {repair.deviceModel}</TableCell>
                     <TableCell className="max-w-xs truncate hidden md:table-cell">{repair.issueDescription}</TableCell>
@@ -107,7 +128,7 @@ export function RepairList({ onEditRepair }: RepairListProps) {
                         value={repair.repairStatus}
                         onValueChange={(newStatus: RepairStatus) => handleStatusChange(repair.id, newStatus)}
                     >
-                        <SelectTrigger className="w-full md:w-[180px] text-xs md:text-sm h-9 md:h-10">
+                        <SelectTrigger className="w-full md:w-[140px] text-xs md:text-sm h-9 md:h-10">
                         <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -117,6 +138,30 @@ export function RepairList({ onEditRepair }: RepairListProps) {
                         <SelectItem value="Cancelled">Cancelled</SelectItem>
                         </SelectContent>
                     </Select>
+                    </TableCell>
+                    <TableCell>
+                       <Select
+                        value={repair.paymentStatus}
+                        onValueChange={(newPaymentStatus: PaymentStatus) => handlePaymentStatusChange(repair.id, newPaymentStatus)}
+                        >
+                        <SelectTrigger className="w-full md:w-[130px] text-xs md:text-sm h-9 md:h-10">
+                            <SelectValue placeholder="Payment status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Unpaid">
+                                <Badge variant={getPaymentStatusVariant('Unpaid')} className="mr-1 w-2 h-2 p-0 rounded-full inline-block" /> Unpaid
+                            </SelectItem>
+                            <SelectItem value="Paid">
+                                <Badge variant={getPaymentStatusVariant('Paid')} className="mr-1 w-2 h-2 p-0 rounded-full inline-block bg-green-500" /> Paid
+                            </SelectItem>
+                            <SelectItem value="Partially Paid">
+                                <Badge variant={getPaymentStatusVariant('Partially Paid')} className="mr-1 w-2 h-2 p-0 rounded-full inline-block bg-yellow-500" /> Partially Paid
+                            </SelectItem>
+                             <SelectItem value="Refunded">
+                                <Badge variant={getPaymentStatusVariant('Refunded')} className="mr-1 w-2 h-2 p-0 rounded-full inline-block" /> Refunded
+                            </SelectItem>
+                        </SelectContent>
+                        </Select>
                     </TableCell>
                     <TableCell className="text-right">${repair.estimatedCost}</TableCell>
                     <TableCell className="text-center">
@@ -171,4 +216,3 @@ function Icon({ ...props }) {
         </svg>
     )
 }
-

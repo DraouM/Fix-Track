@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo } from 'react'; // Added useMemo
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,9 +13,10 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'; // Added Table components
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Repair } from '@/types/repair';
 import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge'; // Import Badge
 
 interface RepairDetailProps {
   repair: Repair | null;
@@ -30,7 +31,7 @@ export function RepairDetail({ repair, onClose }: RepairDetailProps) {
       const printWindow = window.open('', '', 'height=600,width=800');
       if (printWindow) {
         printWindow.document.write('<html><head><title>Repair Receipt</title>');
-        printWindow.document.write('<link rel="stylesheet" href="/globals.css" type="text/css" media="print" />'); // Ensure media="print"
+        printWindow.document.write('<link rel="stylesheet" href="/globals.css" type="text/css" media="print" />');
         printWindow.document.write('<style> @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 20px; } #print-button, .no-print { display: none !important; } .print-only-block { display: block !important; } .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; } .print-table th, .print-table td { border: 1px solid #ccc; padding: 8px; text-align: left; } .print-table th { background-color: #f2f2f2; } } </style>');
         printWindow.document.write('</head><body>');
         printWindow.document.write(printContent.innerHTML);
@@ -55,15 +56,14 @@ export function RepairDetail({ repair, onClose }: RepairDetailProps) {
    if (!repair) {
     return null;
   }
-  
+
   const estimatedCostValue = parseFloat(repair.estimatedCost) || 0;
   const profitExcludingParts = estimatedCostValue - totalPartsCost;
 
   return (
     <Dialog open={!!repair} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[725px]"> {/* Increased width for parts table */}
-        {/* Content specifically for printing */}
-        <div id="receipt-content" className="print-only-block hidden"> {/* Hidden by default, shown only for printing */}
+      <DialogContent className="sm:max-w-[725px]">
+        <div id="receipt-content" className="print-only-block hidden">
             <h2 className="text-xl font-bold mb-2">FixTrack - Repair Receipt</h2>
             <p><strong>Repair ID:</strong> {repair.id}</p>
             <Separator className="my-2" />
@@ -74,8 +74,9 @@ export function RepairDetail({ repair, onClose }: RepairDetailProps) {
             <p><strong>Issue:</strong> {repair.issueDescription}</p>
             <Separator className="my-2" />
             <p><strong>Date Received:</strong> {format(new Date(repair.dateReceived), 'PPP p')}</p>
-            <p><strong>Status:</strong> {repair.repairStatus}</p>
-            
+            <p><strong>Repair Status:</strong> {repair.repairStatus}</p>
+            <p><strong>Payment Status:</strong> {repair.paymentStatus}</p> {/* Added Payment Status for print */}
+
             {repair.usedParts && repair.usedParts.length > 0 && (
               <>
                 <h4 className="text-sm font-medium mt-3 mb-1">Parts Used:</h4>
@@ -103,8 +104,7 @@ export function RepairDetail({ repair, onClose }: RepairDetailProps) {
             <p className="text-xs text-muted-foreground mt-4">Thank you for your business!</p>
         </div>
 
-         {/* Visible Dialog Content */}
-        <div className="no-print"> {/* Hide this section when printing */}
+        <div className="no-print">
           <DialogHeader>
             <DialogTitle>Repair Details</DialogTitle>
             <DialogDescription>
@@ -122,9 +122,9 @@ export function RepairDetail({ repair, onClose }: RepairDetailProps) {
               <Separator />
               <DetailItem label="Quoted/Estimated Cost" value={`$${estimatedCostValue.toFixed(2)}`} />
               <DetailItem label="Date Received" value={format(new Date(repair.dateReceived), 'PPP p')} />
-              <DetailItem label="Current Status" value={repair.repairStatus} />
+              <DetailItem label="Current Repair Status" value={repair.repairStatus} />
+              <DetailItem label="Payment Status" value={repair.paymentStatus} /> {/* Added Payment Status for display */}
 
-              {/* Used Parts Table */}
               {repair.usedParts && repair.usedParts.length > 0 && (
                 <>
                   <Separator />

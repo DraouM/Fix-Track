@@ -2,6 +2,7 @@
 import type { ItemType, PhoneBrand } from '@/types/inventory';
 
 export type RepairStatus = 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
+export type PaymentStatus = 'Unpaid' | 'Paid' | 'Partially Paid' | 'Refunded';
 
 export interface UsedPart {
   partId: string; // Corresponds to InventoryItem id
@@ -22,6 +23,8 @@ export interface Repair {
   estimatedCost: string; // Keep as string as per original schema
   dateReceived: Date;
   repairStatus: RepairStatus;
+  paymentStatus: PaymentStatus; // New field
   statusHistory?: { status: RepairStatus; timestamp: Date }[];
   usedParts?: UsedPart[]; // Array to store parts used in this repair
 }
+

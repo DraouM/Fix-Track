@@ -2,13 +2,13 @@
 'use client';
 
 import React, {createContext, useContext, useState, useEffect, useCallback} from 'react';
-import type { Repair, RepairStatus, UsedPart } from '@/types/repair';
-import { useInventoryContext } from './InventoryContext'; // Import useInventoryContext
+import type { Repair, RepairStatus, UsedPart, PaymentStatus } from '@/types/repair'; // Import PaymentStatus
+import { useInventoryContext } from './InventoryContext';
 
 interface RepairContextType {
   repairs: Repair[];
   addRepair: (repair: Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>) => void;
-  updateRepair: (updatedRepairData: Repair) => void; // Parameter changed for clarity
+  updateRepair: (updatedRepairData: Repair) => void;
   deleteRepair: (id: string) => void;
 }
 
@@ -25,6 +25,7 @@ const sampleRepairs: Repair[] = [
     estimatedCost: '249.99',
     dateReceived: new Date('2024-07-28T10:30:00Z'),
     repairStatus: 'Pending',
+    paymentStatus: 'Unpaid', // Added paymentStatus
     statusHistory: [{ status: 'Pending', timestamp: new Date('2024-07-28T10:30:00Z') }],
     usedParts: [],
   },
@@ -38,6 +39,7 @@ const sampleRepairs: Repair[] = [
     estimatedCost: '120.00',
     dateReceived: new Date('2024-07-29T14:00:00Z'),
     repairStatus: 'In Progress',
+    paymentStatus: 'Paid', // Added paymentStatus
     statusHistory: [
       { status: 'Pending', timestamp: new Date('2024-07-29T14:00:00Z') },
       { status: 'In Progress', timestamp: new Date('2024-07-30T09:15:00Z') },
@@ -56,6 +58,7 @@ const sampleRepairs: Repair[] = [
     estimatedCost: '85.50',
     dateReceived: new Date('2024-07-30T11:00:00Z'),
     repairStatus: 'Completed',
+    paymentStatus: 'Paid', // Added paymentStatus
     statusHistory: [
         { status: 'Pending', timestamp: new Date('2024-07-30T11:00:00Z') },
         { status: 'In Progress', timestamp: new Date('2024-07-30T15:30:00Z') },
@@ -75,6 +78,7 @@ const sampleRepairs: Repair[] = [
     estimatedCost: '350.00',
     dateReceived: new Date('2024-07-31T16:45:00Z'),
     repairStatus: 'Pending',
+    paymentStatus: 'Unpaid', // Added paymentStatus
      statusHistory: [{ status: 'Pending', timestamp: new Date('2024-07-31T16:45:00Z') }],
      usedParts: [],
   },
@@ -95,6 +99,7 @@ const getInitialState = (): Repair[] => {
           timestamp: new Date(hist.timestamp),
         })) || [{ status: repair.repairStatus, timestamp: new Date(repair.dateReceived) }],
         usedParts: repair.usedParts || [],
+        paymentStatus: repair.paymentStatus || 'Unpaid', // Ensure paymentStatus exists
       }));
       if (parsedRepairs.length > 0) {
         return parsedRepairs;
@@ -111,20 +116,21 @@ const getInitialState = (): Repair[] => {
        timestamp: new Date(hist.timestamp)
      })) || [{ status: repair.repairStatus, timestamp: new Date(repair.dateReceived) }],
      usedParts: repair.usedParts || [],
+     paymentStatus: repair.paymentStatus || 'Unpaid', // Ensure paymentStatus for sample data
    }));
 };
 
 
 export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({children}) => {
   const [repairs, setRepairs] = useState<Repair[]>([]);
-  const { updateItemQuantity, getItemById } = useInventoryContext(); 
+  const { updateItemQuantity, getItemById } = useInventoryContext();
 
   useEffect(() => {
     setRepairs(getInitialState());
   }, []);
 
   useEffect(() => {
-     if (typeof window !== 'undefined' && repairs.length >= 0) { 
+     if (typeof window !== 'undefined' && repairs.length >= 0) {
       localStorage.setItem('repairs', JSON.stringify(repairs));
     }
   }, [repairs]);
@@ -135,6 +141,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
     const repairId = Date.now().toString();
     const usedParts = newRepairData.usedParts || [];
     const initialStatus = newRepairData.repairStatus || 'Pending';
+    const initialPaymentStatus = newRepairData.paymentStatus || 'Unpaid'; // Handle paymentStatus
 
     const repairToAdd: Repair = {
       ...newRepairData,
@@ -142,6 +149,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
       id: repairId,
       dateReceived: now,
       repairStatus: initialStatus,
+      paymentStatus: initialPaymentStatus, // Set paymentStatus
       statusHistory: [{ status: initialStatus, timestamp: now }],
     };
     setRepairs(prevRepairs => [repairToAdd, ...prevRepairs]);
@@ -173,48 +181,41 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
         return;
     }
 
-    // Capture the state of the repair *before* it's updated in the list
-    const oldRepair = { ...repairToUpdate }; 
-    oldRepair.usedParts = oldRepair.usedParts || []; // Ensure oldParts has an array
+    const oldRepair = { ...repairToUpdate };
+    oldRepair.usedParts = oldRepair.usedParts || [];
 
-    // Prepare the fully updated repair data, including new status history
     const newStatusHistory = [...(oldRepair.statusHistory || [{ status: oldRepair.repairStatus, timestamp: oldRepair.dateReceived }])];
     if (updatedRepairData.repairStatus !== oldRepair.repairStatus) {
         newStatusHistory.push({ status: updatedRepairData.repairStatus, timestamp: now });
     }
-    
+
     const fullyUpdatedRepairData: Repair = {
-        ...updatedRepairData,
+        ...updatedRepairData, // This includes the new paymentStatus from the form
         statusHistory: newStatusHistory,
-        usedParts: updatedRepairData.usedParts || [], // Ensure usedParts is an array
+        usedParts: updatedRepairData.usedParts || [],
     };
 
-    // Update the repairs list state
-    setRepairs(prevRepairs => 
+    setRepairs(prevRepairs =>
         prevRepairs.map(r => r.id === fullyUpdatedRepairData.id ? fullyUpdatedRepairData : r)
     );
 
-    // Perform inventory adjustments *after* the repairs state has been updated
     const oldStatusIsDeductible = oldRepair.repairStatus === 'In Progress' || oldRepair.repairStatus === 'Completed';
     const newStatusIsDeductible = fullyUpdatedRepairData.repairStatus === 'In Progress' || fullyUpdatedRepairData.repairStatus === 'Completed';
-    
-    const adjustments = new Map<string, number>(); // partId -> quantityChange (negative to deduct, positive to add back)
+
+    const adjustments = new Map<string, number>();
 
     const oldPartsArray = oldRepair.usedParts;
     const newPartsArray = fullyUpdatedRepairData.usedParts;
 
     if (!oldStatusIsDeductible && newStatusIsDeductible) {
-      // Status changed to deductible: deduct all new parts
       newPartsArray.forEach(part => {
         adjustments.set(part.partId, (adjustments.get(part.partId) || 0) - part.quantity);
       });
     } else if (oldStatusIsDeductible && !newStatusIsDeductible) {
-      // Status changed to non-deductible: restock all old parts
       oldPartsArray.forEach(part => {
         adjustments.set(part.partId, (adjustments.get(part.partId) || 0) + part.quantity);
       });
-    } else if (newStatusIsDeductible) { 
-      // Both old and new status are deductible: compare parts lists for differences
+    } else if (newStatusIsDeductible) {
       const oldPartsMap = new Map(oldPartsArray.map(p => [p.partId, p.quantity]));
       const newPartsMap = new Map(newPartsArray.map(p => [p.partId, p.quantity]));
 
@@ -223,12 +224,10 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
       allPartIds.forEach(partId => {
         const oldQty = oldPartsMap.get(partId) || 0;
         const newQty = newPartsMap.get(partId) || 0;
-        const diff = newQty - oldQty; // Positive if quantity increased/added, negative if decreased/removed
+        const diff = newQty - oldQty;
 
         if (diff !== 0) {
-          // If diff is positive, newQty > oldQty, meaning more parts are used, so deduct from stock (-diff)
-          // If diff is negative, newQty < oldQty, meaning fewer parts are used, so add back to stock (-diff will be positive)
-          adjustments.set(partId, (adjustments.get(partId) || 0) - diff); 
+          adjustments.set(partId, (adjustments.get(partId) || 0) - diff);
         }
       });
     }
@@ -237,12 +236,11 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
       if (quantityChange !== 0) {
           const item = getItemById(partId);
           if(item) {
-              // If quantityChange is negative (deducting)
               if (quantityChange < 0 && (item.quantityInStock ?? 0) < Math.abs(quantityChange)) {
                   console.warn(`Not enough stock for ${item.itemName} to deduct ${Math.abs(quantityChange)}. Available: ${item.quantityInStock}. Deducting available stock.`);
-                  updateItemQuantity(partId, -(item.quantityInStock ?? 0)); // Deduct only what's available
+                  updateItemQuantity(partId, -(item.quantityInStock ?? 0));
               } else {
-                  updateItemQuantity(partId, quantityChange); // Apply the calculated change
+                  updateItemQuantity(partId, quantityChange);
               }
           } else {
                console.warn(`Inventory item with ID ${partId} not found for adjustment.`);
@@ -250,7 +248,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
       }
     });
 
-  }, [repairs, updateItemQuantity, getItemById]); // Added 'repairs' to dependency array
+  }, [repairs, updateItemQuantity, getItemById]);
 
 
   const deleteRepair = useCallback((id: string) => {
@@ -259,7 +257,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
         const statusWasDeductible = repairToDelete.repairStatus === 'In Progress' || repairToDelete.repairStatus === 'Completed';
         if (statusWasDeductible && repairToDelete.usedParts && repairToDelete.usedParts.length > 0) {
             repairToDelete.usedParts.forEach(part => {
-                updateItemQuantity(part.partId, part.quantity); // Restock: quantity is positive
+                updateItemQuantity(part.partId, part.quantity);
             });
         }
     }
@@ -288,4 +286,3 @@ export const useRepairContext = () => {
   }
   return context;
 };
-

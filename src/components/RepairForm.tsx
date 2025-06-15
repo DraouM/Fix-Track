@@ -1,9 +1,8 @@
-
 // src/components/RepairForm.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useForm, useFieldArray, FormProvider as RHFFormProvider } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -17,21 +16,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Form, // This is RHFFormProvider aliased via components/ui/form
+  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'; // These are the ShadCN form components
+} from '@/components/ui/form'; 
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { useRepairContext } from '@/context/RepairContext';
 import { useInventoryContext } from '@/context/InventoryContext';
-import type { Repair, RepairStatus, UsedPart } from '@/types/repair';
+import type { Repair, RepairStatus } from '@/types/repair';
 import type { InventoryItem } from '@/types/inventory';
-import { analyzeRepairIssue, type AnalyzeRepairIssueInput, type AnalyzeRepairIssueOutput } from '@/ai/flows/analyze-repair-issue';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const repairFormSchema = z.object({
@@ -72,7 +70,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const { addRepair, updateRepair } = useRepairContext();
   const { inventoryItems, getItemById } = useInventoryContext();
   const { toast } = useToast();
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const defaultValues = repairToEdit
     ? {
@@ -80,8 +77,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
         estimatedCost: repairToEdit.estimatedCost.toString(),
         usedParts: repairToEdit.usedParts?.map(p => ({
           ...p,
-          quantity: p.quantity.toString(), // Keep as string for form input
-          unitCost: p.unitCost.toString(), // Keep as string for form input
+          quantity: p.quantity.toString(), 
+          unitCost: p.unitCost.toString(), 
         })) || [],
       }
     : {
@@ -140,60 +137,10 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     setSearchTerm('');
   };
 
-  const handleAnalyzeIssue = async () => {
-    const issueDescription = form.getValues("issueDescription");
-    const deviceModel = form.getValues("deviceModel");
-    const deviceBrand = form.getValues("deviceBrand");
-
-    if (!issueDescription || !deviceModel || !deviceBrand) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in device brand, model, and issue description to analyze.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsAnalyzing(true);
-    try {
-      const input: AnalyzeRepairIssueInput = { issueDescription, deviceModel, deviceBrand };
-      const result: AnalyzeRepairIssueOutput = await analyzeRepairIssue(input);
-
-      toast({
-        title: "AI Analysis Complete",
-        description: (
-          <div>
-            <p>Possible Causes: {result.possibleCauses.join(', ')}</p>
-            <p>Suggested Solutions: {result.suggestedSolutions.join(', ')}</p>
-            {result.partsNeeded && result.partsNeeded.length > 0 && (
-              <>
-                <p className="font-semibold mt-2">Suggested Parts:</p>
-                <ul className="list-disc list-inside">
-                  {result.partsNeeded.map((part, index) => <li key={index}>{part}</li>)}
-                </ul>
-              </>
-            )}
-          </div>
-        ),
-        duration: 9000,
-      });
-
-    } catch (error) {
-      console.error("Error analyzing repair issue:", error);
-      toast({
-        title: "AI Analysis Failed",
-        description: "Could not analyze the repair issue at this time.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
   const onSubmit = (data: RepairFormValues) => {
     const processedData = {
       ...data,
-      estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(), // Keep as string
+      estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(), 
       usedParts: data.usedParts?.map(p => ({
         ...p,
         quantity: parseInt(p.quantity as unknown as string, 10),
@@ -207,13 +154,13 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
         id: repairToEdit.id,
         dateReceived: repairToEdit.dateReceived,
         statusHistory: repairToEdit.statusHistory
-      } as Repair); // Ensure it matches Repair type
+      } as Repair); 
       toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
       toast({ title: 'Repair Added', description: `New repair for ${data.customerName} has been added.` });
     }
-    form.reset(defaultValues); // Reset to original default values (empty or edit state)
+    form.reset(defaultValues); 
     onSuccess?.();
   };
 
@@ -297,11 +244,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             </FormItem>
           )}
         />
-        <Button type="button" onClick={handleAnalyzeIssue} variant="outline" className="mt-2 w-full md:w-auto" disabled={isAnalyzing}>
-            {isAnalyzing ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : <Icons.search className="mr-2 h-4 w-4" />}
-            Analyze Issue with AI
-        </Button>
-
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <FormField
             control={form.control}
@@ -380,7 +323,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             if (repairToEdit && repairToEdit.usedParts) {
               const existingPartInThisRepair = repairToEdit.usedParts.find(p => p.partId === partId);
               if (existingPartInThisRepair) {
-                // Ensure this is a number before adding
                 quantityCurrentlyInThisRepair = Number(existingPartInThisRepair.quantity) || 0;
               }
             }
@@ -413,14 +355,12 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                           type="number"
                           {...quantityField}
                           min="1"
-                          max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"} // Prevent max 0 if stock is 0 but part was already there
+                          max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"} 
                           onChange={(e) => {
                             let value = parseInt(e.target.value, 10);
                             if (isNaN(value)) value = 1;
-                            // Allow decreasing quantity even if effectiveMaxQuantity is low (e.g. current stock 0, repair had 2, user wants to set to 1)
-                            // The main check is that it shouldn't exceed total available (inventory + what this repair originally had)
                             if (value > effectiveMaxQuantity && effectiveMaxQuantity > 0) value = effectiveMaxQuantity;
-                            else if (value > 1 && effectiveMaxQuantity <= 0) value = 1; // If no stock and not in repair, cap at 1 if user forces
+                            else if (value > 1 && effectiveMaxQuantity <= 0) value = 1; 
                             
                             if (value < 1) value = 1;
                             quantityField.onChange(value.toString());
@@ -467,7 +407,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
         </div>
 
         <div className="flex justify-end pt-4 sticky bottom-0 bg-background pb-4">
-          <Button type="submit" disabled={form.formState.isSubmitting || isAnalyzing}>
+          <Button type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? (
               <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
             ) : repairToEdit ? (
@@ -482,4 +422,3 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </Form>
   );
 }
-

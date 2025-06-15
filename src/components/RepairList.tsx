@@ -48,15 +48,6 @@ export function RepairList({ onEditRepair }: RepairListProps) {
     }
   };
 
-  // This function is no longer used for inline editing in the table,
-  // but kept in case it's needed for other functionality later.
-  // const handlePaymentStatusChange = (repairId: string, newPaymentStatus: PaymentStatus) => {
-  //   const repairToUpdate = repairs.find(r => r.id === repairId);
-  //   if (repairToUpdate) {
-  //     updateRepair({...repairToUpdate, paymentStatus: newPaymentStatus});
-  //   }
-  // };
-
   const getStatusColorClass = (status: RepairStatus): string => {
     switch (status) {
       case 'Completed':
@@ -113,7 +104,7 @@ export function RepairList({ onEditRepair }: RepairListProps) {
           <TableBody>
             {repairs.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={8} className="text-center h-24"> {/* Adjusted colSpan */}
+                    <TableCell colSpan={8} className="text-center h-24">
                         No repairs found. Click "Add New Repair" to get started.
                     </TableCell>
                 </TableRow>
@@ -127,8 +118,7 @@ export function RepairList({ onEditRepair }: RepairListProps) {
                         'border-l-4',
                         getStatusColorClass(repair.repairStatus)
                         )}
-                    >
-                        <TableCell className="font-mono text-xs">{repair.id.slice(-6)}</TableCell> {/* Display last 6 chars of ID */}
+                    ><TableCell className="font-mono text-xs">{repair.id.slice(-6)}</TableCell>
                         <TableCell>{repair.customerName}</TableCell>
                         <TableCell>{repair.deviceBrand} {repair.deviceModel}</TableCell>
                         <TableCell className="max-w-xs truncate hidden md:table-cell">{repair.issueDescription}</TableCell>
@@ -188,23 +178,3 @@ export function RepairList({ onEditRepair }: RepairListProps) {
     </div>
   );
 }
-
-// Simple Icon component - This was unused before, can be removed if Icons.search etc. are preferred.
-// function Icon({ ...props }) {
-//     return (
-//         <svg
-//             {...props}
-//             xmlns="http://www.w3.org/2000/svg"
-//             width="24"
-//             height="24"
-//             viewBox="0 0 24 24"
-//             fill="none"
-//             stroke="currentColor"
-//             strokeWidth="2"
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//         >
-//         </svg>
-//     )
-// }
-

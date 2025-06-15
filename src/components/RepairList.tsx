@@ -27,10 +27,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2, DollarSign } from 'lucide-react'; // Added Edit and Trash2
+import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import {RepairDetail} from './RepairDetail';
 import {cn} from '@/lib/utils';
-import type {Repair, RepairStatus, PaymentStatus} from '@/types/repair'; // Import PaymentStatus
+import type {Repair, RepairStatus, PaymentStatus} from '@/types/repair';
 import { Icons } from '@/components/icons';
 
 interface RepairListProps {
@@ -48,12 +48,14 @@ export function RepairList({ onEditRepair }: RepairListProps) {
     }
   };
 
-  const handlePaymentStatusChange = (repairId: string, newPaymentStatus: PaymentStatus) => {
-    const repairToUpdate = repairs.find(r => r.id === repairId);
-    if (repairToUpdate) {
-      updateRepair({...repairToUpdate, paymentStatus: newPaymentStatus});
-    }
-  };
+  // This function is no longer used for inline editing in the table,
+  // but kept in case it's needed for other functionality later.
+  // const handlePaymentStatusChange = (repairId: string, newPaymentStatus: PaymentStatus) => {
+  //   const repairToUpdate = repairs.find(r => r.id === repairId);
+  //   if (repairToUpdate) {
+  //     updateRepair({...repairToUpdate, paymentStatus: newPaymentStatus});
+  //   }
+  // };
 
   const getStatusColorClass = (status: RepairStatus): string => {
     switch (status) {
@@ -69,19 +71,24 @@ export function RepairList({ onEditRepair }: RepairListProps) {
     }
   };
 
-  const getPaymentStatusVariant = (status: PaymentStatus): "default" | "secondary" | "destructive" | "outline" => {
+  const getPaymentStatusBadgeProps = (status: PaymentStatus): { variant: "default" | "secondary" | "destructive" | "outline"; className: string } => {
     switch (status) {
       case 'Paid':
-        return 'default'; // Typically green, but using primary for consistency with theme
+        return { variant: 'default', className: 'bg-green-500 hover:bg-green-600 text-primary-foreground border-transparent' };
       case 'Unpaid':
-        return 'destructive';
+        return { variant: 'destructive', className: 'bg-destructive hover:bg-destructive/90 text-destructive-foreground border-transparent' };
       case 'Partially Paid':
-        return 'secondary'; // Yellow/Orange
+        return { variant: 'secondary', className: 'bg-yellow-500 hover:bg-yellow-600 text-primary-foreground border-transparent' }; // Use primary-foreground for better contrast on yellow
       case 'Refunded':
-        return 'outline'; // Grey
+        return { variant: 'outline', className: 'text-foreground border-border' };
       default:
-        return 'outline';
+        return { variant: 'outline', className: 'text-foreground border-border' };
     }
+  };
+
+  const handleDeleteRepair = (repairId: string) => {
+    // Consider adding a confirmation dialog here
+    deleteRepair(repairId);
   };
 
 
@@ -111,82 +118,66 @@ export function RepairList({ onEditRepair }: RepairListProps) {
                     </TableCell>
                 </TableRow>
             ) : (
-                repairs.map((repair) => (
-                <TableRow
-                    key={repair.id}
-                    className={cn(
-                    'border-l-4',
-                    getStatusColorClass(repair.repairStatus)
-                    )}
-                >
-                    <TableCell className="font-mono text-xs">{repair.id.slice(-6)}</TableCell> {/* Display last 6 chars of ID */}
-                    <TableCell>{repair.customerName}</TableCell>
-                    <TableCell>{repair.deviceBrand} {repair.deviceModel}</TableCell>
-                    <TableCell className="max-w-xs truncate hidden md:table-cell">{repair.issueDescription}</TableCell>
-                    <TableCell>
-                    <Select
-                        value={repair.repairStatus}
-                        onValueChange={(newStatus: RepairStatus) => handleStatusChange(repair.id, newStatus)}
+                repairs.map((repair) => {
+                  const paymentBadgeProps = getPaymentStatusBadgeProps(repair.paymentStatus);
+                  return (
+                    <TableRow
+                        key={repair.id}
+                        className={cn(
+                        'border-l-4',
+                        getStatusColorClass(repair.repairStatus)
+                        )}
                     >
-                        <SelectTrigger className="w-full md:w-[140px] text-xs md:text-sm h-9 md:h-10">
-                        <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="In Progress">In Progress</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    </TableCell>
-                    <TableCell>
-                       <Select
-                        value={repair.paymentStatus}
-                        onValueChange={(newPaymentStatus: PaymentStatus) => handlePaymentStatusChange(repair.id, newPaymentStatus)}
+                        <TableCell className="font-mono text-xs">{repair.id.slice(-6)}</TableCell> {/* Display last 6 chars of ID */}
+                        <TableCell>{repair.customerName}</TableCell>
+                        <TableCell>{repair.deviceBrand} {repair.deviceModel}</TableCell>
+                        <TableCell className="max-w-xs truncate hidden md:table-cell">{repair.issueDescription}</TableCell>
+                        <TableCell>
+                        <Select
+                            value={repair.repairStatus}
+                            onValueChange={(newStatus: RepairStatus) => handleStatusChange(repair.id, newStatus)}
                         >
-                        <SelectTrigger className="w-full md:w-[130px] text-xs md:text-sm h-9 md:h-10">
-                            <SelectValue placeholder="Payment status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Unpaid">
-                                <Badge variant={getPaymentStatusVariant('Unpaid')} className="mr-1 w-2 h-2 p-0 rounded-full inline-block" /> Unpaid
-                            </SelectItem>
-                            <SelectItem value="Paid">
-                                <Badge variant={getPaymentStatusVariant('Paid')} className="mr-1 w-2 h-2 p-0 rounded-full inline-block bg-green-500" /> Paid
-                            </SelectItem>
-                            <SelectItem value="Partially Paid">
-                                <Badge variant={getPaymentStatusVariant('Partially Paid')} className="mr-1 w-2 h-2 p-0 rounded-full inline-block bg-yellow-500" /> Partially Paid
-                            </SelectItem>
-                             <SelectItem value="Refunded">
-                                <Badge variant={getPaymentStatusVariant('Refunded')} className="mr-1 w-2 h-2 p-0 rounded-full inline-block" /> Refunded
-                            </SelectItem>
-                        </SelectContent>
+                            <SelectTrigger className="w-full md:w-[140px] text-xs md:text-sm h-9 md:h-10">
+                            <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="Pending">Pending</SelectItem>
+                            <SelectItem value="In Progress">In Progress</SelectItem>
+                            <SelectItem value="Completed">Completed</SelectItem>
+                            <SelectItem value="Cancelled">Cancelled</SelectItem>
+                            </SelectContent>
                         </Select>
-                    </TableCell>
-                    <TableCell className="text-right">${repair.estimatedCost}</TableCell>
-                    <TableCell className="text-center">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setSelectedRepairDetail(repair)}>
-                            <Icons.search className="mr-2 h-4 w-4" /> View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onEditRepair(repair)}>
-                            <Edit className="mr-2 h-4 w-4" /> Edit Repair
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDeleteRepair(repair.id)} className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete Repair
-                        </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    </TableCell>
-                </TableRow>
-                ))
+                        </TableCell>
+                        <TableCell>
+                           <Badge variant={paymentBadgeProps.variant} className={cn("text-xs", paymentBadgeProps.className)}>
+                             {repair.paymentStatus}
+                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">${repair.estimatedCost}</TableCell>
+                        <TableCell className="text-center">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setSelectedRepairDetail(repair)}>
+                                <Icons.search className="mr-2 h-4 w-4" /> View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onEditRepair(repair)}>
+                                <Edit className="mr-2 h-4 w-4" /> Edit Repair
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteRepair(repair.id)} className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Repair
+                            </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                  );
+                })
             )}
           </TableBody>
         </Table>
@@ -198,21 +189,22 @@ export function RepairList({ onEditRepair }: RepairListProps) {
   );
 }
 
-// Simple Icon component
-function Icon({ ...props }) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-        </svg>
-    )
-}
+// Simple Icon component - This was unused before, can be removed if Icons.search etc. are preferred.
+// function Icon({ ...props }) {
+//     return (
+//         <svg
+//             {...props}
+//             xmlns="http://www.w3.org/2000/svg"
+//             width="24"
+//             height="24"
+//             viewBox="0 0 24 24"
+//             fill="none"
+//             stroke="currentColor"
+//             strokeWidth="2"
+//             strokeLinecap="round"
+//             strokeLinejoin="round"
+//         >
+//         </svg>
+//     )
+// }
+

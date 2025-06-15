@@ -38,6 +38,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { useRepairContext } from '@/context/RepairContext';
@@ -106,6 +107,21 @@ const PREDEFINED_BRANDS = [
   { value: 'Other', label: 'Other' },
 ];
 
+const getPaymentStatusDotBadgeClass = (status: PaymentStatus): string => {
+  switch (status) {
+    case 'Paid':
+      return 'bg-green-500';
+    case 'Unpaid':
+      return 'bg-red-500'; // Or use theme's destructive color if preferred: 'bg-destructive'
+    case 'Partially Paid':
+      return 'bg-yellow-500';
+    case 'Refunded':
+      return 'bg-gray-400'; // Or use theme's muted/outline
+    default:
+      return 'bg-gray-400';
+  }
+};
+
 
 export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const { repairs, addRepair, updateRepair } = useRepairContext();
@@ -121,7 +137,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
           ...repairToEdit,
           phoneNumber: repairToEdit.phoneNumber || '',
           estimatedCost: parseFloat(repairToEdit.estimatedCost),
-          paymentStatus: repairToEdit.paymentStatus || 'Unpaid', // Added paymentStatus
+          paymentStatus: repairToEdit.paymentStatus || 'Unpaid',
           usedParts: repairToEdit.usedParts?.map(p => ({
             ...p,
             quantity: p.quantity,
@@ -136,7 +152,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
           issueDescription: '',
           estimatedCost: 0,
           repairStatus: 'Pending' as RepairStatus,
-          paymentStatus: 'Unpaid' as PaymentStatus, // Added paymentStatus
+          paymentStatus: 'Unpaid' as PaymentStatus,
           usedParts: [],
         };
   }, [repairToEdit]);
@@ -149,7 +165,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       issueDescription: '',
       estimatedCost: 0,
       repairStatus: 'Pending' as RepairStatus,
-      paymentStatus: 'Unpaid' as PaymentStatus, // Added paymentStatus
+      paymentStatus: 'Unpaid' as PaymentStatus,
       usedParts: [],
   }), []);
 
@@ -201,8 +217,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     const processedData = {
       ...data,
       phoneNumber: data.phoneNumber || undefined,
-      estimatedCost: data.estimatedCost.toString(),
-      paymentStatus: data.paymentStatus, // Ensure paymentStatus is included
+      estimatedCost: data.estimatedCost.toString(), // Ensure estimatedCost is string for Repair type
+      paymentStatus: data.paymentStatus,
       usedParts: data.usedParts?.map(p => ({
         ...p,
       })) || [],
@@ -212,7 +228,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       updateRepair({
         ...repairToEdit,
         ...processedData,
-      } as Repair);
+      } as Repair); // Ensure all fields of Repair are present
       toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
@@ -376,7 +392,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                               value={model.label}
                               key={model.value}
                               onSelect={(currentValue) => {
-                                form.setValue("deviceModel", currentValue);
+                                form.setValue("deviceModel", model.label); // Ensure label is set
                                 setModelPopoverOpen(false);
                               }}
                             >
@@ -416,7 +432,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4"> {/* Adjusted for 3 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <FormField
             control={form.control}
             name="estimatedCost"
@@ -424,7 +440,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
               <FormItem>
                 <FormLabel>Estimated Cost ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 99.99" {...field} value={field.value || ''} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} step="0.01" />
+                  <Input type="number" placeholder="e.g., 99.99" {...field} value={String(field.value || '')} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} step="0.01" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -466,10 +482,14 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Unpaid">Unpaid</SelectItem>
-                    <SelectItem value="Paid">Paid</SelectItem>
-                    <SelectItem value="Partially Paid">Partially Paid</SelectItem>
-                    <SelectItem value="Refunded">Refunded</SelectItem>
+                    {(['Unpaid', 'Paid', 'Partially Paid', 'Refunded'] as PaymentStatus[]).map(status => (
+                      <SelectItem key={status} value={status}>
+                        <div className="flex items-center">
+                          <Badge className={cn("mr-2 h-2 w-2 p-0 rounded-full", getPaymentStatusDotBadgeClass(status))} />
+                          {status}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -548,7 +568,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <Input
                           type="number"
                           {...quantityField}
-                          value={quantityField.value || ''}
+                          value={String(quantityField.value || '')}
                           min="1"
                           max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"}
                           onChange={(e) => {
@@ -567,7 +587,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                       {inventoryItem && currentInventoryStock === 0 && quantityCurrentlyInThisRepair === 0 && (
                         <p className="text-xs text-destructive">Out of stock</p>
                       )}
-                       {inventoryItem && currentInventoryStock < (quantityField.value || 0) - quantityCurrentlyInThisRepair && (
+                       {inventoryItem && currentInventoryStock < (Number(quantityField.value) || 0) - quantityCurrentlyInThisRepair && (
                         <p className="text-xs text-destructive">Requested quantity exceeds available stock.</p>
                       )}
                     </FormItem>
@@ -580,7 +600,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     <FormItem>
                       <FormLabel>Unit Cost ($)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...costField} value={costField.value || ''} step="0.01" readOnly className="bg-muted/50" />
+                        <Input type="number" {...costField} value={String(costField.value || '')} step="0.01" readOnly className="bg-muted/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -618,3 +638,4 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </Form>
   );
 }
+

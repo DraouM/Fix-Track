@@ -2,7 +2,7 @@
 // src/components/RepairForm.tsx
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -114,31 +114,33 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const [brandPopoverOpen, setBrandPopoverOpen] = useState(false);
   const [modelPopoverOpen, setModelPopoverOpen] = useState(false);
 
-  const defaultValues = repairToEdit
-    ? {
-        ...repairToEdit,
-        phoneNumber: repairToEdit.phoneNumber || '',
-        estimatedCost: repairToEdit.estimatedCost.toString(),
-        usedParts: repairToEdit.usedParts?.map(p => ({
-          ...p,
-          quantity: p.quantity.toString(),
-          unitCost: p.unitCost.toString(),
-        })) || [],
-      }
-    : {
-        customerName: '',
-        phoneNumber: '',
-        deviceBrand: '',
-        deviceModel: '',
-        issueDescription: '',
-        estimatedCost: '',
-        repairStatus: 'Pending' as RepairStatus,
-        usedParts: [],
-      };
+  const memoizedDefaultValues = useMemo(() => {
+    return repairToEdit
+      ? {
+          ...repairToEdit,
+          phoneNumber: repairToEdit.phoneNumber || '',
+          estimatedCost: repairToEdit.estimatedCost.toString(),
+          usedParts: repairToEdit.usedParts?.map(p => ({
+            ...p,
+            quantity: p.quantity.toString(),
+            unitCost: p.unitCost.toString(),
+          })) || [],
+        }
+      : {
+          customerName: '',
+          phoneNumber: '',
+          deviceBrand: '',
+          deviceModel: '',
+          issueDescription: '',
+          estimatedCost: '',
+          repairStatus: 'Pending' as RepairStatus,
+          usedParts: [],
+        };
+  }, [repairToEdit]);
 
   const form = useForm<RepairFormValues>({
     resolver: zodResolver(repairFormSchema),
-    defaultValues,
+    defaultValues: memoizedDefaultValues,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -150,21 +152,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const [availableParts, setAvailableParts] = useState<InventoryItem[]>([]);
 
   useEffect(() => {
-    if (repairToEdit) {
-      form.reset({
-        ...repairToEdit,
-        phoneNumber: repairToEdit.phoneNumber || '', // Ensure empty string if null/undefined
-        estimatedCost: repairToEdit.estimatedCost.toString(),
-        usedParts: repairToEdit.usedParts?.map(p => ({
-          ...p,
-          quantity: p.quantity.toString(),
-          unitCost: p.unitCost.toString(),
-        })) || [],
-      });
-    } else {
-        form.reset(defaultValues);
-    }
-  }, [repairToEdit, form, defaultValues]);
+    form.reset(memoizedDefaultValues);
+  }, [memoizedDefaultValues, form.reset]);
 
   useEffect(() => {
     if (searchTerm) {
@@ -195,28 +184,39 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const onSubmit = (data: RepairFormValues) => {
     const processedData = {
       ...data,
-      phoneNumber: data.phoneNumber || undefined, // Ensure undefined if empty string for optionality
-      estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(),
+      phoneNumber: data.phoneNumber || undefined, 
+      estimatedCost: data.estimatedCost.toString(), // Ensure string for Repair type
       usedParts: data.usedParts?.map(p => ({
         ...p,
-        quantity: parseInt(p.quantity as unknown as string, 10),
-        unitCost: parseFloat(p.unitCost as unknown as string),
+        // quantity and unitCost are already numbers from Zod schema
       })) || [],
     };
 
     if (repairToEdit) {
       updateRepair({
-        ...processedData,
-        id: repairToEdit.id,
-        dateReceived: repairToEdit.dateReceived,
-        statusHistory: repairToEdit.statusHistory
+        ...repairToEdit, // Keep original id, dateReceived, statusHistory
+        ...processedData, // Apply form data
       } as Repair);
       toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
       toast({ title: 'Repair Added', description: `New repair for ${data.customerName} has been added.` });
     }
-    form.reset(defaultValues);
+    
+    // Reset to a "new form" state after successful submission
+    // This memoized object is for the "new form" state specifically.
+    const newFormDefaults = useMemo(() => ({
+        customerName: '',
+        phoneNumber: '',
+        deviceBrand: '',
+        deviceModel: '',
+        issueDescription: '',
+        estimatedCost: '',
+        repairStatus: 'Pending' as RepairStatus,
+        usedParts: [],
+    }), []);
+    form.reset(newFormDefaults);
+    
     onSuccess?.();
   };
 
@@ -229,8 +229,11 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const uniqueDeviceModels = React.useMemo(() => {
     const models = new Set<string>();
     repairs.forEach(repair => models.add(repair.deviceModel));
+    // Add current form's model if it's new and not yet in repairs list, for combobox UX
+    const currentFormModel = form.getValues("deviceModel");
+    if(currentFormModel) models.add(currentFormModel);
     return Array.from(models).map(model => ({ value: model, label: model }));
-  }, [repairs]);
+  }, [repairs, form]);
 
   return (
     <Form {...form}>
@@ -256,7 +259,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
               <FormItem>
                 <FormLabel>Phone Number (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="05XX XXX XXX" {...field} />
+                  <Input placeholder="05XXXXXXXX" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -352,15 +355,17 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                     <Command filter={(value, search) => {
+                        // value is CommandItem's value prop (model.label)
+                        // search is CommandInput's current value
                         if (value.toLowerCase().includes(search.toLowerCase())) return 1;
                         return 0;
                       }}
                     >
                       <CommandInput
                         placeholder="Search or type model..."
-                        value={field.value}
-                        onValueChange={(currentValue) => {
-                           form.setValue("deviceModel", currentValue);
+                        value={field.value} // Bind to form field value for typing
+                        onValueChange={(currentInputValue) => {
+                           form.setValue("deviceModel", currentInputValue); // Update form as user types
                         }}
                       />
                       <CommandList>
@@ -368,17 +373,17 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <CommandGroup>
                           {uniqueDeviceModels.map((model) => (
                             <CommandItem
-                              value={model.label}
+                              value={model.label} // Value used for filtering and onSelect
                               key={model.value}
-                              onSelect={(currentValue) => {
-                                form.setValue("deviceModel", currentValue === field.value ? "" : currentValue);
+                              onSelect={(currentValue) => { // currentValue is model.label (the CommandItem's value)
+                                form.setValue("deviceModel", currentValue);
                                 setModelPopoverOpen(false);
                               }}
                             >
                               <Icons.check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  model.value === field.value
+                                  model.label === field.value // Compare with model.label
                                     ? "opacity-100"
                                     : "opacity-0"
                                 )}
@@ -419,7 +424,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
               <FormItem>
                 <FormLabel>Estimated Cost ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 99.99" {...field} step="0.01" />
+                  {/* field value from RHF is number due to Zod, but input expects string */}
+                  <Input type="number" placeholder="e.g., 99.99" {...field} value={field.value || ''} step="0.01" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -520,15 +526,17 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <Input
                           type="number"
                           {...quantityField}
+                          value={quantityField.value || ''} // Ensure string for input
                           min="1"
                           max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"}
                           onChange={(e) => {
                             let value = parseInt(e.target.value, 10);
                             if (isNaN(value)) value = 1;
-                            if (value > effectiveMaxQuantity && effectiveMaxQuantity > 0) value = effectiveMaxQuantity;
-                            else if (value > 1 && effectiveMaxQuantity <= 0) value = 1;
-
+                            
+                            const maxQty = effectiveMaxQuantity > 0 ? effectiveMaxQuantity : 1;
+                            if (value > maxQty) value = maxQty;
                             if (value < 1) value = 1;
+                            
                             quantityField.onChange(value.toString());
                           }}
                         />
@@ -537,7 +545,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                       {inventoryItem && currentInventoryStock === 0 && quantityCurrentlyInThisRepair === 0 && (
                         <p className="text-xs text-destructive">Out of stock</p>
                       )}
-                       {inventoryItem && currentInventoryStock < (parseInt(quantityField.value as string, 10) || 0) - quantityCurrentlyInThisRepair && (
+                       {inventoryItem && currentInventoryStock < (parseInt(quantityField.value as unknown as string, 10) || 0) - quantityCurrentlyInThisRepair && (
                         <p className="text-xs text-destructive">Requested quantity exceeds available stock.</p>
                       )}
                     </FormItem>
@@ -550,7 +558,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     <FormItem>
                       <FormLabel>Unit Cost ($)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...costField} step="0.01" readOnly className="bg-muted/50" />
+                        <Input type="number" {...costField} value={costField.value || ''} step="0.01" readOnly className="bg-muted/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -588,6 +596,3 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </Form>
   );
 }
-
-
-    

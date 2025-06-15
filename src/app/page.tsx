@@ -26,14 +26,21 @@ export default function RepairsPage() {
     setRepairToEdit(null); // Clear item being edited
   }, []);
 
-  const openAddForm = () => {
+  const openAddForm = useCallback(() => {
     setRepairToEdit(null); // Ensure we are adding, not editing
     setIsFormOpen(true);
-  }
+  }, []);
 
   const openEditForm = useCallback((repair: Repair) => {
     setRepairToEdit(repair);
     setIsFormOpen(true);
+  }, []);
+
+  const handleDialogOpeChange = useCallback((isOpen: boolean) => {
+    setIsFormOpen(isOpen);
+    if (!isOpen) {
+      setRepairToEdit(null); // Clear edit state if dialog is closed by any means
+    }
   }, []);
 
 
@@ -41,10 +48,7 @@ export default function RepairsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Repair Dashboard</h1>
-         <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
-            setIsFormOpen(isOpen);
-            if (!isOpen) setRepairToEdit(null); // Clear edit state if dialog is closed
-         }}> 
+         <Dialog open={isFormOpen} onOpenChange={handleDialogOpeChange}> 
           <DialogTrigger asChild>
              <Button onClick={openAddForm}>
                 <Icons.plusCircle className="mr-2 h-4 w-4" />

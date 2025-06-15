@@ -148,12 +148,12 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       ? {
           ...repairToEdit,
           phoneNumber: repairToEdit.phoneNumber || '',
-          estimatedCost: parseFloat(repairToEdit.estimatedCost) || 0, // Ensure it's a number for the form
+          estimatedCost: parseFloat(repairToEdit.estimatedCost) || 0, 
           paymentStatus: repairToEdit.paymentStatus || 'Unpaid',
           usedParts: repairToEdit.usedParts?.map(p => ({
             ...p,
-            quantity: Number(p.quantity) || 1, // Ensure numbers
-            unitCost: Number(p.unitCost) || 0, // Ensure numbers
+            quantity: Number(p.quantity) || 1, 
+            unitCost: Number(p.unitCost) || 0, 
           })) || [],
         }
       : newFormDefaults;
@@ -173,10 +173,8 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [availableParts, setAvailableParts] = useState<InventoryItem[]>([]);
 
-  // Effect to reset form when defaultValues change (e.g., when repairToEdit changes)
-  useEffect(() => {
-    form.reset(memoizedDefaultValues);
-  }, [memoizedDefaultValues, form.reset]);
+  // The form will re-initialize via the 'key' prop on RepairForm in the parent component.
+  // Explicit form.reset() in useEffect is removed to simplify and rely on key-based re-mount.
 
   useEffect(() => {
     if (searchTerm) {
@@ -207,13 +205,13 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const onSubmit = (data: RepairFormValues) => {
     const processedData = {
       ...data,
-      phoneNumber: data.phoneNumber || undefined, // Keep undefined if empty string for consistency with Repair type
-      estimatedCost: data.estimatedCost.toString(), // Convert back to string for Repair type
+      phoneNumber: data.phoneNumber || undefined, 
+      estimatedCost: data.estimatedCost.toString(), 
       paymentStatus: data.paymentStatus,
       usedParts: data.usedParts?.map(p => ({
         ...p,
-        itemType: p.itemType as ItemType, // Assert to ItemType
-        phoneBrand: p.phoneBrand as PhoneBrand, // Assert to PhoneBrand
+        itemType: p.itemType as ItemType, 
+        phoneBrand: p.phoneBrand as PhoneBrand, 
         quantity: Number(p.quantity),
         unitCost: Number(p.unitCost),
       })) || [],
@@ -229,7 +227,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
       toast({ title: 'Repair Added', description: `New repair for ${data.customerName} has been added.` });
     }
-    // Do not call form.reset here. The key change on RepairForm in parent will handle re-initialization.
     onSuccess?.();
   };
 
@@ -373,7 +370,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     >
                       <CommandInput
                         placeholder="Search or type model..."
-                        value={field.value} // Bind to field.value for controlled input behavior
+                        value={field.value} 
                         onValueChange={(currentInputValue) => {
                            form.setValue("deviceModel", currentInputValue, { shouldValidate: true, shouldDirty: true });
                         }}
@@ -383,9 +380,9 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <CommandGroup>
                           {uniqueDeviceModels.map((model) => (
                             <CommandItem
-                              value={model.label} // Use label for matching CommandInput value
-                              key={model.value}  // Use value for key
-                              onSelect={() => { // onSelect uses the current input value if not filtered
+                              value={model.label} 
+                              key={model.value}  
+                              onSelect={() => { 
                                 form.setValue("deviceModel", model.label);
                                 setModelPopoverOpen(false);
                               }}
@@ -393,7 +390,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                               <Icons.check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  model.label === field.value // Compare with field.value for checkmark
+                                  model.label === field.value 
                                     ? "opacity-100"
                                     : "opacity-0"
                                 )}
@@ -632,5 +629,4 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </Form>
   );
 }
-
 

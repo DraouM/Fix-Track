@@ -2,7 +2,7 @@
 'use client';
 
 import React, {createContext, useContext, useState, useEffect, useCallback} from 'react';
-import type { Repair, RepairStatus, UsedPart, PaymentStatus } from '@/types/repair'; // Import PaymentStatus
+import type { Repair, RepairStatus, UsedPart, PaymentStatus } from '@/types/repair';
 import { useInventoryContext } from './InventoryContext';
 
 interface RepairContextType {
@@ -25,7 +25,7 @@ const sampleRepairs: Repair[] = [
     estimatedCost: '249.99',
     dateReceived: new Date('2024-07-28T10:30:00Z'),
     repairStatus: 'Pending',
-    paymentStatus: 'Unpaid', // Added paymentStatus
+    paymentStatus: 'Unpaid',
     statusHistory: [{ status: 'Pending', timestamp: new Date('2024-07-28T10:30:00Z') }],
     usedParts: [],
   },
@@ -39,7 +39,7 @@ const sampleRepairs: Repair[] = [
     estimatedCost: '120.00',
     dateReceived: new Date('2024-07-29T14:00:00Z'),
     repairStatus: 'In Progress',
-    paymentStatus: 'Paid', // Added paymentStatus
+    paymentStatus: 'Paid',
     statusHistory: [
       { status: 'Pending', timestamp: new Date('2024-07-29T14:00:00Z') },
       { status: 'In Progress', timestamp: new Date('2024-07-30T09:15:00Z') },
@@ -58,7 +58,7 @@ const sampleRepairs: Repair[] = [
     estimatedCost: '85.50',
     dateReceived: new Date('2024-07-30T11:00:00Z'),
     repairStatus: 'Completed',
-    paymentStatus: 'Paid', // Added paymentStatus
+    paymentStatus: 'Paid',
     statusHistory: [
         { status: 'Pending', timestamp: new Date('2024-07-30T11:00:00Z') },
         { status: 'In Progress', timestamp: new Date('2024-07-30T15:30:00Z') },
@@ -78,7 +78,7 @@ const sampleRepairs: Repair[] = [
     estimatedCost: '350.00',
     dateReceived: new Date('2024-07-31T16:45:00Z'),
     repairStatus: 'Pending',
-    paymentStatus: 'Unpaid', // Added paymentStatus
+    paymentStatus: 'Unpaid',
      statusHistory: [{ status: 'Pending', timestamp: new Date('2024-07-31T16:45:00Z') }],
      usedParts: [],
   },
@@ -99,7 +99,7 @@ const getInitialState = (): Repair[] => {
           timestamp: new Date(hist.timestamp),
         })) || [{ status: repair.repairStatus, timestamp: new Date(repair.dateReceived) }],
         usedParts: repair.usedParts || [],
-        paymentStatus: repair.paymentStatus || 'Unpaid', // Ensure paymentStatus exists
+        paymentStatus: repair.paymentStatus || 'Unpaid',
       }));
       if (parsedRepairs.length > 0) {
         return parsedRepairs;
@@ -116,7 +116,7 @@ const getInitialState = (): Repair[] => {
        timestamp: new Date(hist.timestamp)
      })) || [{ status: repair.repairStatus, timestamp: new Date(repair.dateReceived) }],
      usedParts: repair.usedParts || [],
-     paymentStatus: repair.paymentStatus || 'Unpaid', // Ensure paymentStatus for sample data
+     paymentStatus: repair.paymentStatus || 'Unpaid',
    }));
 };
 
@@ -139,24 +139,19 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
   const addRepair = useCallback((newRepairData: Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>) => {
     const now = new Date();
     const repairId = Date.now().toString();
-    const usedParts = newRepairData.usedParts || [];
-    const initialStatus = newRepairData.repairStatus || 'Pending';
-    const initialPaymentStatus = newRepairData.paymentStatus || 'Unpaid'; // Handle paymentStatus
-
+    
+    // newRepairData comes from RepairForm and includes .usedParts (as array), .repairStatus, and .paymentStatus
     const repairToAdd: Repair = {
-      ...newRepairData,
-      usedParts,
+      ...newRepairData, 
       id: repairId,
       dateReceived: now,
-      repairStatus: initialStatus,
-      paymentStatus: initialPaymentStatus, // Set paymentStatus
-      statusHistory: [{ status: initialStatus, timestamp: now }],
+      statusHistory: [{ status: newRepairData.repairStatus, timestamp: now }],
     };
     setRepairs(prevRepairs => [repairToAdd, ...prevRepairs]);
 
-    const newStatusIsDeductible = initialStatus === 'In Progress' || initialStatus === 'Completed';
-    if (newStatusIsDeductible && usedParts.length > 0) {
-      usedParts.forEach(part => {
+    const newStatusIsDeductible = repairToAdd.repairStatus === 'In Progress' || repairToAdd.repairStatus === 'Completed';
+    if (newStatusIsDeductible && repairToAdd.usedParts && repairToAdd.usedParts.length > 0) {
+      repairToAdd.usedParts.forEach(part => {
         const item = getItemById(part.partId);
         if (item) {
              if ((item.quantityInStock ?? 0) < part.quantity) {
@@ -190,7 +185,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
     }
 
     const fullyUpdatedRepairData: Repair = {
-        ...updatedRepairData, // This includes the new paymentStatus from the form
+        ...updatedRepairData, 
         statusHistory: newStatusHistory,
         usedParts: updatedRepairData.usedParts || [],
     };
@@ -204,8 +199,9 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
 
     const adjustments = new Map<string, number>();
 
-    const oldPartsArray = oldRepair.usedParts;
-    const newPartsArray = fullyUpdatedRepairData.usedParts;
+    const oldPartsArray = oldRepair.usedParts || [];
+    const newPartsArray = fullyUpdatedRepairData.usedParts || [];
+
 
     if (!oldStatusIsDeductible && newStatusIsDeductible) {
       newPartsArray.forEach(part => {
@@ -215,7 +211,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
       oldPartsArray.forEach(part => {
         adjustments.set(part.partId, (adjustments.get(part.partId) || 0) + part.quantity);
       });
-    } else if (newStatusIsDeductible) {
+    } else if (newStatusIsDeductible) { 
       const oldPartsMap = new Map(oldPartsArray.map(p => [p.partId, p.quantity]));
       const newPartsMap = new Map(newPartsArray.map(p => [p.partId, p.quantity]));
 
@@ -224,14 +220,14 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({childre
       allPartIds.forEach(partId => {
         const oldQty = oldPartsMap.get(partId) || 0;
         const newQty = newPartsMap.get(partId) || 0;
-        const diff = newQty - oldQty;
+        const diff = newQty - oldQty; 
 
         if (diff !== 0) {
           adjustments.set(partId, (adjustments.get(partId) || 0) - diff);
         }
       });
     }
-
+    
     adjustments.forEach((quantityChange, partId) => {
       if (quantityChange !== 0) {
           const item = getItemById(partId);

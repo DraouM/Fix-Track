@@ -43,8 +43,8 @@ import { Icons } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { useRepairContext } from '@/context/RepairContext';
 import { useInventoryContext } from '@/context/InventoryContext';
-import type { Repair, RepairStatus, PaymentStatus } from '@/types/repair'; // Import PaymentStatus
-import type { InventoryItem } from '@/types/inventory';
+import type { Repair, RepairStatus, PaymentStatus } from '@/types/repair';
+import type { InventoryItem, ItemType, PhoneBrand } from '@/types/inventory';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -62,12 +62,12 @@ const repairFormSchema = z.object({
     z.number().positive({ message: "Estimated cost must be a positive number." })
   ),
   repairStatus: z.enum(['Pending', 'In Progress', 'Completed', 'Cancelled'] as [RepairStatus, ...RepairStatus[]]),
-  paymentStatus: z.enum(['Unpaid', 'Paid', 'Partially Paid', 'Refunded'] as [PaymentStatus, ...PaymentStatus[]]), // Added paymentStatus
+  paymentStatus: z.enum(['Unpaid', 'Paid', 'Partially Paid', 'Refunded'] as [PaymentStatus, ...PaymentStatus[]]),
   usedParts: z.array(z.object({
     partId: z.string(),
     name: z.string(),
-    itemType: z.string(),
-    phoneBrand: z.string(),
+    itemType: z.string(), // Kept as string for schema, actual value is ItemType
+    phoneBrand: z.string(), // Kept as string for schema, actual value is PhoneBrand
     quantity: z.preprocess(
       (val) => parseInt(z.string().parse(val), 10),
       z.number().int().min(1, "Quantity must be at least 1.")
@@ -112,11 +112,11 @@ const getPaymentStatusDotBadgeClass = (status: PaymentStatus): string => {
     case 'Paid':
       return 'bg-green-500';
     case 'Unpaid':
-      return 'bg-red-500'; // Or use theme's destructive color if preferred: 'bg-destructive'
+      return 'bg-red-500';
     case 'Partially Paid':
       return 'bg-yellow-500';
     case 'Refunded':
-      return 'bg-gray-400'; // Or use theme's muted/outline
+      return 'bg-gray-400';
     default:
       return 'bg-gray-400';
   }
@@ -131,43 +131,33 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const [brandPopoverOpen, setBrandPopoverOpen] = useState(false);
   const [modelPopoverOpen, setModelPopoverOpen] = useState(false);
 
+  const newFormDefaults = useMemo(() => ({
+    customerName: '',
+    phoneNumber: '',
+    deviceBrand: '',
+    deviceModel: '',
+    issueDescription: '',
+    estimatedCost: 0,
+    repairStatus: 'Pending' as RepairStatus,
+    paymentStatus: 'Unpaid' as PaymentStatus,
+    usedParts: [],
+  }), []);
+
   const memoizedDefaultValues = useMemo(() => {
     return repairToEdit
       ? {
           ...repairToEdit,
           phoneNumber: repairToEdit.phoneNumber || '',
-          estimatedCost: parseFloat(repairToEdit.estimatedCost),
+          estimatedCost: parseFloat(repairToEdit.estimatedCost) || 0, // Ensure it's a number for the form
           paymentStatus: repairToEdit.paymentStatus || 'Unpaid',
           usedParts: repairToEdit.usedParts?.map(p => ({
             ...p,
-            quantity: p.quantity,
-            unitCost: p.unitCost,
+            quantity: Number(p.quantity) || 1, // Ensure numbers
+            unitCost: Number(p.unitCost) || 0, // Ensure numbers
           })) || [],
         }
-      : {
-          customerName: '',
-          phoneNumber: '',
-          deviceBrand: '',
-          deviceModel: '',
-          issueDescription: '',
-          estimatedCost: 0,
-          repairStatus: 'Pending' as RepairStatus,
-          paymentStatus: 'Unpaid' as PaymentStatus,
-          usedParts: [],
-        };
-  }, [repairToEdit]);
-
-  const newFormDefaults = useMemo(() => ({
-      customerName: '',
-      phoneNumber: '',
-      deviceBrand: '',
-      deviceModel: '',
-      issueDescription: '',
-      estimatedCost: 0,
-      repairStatus: 'Pending' as RepairStatus,
-      paymentStatus: 'Unpaid' as PaymentStatus,
-      usedParts: [],
-  }), []);
+      : newFormDefaults;
+  }, [repairToEdit, newFormDefaults]);
 
 
   const form = useForm<RepairFormValues>({
@@ -183,6 +173,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [availableParts, setAvailableParts] = useState<InventoryItem[]>([]);
 
+  // Effect to reset form when defaultValues change (e.g., when repairToEdit changes)
   useEffect(() => {
     form.reset(memoizedDefaultValues);
   }, [memoizedDefaultValues, form.reset]);
@@ -216,11 +207,15 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const onSubmit = (data: RepairFormValues) => {
     const processedData = {
       ...data,
-      phoneNumber: data.phoneNumber || undefined,
-      estimatedCost: data.estimatedCost.toString(), // Ensure estimatedCost is string for Repair type
+      phoneNumber: data.phoneNumber || undefined, // Keep undefined if empty string for consistency with Repair type
+      estimatedCost: data.estimatedCost.toString(), // Convert back to string for Repair type
       paymentStatus: data.paymentStatus,
       usedParts: data.usedParts?.map(p => ({
         ...p,
+        itemType: p.itemType as ItemType, // Assert to ItemType
+        phoneBrand: p.phoneBrand as PhoneBrand, // Assert to PhoneBrand
+        quantity: Number(p.quantity),
+        unitCost: Number(p.unitCost),
       })) || [],
     };
 
@@ -228,20 +223,19 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       updateRepair({
         ...repairToEdit,
         ...processedData,
-      } as Repair); // Ensure all fields of Repair are present
+      } as Repair);
       toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
     } else {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
       toast({ title: 'Repair Added', description: `New repair for ${data.customerName} has been added.` });
     }
-
-    form.reset(newFormDefaults);
+    // Do not call form.reset here. The key change on RepairForm in parent will handle re-initialization.
     onSuccess?.();
   };
 
   const totalPartsCost = form.watch('usedParts')?.reduce((acc, part) => {
-    const quantity = part.quantity || 0;
-    const cost = part.unitCost || 0;
+    const quantity = Number(part.quantity) || 0;
+    const cost = Number(part.unitCost) || 0;
     return acc + (quantity * cost);
   }, 0) || 0;
 
@@ -275,9 +269,9 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             name="phoneNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone Number (Optional)</FormLabel>
+                <FormLabel>Phone Number (Optional, e.g., 05XXXXXXXX)</FormLabel>
                 <FormControl>
-                  <Input placeholder="05XXXXXXXX" {...field} />
+                  <Input placeholder="0512345678" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -379,9 +373,9 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     >
                       <CommandInput
                         placeholder="Search or type model..."
-                        value={field.value}
+                        value={field.value} // Bind to field.value for controlled input behavior
                         onValueChange={(currentInputValue) => {
-                           form.setValue("deviceModel", currentInputValue);
+                           form.setValue("deviceModel", currentInputValue, { shouldValidate: true, shouldDirty: true });
                         }}
                       />
                       <CommandList>
@@ -389,17 +383,17 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <CommandGroup>
                           {uniqueDeviceModels.map((model) => (
                             <CommandItem
-                              value={model.label}
-                              key={model.value}
-                              onSelect={(currentValue) => {
-                                form.setValue("deviceModel", model.label); // Ensure label is set
+                              value={model.label} // Use label for matching CommandInput value
+                              key={model.value}  // Use value for key
+                              onSelect={() => { // onSelect uses the current input value if not filtered
+                                form.setValue("deviceModel", model.label);
                                 setModelPopoverOpen(false);
                               }}
                             >
                               <Icons.check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  model.label === field.value
+                                  model.label === field.value // Compare with field.value for checkmark
                                     ? "opacity-100"
                                     : "opacity-0"
                                 )}
@@ -440,7 +434,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
               <FormItem>
                 <FormLabel>Estimated Cost ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 99.99" {...field} value={String(field.value || '')} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} step="0.01" />
+                  <Input type="number" placeholder="e.g., 99.99" {...field} value={String(field.value || '0')} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} step="0.01" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -540,7 +534,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                 quantityCurrentlyInThisRepair = Number(existingPartInThisRepair.quantity) || 0;
               }
             }
-
+            
             const effectiveMaxQuantity = currentInventoryStock + quantityCurrentlyInThisRepair;
 
             return (
@@ -568,7 +562,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <Input
                           type="number"
                           {...quantityField}
-                          value={String(quantityField.value || '')}
+                          value={String(quantityField.value || '1')}
                           min="1"
                           max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"}
                           onChange={(e) => {
@@ -600,7 +594,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                     <FormItem>
                       <FormLabel>Unit Cost ($)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...costField} value={String(costField.value || '')} step="0.01" readOnly className="bg-muted/50" />
+                        <Input type="number" {...costField} value={String(costField.value || '0')} step="0.01" readOnly className="bg-muted/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -638,4 +632,5 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </Form>
   );
 }
+
 

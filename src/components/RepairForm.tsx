@@ -1,3 +1,4 @@
+
 // src/components/RepairForm.tsx
 'use client';
 
@@ -48,7 +49,10 @@ import { cn } from '@/lib/utils';
 
 const repairFormSchema = z.object({
   customerName: z.string().min(2, { message: "Customer name must be at least 2 characters." }),
-  phoneNumber: z.string().regex(/^\d{3}-\d{3}-\d{4}$/, { message: "Phone number must be in XXX-XXX-XXXX format." }),
+  phoneNumber: z.string()
+    .regex(/^0[567]\d{8}$/, { message: "Phone number must be a 10-digit Algerian number (e.g., 05XXXXXXXX)." })
+    .optional()
+    .or(z.literal('')),
   deviceBrand: z.string().min(1, { message: "Device brand is required." }),
   deviceModel: z.string().min(1, { message: "Device model is required." }),
   issueDescription: z.string().min(10, { message: "Issue description must be at least 10 characters." }),
@@ -95,6 +99,9 @@ const PREDEFINED_BRANDS = [
   { value: 'Motorola', label: 'Motorola' },
   { value: 'Nokia', label: 'Nokia' },
   { value: 'Microsoft', label: 'Microsoft' },
+  { value: 'Condor', label: 'Condor' },
+  { value: 'Iris', label: 'Iris' },
+  { value: 'StreamSystem', label: 'Stream System' },
   { value: 'Other', label: 'Other' },
 ];
 
@@ -110,6 +117,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const defaultValues = repairToEdit
     ? {
         ...repairToEdit,
+        phoneNumber: repairToEdit.phoneNumber || '',
         estimatedCost: repairToEdit.estimatedCost.toString(),
         usedParts: repairToEdit.usedParts?.map(p => ({
           ...p,
@@ -143,7 +151,18 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
 
   useEffect(() => {
     if (repairToEdit) {
-      form.reset(defaultValues);
+      form.reset({
+        ...repairToEdit,
+        phoneNumber: repairToEdit.phoneNumber || '', // Ensure empty string if null/undefined
+        estimatedCost: repairToEdit.estimatedCost.toString(),
+        usedParts: repairToEdit.usedParts?.map(p => ({
+          ...p,
+          quantity: p.quantity.toString(),
+          unitCost: p.unitCost.toString(),
+        })) || [],
+      });
+    } else {
+        form.reset(defaultValues);
     }
   }, [repairToEdit, form, defaultValues]);
 
@@ -176,6 +195,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const onSubmit = (data: RepairFormValues) => {
     const processedData = {
       ...data,
+      phoneNumber: data.phoneNumber || undefined, // Ensure undefined if empty string for optionality
       estimatedCost: parseFloat(data.estimatedCost as unknown as string).toString(),
       usedParts: data.usedParts?.map(p => ({
         ...p,
@@ -234,9 +254,9 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
             name="phoneNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone Number</FormLabel>
+                <FormLabel>Phone Number (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="XXX-XXX-XXXX" {...field} />
+                  <Input placeholder="05XX XXX XXX" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -568,3 +588,6 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     </Form>
   );
 }
+
+
+    

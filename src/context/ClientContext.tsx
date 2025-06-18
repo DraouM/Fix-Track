@@ -11,6 +11,7 @@ interface ClientContextType {
   deleteClient: (id: string) => void;
   getClientById: (id: string) => Client | undefined;
   recordClientPayment: (clientId: string, amount: number) => void;
+  increaseClientDebt: (clientId: string, amount: number) => void; // New function
   loading: boolean;
 }
 
@@ -43,19 +44,18 @@ const sampleClients: Client[] = [
     name: 'Amina Hamidi',
     phoneNumber: '0562334455',
     address: '101 Rue Emir Abdelkader, Setif',
-    debt: -10.00, // Example of credit
+    debt: -10.00, 
   },
 ];
 
 const getInitialClientsState = (): Client[] => {
   if (typeof window === 'undefined') {
-    return []; // Return empty array or placeholder if on server
+    return []; 
   }
   const savedClients = localStorage.getItem('clients');
   if (savedClients) {
     try {
       const parsedClients = JSON.parse(savedClients) as Client[];
-      // Ensure debt is a number, default to 0 if undefined or null
       const validatedClients = parsedClients.map(client => ({
         ...client,
         debt: (client.debt === undefined || client.debt === null) ? 0 : Number(client.debt)
@@ -67,7 +67,6 @@ const getInitialClientsState = (): Client[] => {
       console.error("Failed to parse clients from localStorage", error);
     }
   }
-  // Ensure sample data also has debt as number
   return sampleClients.map(client => ({
     ...client,
     debt: (client.debt === undefined || client.debt === null) ? 0 : Number(client.debt)
@@ -91,7 +90,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addClient = useCallback((clientData: ClientFormValues) => {
     setClients((prevClients) => [
-      { ...clientData, id: `client_${Date.now().toString()}`, debt: 0 }, // Initialize debt to 0
+      { ...clientData, id: `client_${Date.now().toString()}`, debt: 0 }, 
       ...prevClients,
     ]);
   }, []);
@@ -99,7 +98,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateClient = useCallback((id: string, clientData: ClientFormValues) => {
     setClients((prevClients) =>
       prevClients.map((client) =>
-        client.id === id ? { ...client, ...clientData } : client // Debt is not updated here, only through recordClientPayment
+        client.id === id ? { ...client, ...clientData } : client 
       )
     );
   }, []);
@@ -116,11 +115,22 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setClients(prevClients =>
       prevClients.map(client =>
         client.id === clientId
-          ? { ...client, debt: Math.max(0, client.debt - amount) } // Prevent debt from going below 0 for simplicity
+          ? { ...client, debt: client.debt - amount } // Allows debt to go negative (credit)
           : client
       )
     );
   }, []);
+
+  const increaseClientDebt = useCallback((clientId: string, amount: number) => {
+    setClients(prevClients =>
+      prevClients.map(client =>
+        client.id === clientId
+          ? { ...client, debt: client.debt + amount }
+          : client
+      )
+    );
+  }, []);
+
 
   const value = useMemo(() => ({
     clients,
@@ -129,8 +139,9 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     deleteClient,
     getClientById,
     recordClientPayment,
+    increaseClientDebt,
     loading,
-  }), [clients, addClient, updateClient, deleteClient, getClientById, recordClientPayment, loading]);
+  }), [clients, addClient, updateClient, deleteClient, getClientById, recordClientPayment, increaseClientDebt, loading]);
 
   return (
     <ClientContext.Provider value={value}>

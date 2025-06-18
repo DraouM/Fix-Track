@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
@@ -26,6 +26,8 @@ import { useClientContext } from '@/context/ClientContext';
 import { useInventoryContext } from '@/context/InventoryContext';
 import type { Client } from '@/types/client';
 import type { InventoryItem } from '@/types/inventory';
+import type { Sale, SoldItem } from '@/types/sale'; // Import Sale and SoldItem
+import { PreviousSalesTable } from './PreviousSalesTable'; // Import PreviousSalesTable
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,8 +37,20 @@ interface CartItem {
   sellingPrice: number; // Price at the time of adding to cart
 }
 
+const getInitialSalesState = (): Sale[] => {
+  if (typeof window === 'undefined') return [];
+  const savedSales = localStorage.getItem('pastSales');
+  try {
+    return savedSales ? JSON.parse(savedSales) : [];
+  } catch (e) {
+    console.error("Failed to parse past sales from localStorage", e);
+    return [];
+  }
+};
+
+
 export default function SalesPageClient() {
-  const { clients } = useClientContext();
+  const { clients, increaseClientDebt } = useClientContext();
   const { inventoryItems, getItemById, updateItemQuantity: updateInventoryContextItemQuantity } = useInventoryContext();
   const { toast } = useToast();
 
@@ -46,12 +60,21 @@ export default function SalesPageClient() {
   const [inventorySearchTerm, setInventorySearchTerm] = useState('');
   const [inventoryPopoverOpen, setInventoryPopoverOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  
+  const [pastSales, setPastSales] = useState<Sale[]>(getInitialSalesState);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pastSales', JSON.stringify(pastSales));
+    }
+  }, [pastSales]);
+
 
   const availableInventoryItems = useMemo(() => {
     return inventoryItems.filter(item => 
       item.itemName.toLowerCase().includes(inventorySearchTerm.toLowerCase()) &&
       (item.quantityInStock ?? 0) > 0 &&
-      !cartItems.some(cartItem => cartItem.inventoryItem.id === item.id) // Exclude items already in cart
+      !cartItems.some(cartItem => cartItem.inventoryItem.id === item.id) 
     );
   }, [inventoryItems, inventorySearchTerm, cartItems]);
 
@@ -68,7 +91,6 @@ export default function SalesPageClient() {
     setCartItems(prev => {
       const existingItem = prev.find(ci => ci.inventoryItem.id === item.id);
       if (existingItem) {
-        // This case should ideally not be hit if availableInventoryItems filters correctly
         return prev.map(ci => 
           ci.inventoryItem.id === item.id 
           ? { ...ci, quantity: Math.min(ci.quantity + 1, item.quantityInStock ?? 1) } 
@@ -98,12 +120,11 @@ export default function SalesPageClient() {
       toast({ title: "Stock Limit Reached", description: `Only ${maxQuantity} units of ${inventoryItem.itemName} available.`, variant: "destructive" });
     }
     
-    if (maxQuantity === 0 && newQuantity > 0) { // Should not happen if item is removed when stock is 0 after adding
+    if (maxQuantity === 0 && newQuantity > 0) { 
         toast({ title: "Out of Stock", description: `${inventoryItem.itemName} is out of stock.`, variant: "destructive" });
         setCartItems(prev => prev.filter(ci => ci.inventoryItem.id !== itemId));
         return;
     }
-
 
     setCartItems(prev => prev.map(ci => 
       ci.inventoryItem.id === itemId ? { ...ci, quantity: newQuantity } : ci
@@ -128,33 +149,50 @@ export default function SalesPageClient() {
       return;
     }
 
-    // In a real scenario:
-    // 1. Create a sale record in database/context
-    // 2. Update inventory quantities (deduct stock)
-    // 3. Update client debt if applicable
-    // 4. Potentially generate an invoice
+    const soldItems: SoldItem[] = cartItems.map(cartItem => ({
+      inventoryItemId: cartItem.inventoryItem.id,
+      itemName: cartItem.inventoryItem.itemName,
+      quantity: cartItem.quantity,
+      sellingPriceAtSale: cartItem.sellingPrice,
+    }));
 
-    console.log("Finalizing Sale...");
-    console.log("Client:", selectedClient);
-    console.log("Cart Items:", cartItems.map(item => ({ 
-        id: item.inventoryItem.id, 
-        name: item.inventoryItem.itemName, 
-        quantity: item.quantity, 
-        price: item.sellingPrice 
-    })));
-    console.log("Sale Total:", saleTotal);
+    const newSale: Sale = {
+      id: `sale_${Date.now().toString()}`,
+      clientId: selectedClient.id,
+      clientName: selectedClient.name,
+      items: soldItems,
+      totalAmount: saleTotal,
+      saleDate: new Date().toISOString(),
+    };
 
-    // Example of updating inventory (this should be more robust, possibly transactional)
-    // cartItems.forEach(item => {
-    //   updateInventoryContextItemQuantity(item.inventoryItem.id, -item.quantity);
-    // });
+    // 1. Add to pastSales
+    setPastSales(prevSales => [newSale, ...prevSales]);
 
-    toast({ title: "Sale Logged (Placeholder)", description: `Sale for ${selectedClient.name} totaling $${saleTotal.toFixed(2)} logged to console.` });
+    // 2. Update client debt
+    increaseClientDebt(selectedClient.id, saleTotal);
+
+    // 3. Update inventory quantities
+    soldItems.forEach(soldItem => {
+      updateInventoryContextItemQuantity(soldItem.inventoryItemId, -soldItem.quantity);
+    });
+    
+    toast({ 
+      title: "Sale Recorded!", 
+      description: `Sale for ${selectedClient.name} totaling $${saleTotal.toFixed(2)} has been recorded.` 
+    });
     
     // Reset for next sale
-    // setSelectedClient(null);
-    // setCartItems([]);
+    setSelectedClient(null);
+    setCartItems([]);
+    setInventorySearchTerm('');
   };
+  
+  const handleViewSaleDetails = useCallback((sale: Sale) => {
+    // Placeholder for future detailed sale view modal/page
+    console.log("View details for sale:", sale);
+    toast({ title: "View Details (Coming Soon)", description: `Details for sale ID ${sale.id.slice(0,8)}...`});
+  }, [toast]);
+
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
@@ -167,9 +205,8 @@ export default function SalesPageClient() {
             <CardDescription>Select a client and add items to the cart.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Client Selection */}
             <div>
-              <label htmlFor="client-select" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="client-select" className="block text-sm font-medium text-muted-foreground mb-1">
                 Select Client
               </label>
               <Popover open={clientPopoverOpen} onOpenChange={setClientPopoverOpen}>
@@ -213,9 +250,8 @@ export default function SalesPageClient() {
               </Popover>
             </div>
 
-            {/* Inventory Item Selection */}
             <div>
-              <label htmlFor="inventory-search" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="inventory-search" className="block text-sm font-medium text-muted-foreground mb-1">
                 Add Item to Cart
               </label>
               <Popover open={inventoryPopoverOpen} onOpenChange={setInventoryPopoverOpen}>
@@ -259,7 +295,6 @@ export default function SalesPageClient() {
             
             <Separator />
 
-            {/* Shopping Cart Table */}
             <div>
               <h3 className="text-lg font-medium mb-2">Shopping Cart</h3>
               {cartItems.length === 0 ? (
@@ -307,7 +342,6 @@ export default function SalesPageClient() {
           </CardContent>
         </Card>
 
-        {/* Order Summary Card */}
         <Card className="lg:col-span-1 sticky top-6">
           <CardHeader>
             <CardTitle>Order Summary</CardTitle>
@@ -336,11 +370,14 @@ export default function SalesPageClient() {
               disabled={!selectedClient || cartItems.length === 0}
             >
               <Icons.check className="mr-2 h-4 w-4" />
-              Finalize Sale (Log to Console)
+              Finalize Sale
             </Button>
           </CardFooter>
         </Card>
       </div>
+      
+      {/* Previous Sales Table Display */}
+      <PreviousSalesTable sales={pastSales} onViewDetails={handleViewSaleDetails} />
     </div>
   );
 }

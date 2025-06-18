@@ -27,7 +27,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/', label: 'Repairs', icon: <Icons.wrench className="h-5 w-5" /> },
   { href: '/inventory', label: 'Inventory', icon: <Icons.packageIcon className="h-5 w-5" /> },
-  { href: '/clients', label: 'Clients', icon: <Icons.user className="h-5 w-5" /> }, // Added Clients
+  { href: '/clients', label: 'Clients', icon: <Icons.user className="h-5 w-5" /> },
+  { href: '/sales', label: 'Sales', icon: <Icons.shoppingCart className="h-5 w-5" /> },
   { href: '/statistics', label: 'Statistics', icon: <Icons.barChart className="h-5 w-5" /> },
 ];
 

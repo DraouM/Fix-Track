@@ -47,12 +47,7 @@ export function ClientTable({ clients, onEdit, onDelete }: ClientTableProps) {
         </TableHeader>
         <TableBody>
           {clients.map((client) => (
-            <TableRow key={client.id}>
-              <TableCell className="font-medium">{client.name}</TableCell>
-              <TableCell>{client.phoneNumber || 'N/A'}</TableCell>
-              <TableCell className="hidden lg:table-cell max-w-xs truncate">{client.address || 'N/A'}</TableCell>
-              <TableCell className="hidden md:table-cell">{'N/A'}</TableCell> {/* Placeholder for Debt */}
-              <TableCell className="text-center">
+            <TableRow key={client.id}><TableCell className="font-medium">{client.name}</TableCell><TableCell>{client.phoneNumber || 'N/A'}</TableCell><TableCell className="hidden lg:table-cell max-w-xs truncate">{client.address || 'N/A'}</TableCell><TableCell className="hidden md:table-cell">{'N/A'}</TableCell><TableCell className="text-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
@@ -69,8 +64,7 @@ export function ClientTable({ clients, onEdit, onDelete }: ClientTableProps) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </TableCell>
-            </TableRow>
+              </TableCell></TableRow>
           ))}
         </TableBody>
       </Table>

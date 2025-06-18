@@ -20,14 +20,12 @@ const sampleClients: Client[] = [
     id: 'client_1',
     name: 'Ahmed Zaid',
     phoneNumber: '0550123456',
-    email: 'ahmed.zaid@example.com',
     address: '123 Rue Didouche Mourad, Alger',
   },
   {
     id: 'client_2',
     name: 'Fatima Cherif',
     phoneNumber: '0661987654',
-    email: 'fatima.cherif@example.com',
     address: '456 Avenue de l\'Indépendance, Oran',
   },
 ];

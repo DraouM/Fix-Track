@@ -40,8 +40,8 @@ export function ClientTable({ clients, onEdit, onDelete }: ClientTableProps) {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Phone Number</TableHead>
-            <TableHead className="hidden md:table-cell">Email</TableHead>
             <TableHead className="hidden lg:table-cell">Address</TableHead>
+            <TableHead className="hidden md:table-cell">Debt</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -50,8 +50,8 @@ export function ClientTable({ clients, onEdit, onDelete }: ClientTableProps) {
             <TableRow key={client.id}>
               <TableCell className="font-medium">{client.name}</TableCell>
               <TableCell>{client.phoneNumber || 'N/A'}</TableCell>
-              <TableCell className="hidden md:table-cell">{client.email || 'N/A'}</TableCell>
               <TableCell className="hidden lg:table-cell max-w-xs truncate">{client.address || 'N/A'}</TableCell>
+              <TableCell className="hidden md:table-cell">{'N/A'}</TableCell> {/* Placeholder for Debt */}
               <TableCell className="text-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

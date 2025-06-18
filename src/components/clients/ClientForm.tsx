@@ -34,13 +34,11 @@ export function ClientForm({ onSuccess, clientToEdit, onSubmitForm }: ClientForm
       ? {
           name: clientToEdit.name,
           phoneNumber: clientToEdit.phoneNumber || '',
-          email: clientToEdit.email || '',
           address: clientToEdit.address || '',
         }
       : {
           name: '',
           phoneNumber: '',
-          email: '',
           address: '',
         },
   });
@@ -86,20 +84,6 @@ export function ClientForm({ onSuccess, clientToEdit, onSubmitForm }: ClientForm
           )}
         />
         
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email (Optional)</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="john.doe@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <FormField
           control={form.control}
           name="address"

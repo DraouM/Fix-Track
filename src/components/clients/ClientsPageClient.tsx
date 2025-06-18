@@ -41,8 +41,7 @@ function ClientsPageContent() {
   const filteredClients = useMemo(() => {
     return clients.filter((client) =>
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (client.phoneNumber && client.phoneNumber.includes(searchTerm)) ||
-      (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      (client.phoneNumber && client.phoneNumber.includes(searchTerm))
     );
   }, [clients, searchTerm]);
 
@@ -129,7 +128,7 @@ function ClientsPageContent() {
       
       <div className="space-y-4 p-4 border rounded-lg shadow-sm bg-card">
         <Input
-          placeholder="Search by name, phone, or email..."
+          placeholder="Search by name or phone..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full md:max-w-sm"

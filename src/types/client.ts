@@ -7,7 +7,6 @@ export const clientFormSchema = z.object({
     .regex(/^0[567]\d{8}$/, { message: "Phone number must be a 10-digit Algerian number (e.g., 05XXXXXXXX)." })
     .optional()
     .or(z.literal('')),
-  email: z.string().email({ message: "Please enter a valid email." }).optional().or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
 });
 

@@ -10,6 +10,7 @@ interface ClientContextType {
   updateClient: (id: string, clientData: ClientFormValues) => void;
   deleteClient: (id: string) => void;
   getClientById: (id: string) => Client | undefined;
+  recordClientPayment: (clientId: string, amount: number) => void;
   loading: boolean;
 }
 
@@ -21,31 +22,56 @@ const sampleClients: Client[] = [
     name: 'Ahmed Zaid',
     phoneNumber: '0550123456',
     address: '123 Rue Didouche Mourad, Alger',
+    debt: 50.75,
   },
   {
     id: 'client_2',
     name: 'Fatima Cherif',
     phoneNumber: '0661987654',
     address: '456 Avenue de l\'Indépendance, Oran',
+    debt: 0,
+  },
+  {
+    id: 'client_3',
+    name: 'Karim Belkacem',
+    phoneNumber: '0770112233',
+    address: '789 Boulevard des Martyrs, Constantine',
+    debt: 120.00,
+  },
+  {
+    id: 'client_4',
+    name: 'Amina Hamidi',
+    phoneNumber: '0562334455',
+    address: '101 Rue Emir Abdelkader, Setif',
+    debt: -10.00, // Example of credit
   },
 ];
 
 const getInitialClientsState = (): Client[] => {
   if (typeof window === 'undefined') {
-    return [];
+    return []; // Return empty array or placeholder if on server
   }
   const savedClients = localStorage.getItem('clients');
   if (savedClients) {
     try {
       const parsedClients = JSON.parse(savedClients) as Client[];
-      if (parsedClients.length > 0) {
-        return parsedClients;
+      // Ensure debt is a number, default to 0 if undefined or null
+      const validatedClients = parsedClients.map(client => ({
+        ...client,
+        debt: (client.debt === undefined || client.debt === null) ? 0 : Number(client.debt)
+      }));
+      if (validatedClients.length > 0) {
+        return validatedClients;
       }
     } catch (error) {
       console.error("Failed to parse clients from localStorage", error);
     }
   }
-  return sampleClients;
+  // Ensure sample data also has debt as number
+  return sampleClients.map(client => ({
+    ...client,
+    debt: (client.debt === undefined || client.debt === null) ? 0 : Number(client.debt)
+  }));
 };
 
 export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -65,7 +91,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addClient = useCallback((clientData: ClientFormValues) => {
     setClients((prevClients) => [
-      { ...clientData, id: `client_${Date.now().toString()}` },
+      { ...clientData, id: `client_${Date.now().toString()}`, debt: 0 }, // Initialize debt to 0
       ...prevClients,
     ]);
   }, []);
@@ -73,7 +99,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateClient = useCallback((id: string, clientData: ClientFormValues) => {
     setClients((prevClients) =>
       prevClients.map((client) =>
-        client.id === id ? { ...client, ...clientData } : client
+        client.id === id ? { ...client, ...clientData } : client // Debt is not updated here, only through recordClientPayment
       )
     );
   }, []);
@@ -86,14 +112,25 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return clients.find(client => client.id === id);
   }, [clients]);
 
+  const recordClientPayment = useCallback((clientId: string, amount: number) => {
+    setClients(prevClients =>
+      prevClients.map(client =>
+        client.id === clientId
+          ? { ...client, debt: Math.max(0, client.debt - amount) } // Prevent debt from going below 0 for simplicity
+          : client
+      )
+    );
+  }, []);
+
   const value = useMemo(() => ({
     clients,
     addClient,
     updateClient,
     deleteClient,
     getClientById,
+    recordClientPayment,
     loading,
-  }), [clients, addClient, updateClient, deleteClient, getClientById, loading]);
+  }), [clients, addClient, updateClient, deleteClient, getClientById, recordClientPayment, loading]);
 
   return (
     <ClientContext.Provider value={value}>

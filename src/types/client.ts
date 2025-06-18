@@ -14,6 +14,6 @@ export type ClientFormValues = z.infer<typeof clientFormSchema>;
 
 export interface Client extends ClientFormValues {
   id: string;
-  // totalDebt: number; // To be added later
+  debt: number; // Added debt field
   // purchaseHistoryIds: string[]; // To be added later
 }

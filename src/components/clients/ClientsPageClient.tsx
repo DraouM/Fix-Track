@@ -24,12 +24,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ClientForm } from './ClientForm';
 import { ClientTable } from './ClientTable';
-import { useClientContext, ClientProvider } from '@/context/ClientContext'; // Import ClientProvider
+import { PaymentDialog } from './PaymentDialog'; // Import PaymentDialog
+import { useClientContext } from '@/context/ClientContext';
 import { Icons } from '@/components/icons';
 import type { Client, ClientFormValues } from '@/types/client';
+import { useToast } from '@/hooks/use-toast';
 
 function ClientsPageContent() {
-  const { clients, addClient, updateClient, deleteClient, loading, getClientById } = useClientContext();
+  const { clients, addClient, updateClient, deleteClient, getClientById, recordClientPayment, loading } = useClientContext();
+  const { toast } = useToast();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
@@ -37,6 +40,9 @@ function ClientsPageContent() {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [clientToDeleteId, setClientToDeleteId] = useState<string | null>(null);
+
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [clientForPayment, setClientForPayment] = useState<Client | null>(null);
 
   const filteredClients = useMemo(() => {
     return clients.filter((client) =>
@@ -49,7 +55,7 @@ function ClientsPageContent() {
     const fullClient = getClientById(client.id);
     if (fullClient) {
       setClientToEdit(fullClient);
-      setFormInstanceKey(prevKey => prevKey + 1); // Ensure form re-renders with new data
+      setFormInstanceKey(prevKey => prevKey + 1);
       setIsFormOpen(true);
     }
   }, [getClientById]);
@@ -61,9 +67,10 @@ function ClientsPageContent() {
   const handleDelete = useCallback(() => {
     if (clientToDeleteId) {
       deleteClient(clientToDeleteId);
+      toast({ title: 'Client Deleted', description: 'The client has been removed.' });
       setClientToDeleteId(null);
     }
-  }, [clientToDeleteId, deleteClient]);
+  }, [clientToDeleteId, deleteClient, toast]);
 
   const handleFormSubmit = (data: ClientFormValues) => {
     if (clientToEdit) {
@@ -77,16 +84,37 @@ function ClientsPageContent() {
 
   const openAddNewForm = () => {
     setClientToEdit(null);
-    setFormInstanceKey(prevKey => prevKey + 1); // Ensure form re-renders fresh
+    setFormInstanceKey(prevKey => prevKey + 1);
     setIsFormOpen(true);
   };
   
-  const handleDialogOpeChange = useCallback((isOpen: boolean) => {
+  const handleClientFormDialogOpeChange = useCallback((isOpen: boolean) => {
     setIsFormOpen(isOpen);
     if (!isOpen) {
       setClientToEdit(null); 
     }
   }, []);
+
+  const handleOpenPaymentDialog = useCallback((client: Client) => {
+    setClientForPayment(client);
+    setIsPaymentDialogOpen(true);
+  }, []);
+
+  const handleClosePaymentDialog = useCallback(() => {
+    setIsPaymentDialogOpen(false);
+    setClientForPayment(null);
+  }, []);
+
+  const handleProcessPayment = useCallback((amount: number) => {
+    if (clientForPayment) {
+      recordClientPayment(clientForPayment.id, amount);
+      toast({
+        title: 'Payment Recorded',
+        description: `Payment of $${amount.toFixed(2)} for ${clientForPayment.name} has been recorded.`,
+      });
+      handleClosePaymentDialog();
+    }
+  }, [clientForPayment, recordClientPayment, toast, handleClosePaymentDialog]);
 
   if (loading) {
     return (
@@ -100,7 +128,7 @@ function ClientsPageContent() {
     <div className="container mx-auto p-4 md:p-6 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Client Management</h1>
-        <Dialog open={isFormOpen} onOpenChange={handleDialogOpeChange}>
+        <Dialog open={isFormOpen} onOpenChange={handleClientFormDialogOpeChange}>
           <DialogTrigger asChild>
             <Button onClick={openAddNewForm}>
               <Icons.plusCircle className="mr-2 h-4 w-4" /> Add New Client
@@ -136,15 +164,29 @@ function ClientsPageContent() {
         />
       </div>
 
-      <ClientTable clients={filteredClients} onEdit={handleEdit} onDelete={handleDeleteConfirmation} />
+      <ClientTable 
+        clients={filteredClients} 
+        onEdit={handleEdit} 
+        onDelete={handleDeleteConfirmation}
+        onMakePayment={handleOpenPaymentDialog} 
+      />
+
+      {clientForPayment && (
+        <PaymentDialog
+          isOpen={isPaymentDialogOpen}
+          onClose={handleClosePaymentDialog}
+          clientName={clientForPayment.name}
+          currentDebt={clientForPayment.debt}
+          onSubmitPayment={handleProcessPayment}
+        />
+      )}
 
       <AlertDialog open={!!clientToDeleteId} onOpenChange={() => setClientToDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the client
-              and all associated data (future feature).
+              This action cannot be undone. This will permanently delete the client.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -161,8 +203,6 @@ function ClientsPageContent() {
 
 export default function ClientsPageClient() {
   return (
-    // Wrap with ClientProvider here if not done globally
-    // For this app structure, ClientProvider is in ClientProviders.tsx
     <ClientsPageContent />
   );
 }

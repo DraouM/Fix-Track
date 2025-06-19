@@ -1,28 +1,36 @@
+
 'use client';
 
-import React from 'react';
-import { useForm } from 'react-hook-form'; // FormProvider will come from ui/form
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Form,
   FormControl,
   FormField,
   FormItem,
-  Form, // Import Form alias from ui/form
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { useToast } from '@/hooks/use-toast';
-import { PHONE_BRANDS, ITEM_TYPES, inventoryItemSchema, type InventoryFormValues, type InventoryItem, PhoneBrand, ItemType } from '@/types/inventory';
+import { PHONE_BRANDS, ITEM_TYPES, inventoryItemSchema, type InventoryFormValues, type InventoryItem } from '@/types/inventory';
 import { Icons } from '@/components/icons';
+import { cn } from '@/lib/utils';
 
 interface InventoryFormProps {
   onSuccess?: () => void;
@@ -32,6 +40,8 @@ interface InventoryFormProps {
 
 export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: InventoryFormProps) {
   const { toast } = useToast();
+  const [brandPopoverOpen, setBrandPopoverOpen] = useState(false);
+  const [itemTypePopoverOpen, setItemTypePopoverOpen] = useState(false);
 
   const form = useForm<InventoryFormValues>({
     resolver: zodResolver(inventoryItemSchema),
@@ -58,12 +68,19 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
       title: itemToEdit ? 'Item Updated' : 'Item Added',
       description: `${data.itemName} has been successfully ${itemToEdit ? 'updated' : 'added'}.`,
     });
-    form.reset();
+    form.reset({ 
+        itemName: '', 
+        phoneBrand: undefined, 
+        itemType: undefined, 
+        buyingPrice: '', 
+        sellingPrice: '', 
+        quantityInStock: '' 
+    });
     onSuccess?.();
   };
 
   return (
-    <Form {...form}> {/* Use Form alias */}
+    <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
@@ -84,22 +101,60 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
             control={form.control}
             name="phoneBrand"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Phone Brand</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select brand" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {PHONE_BRANDS.filter(brand => brand !== 'All').map((brand) => (
-                      <SelectItem key={brand} value={brand}>
-                        {brand}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={brandPopoverOpen} onOpenChange={setBrandPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={brandPopoverOpen}
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? PHONE_BRANDS.find(
+                              (brand) => brand === field.value
+                            )
+                          : "Select brand"}
+                        <Icons.chevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search brand..." />
+                      <CommandList>
+                        <CommandEmpty>No brand found.</CommandEmpty>
+                        <CommandGroup>
+                          {PHONE_BRANDS.filter(b => b !== 'All').map((brand) => (
+                            <CommandItem
+                              value={brand}
+                              key={brand}
+                              onSelect={() => {
+                                form.setValue("phoneBrand", brand);
+                                setBrandPopoverOpen(false);
+                              }}
+                            >
+                              <Icons.check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  brand === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {brand}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -109,22 +164,60 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
             control={form.control}
             name="itemType"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Item Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {ITEM_TYPES.filter(type => type !== 'All').map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={itemTypePopoverOpen} onOpenChange={setItemTypePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={itemTypePopoverOpen}
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value
+                          ? ITEM_TYPES.find(
+                              (itemType) => itemType === field.value
+                            )
+                          : "Select type"}
+                        <Icons.chevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search item type..." />
+                      <CommandList>
+                        <CommandEmpty>No item type found.</CommandEmpty>
+                        <CommandGroup>
+                          {ITEM_TYPES.filter(it => it !== 'All').map((itemType) => (
+                            <CommandItem
+                              value={itemType}
+                              key={itemType}
+                              onSelect={() => {
+                                form.setValue("itemType", itemType);
+                                setItemTypePopoverOpen(false);
+                              }}
+                            >
+                              <Icons.check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  itemType === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {itemType}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -189,5 +282,3 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
     </Form>
   );
 }
-
-    

@@ -1,4 +1,3 @@
-
 // src/components/RepairForm.tsx
 'use client';
 
@@ -40,7 +39,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // Updated import
 import { useRepairContext } from '@/context/RepairContext';
 import { useInventoryContext } from '@/context/InventoryContext';
 import type { Repair, RepairStatus, PaymentStatus } from '@/types/repair';
@@ -117,7 +116,6 @@ const getPaymentStatusDotBadgeClass = (status: PaymentStatus): string => {
 export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
   const { repairs, addRepair, updateRepair } = useRepairContext();
   const { inventoryItems, getItemById } = useInventoryContext();
-  const { toast } = useToast();
 
   const [brandPopoverOpen, setBrandPopoverOpen] = useState(false);
   const [modelPopoverOpen, setModelPopoverOpen] = useState(false);
@@ -186,7 +184,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       itemType: part.itemType,
       phoneBrand: part.phoneBrand,
       quantity: 1,
-      unitCost: part.buyingPrice, // buyingPrice from InventoryItem is already a number
+      unitCost: part.buyingPrice, 
     });
     setSearchTerm('');
   };
@@ -195,14 +193,14 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
     const processedData = {
       ...data,
       phoneNumber: data.phoneNumber || undefined,
-      estimatedCost: data.estimatedCost.toString(), // Repair type expects string
+      estimatedCost: data.estimatedCost.toString(), 
       paymentStatus: data.paymentStatus,
       usedParts: data.usedParts?.map(p => ({
         ...p,
         itemType: p.itemType as ItemType,
         phoneBrand: p.phoneBrand as PhoneBrand,
-        quantity: Number(p.quantity), // Ensure it's number for Repair type
-        unitCost: Number(p.unitCost),   // Ensure it's number for Repair type
+        quantity: Number(p.quantity), 
+        unitCost: Number(p.unitCost),   
       })) || [],
     };
 
@@ -210,11 +208,11 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
       updateRepair({
         ...repairToEdit,
         ...processedData,
-      } as Repair); // Cast to Repair to satisfy type, ID and dateReceived are spread from repairToEdit
-      toast({ title: 'Repair Updated', description: `Repair for ${data.customerName} has been updated.` });
+      } as Repair); 
+      toast.success(`Repair for ${data.customerName} has been updated.`);
     } else {
       addRepair(processedData as Omit<Repair, 'id' | 'dateReceived' | 'statusHistory'>);
-      toast({ title: 'Repair Added', description: `New repair for ${data.customerName} has been added.` });
+      toast.success(`New repair for ${data.customerName} has been added.`);
     }
     onSuccess?.();
   };
@@ -420,11 +418,10 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
               <FormItem>
                 <FormLabel>Estimated Cost ($)</FormLabel>
                 <FormControl>
-                  {/* Input expects string, RHF provides number. RHF onChange expects number. */}
                   <Input type="number" placeholder="e.g., 99.99"
                     {...field}
-                    value={String(field.value ?? '0')} // Display as string
-                    onChange={e => field.onChange(parseFloat(e.target.value) || 0)} // Send number to RHF
+                    value={String(field.value ?? '0')} 
+                    onChange={e => field.onChange(parseFloat(e.target.value) || 0)} 
                     step="0.01"
                   />
                 </FormControl>
@@ -554,10 +551,10 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                         <Input
                           type="number"
                           {...quantityField}
-                          value={String(quantityField.value ?? '1')} // Display as string
+                          value={String(quantityField.value ?? '1')} 
                           min="1"
                           max={effectiveMaxQuantity > 0 ? effectiveMaxQuantity.toString() : "1"}
-                          onChange={(e) => { // Send number to RHF
+                          onChange={(e) => { 
                             let value = parseInt(e.target.value, 10);
                             if (isNaN(value)) value = 1;
 
@@ -587,7 +584,7 @@ export function RepairForm({ onSuccess, repairToEdit }: RepairFormProps) {
                       <FormLabel>Unit Cost ($)</FormLabel>
                       <FormControl>
                         <Input type="number" {...costField}
-                         value={String(costField.value ?? '0')} // Display as string
+                         value={String(costField.value ?? '0')} 
                          step="0.01" readOnly className="bg-muted/50" />
                       </FormControl>
                       <FormMessage />

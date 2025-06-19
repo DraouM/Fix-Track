@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // Updated import
 import { clientFormSchema, type ClientFormValues, type Client } from '@/types/client';
 import { Icons } from '@/components/icons';
 
@@ -26,8 +26,6 @@ interface ClientFormProps {
 }
 
 export function ClientForm({ onSuccess, clientToEdit, onSubmitForm }: ClientFormProps) {
-  const { toast } = useToast();
-
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
     defaultValues: clientToEdit
@@ -45,11 +43,7 @@ export function ClientForm({ onSuccess, clientToEdit, onSubmitForm }: ClientForm
 
   const handleSubmit = (data: ClientFormValues) => {
     onSubmitForm(data);
-    toast({
-      title: clientToEdit ? 'Client Updated' : 'Client Added',
-      description: `${data.name} has been successfully ${clientToEdit ? 'updated' : 'added'}.`,
-    });
-    // Form reset is handled by key change in parent on success
+    toast.success(`${data.name} has been successfully ${clientToEdit ? 'updated' : 'added'}.`);
     onSuccess?.();
   };
 

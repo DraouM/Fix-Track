@@ -24,15 +24,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ClientForm } from './ClientForm';
 import { ClientTable } from './ClientTable';
-import { PaymentDialog } from './PaymentDialog'; // Import PaymentDialog
+import { PaymentDialog } from './PaymentDialog'; 
 import { useClientContext } from '@/context/ClientContext';
 import { Icons } from '@/components/icons';
 import type { Client, ClientFormValues } from '@/types/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // Updated import
 
 function ClientsPageContent() {
   const { clients, addClient, updateClient, deleteClient, getClientById, recordClientPayment, loading } = useClientContext();
-  const { toast } = useToast();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
@@ -66,11 +65,12 @@ function ClientsPageContent() {
 
   const handleDelete = useCallback(() => {
     if (clientToDeleteId) {
+      const clientName = clients.find(c => c.id === clientToDeleteId)?.name || "The client";
       deleteClient(clientToDeleteId);
-      toast({ title: 'Client Deleted', description: 'The client has been removed.' });
+      toast.success(`${clientName} has been removed.`);
       setClientToDeleteId(null);
     }
-  }, [clientToDeleteId, deleteClient, toast]);
+  }, [clientToDeleteId, deleteClient, clients]);
 
   const handleFormSubmit = (data: ClientFormValues) => {
     if (clientToEdit) {
@@ -108,13 +108,10 @@ function ClientsPageContent() {
   const handleProcessPayment = useCallback((amount: number) => {
     if (clientForPayment) {
       recordClientPayment(clientForPayment.id, amount);
-      toast({
-        title: 'Payment Recorded',
-        description: `Payment of $${amount.toFixed(2)} for ${clientForPayment.name} has been recorded.`,
-      });
+      toast.success(`Payment of $${amount.toFixed(2)} for ${clientForPayment.name} has been recorded.`);
       handleClosePaymentDialog();
     }
-  }, [clientForPayment, recordClientPayment, toast, handleClosePaymentDialog]);
+  }, [clientForPayment, recordClientPayment, handleClosePaymentDialog]);
 
   if (loading) {
     return (

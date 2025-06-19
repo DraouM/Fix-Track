@@ -26,15 +26,15 @@ import { useClientContext } from '@/context/ClientContext';
 import { useInventoryContext } from '@/context/InventoryContext';
 import type { Client } from '@/types/client';
 import type { InventoryItem } from '@/types/inventory';
-import type { Sale, SoldItem } from '@/types/sale'; // Import Sale and SoldItem
-import { PreviousSalesTable } from './PreviousSalesTable'; // Import PreviousSalesTable
+import type { Sale, SoldItem } from '@/types/sale'; 
+import { PreviousSalesTable } from './PreviousSalesTable'; 
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // Updated import
 
 interface CartItem {
   inventoryItem: InventoryItem;
   quantity: number;
-  sellingPrice: number; // Price at the time of adding to cart
+  sellingPrice: number; 
 }
 
 const getInitialSalesState = (): Sale[] => {
@@ -52,7 +52,6 @@ const getInitialSalesState = (): Sale[] => {
 export default function SalesPageClient() {
   const { clients, increaseClientDebt } = useClientContext();
   const { inventoryItems, getItemById, updateItemQuantity: updateInventoryContextItemQuantity } = useInventoryContext();
-  const { toast } = useToast();
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
@@ -85,7 +84,7 @@ export default function SalesPageClient() {
 
   const handleAddInventoryItemToCart = (item: InventoryItem) => {
     if ((item.quantityInStock ?? 0) <= 0) {
-      toast({ title: "Out of Stock", description: `${item.itemName} is currently out of stock.`, variant: "destructive" });
+      toast.error(`${item.itemName} is currently out of stock.`);
       return;
     }
     setCartItems(prev => {
@@ -117,11 +116,11 @@ export default function SalesPageClient() {
     const maxQuantity = inventoryItem.quantityInStock ?? 0;
     if (newQuantity > maxQuantity) {
       newQuantity = maxQuantity;
-      toast({ title: "Stock Limit Reached", description: `Only ${maxQuantity} units of ${inventoryItem.itemName} available.`, variant: "destructive" });
+      toast.warning(`Only ${maxQuantity} units of ${inventoryItem.itemName} available.`);
     }
     
     if (maxQuantity === 0 && newQuantity > 0) { 
-        toast({ title: "Out of Stock", description: `${inventoryItem.itemName} is out of stock.`, variant: "destructive" });
+        toast.error(`${inventoryItem.itemName} is out of stock.`);
         setCartItems(prev => prev.filter(ci => ci.inventoryItem.id !== itemId));
         return;
     }
@@ -141,11 +140,11 @@ export default function SalesPageClient() {
 
   const handleFinalizeSale = () => {
     if (!selectedClient) {
-      toast({ title: "Client Required", description: "Please select a client for the sale.", variant: "destructive" });
+      toast.error("Please select a client for the sale.");
       return;
     }
     if (cartItems.length === 0) {
-      toast({ title: "Empty Cart", description: "Please add items to the cart before finalizing.", variant: "destructive" });
+      toast.error("Please add items to the cart before finalizing.");
       return;
     }
 
@@ -165,33 +164,23 @@ export default function SalesPageClient() {
       saleDate: new Date().toISOString(),
     };
 
-    // 1. Add to pastSales
     setPastSales(prevSales => [newSale, ...prevSales]);
-
-    // 2. Update client debt
     increaseClientDebt(selectedClient.id, saleTotal);
-
-    // 3. Update inventory quantities
     soldItems.forEach(soldItem => {
       updateInventoryContextItemQuantity(soldItem.inventoryItemId, -soldItem.quantity);
     });
     
-    toast({ 
-      title: "Sale Recorded!", 
-      description: `Sale for ${selectedClient.name} totaling $${saleTotal.toFixed(2)} has been recorded.` 
-    });
+    toast.success(`Sale for ${selectedClient.name} totaling $${saleTotal.toFixed(2)} has been recorded.`);
     
-    // Reset for next sale
     setSelectedClient(null);
     setCartItems([]);
     setInventorySearchTerm('');
   };
   
   const handleViewSaleDetails = useCallback((sale: Sale) => {
-    // Placeholder for future detailed sale view modal/page
     console.log("View details for sale:", sale);
-    toast({ title: "View Details (Coming Soon)", description: `Details for sale ID ${sale.id.slice(0,8)}...`});
-  }, [toast]);
+    toast.info(`Details for sale ID ${sale.id.slice(0,8)}...`, { description: "View Details (Coming Soon)"});
+  }, []);
 
 
   return (
@@ -376,7 +365,6 @@ export default function SalesPageClient() {
         </Card>
       </div>
       
-      {/* Previous Sales Table Display */}
       <PreviousSalesTable sales={pastSales} onViewDetails={handleViewSaleDetails} />
     </div>
   );

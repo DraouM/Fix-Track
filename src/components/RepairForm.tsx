@@ -39,7 +39,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
-import { toast } from '@/hooks/use-toast'; // Updated import
+import { toast } from 'sonner';
 import { useRepairContext } from '@/context/RepairContext';
 import { useInventoryContext } from '@/context/InventoryContext';
 import type { Repair, RepairStatus, PaymentStatus } from '@/types/repair';

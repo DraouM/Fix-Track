@@ -29,7 +29,7 @@ import type { InventoryItem } from '@/types/inventory';
 import type { Sale, SoldItem } from '@/types/sale'; 
 import { PreviousSalesTable } from './PreviousSalesTable'; 
 import { cn } from '@/lib/utils';
-import { toast } from '@/hooks/use-toast'; // Updated import
+import { toast } from 'sonner';
 
 interface CartItem {
   inventoryItem: InventoryItem;

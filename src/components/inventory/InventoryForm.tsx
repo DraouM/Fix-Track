@@ -27,7 +27,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { toast } from '@/hooks/use-toast'; // Updated import
+import { toast } from 'sonner';
 import { PHONE_BRANDS, ITEM_TYPES, inventoryItemSchema, type InventoryFormValues, type InventoryItem } from '@/types/inventory';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';

@@ -28,7 +28,7 @@ import { PaymentDialog } from './PaymentDialog';
 import { useClientContext } from '@/context/ClientContext';
 import { Icons } from '@/components/icons';
 import type { Client, ClientFormValues } from '@/types/client';
-import { toast } from '@/hooks/use-toast'; // Updated import
+import { toast } from 'sonner';
 
 function ClientsPageContent() {
   const { clients, addClient, updateClient, deleteClient, getClientById, recordClientPayment, loading } = useClientContext();

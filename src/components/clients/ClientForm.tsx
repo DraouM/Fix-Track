@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { toast } from '@/hooks/use-toast'; // Updated import
+import { toast } from 'sonner';
 import { clientFormSchema, type ClientFormValues, type Client } from '@/types/client';
 import { Icons } from '@/components/icons';
 

@@ -22,13 +22,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface InventoryTableProps {
   items: InventoryItem[];
   onEdit: (item: InventoryItem) => void;
   onDelete: (itemId: string) => void;
-  onViewHistory: (item: InventoryItem) => void; // New prop for viewing history
+  onViewHistory: (item: InventoryItem) => void;
+  onSort: (key: keyof InventoryItem | 'profit') => void;
+  sortConfig: { key: keyof InventoryItem | 'profit'; direction: 'ascending' | 'descending' } | null;
 }
 
 const getItemTypeBadgeVariant = (itemType: ItemType): "default" | "secondary" | "destructive" | "outline" => {
@@ -43,23 +46,53 @@ const getItemTypeBadgeVariant = (itemType: ItemType): "default" | "secondary" | 
   }
 }
 
-export function InventoryTable({ items, onEdit, onDelete, onViewHistory }: InventoryTableProps) {
+export function InventoryTable({ items, onEdit, onDelete, onViewHistory, onSort, sortConfig }: InventoryTableProps) {
   if (items.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No inventory items found. Try adjusting your filters or adding new items.</p>;
   }
+
+  const SortableHeader = ({ columnKey, children, className }: { columnKey: keyof InventoryItem | 'profit', children: React.ReactNode, className?: string }) => (
+    <Button variant="ghost" onClick={() => onSort(columnKey)} className={cn("px-2 py-1 h-auto -ml-2", className)}>
+      {children}
+      <span className="ml-1.5 shrink-0">
+        {sortConfig?.key === columnKey
+          ? (sortConfig.direction === 'ascending'
+            ? <ArrowUp className="h-4 w-4" />
+            : <ArrowDown className="h-4 w-4" />)
+          : <ArrowUpDown className="h-4 w-4 opacity-30" />
+        }
+      </span>
+    </Button>
+  );
+
+
   return (
     <div className="rounded-md border">
       <Table>
         <TableCaption>A list of your inventory items.</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead>Item Name</TableHead>
-            <TableHead>Brand</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead className="text-right">Buy Price</TableHead>
-            <TableHead className="text-right">Sell Price</TableHead>
-            <TableHead className="text-right">Profit</TableHead>
-            <TableHead className="text-right">Stock</TableHead>
+            <TableHead>
+                <SortableHeader columnKey="itemName">Item Name</SortableHeader>
+            </TableHead>
+            <TableHead>
+                <SortableHeader columnKey="phoneBrand">Brand</SortableHeader>
+            </TableHead>
+            <TableHead>
+                <SortableHeader columnKey="itemType">Type</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+                <SortableHeader columnKey="buyingPrice" className="justify-end w-full -mr-2">Buy Price</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+                <SortableHeader columnKey="sellingPrice" className="justify-end w-full -mr-2">Sell Price</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+                <SortableHeader columnKey="profit" className="justify-end w-full -mr-2">Profit</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+                <SortableHeader columnKey="quantityInStock" className="justify-end w-full -mr-2">Stock</SortableHeader>
+            </TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>

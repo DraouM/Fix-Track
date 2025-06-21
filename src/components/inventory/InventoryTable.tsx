@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -82,16 +81,16 @@ export function InventoryTable({ items, onEdit, onDelete, onViewHistory, onSort,
                 <SortableHeader columnKey="itemType">Type</SortableHeader>
             </TableHead>
             <TableHead className="text-right">
-                <SortableHeader columnKey="buyingPrice" className="justify-end w-full -mr-2">Buy Price</SortableHeader>
+                <SortableHeader columnKey="buyingPrice" className="-mr-2">Buy Price</SortableHeader>
             </TableHead>
             <TableHead className="text-right">
-                <SortableHeader columnKey="sellingPrice" className="justify-end w-full -mr-2">Sell Price</SortableHeader>
+                <SortableHeader columnKey="sellingPrice" className="-mr-2">Sell Price</SortableHeader>
             </TableHead>
             <TableHead className="text-right">
-                <SortableHeader columnKey="profit" className="justify-end w-full -mr-2">Profit</SortableHeader>
+                <SortableHeader columnKey="profit" className="-mr-2">Profit</SortableHeader>
             </TableHead>
             <TableHead className="text-right">
-                <SortableHeader columnKey="quantityInStock" className="justify-end w-full -mr-2">Stock</SortableHeader>
+                <SortableHeader columnKey="quantityInStock" className="-mr-2">Stock</SortableHeader>
             </TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>

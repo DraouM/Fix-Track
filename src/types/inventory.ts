@@ -5,6 +5,18 @@ export type PhoneBrand = typeof PHONE_BRANDS[number];
 export const ITEM_TYPES = ['All', 'Battery', 'Screen', 'Charger', 'Motherboard', 'Cable', 'Case', 'Audio Jack', 'Camera', 'Button', 'Other'] as const;
 export type ItemType = typeof ITEM_TYPES[number];
 
+// New Type for history events
+export type HistoryEventType = 'Purchased' | 'Used in Repair' | 'Sold' | 'Manual Correction' | 'Returned';
+
+export interface InventoryHistoryEvent {
+  id: string;
+  date: string; // ISO string
+  type: HistoryEventType;
+  quantityChange: number; // e.g., +10 for purchase, -1 for sale
+  notes?: string; // e.g., "Repair ID: 3" or "Sale ID: sale_123"
+  relatedId?: string; // repair ID, sale ID, etc.
+}
+
 export interface InventoryItem {
   id: string;
   itemName: string;
@@ -13,9 +25,7 @@ export interface InventoryItem {
   buyingPrice: number;
   sellingPrice: number;
   quantityInStock?: number;
-  // Timestamps for tracking, can be added later if needed
-  // createdAt: Date;
-  // updatedAt: Date;
+  history?: InventoryHistoryEvent[]; // Add history array
 }
 
 // Schema for form validation, can be placed here or in the form component

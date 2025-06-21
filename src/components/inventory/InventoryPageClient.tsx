@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { InventoryForm } from './InventoryForm';
 import { InventoryTable } from './InventoryTable';
+import { InventoryHistoryDialog } from './InventoryHistoryDialog'; // Import the new dialog
 import { useInventoryContext } from '@/context/InventoryContext';
 import { Icons } from '@/components/icons';
 import type { InventoryItem, PhoneBrand, ItemType, InventoryFormValues } from '@/types/inventory';
@@ -48,6 +49,7 @@ function InventoryPageContent() {
   const [selectedType, setSelectedType] = useState<ItemType>('All');
 
   const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
+  const [historyItem, setHistoryItem] = useState<InventoryItem | null>(null); // State for history dialog
 
 
   const filteredItems = useMemo(() => {
@@ -81,6 +83,13 @@ function InventoryPageContent() {
       setItemToDeleteId(null); // Close dialog
     }
   }, [itemToDeleteId, deleteInventoryItem]);
+
+  const handleViewHistory = useCallback((item: InventoryItem) => {
+    const fullItem = getItemById(item.id);
+    if(fullItem) {
+      setHistoryItem(fullItem);
+    }
+  }, [getItemById]);
 
 
   const handleFormSubmit = (data: InventoryFormValues) => {
@@ -134,9 +143,6 @@ function InventoryPageContent() {
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* TODO: Add comment about admin-only access once Firebase Auth is integrated */}
-      {/* <p className="text-sm text-muted-foreground">This page is for admin use only.</p> */}
       
       <div className="space-y-4 p-4 border rounded-lg shadow-sm bg-card">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -180,7 +186,9 @@ function InventoryPageContent() {
         </div>
       </div>
 
-      <InventoryTable items={filteredItems} onEdit={handleEdit} onDelete={handleDeleteConfirmation} />
+      <InventoryTable items={filteredItems} onEdit={handleEdit} onDelete={handleDeleteConfirmation} onViewHistory={handleViewHistory} />
+
+      {historyItem && <InventoryHistoryDialog item={historyItem} onClose={() => setHistoryItem(null)} />}
 
       <AlertDialog open={!!itemToDeleteId} onOpenChange={() => setItemToDeleteId(null)}>
         <AlertDialogContent>
@@ -188,7 +196,7 @@ function InventoryPageContent() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the item
-              from your inventory.
+              from your inventory and its history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

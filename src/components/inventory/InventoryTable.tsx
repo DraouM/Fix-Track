@@ -19,6 +19,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from 'lucide-react';
@@ -27,6 +28,7 @@ interface InventoryTableProps {
   items: InventoryItem[];
   onEdit: (item: InventoryItem) => void;
   onDelete: (itemId: string) => void;
+  onViewHistory: (item: InventoryItem) => void; // New prop for viewing history
 }
 
 const getItemTypeBadgeVariant = (itemType: ItemType): "default" | "secondary" | "destructive" | "outline" => {
@@ -41,7 +43,7 @@ const getItemTypeBadgeVariant = (itemType: ItemType): "default" | "secondary" | 
   }
 }
 
-export function InventoryTable({ items, onEdit, onDelete }: InventoryTableProps) {
+export function InventoryTable({ items, onEdit, onDelete, onViewHistory }: InventoryTableProps) {
   if (items.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No inventory items found. Try adjusting your filters or adding new items.</p>;
   }
@@ -91,9 +93,13 @@ export function InventoryTable({ items, onEdit, onDelete }: InventoryTableProps)
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onViewHistory(item)}>
+                        <Icons.history className="mr-2 h-4 w-4" /> View History
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onEdit(item)}>
                         <Icons.edit className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => onDelete(item.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                         <Icons.trash className="mr-2 h-4 w-4" /> Delete
                       </DropdownMenuItem>

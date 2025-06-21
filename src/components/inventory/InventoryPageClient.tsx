@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { InventoryForm } from './InventoryForm';
 import { InventoryTable } from './InventoryTable';
-import { useInventoryContext, InventoryProvider } from '@/context/InventoryContext';
+import { useInventoryContext } from '@/context/InventoryContext';
 import { Icons } from '@/components/icons';
 import type { InventoryItem, PhoneBrand, ItemType, InventoryFormValues } from '@/types/inventory';
 import { PHONE_BRANDS, ITEM_TYPES } from '@/types/inventory';
@@ -205,8 +205,6 @@ function InventoryPageContent() {
 
 export default function InventoryPageClient() {
   return (
-    <InventoryProvider>
       <InventoryPageContent />
-    </InventoryProvider>
   );
 }

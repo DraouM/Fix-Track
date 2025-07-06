@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/select';
 import { InventoryForm } from './InventoryForm';
 import { InventoryTable } from './InventoryTable';
-import { useInventoryContext, InventoryProvider } from '@/context/InventoryContext';
+import { InventoryHistoryDialog } from './InventoryHistoryDialog'; // Import the new dialog
+import { useInventoryContext } from '@/context/InventoryContext';
 import { Icons } from '@/components/icons';
 import type { InventoryItem, PhoneBrand, ItemType, InventoryFormValues } from '@/types/inventory';
 import { PHONE_BRANDS, ITEM_TYPES } from '@/types/inventory';
@@ -47,11 +48,14 @@ function InventoryPageContent() {
   const [selectedBrand, setSelectedBrand] = useState<PhoneBrand>('All');
   const [selectedType, setSelectedType] = useState<ItemType>('All');
 
+  const [sortConfig, setSortConfig] = useState<{ key: keyof InventoryItem | 'profit'; direction: 'ascending' | 'descending' } | null>({ key: 'itemName', direction: 'ascending' });
+
   const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
+  const [historyItem, setHistoryItem] = useState<InventoryItem | null>(null); // State for history dialog
 
 
-  const filteredItems = useMemo(() => {
-    return inventoryItems
+  const sortedAndFilteredItems = useMemo(() => {
+    let sortableItems = [...inventoryItems]
       .filter((item) =>
         item.itemName.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -61,7 +65,43 @@ function InventoryPageContent() {
       .filter((item) =>
         selectedType === 'All' ? true : item.itemType === selectedType
       );
-  }, [inventoryItems, searchTerm, selectedBrand, selectedType]);
+      
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue: string | number;
+        let bValue: string | number;
+
+        // Handle special 'profit' key
+        if (sortConfig.key === 'profit') {
+          aValue = a.sellingPrice - a.buyingPrice;
+          bValue = b.sellingPrice - b.buyingPrice;
+        } else {
+          aValue = a[sortConfig.key as keyof Omit<InventoryItem, 'history'>];
+          bValue = b[sortConfig.key as keyof Omit<InventoryItem, 'history'>];
+        }
+        
+        // Handle optional quantityInStock by providing a default value for sorting
+        if (sortConfig.key === 'quantityInStock') {
+            aValue = a.quantityInStock ?? -Infinity;
+            bValue = b.quantityInStock ?? -Infinity;
+        }
+        
+        // Ensure values are comparable
+        if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+        if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    return sortableItems;
+  }, [inventoryItems, searchTerm, selectedBrand, selectedType, sortConfig]);
 
   const handleEdit = useCallback((item: InventoryItem) => {
     const fullItem = getItemById(item.id); // Get the most up-to-date item
@@ -81,6 +121,21 @@ function InventoryPageContent() {
       setItemToDeleteId(null); // Close dialog
     }
   }, [itemToDeleteId, deleteInventoryItem]);
+
+  const handleViewHistory = useCallback((item: InventoryItem) => {
+    const fullItem = getItemById(item.id);
+    if(fullItem) {
+      setHistoryItem(fullItem);
+    }
+  }, [getItemById]);
+
+  const handleSort = useCallback((key: keyof InventoryItem | 'profit') => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  }, [sortConfig]);
 
 
   const handleFormSubmit = (data: InventoryFormValues) => {
@@ -107,7 +162,7 @@ function InventoryPageContent() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Inventory Management</h1>
         <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
@@ -134,9 +189,6 @@ function InventoryPageContent() {
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* TODO: Add comment about admin-only access once Firebase Auth is integrated */}
-      {/* <p className="text-sm text-muted-foreground">This page is for admin use only.</p> */}
       
       <div className="space-y-4 p-4 border rounded-lg shadow-sm bg-card">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -180,7 +232,16 @@ function InventoryPageContent() {
         </div>
       </div>
 
-      <InventoryTable items={filteredItems} onEdit={handleEdit} onDelete={handleDeleteConfirmation} />
+      <InventoryTable 
+        items={sortedAndFilteredItems} 
+        onEdit={handleEdit} 
+        onDelete={handleDeleteConfirmation} 
+        onViewHistory={handleViewHistory}
+        onSort={handleSort}
+        sortConfig={sortConfig}
+      />
+
+      {historyItem && <InventoryHistoryDialog item={historyItem} onClose={() => setHistoryItem(null)} />}
 
       <AlertDialog open={!!itemToDeleteId} onOpenChange={() => setItemToDeleteId(null)}>
         <AlertDialogContent>
@@ -188,7 +249,7 @@ function InventoryPageContent() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the item
-              from your inventory.
+              from your inventory and its history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -205,8 +266,6 @@ function InventoryPageContent() {
 
 export default function InventoryPageClient() {
   return (
-    <InventoryProvider>
       <InventoryPageContent />
-    </InventoryProvider>
   );
 }

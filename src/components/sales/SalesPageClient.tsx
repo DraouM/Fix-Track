@@ -51,7 +51,7 @@ const getInitialSalesState = (): Sale[] => {
 
 export default function SalesPageClient() {
   const { clients, increaseClientDebt } = useClientContext();
-  const { inventoryItems, getItemById, updateItemQuantity: updateInventoryContextItemQuantity } = useInventoryContext();
+  const { inventoryItems, getItemById, updateItemQuantity } = useInventoryContext();
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
@@ -167,7 +167,7 @@ export default function SalesPageClient() {
     setPastSales(prevSales => [newSale, ...prevSales]);
     increaseClientDebt(selectedClient.id, saleTotal);
     soldItems.forEach(soldItem => {
-      updateInventoryContextItemQuantity(soldItem.inventoryItemId, -soldItem.quantity);
+      updateItemQuantity(soldItem.inventoryItemId, -soldItem.quantity, 'Sold', `Sale to ${selectedClient.name}`, newSale.id);
     });
     
     toast.success(`Sale for ${selectedClient.name} totaling $${saleTotal.toFixed(2)} has been recorded.`);

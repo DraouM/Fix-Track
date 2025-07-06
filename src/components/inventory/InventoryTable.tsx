@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -19,14 +18,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface InventoryTableProps {
   items: InventoryItem[];
   onEdit: (item: InventoryItem) => void;
   onDelete: (itemId: string) => void;
+  onViewHistory: (item: InventoryItem) => void;
+  onSort: (key: keyof InventoryItem | 'profit') => void;
+  sortConfig: { key: keyof InventoryItem | 'profit'; direction: 'ascending' | 'descending' } | null;
 }
 
 const getItemTypeBadgeVariant = (itemType: ItemType): "default" | "secondary" | "destructive" | "outline" => {
@@ -41,23 +45,53 @@ const getItemTypeBadgeVariant = (itemType: ItemType): "default" | "secondary" | 
   }
 }
 
-export function InventoryTable({ items, onEdit, onDelete }: InventoryTableProps) {
+export function InventoryTable({ items, onEdit, onDelete, onViewHistory, onSort, sortConfig }: InventoryTableProps) {
   if (items.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No inventory items found. Try adjusting your filters or adding new items.</p>;
   }
+
+  const SortableHeader = ({ columnKey, children, className }: { columnKey: keyof InventoryItem | 'profit', children: React.ReactNode, className?: string }) => (
+    <Button variant="ghost" onClick={() => onSort(columnKey)} className={cn("px-2 py-1 h-auto -ml-2", className)}>
+      {children}
+      <span className="ml-1.5 shrink-0">
+        {sortConfig?.key === columnKey
+          ? (sortConfig.direction === 'ascending'
+            ? <ArrowUp className="h-4 w-4" />
+            : <ArrowDown className="h-4 w-4" />)
+          : <ArrowUpDown className="h-4 w-4 opacity-30" />
+        }
+      </span>
+    </Button>
+  );
+
+
   return (
     <div className="rounded-md border">
       <Table>
         <TableCaption>A list of your inventory items.</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead>Item Name</TableHead>
-            <TableHead>Brand</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead className="text-right">Buy Price</TableHead>
-            <TableHead className="text-right">Sell Price</TableHead>
-            <TableHead className="text-right">Profit</TableHead>
-            <TableHead className="text-right">Stock</TableHead>
+            <TableHead>
+                <SortableHeader columnKey="itemName">Item Name</SortableHeader>
+            </TableHead>
+            <TableHead>
+                <SortableHeader columnKey="phoneBrand">Brand</SortableHeader>
+            </TableHead>
+            <TableHead>
+                <SortableHeader columnKey="itemType">Type</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+                <SortableHeader columnKey="buyingPrice" className="-mr-2">Buy Price</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+                <SortableHeader columnKey="sellingPrice" className="-mr-2">Sell Price</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+                <SortableHeader columnKey="profit" className="-mr-2">Profit</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+                <SortableHeader columnKey="quantityInStock" className="-mr-2">Stock</SortableHeader>
+            </TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -91,9 +125,13 @@ export function InventoryTable({ items, onEdit, onDelete }: InventoryTableProps)
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onViewHistory(item)}>
+                        <Icons.history className="mr-2 h-4 w-4" /> View History
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onEdit(item)}>
                         <Icons.edit className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => onDelete(item.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                         <Icons.trash className="mr-2 h-4 w-4" /> Delete
                       </DropdownMenuItem>

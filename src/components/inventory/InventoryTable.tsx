@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import {
   Table,
   TableBody,
@@ -9,11 +9,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Icons } from '@/components/icons';
-import type { InventoryItem, ItemType } from '@/types/inventory';
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Icons } from "@/components/icons";
+import type { InventoryItem, ItemType } from "@/types/inventory";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,49 +21,92 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface InventoryTableProps {
   items: InventoryItem[];
   onEdit: (item: InventoryItem) => void;
   onDelete: (itemId: string) => void;
   onViewHistory: (item: InventoryItem) => void;
-  onSort: (key: keyof InventoryItem | 'profit') => void;
-  sortConfig: { key: keyof InventoryItem | 'profit'; direction: 'ascending' | 'descending' } | null;
+  onSort: (key: keyof InventoryItem | "profit") => void;
+  sortConfig: {
+    key: keyof InventoryItem | "profit";
+    direction: "ascending" | "descending";
+  } | null;
+  activeItemId: string | null;
+  setActiveItemId: (id: string | null) => void;
 }
 
-const getItemTypeBadgeVariant = (itemType: ItemType): "default" | "secondary" | "destructive" | "outline" => {
+const getItemTypeBadgeVariant = (
+  itemType: ItemType
+): "default" | "secondary" | "destructive" | "outline" => {
   switch (itemType) {
-    case 'Battery': return 'default';
-    case 'Screen': return 'secondary';
-    case 'Charger': return 'destructive'; // Example, can customize
-    case 'Motherboard': return 'outline';
-    case 'Cable': return 'default'; // Example
-    case 'Case': return 'secondary'; // Example
-    default: return 'outline';
+    case "Battery":
+      return "default";
+    case "Screen":
+      return "secondary";
+    case "Charger":
+      return "destructive"; // Example, can customize
+    case "Motherboard":
+      return "outline";
+    case "Cable":
+      return "default"; // Example
+    case "Case":
+      return "secondary"; // Example
+    default:
+      return "outline";
   }
-}
+};
 
-export function InventoryTable({ items, onEdit, onDelete, onViewHistory, onSort, sortConfig }: InventoryTableProps) {
+export function InventoryTable({
+  items,
+  onEdit,
+  onDelete,
+  onViewHistory,
+  onSort,
+  sortConfig,
+  activeItemId,
+  setActiveItemId,
+}: InventoryTableProps) {
   if (items.length === 0) {
-    return <p className="text-center text-muted-foreground py-8">No inventory items found. Try adjusting your filters or adding new items.</p>;
+    return (
+      <p className="text-center text-muted-foreground py-8">
+        No inventory items found. Try adjusting your filters or adding new
+        items.
+      </p>
+    );
   }
 
-  const SortableHeader = ({ columnKey, children, className }: { columnKey: keyof InventoryItem | 'profit', children: React.ReactNode, className?: string }) => (
-    <Button variant="ghost" onClick={() => onSort(columnKey)} className={cn("px-2 py-1 h-auto -ml-2", className)}>
+  const SortableHeader = ({
+    columnKey,
+    children,
+    className,
+  }: {
+    columnKey: keyof InventoryItem | "profit";
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <Button
+      variant="ghost"
+      onClick={() => onSort(columnKey)}
+      className={cn("px-2 py-1 h-auto -ml-2", className)}
+    >
       {children}
       <span className="ml-1.5 shrink-0">
-        {sortConfig?.key === columnKey
-          ? (sortConfig.direction === 'ascending'
-            ? <ArrowUp className="h-4 w-4" />
-            : <ArrowDown className="h-4 w-4" />)
-          : <ArrowUpDown className="h-4 w-4 opacity-30" />
-        }
+        {sortConfig?.key === columnKey ? (
+          sortConfig.direction === "ascending" ? (
+            <ArrowUp className="h-4 w-4" />
+          ) : (
+            <ArrowDown className="h-4 w-4" />
+          )
+        ) : (
+          <ArrowUpDown className="h-4 w-4 opacity-30" />
+        )}
       </span>
     </Button>
   );
-
 
   return (
     <div className="rounded-md border">
@@ -72,25 +115,33 @@ export function InventoryTable({ items, onEdit, onDelete, onViewHistory, onSort,
         <TableHeader>
           <TableRow>
             <TableHead>
-                <SortableHeader columnKey="itemName">Item Name</SortableHeader>
+              <SortableHeader columnKey="itemName">Item Name</SortableHeader>
             </TableHead>
             <TableHead>
-                <SortableHeader columnKey="phoneBrand">Brand</SortableHeader>
+              <SortableHeader columnKey="phoneBrand">Brand</SortableHeader>
             </TableHead>
             <TableHead>
-                <SortableHeader columnKey="itemType">Type</SortableHeader>
+              <SortableHeader columnKey="itemType">Type</SortableHeader>
             </TableHead>
             <TableHead className="text-right">
-                <SortableHeader columnKey="buyingPrice" className="-mr-2">Buy Price</SortableHeader>
+              <SortableHeader columnKey="buyingPrice" className="-mr-2">
+                Buy Price
+              </SortableHeader>
             </TableHead>
             <TableHead className="text-right">
-                <SortableHeader columnKey="sellingPrice" className="-mr-2">Sell Price</SortableHeader>
+              <SortableHeader columnKey="sellingPrice" className="-mr-2">
+                Sell Price
+              </SortableHeader>
             </TableHead>
             <TableHead className="text-right">
-                <SortableHeader columnKey="profit" className="-mr-2">Profit</SortableHeader>
+              <SortableHeader columnKey="profit" className="-mr-2">
+                Profit
+              </SortableHeader>
             </TableHead>
             <TableHead className="text-right">
-                <SortableHeader columnKey="quantityInStock" className="-mr-2">Stock</SortableHeader>
+              <SortableHeader columnKey="quantityInStock" className="-mr-2">
+                Stock
+              </SortableHeader>
             </TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
@@ -98,23 +149,48 @@ export function InventoryTable({ items, onEdit, onDelete, onViewHistory, onSort,
         <TableBody>
           {items.map((item) => {
             const profit = item.sellingPrice - item.buyingPrice;
-            const isLowStock = item.quantityInStock !== undefined && item.quantityInStock < 5;
+            const isLowStock =
+              item.quantityInStock !== undefined && item.quantityInStock < 5;
             return (
-              <TableRow key={item.id} className={isLowStock ? 'bg-destructive/10' : ''}>
+              <TableRow
+                key={item.id}
+                className={cn(
+                  isLowStock ? "bg-destructive/10" : "",
+                  activeItemId === item.id
+                    ? "bg-primary/10 border-l-4 border-primary font-bold"
+                    : ""
+                )}
+                onClick={() => setActiveItemId(item.id)}
+                style={{ cursor: "pointer" }}
+              >
                 <TableCell className="font-medium">{item.itemName}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{item.phoneBrand}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={getItemTypeBadgeVariant(item.itemType)}>{item.itemType}</Badge>
+                  <Badge variant={getItemTypeBadgeVariant(item.itemType)}>
+                    {item.itemType}
+                  </Badge>
                 </TableCell>
-                <TableCell className="text-right">${item.buyingPrice.toFixed(2)}</TableCell>
-                <TableCell className="text-right">${item.sellingPrice.toFixed(2)}</TableCell>
-                <TableCell className={`text-right ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <TableCell className="text-right">
+                  ${item.buyingPrice.toFixed(2)}
+                </TableCell>
+                <TableCell className="text-right">
+                  ${item.sellingPrice.toFixed(2)}
+                </TableCell>
+                <TableCell
+                  className={`text-right ${
+                    profit >= 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
                   ${profit.toFixed(2)}
                 </TableCell>
-                <TableCell className={`text-right ${isLowStock ? 'text-destructive font-semibold' : ''}`}>
-                  {item.quantityInStock ?? 'N/A'}
+                <TableCell
+                  className={`text-right ${
+                    isLowStock ? "text-destructive font-semibold" : ""
+                  }`}
+                >
+                  {item.quantityInStock ?? "N/A"}
                 </TableCell>
                 <TableCell className="text-center">
                   <DropdownMenu>
@@ -132,7 +208,10 @@ export function InventoryTable({ items, onEdit, onDelete, onViewHistory, onSort,
                         <Icons.edit className="mr-2 h-4 w-4" /> Edit
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => onDelete(item.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                      <DropdownMenuItem
+                        onClick={() => onDelete(item.id)}
+                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                      >
                         <Icons.trash className="mr-2 h-4 w-4" /> Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>

@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -71,6 +77,24 @@ function InventoryPageContent() {
   const [historyEvents, setHistoryEvents] = useState<InventoryHistoryEvent[]>(
     []
   );
+
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        tableContainerRef.current &&
+        !tableContainerRef.current.contains(event.target as Node)
+      ) {
+        setActiveItemId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const sortedAndFilteredItems = useMemo(() => {
     let sortableItems = [...inventoryItems]
@@ -250,15 +274,20 @@ function InventoryPageContent() {
         </Dialog>
       </div>
 
-      <div className="space-y-4 p-4 border rounded-lg shadow-sm bg-card">
+      <div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <Input
-            placeholder="Search by item name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="md:col-span-1"
-            aria-label="Search items"
-          />
+          <div className="relative md:col-span-1">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Icons.search className="h-5 w-5 text-muted-foreground" />
+            </span>
+            <Input
+              placeholder="Search by item name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 rounded-full shadow-sm focus:ring-2 focus:ring-primary focus:border-primary border border-input bg-background transition-all"
+              aria-label="Search items"
+            />
+          </div>
           <div className="space-y-1">
             <label
               htmlFor="brand-filter"
@@ -308,14 +337,18 @@ function InventoryPageContent() {
         </div>
       </div>
 
-      <InventoryTable
-        items={sortedAndFilteredItems}
-        onEdit={handleEdit}
-        onDelete={handleDeleteConfirmation}
-        onViewHistory={handleViewHistory}
-        onSort={handleSort}
-        sortConfig={sortConfig}
-      />
+      <div ref={tableContainerRef}>
+        <InventoryTable
+          items={sortedAndFilteredItems}
+          onEdit={handleEdit}
+          onDelete={handleDeleteConfirmation}
+          onViewHistory={handleViewHistory}
+          onSort={handleSort}
+          sortConfig={sortConfig}
+          activeItemId={activeItemId}
+          setActiveItemId={setActiveItemId}
+        />
+      </div>
 
       <InventoryHistoryDialog
         open={!!historyItem}

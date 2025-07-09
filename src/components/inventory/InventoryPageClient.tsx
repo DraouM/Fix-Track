@@ -1,9 +1,8 @@
+"use client";
 
-'use client';
-
-import React, { useState, useMemo, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React, { useState, useMemo, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -11,21 +10,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { InventoryForm } from './InventoryForm';
-import { InventoryTable } from './InventoryTable';
-import { InventoryHistoryDialog } from './InventoryHistoryDialog'; // Import the new dialog
-import { useInventoryContext } from '@/context/InventoryContext';
-import { Icons } from '@/components/icons';
-import type { InventoryItem, PhoneBrand, ItemType, InventoryFormValues } from '@/types/inventory';
-import { PHONE_BRANDS, ITEM_TYPES } from '@/types/inventory';
+} from "@/components/ui/select";
+import { InventoryForm } from "./InventoryForm";
+import { InventoryTable } from "./InventoryTable";
+import { InventoryHistoryDialog } from "./InventoryHistoryDialog"; // Import the new dialog
+import { useInventoryContext } from "@/context/InventoryContext";
+import { Icons } from "@/components/icons";
+import type {
+  InventoryItem,
+  PhoneBrand,
+  ItemType,
+  InventoryFormValues,
+} from "@/types/inventory";
+import { PHONE_BRANDS, ITEM_TYPES } from "@/types/inventory";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,24 +39,32 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-
+} from "@/components/ui/alert-dialog";
 
 function InventoryPageContent() {
-  const { inventoryItems, addInventoryItem, updateInventoryItem, deleteInventoryItem, loading, getItemById } = useInventoryContext();
+  const {
+    inventoryItems,
+    addInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem,
+    loading,
+    getItemById,
+  } = useInventoryContext();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<InventoryItem | null>(null);
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState<PhoneBrand>('All');
-  const [selectedType, setSelectedType] = useState<ItemType>('All');
 
-  const [sortConfig, setSortConfig] = useState<{ key: keyof InventoryItem | 'profit'; direction: 'ascending' | 'descending' } | null>({ key: 'itemName', direction: 'ascending' });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState<PhoneBrand>("All");
+  const [selectedType, setSelectedType] = useState<ItemType>("All");
+
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof InventoryItem | "profit";
+    direction: "ascending" | "descending";
+  } | null>({ key: "itemName", direction: "ascending" });
 
   const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
   const [historyItem, setHistoryItem] = useState<InventoryItem | null>(null); // State for history dialog
-
 
   const sortedAndFilteredItems = useMemo(() => {
     let sortableItems = [...inventoryItems]
@@ -60,41 +72,46 @@ function InventoryPageContent() {
         item.itemName.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .filter((item) =>
-        selectedBrand === 'All' ? true : item.phoneBrand === selectedBrand
+        selectedBrand === "All" ? true : item.phoneBrand === selectedBrand
       )
       .filter((item) =>
-        selectedType === 'All' ? true : item.itemType === selectedType
+        selectedType === "All" ? true : item.itemType === selectedType
       );
-      
+
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         let aValue: string | number;
         let bValue: string | number;
 
         // Handle special 'profit' key
-        if (sortConfig.key === 'profit') {
+        if (sortConfig.key === "profit") {
           aValue = a.sellingPrice - a.buyingPrice;
           bValue = b.sellingPrice - b.buyingPrice;
         } else {
-          aValue = a[sortConfig.key as keyof Omit<InventoryItem, 'history'>];
-          bValue = b[sortConfig.key as keyof Omit<InventoryItem, 'history'>];
+          // Ensure aValue and bValue are never undefined by providing a default value
+          const aRaw =
+            a[sortConfig.key as keyof Omit<InventoryItem, "history">];
+          const bRaw =
+            b[sortConfig.key as keyof Omit<InventoryItem, "history">];
+          aValue = aRaw !== undefined && aRaw !== null ? aRaw : "";
+          bValue = bRaw !== undefined && bRaw !== null ? bRaw : "";
         }
-        
+
         // Handle optional quantityInStock by providing a default value for sorting
-        if (sortConfig.key === 'quantityInStock') {
-            aValue = a.quantityInStock ?? -Infinity;
-            bValue = b.quantityInStock ?? -Infinity;
+        if (sortConfig.key === "quantityInStock") {
+          aValue = a.quantityInStock ?? -Infinity;
+          bValue = b.quantityInStock ?? -Infinity;
         }
-        
+
         // Ensure values are comparable
-        if (typeof aValue === 'string') aValue = aValue.toLowerCase();
-        if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+        if (typeof aValue === "string") aValue = aValue.toLowerCase();
+        if (typeof bValue === "string") bValue = bValue.toLowerCase();
 
         if (aValue < bValue) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
+          return sortConfig.direction === "ascending" ? -1 : 1;
         }
         if (aValue > bValue) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
+          return sortConfig.direction === "ascending" ? 1 : -1;
         }
         return 0;
       });
@@ -103,13 +120,16 @@ function InventoryPageContent() {
     return sortableItems;
   }, [inventoryItems, searchTerm, selectedBrand, selectedType, sortConfig]);
 
-  const handleEdit = useCallback((item: InventoryItem) => {
-    const fullItem = getItemById(item.id); // Get the most up-to-date item
-    if (fullItem) {
+  const handleEdit = useCallback(
+    (item: InventoryItem) => {
+      const fullItem = getItemById(item.id); // Get the most up-to-date item
+      if (fullItem) {
         setItemToEdit(fullItem);
         setIsFormOpen(true);
-    }
-  }, [getItemById]);
+      }
+    },
+    [getItemById]
+  );
 
   const handleDeleteConfirmation = useCallback((itemId: string) => {
     setItemToDeleteId(itemId);
@@ -122,21 +142,30 @@ function InventoryPageContent() {
     }
   }, [itemToDeleteId, deleteInventoryItem]);
 
-  const handleViewHistory = useCallback((item: InventoryItem) => {
-    const fullItem = getItemById(item.id);
-    if(fullItem) {
-      setHistoryItem(fullItem);
-    }
-  }, [getItemById]);
+  const handleViewHistory = useCallback(
+    (item: InventoryItem) => {
+      const fullItem = getItemById(item.id);
+      if (fullItem) {
+        setHistoryItem(fullItem);
+      }
+    },
+    [getItemById]
+  );
 
-  const handleSort = useCallback((key: keyof InventoryItem | 'profit') => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  }, [sortConfig]);
-
+  const handleSort = useCallback(
+    (key: keyof InventoryItem | "profit") => {
+      let direction: "ascending" | "descending" = "ascending";
+      if (
+        sortConfig &&
+        sortConfig.key === key &&
+        sortConfig.direction === "ascending"
+      ) {
+        direction = "descending";
+      }
+      setSortConfig({ key, direction });
+    },
+    [sortConfig]
+  );
 
   const handleFormSubmit = (data: InventoryFormValues) => {
     if (itemToEdit) {
@@ -152,7 +181,7 @@ function InventoryPageContent() {
     setItemToEdit(null);
     setIsFormOpen(true);
   };
-  
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -165,10 +194,13 @@ function InventoryPageContent() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Inventory Management</h1>
-        <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
+        <Dialog
+          open={isFormOpen}
+          onOpenChange={(isOpen) => {
             setIsFormOpen(isOpen);
             if (!isOpen) setItemToEdit(null);
-        }}>
+          }}
+        >
           <DialogTrigger asChild>
             <Button onClick={openAddNewForm}>
               <Icons.plusCircle className="mr-2 h-4 w-4" /> Add New Item
@@ -176,20 +208,24 @@ function InventoryPageContent() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[625px]">
             <DialogHeader>
-              <DialogTitle>{itemToEdit ? 'Edit Item' : 'Add New Item'}</DialogTitle>
+              <DialogTitle>
+                {itemToEdit ? "Edit Item" : "Add New Item"}
+              </DialogTitle>
               <DialogDescription>
-                {itemToEdit ? 'Update the details of this inventory item.' : 'Fill in the details to add a new item to your inventory.'}
+                {itemToEdit
+                  ? "Update the details of this inventory item."
+                  : "Fill in the details to add a new item to your inventory."}
               </DialogDescription>
             </DialogHeader>
-            <InventoryForm 
-              onSuccess={() => setIsFormOpen(false)} 
+            <InventoryForm
+              onSuccess={() => setIsFormOpen(false)}
               itemToEdit={itemToEdit}
               onSubmitForm={handleFormSubmit}
             />
           </DialogContent>
         </Dialog>
       </div>
-      
+
       <div className="space-y-4 p-4 border rounded-lg shadow-sm bg-card">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <Input
@@ -200,8 +236,16 @@ function InventoryPageContent() {
             aria-label="Search items"
           />
           <div className="space-y-1">
-            <label htmlFor="brand-filter" className="text-sm font-medium text-muted-foreground">Filter by Brand</label>
-            <Select value={selectedBrand} onValueChange={(value) => setSelectedBrand(value as PhoneBrand)}>
+            <label
+              htmlFor="brand-filter"
+              className="text-sm font-medium text-muted-foreground"
+            >
+              Filter by Brand
+            </label>
+            <Select
+              value={selectedBrand}
+              onValueChange={(value) => setSelectedBrand(value as PhoneBrand)}
+            >
               <SelectTrigger id="brand-filter">
                 <SelectValue placeholder="Filter by brand" />
               </SelectTrigger>
@@ -215,8 +259,16 @@ function InventoryPageContent() {
             </Select>
           </div>
           <div className="space-y-1">
-            <label htmlFor="type-filter" className="text-sm font-medium text-muted-foreground">Filter by Type</label>
-            <Select value={selectedType} onValueChange={(value) => setSelectedType(value as ItemType)}>
+            <label
+              htmlFor="type-filter"
+              className="text-sm font-medium text-muted-foreground"
+            >
+              Filter by Type
+            </label>
+            <Select
+              value={selectedType}
+              onValueChange={(value) => setSelectedType(value as ItemType)}
+            >
               <SelectTrigger id="type-filter">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
@@ -232,29 +284,40 @@ function InventoryPageContent() {
         </div>
       </div>
 
-      <InventoryTable 
-        items={sortedAndFilteredItems} 
-        onEdit={handleEdit} 
-        onDelete={handleDeleteConfirmation} 
+      <InventoryTable
+        items={sortedAndFilteredItems}
+        onEdit={handleEdit}
+        onDelete={handleDeleteConfirmation}
         onViewHistory={handleViewHistory}
         onSort={handleSort}
         sortConfig={sortConfig}
       />
 
-      {historyItem && <InventoryHistoryDialog item={historyItem} onClose={() => setHistoryItem(null)} />}
+      {historyItem && (
+        <InventoryHistoryDialog
+          item={historyItem}
+          onClose={() => setHistoryItem(null)}
+        />
+      )}
 
-      <AlertDialog open={!!itemToDeleteId} onOpenChange={() => setItemToDeleteId(null)}>
+      <AlertDialog
+        open={!!itemToDeleteId}
+        onOpenChange={() => setItemToDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the item
-              from your inventory and its history.
+              This action cannot be undone. This will permanently delete the
+              item from your inventory and its history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -265,7 +328,5 @@ function InventoryPageContent() {
 }
 
 export default function InventoryPageClient() {
-  return (
-      <InventoryPageContent />
-  );
+  return <InventoryPageContent />;
 }

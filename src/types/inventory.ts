@@ -1,12 +1,40 @@
+export const PHONE_BRANDS = [
+  "All",
+  "Samsung",
+  "Apple",
+  "Huawei",
+  "Xiaomi",
+  "Google",
+  "OnePlus",
+  "Oppo",
+  "Vivo",
+  "Realme",
+  "Other",
+] as const;
+export type PhoneBrand = (typeof PHONE_BRANDS)[number];
 
-export const PHONE_BRANDS = ['All', 'Samsung', 'Apple', 'Huawei', 'Xiaomi', 'Google', 'OnePlus', 'Oppo', 'Vivo', 'Realme', 'Other'] as const;
-export type PhoneBrand = typeof PHONE_BRANDS[number];
-
-export const ITEM_TYPES = ['All', 'Battery', 'Screen', 'Charger', 'Motherboard', 'Cable', 'Case', 'Audio Jack', 'Camera', 'Button', 'Other'] as const;
-export type ItemType = typeof ITEM_TYPES[number];
+export const ITEM_TYPES = [
+  "All",
+  "Battery",
+  "Screen",
+  "Charger",
+  "Motherboard",
+  "Cable",
+  "Case",
+  "Audio Jack",
+  "Camera",
+  "Button",
+  "Other",
+] as const;
+export type ItemType = (typeof ITEM_TYPES)[number];
 
 // New Type for history events
-export type HistoryEventType = 'Purchased' | 'Used in Repair' | 'Sold' | 'Manual Correction' | 'Returned';
+export type HistoryEventType =
+  | "Purchased"
+  | "Used in Repair"
+  | "Sold"
+  | "Manual Correction"
+  | "Returned";
 
 export interface InventoryHistoryEvent {
   id: string;
@@ -25,16 +53,29 @@ export interface InventoryItem {
   buyingPrice: number;
   sellingPrice: number;
   quantityInStock?: number;
+  lowStockThreshold?: number;
+  supplierInfo?: string;
   history?: InventoryHistoryEvent[]; // Add history array
 }
 
 // Schema for form validation, can be placed here or in the form component
-import { z } from 'zod';
+import { z } from "zod";
 
 export const inventoryItemSchema = z.object({
-  itemName: z.string().min(2, { message: "Item name must be at least 2 characters." }),
-  phoneBrand: z.enum(PHONE_BRANDS.filter(brand => brand !== 'All') as [PhoneBrand, ...PhoneBrand[]], { message: "Please select a valid phone brand." }),
-  itemType: z.enum(ITEM_TYPES.filter(type => type !== 'All') as [ItemType, ...ItemType[]], { message: "Please select a valid item type." }),
+  itemName: z
+    .string()
+    .min(2, { message: "Item name must be at least 2 characters." }),
+  phoneBrand: z.enum(
+    PHONE_BRANDS.filter((brand) => brand !== "All") as [
+      PhoneBrand,
+      ...PhoneBrand[]
+    ],
+    { message: "Please select a valid phone brand." }
+  ),
+  itemType: z.enum(
+    ITEM_TYPES.filter((type) => type !== "All") as [ItemType, ...ItemType[]],
+    { message: "Please select a valid item type." }
+  ),
   buyingPrice: z.preprocess(
     (val) => parseFloat(z.string().parse(val)),
     z.number().positive({ message: "Buying price must be a positive number." })
@@ -44,9 +85,30 @@ export const inventoryItemSchema = z.object({
     z.number().positive({ message: "Selling price must be a positive number." })
   ),
   quantityInStock: z.preprocess(
-    (val) => (val === "" || val === undefined || val === null) ? undefined : parseInt(z.string().parse(val), 10),
-    z.number().int().min(0, { message: "Quantity must be a non-negative integer." }).optional()
+    (val) =>
+      val === "" || val === undefined || val === null
+        ? undefined
+        : parseInt(z.string().parse(val), 10),
+    z
+      .number()
+      .int()
+      .min(0, { message: "Quantity must be a non-negative integer." })
+      .optional()
   ),
+  lowStockThreshold: z.preprocess(
+    (val) =>
+      val === "" || val === undefined || val === null
+        ? undefined
+        : parseInt(z.string().parse(val), 10),
+    z
+      .number()
+      .int()
+      .min(0, {
+        message: "Low stock threshold must be a non-negative integer.",
+      })
+      .optional()
+  ),
+  supplierInfo: z.string().optional(),
 });
 
 export type InventoryFormValues = z.infer<typeof inventoryItemSchema>;

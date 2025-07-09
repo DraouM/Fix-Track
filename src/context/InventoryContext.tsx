@@ -46,30 +46,35 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    invoke<any[]>("get_items")
-      .then((items) => {
-        // Map snake_case to camelCase
-        const mapped = items.map((item) => ({
-          ...item,
-          itemName: item.item_name,
-          phoneBrand: item.phone_brand,
-          itemType: item.item_type,
-          buyingPrice: item.buying_price,
-          sellingPrice: item.selling_price,
-          quantityInStock: item.quantity_in_stock,
-          lowStockThreshold: item.low_stock_threshold,
-          supplierInfo: item.supplier_info,
-          // history: [] // If you add history later
-        }));
-        setInventoryItems(mapped);
-        console.log({ items: mapped });
+    // Initialize both tables before fetching items
+    Promise.all([invoke("init_inventory_table"), invoke("init_history_table")])
+      .then(() => {
+        setLoading(true);
+        invoke<any[]>("get_items")
+          .then((items) => {
+            const mapped = items.map((item) => ({
+              ...item,
+              itemName: item.item_name,
+              phoneBrand: item.phone_brand,
+              itemType: item.item_type,
+              buyingPrice: item.buying_price,
+              sellingPrice: item.selling_price,
+              quantityInStock: item.quantity_in_stock,
+              lowStockThreshold: item.low_stock_threshold,
+              supplierInfo: item.supplier_info,
+              history: item.history ?? [],
+            }));
+            setInventoryItems(mapped);
+          })
+          .catch((err) => {
+            toast.error("Failed to load inventory: " + err);
+            setInventoryItems([]);
+          })
+          .finally(() => setLoading(false));
       })
       .catch((err) => {
-        toast.error("Failed to load inventory: " + err);
-        setInventoryItems([]); // fallback or keep previous
-      })
-      .finally(() => setLoading(false));
+        toast.error("Failed to initialize tables: " + err);
+      });
   }, []);
 
   useEffect(() => {
@@ -79,65 +84,133 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [inventoryItems, loading]);
 
   const addInventoryItem = useCallback((itemData: InventoryFormValues) => {
-    const newItemId = `inv_${Date.now().toString()}`;
+    // Map camelCase to snake_case for Rust
+    const newItemId = `inv_${Date.now()}`;
     const quantity = itemData.quantityInStock ?? 0;
 
-    const newHistoryEvent: InventoryHistoryEvent = {
-      id: `hist_${Date.now()}`,
-      date: new Date().toISOString(),
-      type: "Purchased",
-      quantityChange: quantity,
-      notes: "Initial stock added",
+    const payload = {
+      id: newItemId,
+      item_name: itemData.itemName,
+      phone_brand: itemData.phoneBrand,
+      item_type: itemData.itemType,
+      buying_price: itemData.buyingPrice,
+      selling_price: itemData.sellingPrice,
+      quantity_in_stock: quantity,
+      low_stock_threshold: itemData.lowStockThreshold,
+      supplier_info: itemData.supplierInfo,
     };
 
-    setInventoryItems((prevItems) => [
-      {
-        ...itemData,
-        id: newItemId,
-        quantityInStock: quantity,
-        lowStockThreshold: itemData.lowStockThreshold,
-        supplierInfo: itemData.supplierInfo,
-        history: quantity > 0 ? [newHistoryEvent] : [],
-      },
-      ...prevItems,
-    ]);
+    invoke("insert_item", { item: payload })
+      .then(() => {
+        // Insert history event after item is added
+        const historyEvent = {
+          id: `hist_${Date.now()}`,
+          item_id: newItemId,
+          date: new Date().toISOString(),
+          event_type: "Purchased",
+          quantity_change: quantity,
+          notes: "Initial stock added",
+          related_id: null,
+        };
+        return invoke("insert_history_event", { event: historyEvent });
+      })
+      .then(() => {
+        toast.success("Item and history event added!");
+        // Refetch inventory
+        setLoading(true);
+        invoke<any[]>("get_items")
+          .then((items) => {
+            const mapped = items.map((item) => ({
+              ...item,
+              itemName: item.item_name,
+              phoneBrand: item.phone_brand,
+              itemType: item.item_type,
+              buyingPrice: item.buying_price,
+              sellingPrice: item.selling_price,
+              quantityInStock: item.quantity_in_stock,
+              lowStockThreshold: item.low_stock_threshold,
+              supplierInfo: item.supplier_info,
+              history: item.history ?? [],
+            }));
+            setInventoryItems(mapped);
+          })
+          .catch((err) => {
+            toast.error("Failed to reload inventory: " + err);
+          })
+          .finally(() => setLoading(false));
+      })
+      .catch((err) => {
+        toast.error("Failed to add item or history: " + err);
+      });
   }, []);
 
   const updateInventoryItem = useCallback(
     (id: string, itemData: InventoryFormValues) => {
-      setInventoryItems((prevItems) =>
-        prevItems.map((item) => {
-          if (item.id === id) {
-            const currentStock = item.quantityInStock ?? 0;
-            const newStock = itemData.quantityInStock ?? currentStock;
-            const quantityChange = newStock - currentStock;
-            let newHistory = item.history ? [...item.history] : [];
+      // Find the current item for stock diff
+      const currentItem = inventoryItems.find((item) => item.id === id);
+      const currentStock = currentItem?.quantityInStock ?? 0;
+      const newStock = itemData.quantityInStock ?? currentStock;
+      const quantityChange = newStock - currentStock;
 
-            if (quantityChange !== 0) {
-              const newHistoryEvent: InventoryHistoryEvent = {
-                id: `hist_${Date.now()}`,
-                date: new Date().toISOString(),
-                type: "Manual Correction",
-                quantityChange,
-                notes: `Stock updated via form from ${currentStock} to ${newStock}`,
-              };
-              newHistory.push(newHistoryEvent);
-            }
+      // Map camelCase to snake_case for Rust
+      const payload = {
+        id,
+        item_name: itemData.itemName,
+        phone_brand: itemData.phoneBrand,
+        item_type: itemData.itemType,
+        buying_price: itemData.buyingPrice,
+        selling_price: itemData.sellingPrice,
+        quantity_in_stock: newStock,
+        low_stock_threshold: itemData.lowStockThreshold,
+        supplier_info: itemData.supplierInfo,
+      };
 
-            return {
-              ...item,
-              ...itemData,
-              quantityInStock: newStock,
-              lowStockThreshold: itemData.lowStockThreshold,
-              supplierInfo: itemData.supplierInfo,
-              history: newHistory,
+      invoke("update_item", { item: payload })
+        .then(() => {
+          // Optionally, insert a history event if stock changed
+          if (quantityChange !== 0) {
+            const historyEvent = {
+              id: `hist_${Date.now()}`,
+              item_id: id,
+              date: new Date().toISOString(),
+              event_type: "Manual Correction",
+              quantity_change: quantityChange,
+              notes: `Stock updated via form from ${currentStock} to ${newStock}`,
+              related_id: null,
             };
+            return invoke("insert_history_event", { event: historyEvent });
           }
-          return item;
         })
-      );
+        .then(() => {
+          toast.success("Item updated!");
+          // Refetch inventory
+          setLoading(true);
+          invoke<any[]>("get_items")
+            .then((items) => {
+              const mapped = items.map((item) => ({
+                ...item,
+                itemName: item.item_name,
+                phoneBrand: item.phone_brand,
+                itemType: item.item_type,
+                buyingPrice: item.buying_price,
+                sellingPrice: item.selling_price,
+                quantityInStock: item.quantity_in_stock,
+                lowStockThreshold: item.low_stock_threshold,
+                supplierInfo: item.supplier_info,
+                history: item.history ?? [],
+              }));
+              setInventoryItems(mapped);
+            })
+            .catch((err) => {
+              toast.error("Failed to reload inventory: " + err);
+            })
+            .finally(() => setLoading(false));
+        })
+        .catch((err) => {
+          toast.error("Failed to update item: " + err);
+        });
     },
-    []
+    [inventoryItems]
   );
 
   const deleteInventoryItem = useCallback((id: string) => {

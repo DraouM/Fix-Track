@@ -136,3 +136,76 @@ pub fn delete_item(item_id: String) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct InventoryHistoryEvent {
+    pub id: String,
+    pub item_id: String,
+    pub date: String,       // ISO string
+    pub event_type: String, // e.g., Purchased, Used in Repair, etc.
+    pub quantity_change: i64,
+    pub notes: Option<String>,
+    pub related_id: Option<String>,
+}
+
+#[tauri::command]
+pub fn init_history_table() -> Result<(), String> {
+    let conn = db::get_connection().map_err(|e| e.to_string())?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS inventory_history (
+            id TEXT PRIMARY KEY,
+            item_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            quantity_change INTEGER NOT NULL,
+            notes TEXT,
+            related_id TEXT,
+            FOREIGN KEY(item_id) REFERENCES inventory_items(id)
+        )",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn insert_history_event(event: InventoryHistoryEvent) -> Result<(), String> {
+    let conn = db::get_connection().map_err(|e| e.to_string())?;
+    conn.execute(
+        "INSERT INTO inventory_history (id, item_id, date, event_type, quantity_change, notes, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![
+            event.id,
+            event.item_id,
+            event.date,
+            event.event_type,
+            event.quantity_change,
+            event.notes,
+            event.related_id
+        ],
+    ).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_history_for_item(item_id: String) -> Result<Vec<InventoryHistoryEvent>, String> {
+    let conn = db::get_connection().map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare(
+        "SELECT id, item_id, date, event_type, quantity_change, notes, related_id FROM inventory_history WHERE item_id = ?1 ORDER BY date DESC"
+    ).map_err(|e| e.to_string())?;
+    let events = stmt
+        .query_map(params![item_id], |row| {
+            Ok(InventoryHistoryEvent {
+                id: row.get(0)?,
+                item_id: row.get(1)?,
+                date: row.get(2)?,
+                event_type: row.get(3)?,
+                quantity_change: row.get(4)?,
+                notes: row.get(5).ok(),
+                related_id: row.get(6).ok(),
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(|res| res.ok())
+        .collect();
+    Ok(events)
+}

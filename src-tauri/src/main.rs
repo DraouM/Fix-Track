@@ -9,7 +9,8 @@ mod db;
 use db::client;
 use db::get_connection;
 use db::inventory::{
-    delete_item, get_item_by_id, get_items, init_inventory_table, insert_item, update_item,
+    delete_item, get_history_for_item, get_item_by_id, get_items, init_history_table,
+    init_inventory_table, insert_history_event, insert_item, update_item,
 };
 
 pub fn init_table(conn: &Connection) -> Result<()> {
@@ -58,6 +59,10 @@ fn main() {
             delete_item,
             get_item_by_id,
             init_inventory_table,
+            // New history commands
+            init_history_table,
+            insert_history_event,
+            get_history_for_item,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

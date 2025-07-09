@@ -1,16 +1,16 @@
 // src/app/layout.tsx
-'use client'; // Ensures the layout and its children can use client-side features like Context
+"use client"; // Ensures the layout and its children can use client-side features like Context
 
 // import type { Metadata } from 'next'; // Import type for Metadata. Not used when 'use client' is present at top level for metadata.
-import { Inter as FontSans } from 'next/font/google';
-import './globals.css';
-import { cn } from '@/lib/utils';
-import { ClientProviders } from '@/components/ClientProviders';
-import AppLayout from '@/components/AppLayout';
+import { Inter as FontSans } from "next/font/google";
+import "./globals.css";
+import { cn } from "@/lib/utils";
+import { ClientProviders } from "@/components/ClientProviders";
+import AppLayout from "@/components/AppLayout";
 
 const fontSans = FontSans({
-  subsets: ['latin'],
-  variable: '--font-sans',
+  subsets: ["latin"],
+  variable: "--font-sans",
 });
 
 // Metadata should be defined in a server component or a separate metadata.ts file
@@ -29,7 +29,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          'min-h-screen bg-background font-sans antialiased',
+          "min-h-screen bg-background font-sans antialiased",
           fontSans.variable
         )}
         suppressHydrationWarning={true} // Added to address hydration issues from browser extensions modifying body

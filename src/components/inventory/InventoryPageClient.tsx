@@ -28,6 +28,7 @@ import type {
   PhoneBrand,
   ItemType,
   InventoryFormValues,
+  InventoryHistoryEvent,
 } from "@/types/inventory";
 import { PHONE_BRANDS, ITEM_TYPES } from "@/types/inventory";
 import {
@@ -40,6 +41,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { invoke } from "@tauri-apps/api/core";
 
 function InventoryPageContent() {
   const {
@@ -65,6 +68,9 @@ function InventoryPageContent() {
 
   const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
   const [historyItem, setHistoryItem] = useState<InventoryItem | null>(null); // State for history dialog
+  const [historyEvents, setHistoryEvents] = useState<InventoryHistoryEvent[]>(
+    []
+  );
 
   const sortedAndFilteredItems = useMemo(() => {
     let sortableItems = [...inventoryItems]
@@ -122,6 +128,7 @@ function InventoryPageContent() {
 
   const handleEdit = useCallback(
     (item: InventoryItem) => {
+      console.log("Edit clicked for:", item);
       const fullItem = getItemById(item.id); // Get the most up-to-date item
       if (fullItem) {
         setItemToEdit(fullItem);
@@ -142,15 +149,29 @@ function InventoryPageContent() {
     }
   }, [itemToDeleteId, deleteInventoryItem]);
 
-  const handleViewHistory = useCallback(
-    (item: InventoryItem) => {
-      const fullItem = getItemById(item.id);
-      if (fullItem) {
-        setHistoryItem(fullItem);
-      }
-    },
-    [getItemById]
-  );
+  const handleViewHistory = useCallback((item: InventoryItem) => {
+    invoke<any[]>("get_history_for_item", { itemId: item.id })
+      .then((events) => {
+        // Map snake_case to camelCase for frontend
+        const mapped = events.map((event) => ({
+          ...event,
+          eventType: event.event_type,
+          quantityChange: event.quantity_change,
+          relatedId: event.related_id,
+          type: event.event_type, // for badge rendering
+          notes: event.notes,
+          date: event.date,
+          id: event.id,
+        }));
+        setHistoryEvents(mapped);
+        setHistoryItem(item);
+      })
+      .catch((err: Error) => {
+        toast.error("Failed to load history: " + err);
+        setHistoryEvents([]);
+        setHistoryItem(item);
+      });
+  }, []);
 
   const handleSort = useCallback(
     (key: keyof InventoryItem | "profit") => {
@@ -169,6 +190,7 @@ function InventoryPageContent() {
 
   const handleFormSubmit = (data: InventoryFormValues) => {
     if (itemToEdit) {
+      console.log("Submitting update for:", itemToEdit.id, data);
       updateInventoryItem(itemToEdit.id, data);
     } else {
       addInventoryItem(data);
@@ -191,10 +213,11 @@ function InventoryPageContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+    <div className="w-full space-y-6">
+      <div className=" flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Inventory Management</h1>
         <Dialog
+          key={itemToEdit?.id || "new"}
           open={isFormOpen}
           onOpenChange={(isOpen) => {
             setIsFormOpen(isOpen);
@@ -218,6 +241,7 @@ function InventoryPageContent() {
               </DialogDescription>
             </DialogHeader>
             <InventoryForm
+              key={itemToEdit?.id || "new"}
               onSuccess={() => setIsFormOpen(false)}
               itemToEdit={itemToEdit}
               onSubmitForm={handleFormSubmit}
@@ -293,12 +317,17 @@ function InventoryPageContent() {
         sortConfig={sortConfig}
       />
 
-      {historyItem && (
-        <InventoryHistoryDialog
-          item={historyItem}
-          onClose={() => setHistoryItem(null)}
-        />
-      )}
+      <InventoryHistoryDialog
+        open={!!historyItem}
+        onOpenChange={(open) => {
+          if (!open) {
+            setHistoryItem(null);
+            setHistoryEvents([]);
+          }
+        }}
+        item={historyItem}
+        historyEvents={historyEvents}
+      />
 
       <AlertDialog
         open={!!itemToDeleteId}

@@ -76,25 +76,17 @@ export const inventoryItemSchema = z.object({
     ITEM_TYPES.filter((type) => type !== "All") as [ItemType, ...ItemType[]],
     { message: "Please select a valid item type." }
   ),
-  buyingPrice: z.preprocess(
-    (val) => parseFloat(z.string().parse(val)),
-    z.number().positive({ message: "Buying price must be a positive number." })
-  ),
-  sellingPrice: z.preprocess(
-    (val) => parseFloat(z.string().parse(val)),
-    z.number().positive({ message: "Selling price must be a positive number." })
-  ),
-  quantityInStock: z.preprocess(
-    (val) =>
-      val === "" || val === undefined || val === null
-        ? undefined
-        : parseInt(z.string().parse(val), 10),
-    z
-      .number()
-      .int()
-      .min(0, { message: "Quantity must be a non-negative integer." })
-      .optional()
-  ),
+  buyingPrice: z
+    .number()
+    .positive({ message: "Buying price must be a positive number." }),
+  sellingPrice: z
+    .number()
+    .positive({ message: "Selling price must be a positive number." }),
+  quantityInStock: z
+    .number()
+    .int()
+    .min(0, { message: "Quantity must be a non-negative integer." })
+    .optional(),
   lowStockThreshold: z.preprocess(
     (val) =>
       val === "" || val === undefined || val === null
@@ -108,7 +100,7 @@ export const inventoryItemSchema = z.object({
       })
       .optional()
   ),
-  supplierInfo: z.string().optional(),
+  supplierInfo: z.union([z.string(), z.undefined(), z.null()]).optional(),
 });
 
 export type InventoryFormValues = z.infer<typeof inventoryItemSchema>;

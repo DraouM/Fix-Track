@@ -1,11 +1,10 @@
+"use client";
 
-'use client';
-
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -13,12 +12,12 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -26,11 +25,17 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import { toast } from 'sonner';
-import { PHONE_BRANDS, ITEM_TYPES, inventoryItemSchema, type InventoryFormValues, type InventoryItem } from '@/types/inventory';
-import { Icons } from '@/components/icons';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/command";
+import { toast } from "sonner";
+import {
+  PHONE_BRANDS,
+  ITEM_TYPES,
+  inventoryItemSchema,
+  type InventoryFormValues,
+  type InventoryItem,
+} from "@/types/inventory";
+import { Icons } from "@/components/icons";
+import { cn } from "@/lib/utils";
 
 interface InventoryFormProps {
   onSuccess?: () => void;
@@ -38,7 +43,11 @@ interface InventoryFormProps {
   onSubmitForm: (data: InventoryFormValues) => void;
 }
 
-export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: InventoryFormProps) {
+export function InventoryForm({
+  onSuccess,
+  itemToEdit,
+  onSubmitForm,
+}: InventoryFormProps) {
   const [brandPopoverOpen, setBrandPopoverOpen] = useState(false);
   const [itemTypePopoverOpen, setItemTypePopoverOpen] = useState(false);
 
@@ -47,30 +56,46 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
     defaultValues: itemToEdit
       ? {
           ...itemToEdit,
-          buyingPrice: itemToEdit.buyingPrice.toString(), 
-          sellingPrice: itemToEdit.sellingPrice.toString(), 
-          quantityInStock: itemToEdit.quantityInStock?.toString() ?? '',
+          // No .toString() here, keep as numbers or undefined
         }
       : {
-          itemName: '',
-          phoneBrand: undefined, 
+          itemName: "",
+          phoneBrand: undefined,
           itemType: undefined,
-          buyingPrice: '',
-          sellingPrice: '',
-          quantityInStock: '',
+          buyingPrice: undefined,
+          sellingPrice: undefined,
+          quantityInStock: undefined,
         },
   });
 
+  useEffect(() => {
+    if (itemToEdit) {
+      form.reset({
+        ...itemToEdit,
+        // No .toString() here, keep as numbers or undefined
+      });
+    }
+  }, [itemToEdit, form]);
+
+  useEffect(() => {
+    console.log("Form errors:", form.formState.errors);
+  }, [form.formState.errors]);
+
   const handleSubmit = (data: InventoryFormValues) => {
+    console.log("Form handleSubmit called with:", data);
     onSubmitForm(data);
-    toast.success(`${data.itemName} has been successfully ${itemToEdit ? 'updated' : 'added'}.`);
-    form.reset({ 
-        itemName: '', 
-        phoneBrand: undefined, 
-        itemType: undefined, 
-        buyingPrice: '', 
-        sellingPrice: '', 
-        quantityInStock: '' 
+    toast.success(
+      `${data.itemName} has been successfully ${
+        itemToEdit ? "updated" : "added"
+      }.`
+    );
+    form.reset({
+      itemName: "",
+      phoneBrand: undefined,
+      itemType: undefined,
+      buyingPrice: undefined,
+      sellingPrice: undefined,
+      quantityInStock: undefined,
     });
     onSuccess?.();
   };
@@ -99,7 +124,10 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Phone Brand</FormLabel>
-                <Popover open={brandPopoverOpen} onOpenChange={setBrandPopoverOpen}>
+                <Popover
+                  open={brandPopoverOpen}
+                  onOpenChange={setBrandPopoverOpen}
+                >
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -112,9 +140,7 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
                         )}
                       >
                         {field.value
-                          ? PHONE_BRANDS.find(
-                              (brand) => brand === field.value
-                            )
+                          ? PHONE_BRANDS.find((brand) => brand === field.value)
                           : "Select brand"}
                         <Icons.chevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -126,26 +152,28 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
                       <CommandList>
                         <CommandEmpty>No brand found.</CommandEmpty>
                         <CommandGroup>
-                          {PHONE_BRANDS.filter(b => b !== 'All').map((brand) => (
-                            <CommandItem
-                              value={brand}
-                              key={brand}
-                              onSelect={() => {
-                                form.setValue("phoneBrand", brand);
-                                setBrandPopoverOpen(false);
-                              }}
-                            >
-                              <Icons.check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  brand === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {brand}
-                            </CommandItem>
-                          ))}
+                          {PHONE_BRANDS.filter((b) => b !== "All").map(
+                            (brand) => (
+                              <CommandItem
+                                value={brand}
+                                key={brand}
+                                onSelect={() => {
+                                  form.setValue("phoneBrand", brand);
+                                  setBrandPopoverOpen(false);
+                                }}
+                              >
+                                <Icons.check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    brand === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {brand}
+                              </CommandItem>
+                            )
+                          )}
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -162,7 +190,10 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Item Type</FormLabel>
-                <Popover open={itemTypePopoverOpen} onOpenChange={setItemTypePopoverOpen}>
+                <Popover
+                  open={itemTypePopoverOpen}
+                  onOpenChange={setItemTypePopoverOpen}
+                >
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -189,26 +220,28 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
                       <CommandList>
                         <CommandEmpty>No item type found.</CommandEmpty>
                         <CommandGroup>
-                          {ITEM_TYPES.filter(it => it !== 'All').map((itemType) => (
-                            <CommandItem
-                              value={itemType}
-                              key={itemType}
-                              onSelect={() => {
-                                form.setValue("itemType", itemType);
-                                setItemTypePopoverOpen(false);
-                              }}
-                            >
-                              <Icons.check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  itemType === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {itemType}
-                            </CommandItem>
-                          ))}
+                          {ITEM_TYPES.filter((it) => it !== "All").map(
+                            (itemType) => (
+                              <CommandItem
+                                value={itemType}
+                                key={itemType}
+                                onSelect={() => {
+                                  form.setValue("itemType", itemType);
+                                  setItemTypePopoverOpen(false);
+                                }}
+                              >
+                                <Icons.check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    itemType === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {itemType}
+                              </CommandItem>
+                            )
+                          )}
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -228,7 +261,19 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
               <FormItem>
                 <FormLabel>Buying Price ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 50.00" {...field} step="0.01" />
+                  <Input
+                    type="number"
+                    placeholder="e.g., 50.00"
+                    {...field}
+                    step="0.01"
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === ""
+                          ? undefined
+                          : Number(e.target.value)
+                      )
+                    }
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -242,7 +287,19 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
               <FormItem>
                 <FormLabel>Selling Price ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 100.00" {...field} step="0.01" />
+                  <Input
+                    type="number"
+                    placeholder="e.g., 100.00"
+                    {...field}
+                    step="0.01"
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === ""
+                          ? undefined
+                          : Number(e.target.value)
+                      )
+                    }
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -257,14 +314,29 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
             <FormItem>
               <FormLabel>Quantity in Stock (Optional)</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 10" {...field} min="0" step="1" />
+                <Input
+                  type="number"
+                  placeholder="e.g., 10"
+                  {...field}
+                  min="0"
+                  step="1"
+                  onChange={(e) =>
+                    field.onChange(
+                      e.target.value === "" ? undefined : Number(e.target.value)
+                    )
+                  }
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+        >
           {form.formState.isSubmitting ? (
             <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
           ) : itemToEdit ? (
@@ -272,7 +344,7 @@ export function InventoryForm({ onSuccess, itemToEdit, onSubmitForm }: Inventory
           ) : (
             <Icons.plusCircle className="mr-2 h-4 w-4" />
           )}
-          {itemToEdit ? 'Update Item' : 'Add Item'}
+          {itemToEdit ? "Update Item" : "Add Item"}
         </Button>
       </form>
     </Form>

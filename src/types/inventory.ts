@@ -65,6 +65,7 @@ export const inventoryItemSchema = z.object({
   itemName: z
     .string()
     .min(2, { message: "Item name must be at least 2 characters." }),
+
   phoneBrand: z.enum(
     PHONE_BRANDS.filter((brand) => brand !== "All") as [
       PhoneBrand,
@@ -72,34 +73,32 @@ export const inventoryItemSchema = z.object({
     ],
     { message: "Please select a valid phone brand." }
   ),
+
   itemType: z.enum(
     ITEM_TYPES.filter((type) => type !== "All") as [ItemType, ...ItemType[]],
     { message: "Please select a valid item type." }
   ),
-  buyingPrice: z
+
+  buyingPrice: z.coerce
     .number()
     .positive({ message: "Buying price must be a positive number." }),
-  sellingPrice: z
+
+  sellingPrice: z.coerce
     .number()
     .positive({ message: "Selling price must be a positive number." }),
-  quantityInStock: z
+
+  quantityInStock: z.coerce
     .number()
     .int()
     .min(0, { message: "Quantity must be a non-negative integer." })
     .optional(),
-  lowStockThreshold: z.preprocess(
-    (val) =>
-      val === "" || val === undefined || val === null
-        ? undefined
-        : parseInt(z.string().parse(val), 10),
-    z
-      .number()
-      .int()
-      .min(0, {
-        message: "Low stock threshold must be a non-negative integer.",
-      })
-      .optional()
-  ),
+
+  lowStockThreshold: z.coerce
+    .number()
+    .int()
+    .min(0, { message: "Low stock threshold must be a non-negative integer." })
+    .optional(),
+
   supplierInfo: z.union([z.string(), z.undefined(), z.null()]).optional(),
 });
 

@@ -51,21 +51,33 @@ export function InventoryForm({
   const [brandPopoverOpen, setBrandPopoverOpen] = useState(false);
   const [itemTypePopoverOpen, setItemTypePopoverOpen] = useState(false);
 
+  // Utility to sanitize itemToEdit to only camelCase fields
+  const sanitizeItem = (item: any) =>
+    item
+      ? {
+          itemName: item.itemName,
+          phoneBrand: item.phoneBrand,
+          itemType: item.itemType,
+          buyingPrice: item.buyingPrice,
+          sellingPrice: item.sellingPrice,
+          quantityInStock: item.quantityInStock,
+          lowStockThreshold: item.lowStockThreshold,
+          supplierInfo: item.supplierInfo,
+        }
+      : undefined;
+
+  const sanitizedItemToEdit = sanitizeItem(itemToEdit);
+
   const form = useForm<InventoryFormValues>({
     resolver: zodResolver(inventoryItemSchema),
-    defaultValues: itemToEdit
-      ? {
-          ...itemToEdit,
-          // No .toString() here, keep as numbers or undefined
-        }
-      : {
-          itemName: "",
-          phoneBrand: undefined,
-          itemType: undefined,
-          buyingPrice: undefined,
-          sellingPrice: undefined,
-          quantityInStock: undefined,
-        },
+    defaultValues: sanitizedItemToEdit || {
+      itemName: "",
+      phoneBrand: undefined,
+      itemType: undefined,
+      buyingPrice: undefined,
+      sellingPrice: undefined,
+      quantityInStock: undefined,
+    },
   });
 
   useEffect(() => {

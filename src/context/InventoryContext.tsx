@@ -54,6 +54,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
           .then((items) => {
             const mapped = items.map((item) => ({
               ...item,
+              id: String(item.id), // <-- force id to string
               itemName: item.item_name,
               phoneBrand: item.phone_brand,
               itemType: item.item_type,
@@ -122,6 +123,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
           .then((items) => {
             const mapped = items.map((item) => ({
               ...item,
+              id: String(item.id), // <-- force id to string
               itemName: item.item_name,
               phoneBrand: item.phone_brand,
               itemType: item.item_type,
@@ -189,6 +191,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
             .then((items) => {
               const mapped = items.map((item) => ({
                 ...item,
+                id: String(item.id), // <-- force id to string
                 itemName: item.item_name,
                 phoneBrand: item.phone_brand,
                 itemType: item.item_type,

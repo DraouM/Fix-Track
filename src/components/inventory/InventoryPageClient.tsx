@@ -216,6 +216,7 @@ function InventoryPageContent() {
     if (itemToEdit) {
       console.log("Submitting update for:", itemToEdit.id, data);
       updateInventoryItem(itemToEdit.id, data);
+      console.log({ data });
     } else {
       addInventoryItem(data);
     }

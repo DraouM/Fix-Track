@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import InventoryPageClient from "@/components/inventory/InventoryPageClient";
+import { useRouter } from "next/navigation";
 
 // Types matching your Rust structs
 interface InventoryItem {
@@ -15,12 +17,16 @@ interface InventoryItem {
   low_stock_threshold?: number;
   supplier_info?: string;
 }
+import { InventoryProvider } from "@/context/InventoryContext";
+import InventoryPage from "./inventory/page";
 
 export default function TestPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+
+  const router = useRouter();
 
   // Initialize database tables
   const initDatabase = async () => {
@@ -225,9 +231,8 @@ export default function TestPage() {
 
       {/* Go to the inventory */}
       <div>
-        {/* Use Next.js navigation to go to the inventory */}
         <button
-          onClick={() => (window.location.href = "./inventory/page.tsx")}
+          onClick={() => router.push("/inventory")}
           className="text-blue-600 hover:text-blue-900"
         >
           Go to inventory
@@ -235,4 +240,6 @@ export default function TestPage() {
       </div>
     </div>
   );
+
+  // return <InventoryPage />;
 }

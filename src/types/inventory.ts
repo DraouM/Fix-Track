@@ -12,16 +12,6 @@ export interface InventoryItem {
   history?: InventoryHistoryEvent[]; // Add history array
 }
 
-export interface InventoryHistoryEvent {
-  id: string;
-  item_id: string;
-  date: string;
-  event_type: string;
-  quantity_change: number;
-  notes?: string;
-  related_id?: string;
-}
-
 export const PHONE_BRANDS = [
   "All",
   "Samsung",
@@ -62,6 +52,7 @@ export type HistoryEventType =
 
 export interface InventoryHistoryEvent {
   id: string;
+  itemId: string; // ID of the inventory item
   date: string; // ISO string
   type: HistoryEventType;
   quantityChange: number; // e.g., +10 for purchase, -1 for sale

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,17 +20,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import type {
+  InventoryItem,
+  InventoryHistoryEvent,
+  HistoryEventType,
+} from "@/types/inventory";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useInventoryContext } from "@/context/InventoryContext";
-import type { HistoryEventType } from "@/types/inventory";
 
+// --- Props ---
 interface InventoryHistoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  itemId: string | null;
+  item: InventoryItem | null; // full item
+  historyEvents: InventoryHistoryEvent[]; // history already fetched in parent
 }
 
+// --- Badge UI helper ---
 const getEventTypeBadgeVariant = (
   eventType: HistoryEventType
 ): "default" | "secondary" | "destructive" | "outline" => {
@@ -50,23 +56,19 @@ const getEventTypeBadgeVariant = (
   }
 };
 
+// --- Component ---
 export function InventoryHistoryDialog({
   open,
   onOpenChange,
-  itemId,
+  item,
+  historyEvents,
 }: InventoryHistoryDialogProps) {
-  const { getItemById } = useInventoryContext();
-  const item = itemId ? getItemById(itemId) : null;
-
-  // 🧠 Memoized sorted history
-  const sortedHistory = useMemo(() => {
-    if (!item?.history) return [];
-    return [...item.history].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-  }, [item]);
-
   if (!item) return null;
+
+  // Sort history (newest first)
+  const sortedHistory = [...historyEvents].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
 
   return (
     <Dialog
@@ -78,9 +80,11 @@ export function InventoryHistoryDialog({
           <DialogTitle>Movement History: {item.itemName}</DialogTitle>
           <DialogDescription>
             A log of all stock changes for this item. Current stock:{" "}
-            {item.quantityInStock ?? 0}
+            <strong>{item.quantityInStock ?? 0}</strong>
           </DialogDescription>
         </DialogHeader>
+
+        {/* Scrollable history table */}
         <ScrollArea className="max-h-[60vh] border rounded-md">
           <Table>
             <TableHeader className="sticky top-0 bg-background">
@@ -130,6 +134,7 @@ export function InventoryHistoryDialog({
             </TableBody>
           </Table>
         </ScrollArea>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close

@@ -87,7 +87,7 @@ function mapItemFromDB(dbItem: InventoryItemDB): InventoryItem {
     sellingPrice: dbItem.selling_price,
     quantityInStock: dbItem.quantity_in_stock,
     lowStockThreshold: dbItem.low_stock_threshold,
-    supplierInfo: dbItem.supplier_info,
+    supplierInfo: dbItem.supplier_info || "",
     history: dbItem.history ?? [],
   };
 }
@@ -117,6 +117,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     try {
       const dbItems = await invoke<InventoryItemDB[]>("get_items");
+      console.info("Fetched items from DB:", dbItems);
+
       setInventoryItems(dbItems.map(mapItemFromDB));
     } catch (err) {
       toast.error(`Failed to load inventory: ${err}`);
@@ -128,9 +130,9 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ✅ Initialize tables + load data
   useEffect(() => {
-    Promise.all([invoke("init_inventory_table"), invoke("init_history_table")])
+    invoke("init_database")
       .then(fetchItems)
-      .catch((err) => toast.error(`Failed to initialize tables: ${err}`));
+      .catch((err) => toast.error("Failed to initialize database: " + err));
   }, [fetchItems]);
 
   const addInventoryItem = useCallback(

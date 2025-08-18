@@ -1,14 +1,6 @@
 "use client";
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -17,176 +9,171 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowUp, ArrowDown, ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal } from "lucide-react";
+import type { InventoryItem } from "@/types/inventory";
+import type { SortConfig } from "@/hooks/useInventoryFilters";
 import { cn } from "@/lib/utils";
 
-import {
-  useInventoryState,
-  useInventoryActions,
-} from "@/context/InventoryContext";
-import type { InventoryItem } from "@/types/inventory";
-
-interface InventoryTableProps {
-  onEditItem: (id: string) => void;
-  onViewHistory: (id: string) => void;
+export interface InventoryTableProps {
+  items: InventoryItem[]; // ✅ Rows to display
+  sortConfig: SortConfig; // ✅ Current sorting state
+  onSort: (key: keyof InventoryItem | "profit") => void; // ✅ Handle sort clicks
+  onEdit: (item: InventoryItem) => void; // ✅ Open InventoryForm
+  onViewHistory: (item: InventoryItem) => void; // ✅ Open HistoryDialog
+  onDelete: (id: string) => void; // ✅ Delete row
 }
 
-// Badge variant helper
-function getItemTypeBadgeVariant(type: string) {
-  switch (type) {
-    case "Screen":
-      return "default";
-    case "Battery":
-      return "secondary";
-    case "Charger":
-      return "outline";
-    default:
-      return "secondary";
-  }
-}
+export function InventoryTable({
+  items,
+  sortConfig,
+  onSort,
+  onEdit,
+  onViewHistory,
+  onDelete,
+}: InventoryTableProps) {
+  // Helper: toggle sort direction UI indicator
+  const renderSortIndicator = (key: keyof InventoryItem | "profit") => {
+    if (sortConfig.key !== key) return null;
+    return sortConfig.direction === "ascending" ? " ↑" : " ↓";
+  };
 
-// Sortable header cell
-function SortableHeader({
-  label,
-  column,
-}: {
-  label: string;
-  column: keyof InventoryItem | "profit";
-}) {
-  const { sortConfig } = useInventoryState();
-  const { handleSort } = useInventoryActions();
-
-  return (
-    <TableHead
-      className="cursor-pointer select-none"
-      onClick={() => handleSort(column)}
+  const SortableHeader = ({
+    columnKey,
+    children,
+    className,
+  }: {
+    columnKey: keyof InventoryItem | "profit";
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <Button
+      variant="ghost"
+      onClick={() => onSort(columnKey)}
+      className={cn("px-2 py-1 h-auto -ml-2", className)}
     >
-      <div className="flex items-center gap-1">
-        {label}
-        {sortConfig?.key === column ? (
+      {children}
+      <span className="ml-1.5 shrink-0">
+        {sortConfig?.key === columnKey ? (
           sortConfig.direction === "ascending" ? (
             <ArrowUp className="h-4 w-4" />
           ) : (
             <ArrowDown className="h-4 w-4" />
           )
         ) : (
-          <ArrowUpDown className="h-4 w-4 opacity-50" />
+          <ArrowUpDown className="h-4 w-4 opacity-30" />
         )}
-      </div>
-    </TableHead>
+      </span>
+    </Button>
   );
-}
-
-export function InventoryTable({
-  onEdit,
-  onViewHistory,
-}: {
-  onEdit: (item: InventoryItem) => void;
-  onViewHistory: (item: InventoryItem) => void;
-}) {
-  // ✅ Get state & actions directly from context
-  const { filteredAndSortedItems, loading } = useInventoryState();
-  const { deleteInventoryItem } = useInventoryActions();
-
-  const [activeItemId, setActiveItemId] = React.useState<string | null>(null);
-
-  if (loading) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">
-        Loading inventory...
-      </div>
-    );
-  }
-
-  if (filteredAndSortedItems.length === 0) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">
-        No inventory items found.
-      </div>
-    );
-  }
 
   return (
-    <div className="rounded-md border">
+    <div className="border rounded-md">
       <Table>
+        {/* --- Table Header --- */}
         <TableHeader>
           <TableRow>
-            <SortableHeader label="Name" column="itemName" />
-            <SortableHeader label="Brand" column="phoneBrand" />
-            <SortableHeader label="Type" column="itemType" />
-            <SortableHeader label="Buying" column="buyingPrice" />
-            <SortableHeader label="Selling" column="sellingPrice" />
-            <SortableHeader label="Profit" column="profit" />
-            <SortableHeader label="Qty" column="quantityInStock" />
-            <TableHead>Supplier</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>
+              <SortableHeader columnKey="itemName">Name</SortableHeader>
+            </TableHead>
+            <TableHead>Brand</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead className="text-right">
+              <SortableHeader columnKey="buyingPrice">Buying</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+              <SortableHeader columnKey="sellingPrice">Selling</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+              <SortableHeader columnKey="profit">Profit</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">
+              <SortableHeader columnKey="quantityInStock">Stock</SortableHeader>
+            </TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
 
+        {/* --- Table Body --- */}
         <TableBody>
-          {filteredAndSortedItems.map((item) => {
-            const profit = (item.sellingPrice ?? 0) - (item.buyingPrice ?? 0);
-            const isLowStock =
-              item.quantityInStock !== undefined &&
-              item.quantityInStock < (item.lowStockThreshold ?? 5);
+          {items.length > 0 ? (
+            items.map((item) => {
+              const profit = (item.sellingPrice ?? 0) - (item.buyingPrice ?? 0);
+              const lowStock =
+                item.lowStockThreshold != null &&
+                (item.quantityInStock ?? 0) <= item.lowStockThreshold;
 
-            return (
-              <TableRow
-                key={item.id}
-                onClick={() => setActiveItemId(item.id)}
-                className={cn(
-                  "cursor-pointer",
-                  activeItemId === item.id && "bg-muted/50",
-                  isLowStock && "bg-destructive/10"
-                )}
-                aria-selected={activeItemId === item.id}
-              >
-                <TableCell className="font-medium">{item.itemName}</TableCell>
-                <TableCell>{item.phoneBrand}</TableCell>
-                <TableCell>
-                  <Badge variant={getItemTypeBadgeVariant(item.itemType)}>
-                    {item.itemType}
-                  </Badge>
-                </TableCell>
-                <TableCell>${item.buyingPrice.toFixed(2)}</TableCell>
-                <TableCell>${item.sellingPrice.toFixed(2)}</TableCell>
-                <TableCell
-                  className={profit >= 0 ? "text-green-600" : "text-red-600"}
-                >
-                  ${profit.toFixed(2)}
-                </TableCell>
-                <TableCell
-                  className={isLowStock ? "text-red-600 font-semibold" : ""}
-                >
-                  {item.quantityInStock}
-                </TableCell>
-                <TableCell>{item.supplierInfo}</TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onViewHistory(item)}>
-                        View History
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onEdit(item)}>
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={() => deleteInventoryItem(item.id)}
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+              return (
+                <TableRow key={item.id} className={cn(lowStock && "bg-red-50")}>
+                  <TableCell className="font-medium">{item.itemName}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{item.phoneBrand}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge>{item.itemType}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    ${item.buyingPrice.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    ${item.sellingPrice.toFixed(2)}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "text-right font-mono",
+                      profit >= 0 ? "text-green-600" : "text-destructive"
+                    )}
+                  >
+                    ${profit.toFixed(2)}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "text-right font-mono",
+                      lowStock && "font-bold text-destructive"
+                    )}
+                  >
+                    {item.quantityInStock ?? 0}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onViewHistory(item)}>
+                          View History
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEdit(item)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onDelete(item.id)}
+                          className="text-destructive"
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          ) : (
+            <TableRow>
+              <TableCell colSpan={8} className="text-center h-24">
+                No items found.
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>

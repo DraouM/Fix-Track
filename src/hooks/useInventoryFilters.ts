@@ -5,7 +5,7 @@ import type { InventoryItem, PhoneBrand, ItemType } from "@/types/inventory";
 export type SortConfig = {
   key: keyof InventoryItem | "profit";
   direction: "ascending" | "descending";
-} | null;
+};
 
 export function useInventoryFilters(items: InventoryItem[]) {
   const [searchTerm, setSearchTerm] = useState("");

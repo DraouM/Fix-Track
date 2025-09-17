@@ -32,21 +32,66 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    // Repairs table
+    // Repairs tables (normalized)
+    // Repairs main table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS repairs (
             id TEXT PRIMARY KEY,
             customer_name TEXT NOT NULL,
-            phone_model TEXT NOT NULL,
+            customer_phone TEXT NOT NULL,
+            device_brand TEXT NOT NULL,
+            device_model TEXT NOT NULL,
             issue_description TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'pending',
-            cost REAL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            completed_at DATETIME
+            estimated_cost REAL NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('pending','in_progress','completed','delivered')),
+            payment_status TEXT NOT NULL CHECK(payment_status IN ('unpaid','partial','paid')),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )",
         [],
     )?;
 
+    // Repair payments (supports multiple/partial payments)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS repair_payments (
+            id TEXT PRIMARY KEY,
+            repair_id TEXT NOT NULL,
+            amount REAL NOT NULL,
+            date TEXT NOT NULL,
+            method TEXT NOT NULL,
+            received_by TEXT,
+            FOREIGN KEY(repair_id) REFERENCES repairs(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    // Parts used in repair (linked to inventory if needed later)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS repair_used_parts (
+            id TEXT PRIMARY KEY,
+            repair_id TEXT NOT NULL,
+            part_id TEXT NOT NULL,
+            part_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            unit_price REAL NOT NULL,
+            FOREIGN KEY(repair_id) REFERENCES repairs(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    // History table for tracking repair lifecycle
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS repair_history (
+            id TEXT PRIMARY KEY,
+            repair_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            event_type TEXT NOT NULL CHECK(event_type IN ('status_change','payment_added','part_added','note')),
+            details TEXT NOT NULL,
+            changed_by TEXT,
+            FOREIGN KEY(repair_id) REFERENCES repairs(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
     // Sales table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sales (

@@ -1,4 +1,6 @@
 pub mod inventory;
+pub mod models;
+pub mod repair;
 pub mod schema;
 
 use rusqlite::{Connection, Result};

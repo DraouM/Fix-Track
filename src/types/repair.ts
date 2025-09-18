@@ -2,43 +2,16 @@
 
 import z from "zod";
 
+// --- ENUM TYPES ---
 export type RepairStatus =
   | "Pending" // Waiting to start
   | "In Progress" // Being repaired
   | "Completed" // Repair done, still in shop
   | "Delivered"; // Customer picked up
 
-export type PaymentStatus = "Unpaid" | "Partially Paid" | "Paid";
+export type PaymentStatus = "Unpaid" | "Partially Paid" | "Paid" | "Refunded";
 
-export interface Payment {
-  id: string; // unique ID (e.g., pay_123)
-  amount: number; // payment amount
-  date: string; // ISO date string
-  method: "Cash" | "Card" | "BankTransfer";
-  receivedBy?: string; // employee who logged it
-}
-
-export interface UsedPart {
-  partId: string; // reference to inventory item
-  partName: string; // denormalized for convenience
-  quantity: number;
-  unitPrice: number;
-}
-
-export interface RepairHistoryEvent {
-  id: string; // unique ID for history entry
-  repairId: string; // reference to repair
-  date: string; // ISO date string
-  eventType:
-    | "StatusChanged"
-    | "PaymentAdded"
-    | "PartAdded"
-    | "PartRemoved"
-    | "RepairUpdated";
-  details: string; // free text description
-  changedBy?: string; // employee responsible
-}
-
+// repair.ts
 export interface Repair {
   id: string; // unique repair ID
   customerName: string;
@@ -55,13 +28,91 @@ export interface Repair {
 
   usedParts: UsedPart[];
   payments: Payment[];
-  history: RepairHistoryEvent[];
+  history: RepairHistory[];
 
   createdAt: string;
   updatedAt: string;
 }
 
-// Validation schema
+export interface RepairDb {
+  id: string | number; // unique repair ID
+  customer_name: string;
+  customer_phone: string;
+
+  device_brand: string;
+  device_model: string;
+
+  issue_description: string;
+  estimated_cost: number;
+
+  status: RepairStatus;
+  payment_status: PaymentStatus;
+
+  used_parts: UsedPart[];
+  payments: Payment[];
+  history: RepairHistory[];
+
+  created_at: string;
+  updated_at: string;
+}
+
+// --- PAYMENTS ---
+// Frontend
+export interface Payment {
+  id: number;
+  repairId: number;
+  amount: number;
+  paid_at: string;
+}
+
+// When adding a payment
+// Input for DB / API
+export interface PaymentInput {
+  repair_id: number;
+  amount: number;
+}
+
+// --- USED PARTS ---
+// Frontend
+export interface UsedPart {
+  id: number;
+  repairId: number;
+  partName: string;
+  cost: number;
+  quantity: number;
+}
+// Input for DB / API
+export interface UsedPartInput {
+  repair_id: number;
+  part_name: string;
+  cost: number;
+  quantity: number;
+}
+
+// --- REPAIR HISTORY ---
+
+export type RepairEventType =
+  | { type: "StatusChanged"; from: RepairStatus; to: RepairStatus }
+  | { type: "PaymentAdded"; amount: number }
+  | { type: "PartAdded"; partName: string; qty: number }
+  | { type: "Note"; text: string };
+
+export interface RepairHistory {
+  id: string;
+  repairId: string;
+  timestamp: string;
+  event: RepairEventType;
+  changedBy?: string;
+}
+
+// Input when adding a history record
+export interface RepairHistoryInput {
+  repairId: number;
+  actionType: "status_update" | "payment_update" | "part_added" | "note";
+  description: string;
+  changedBy?: string;
+}
+
 export const repairSchema = z.object({
   customerName: z
     .string()

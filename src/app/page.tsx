@@ -238,6 +238,15 @@ export default function TestPage() {
           Go to inventory
         </button>
       </div>
+      {/* Go to the repair page */}
+      <div>
+        <button
+          onClick={() => router.push("/repairs")}
+          className="text-blue-600 hover:text-blue-900"
+        >
+          Go to Repairs Page
+        </button>
+      </div>
     </div>
   );
 

@@ -125,7 +125,9 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
 
         <select
           value={filters.status}
-          onChange={(e) => setStatusFilter(e.target.value as any)}
+          onChange={(e) =>
+            setStatusFilter(e.target.value as RepairStatus | "All")
+          }
           className="border rounded px-2 py-1"
         >
           <option value="All">All Status</option>
@@ -137,14 +139,16 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
 
         <select
           value={filters.paymentStatus}
-          onChange={(e) => setPaymentStatusFilter(e.target.value as any)}
+          onChange={(e) =>
+            setPaymentStatusFilter(e.target.value as PaymentStatus | "All")
+          }
           className="border rounded px-2 py-1"
         >
           <option value="All">All Payments</option>
           <option value="Unpaid">Unpaid</option>
           <option value="Partially Paid">Partially Paid</option>
           <option value="Paid">Paid</option>
-          <option value="Refundd">Refunded</option>
+          <option value="Refunded">Refunded</option>
         </select>
 
         {hasActiveFilters && (
@@ -203,6 +207,12 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
                 const paymentBadgeProps = getPaymentBadgeProps(
                   repair.paymentStatus
                 );
+                console.log(
+                  "🔍 Rendering repair:",
+                  repair.id,
+                  "Status:",
+                  repair.status
+                );
                 return (
                   <TableRow
                     key={repair.id}
@@ -218,12 +228,18 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
                     <TableCell>
                       <Select
                         value={repair.status}
-                        onValueChange={(newStatus: RepairStatus) =>
-                          updateRepairStatus(repair.id, newStatus)
-                        }
+                        onValueChange={(newStatus: RepairStatus) => {
+                          console.log(
+                            "🔄 Changing status from",
+                            repair.status,
+                            "to",
+                            newStatus
+                          );
+                          updateRepairStatus(repair.id, newStatus);
+                        }}
                       >
                         <SelectTrigger className="w-[140px]">
-                          <SelectValue placeholder="Status" />
+                          <SelectValue>{repair.status}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Pending">Pending</SelectItem>

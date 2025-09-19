@@ -43,8 +43,8 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
             device_model TEXT NOT NULL,
             issue_description TEXT NOT NULL,
             estimated_cost REAL NOT NULL,
-            status TEXT NOT NULL CHECK(status IN ('pending','in_progress','completed','delivered')),
-            payment_status TEXT NOT NULL CHECK(payment_status IN ('unpaid','partial','paid')),
+            status TEXT NOT NULL CHECK(status IN ('Pending','In Progress','Completed','Delivered')),
+            payment_status TEXT NOT NULL CHECK(payment_status IN ('Unpaid','Partially Paid','Paid','Refunded')),
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )",

@@ -136,14 +136,21 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ✅ Fetch all repairs
   const fetchRepairs = useCallback(async () => {
+    console.log("🔄 Fetching all repairs from database...");
     setLoading(true);
     clearError();
     await withAsync(() => invoke<RepairDb[]>("get_repairs"), {
       onSuccess: (data) => {
+        console.log("✅ Successfully fetched repairs:", data);
+        console.log("📊 Number of repairs fetched:", data.length);
         const mappedRepairs = data.map(mapRepairFromDB);
+        console.log("🔄 Mapped repairs to frontend format:", mappedRepairs);
         setRepairs(mappedRepairs);
       },
-      onError: (msg) => setError(msg),
+      onError: (msg) => {
+        console.error("❌ Error fetching repairs:", msg);
+        setError(msg);
+      },
     });
     setLoading(false);
   }, [clearError]);
@@ -151,6 +158,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
   // ✅ Fetch repair by ID
   const fetchRepairById = useCallback(
     async (id: string) => {
+      console.log("🔍 Fetching repair by ID:", id);
       setLoading(true);
       clearError();
 
@@ -158,23 +166,32 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         () => invoke<RepairDb>("get_repair_by_id", { id }),
         {
           onSuccess: (data) => {
+            console.log("✅ Successfully fetched repair by ID:", data);
             const mappedRepair = mapRepairFromDB(data);
+            console.log("🔄 Mapped repair to frontend format:", mappedRepair);
             setSelectedRepair(mappedRepair);
             setRepairs((prev) =>
               prev.map((r) => (r.id === mappedRepair.id ? mappedRepair : r))
             );
           },
-          onError: (msg) => setError(msg),
+          onError: (msg) => {
+            console.error("❌ Error fetching repair by ID:", msg);
+            setError(msg);
+          },
         }
       );
 
       if (repair) {
+        console.log("🔄 Fetching related data for repair:", id);
         // fetch related data
         const [paymentsData, partsData, historyData] = await Promise.all([
           invoke<Payment[]>("get_payments_for_repair", { repairId: id }),
           invoke<UsedPart[]>("get_used_parts_for_repair", { repairId: id }),
           invoke<RepairHistory[]>("get_history_for_repair", { repairId: id }),
         ]);
+        console.log("💰 Payments fetched:", paymentsData);
+        console.log("🔧 Used parts fetched:", partsData);
+        console.log("📜 History fetched:", historyData);
         setPayments(paymentsData);
         setUsedParts(partsData);
         setHistory(historyData);
@@ -188,6 +205,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
   // ✅ Create repair
   const createRepair = useCallback(
     async (data: Omit<RepairDb, "id" | "created_at" | "updated_at">) => {
+      console.log("➕ Creating new repair:", data);
       setLoading(true);
       clearError();
       const repairData = {
@@ -196,13 +214,18 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+      console.log("📝 Repair data with ID and timestamps:", repairData);
 
       await withAsync(() => invoke("insert_repair", { repair: repairData }), {
         onSuccess: () => {
+          console.log("✅ Repair created successfully");
           toast.success("Repair created successfully");
           fetchRepairs();
         },
-        onError: (msg) => setError(msg),
+        onError: (msg) => {
+          console.error("❌ Error creating repair:", msg);
+          setError(msg);
+        },
       });
       setLoading(false);
     },
@@ -253,21 +276,29 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
   // ✅ Update repair status
   const updateRepairStatus = useCallback(
     async (id: string, status: RepairStatus) => {
+      console.log("🔄 Updating repair status:", { id, status });
       setLoading(true);
       clearError();
-      await withAsync(() => invoke("update_repair_status", { id, status }), {
-        onSuccess: () => {
-          toast.success("Repair status updated");
-          setRepairs((prev) =>
-            prev.map((r) =>
-              r.id === id
-                ? { ...r, status, updatedAt: new Date().toISOString() }
-                : r
-            )
-          );
-        },
-        onError: (msg) => setError(msg),
-      });
+      await withAsync(
+        () => invoke("update_repair_status", { id, newStatus: status }),
+        {
+          onSuccess: () => {
+            console.log("✅ Repair status updated successfully");
+            toast.success("Repair status updated");
+            setRepairs((prev) =>
+              prev.map((r) =>
+                r.id === id
+                  ? { ...r, status, updatedAt: new Date().toISOString() }
+                  : r
+              )
+            );
+          },
+          onError: (msg) => {
+            console.error("❌ Error updating repair status:", msg);
+            setError(msg);
+          },
+        }
+      );
       setLoading(false);
     },
     [clearError]
@@ -276,25 +307,33 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
   // ✅ Update payment status
   const updatePaymentStatus = useCallback(
     async (id: string, status: PaymentStatus) => {
+      console.log("🔄 Updating payment status:", { id, status });
       setLoading(true);
       clearError();
-      await withAsync(() => invoke("update_payment_status", { id, status }), {
-        onSuccess: () => {
-          toast.success("Payment status updated");
-          setRepairs((prev) =>
-            prev.map((r) =>
-              r.id === id
-                ? {
-                    ...r,
-                    paymentStatus: status,
-                    updatedAt: new Date().toISOString(),
-                  }
-                : r
-            )
-          );
-        },
-        onError: (msg) => setError(msg),
-      });
+      await withAsync(
+        () => invoke("update_payment_status", { id, newStatus: status }),
+        {
+          onSuccess: () => {
+            console.log("✅ Payment status updated successfully");
+            toast.success("Payment status updated");
+            setRepairs((prev) =>
+              prev.map((r) =>
+                r.id === id
+                  ? {
+                      ...r,
+                      paymentStatus: status,
+                      updatedAt: new Date().toISOString(),
+                    }
+                  : r
+              )
+            );
+          },
+          onError: (msg) => {
+            console.error("❌ Error updating payment status:", msg);
+            setError(msg);
+          },
+        }
+      );
       setLoading(false);
     },
     [clearError]

@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -18,15 +19,73 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useRepairActions } from "@/context/RepairContext"; // ✅ context
+import { useRepairActions } from "@/context/RepairContext";
 import { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
-import { Printer } from "lucide-react";
+import {
+  Printer,
+  User,
+  Smartphone,
+  AlertCircle,
+  DollarSign,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader,
+  FileText,
+  Calendar,
+  Phone,
+} from "lucide-react";
 
 interface RepairDetailProps {
   repair: Repair | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const getStatusColor = (status: RepairStatus) => {
+  switch (status) {
+    case "Pending":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "In Progress":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "Completed":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "Delivered":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const getPaymentStatusColor = (status: PaymentStatus) => {
+  switch (status) {
+    case "Paid":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "Partially Paid":
+      return "bg-orange-100 text-orange-800 border-orange-200";
+    case "Unpaid":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "Refunded":
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const getStatusIcon = (status: RepairStatus) => {
+  switch (status) {
+    case "Pending":
+      return <Clock className="h-4 w-4" />;
+    case "In Progress":
+      return <Loader className="h-4 w-4" />;
+    case "Completed":
+      return <CheckCircle className="h-4 w-4" />;
+    case "Delivered":
+      return <CheckCircle className="h-4 w-4" />;
+    default:
+      return <XCircle className="h-4 w-4" />;
+  }
+};
 
 export function RepairDetail({
   repair,
@@ -45,146 +104,446 @@ export function RepairDetail({
     newWin.document.write(`
       <html>
         <head>
-          <title>Repair Receipt</title>
+          <title>Repair Receipt - Order #${repair.id}</title>
           <style>
-            body { font-family: sans-serif; padding: 20px; }
-            h2 { margin-bottom: 8px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            body { 
+              font-family: 'Arial', sans-serif; 
+              padding: 20px; 
+              line-height: 1.4; 
+              color: #000;
+            }
+            .header { 
+              text-align: center; 
+              border-bottom: 2px solid #000; 
+              padding-bottom: 15px; 
+              margin-bottom: 20px; 
+            }
+            .section { margin-bottom: 20px; }
+            .section h3 { 
+              margin: 0 0 10px 0; 
+              font-size: 16px; 
+              font-weight: bold; 
+              border-bottom: 1px solid #ccc; 
+              padding-bottom: 5px; 
+            }
+            .info-row { 
+              display: flex; 
+              justify-content: space-between; 
+              margin-bottom: 5px; 
+            }
+            .label { font-weight: bold; }
+            .status { 
+              display: inline-block; 
+              padding: 4px 8px; 
+              border: 1px solid #000; 
+              border-radius: 4px; 
+              font-size: 12px; 
+              font-weight: bold; 
+            }
           </style>
         </head>
-        <body>${printContent.innerHTML}</body>
+        <body>
+          <div class="header">
+            <h1>REPAIR RECEIPT</h1>
+            <p>Order #${repair.id}</p>
+            <p>Date: ${formatDate(repair.createdAt)}</p>
+          </div>
+          
+          <div class="section">
+            <h3>Customer Information</h3>
+            <div class="info-row">
+              <span class="label">Name:</span>
+              <span>${repair.customerName}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Phone:</span>
+              <span>${repair.customerPhone}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Device Information</h3>
+            <div class="info-row">
+              <span class="label">Device:</span>
+              <span>${repair.deviceBrand} ${repair.deviceModel}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Issue:</span>
+              <span>${repair.issueDescription}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Status & Payment</h3>
+            <div class="info-row">
+              <span class="label">Repair Status:</span>
+              <span class="status">${repair.status}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Payment Status:</span>
+              <span class="status">${repair.paymentStatus}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Estimated Cost:</span>
+              <span>$${repair.estimatedCost.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <p style="text-align: center; margin-top: 30px; font-size: 12px;">
+              Thank you for choosing our repair service!
+            </p>
+          </div>
+        </body>
       </html>
     `);
     newWin.document.close();
     newWin.print();
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Repair Details</DialogTitle>
-          <DialogDescription>
-            Detailed view of repair order #{repair.id}
-          </DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className="max-h-[70vh] pr-4">
-          <div id="printable-repair" className="space-y-6">
-            {/* Customer Info */}
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="pb-4 flex-shrink-0">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Customer</h2>
-              <p>
-                {repair.customerName} — {repair.customerPhone}
-              </p>
+              <DialogTitle className="text-2xl font-bold">
+                Repair Details
+              </DialogTitle>
+              <DialogDescription className="text-base mt-1">
+                Order #{repair.id} • Created {formatDate(repair.createdAt)}
+              </DialogDescription>
             </div>
-
-            {/* Device Info */}
-            <div>
-              <h2 className="text-lg font-semibold">Device</h2>
-              <p>
-                {repair.deviceBrand} {repair.deviceModel}
-              </p>
-              <p className="text-muted-foreground">{repair.issueDescription}</p>
-            </div>
-
-            {/* Status + Payment (Editable) */}
-            <div>
-              <h2 className="text-lg font-semibold mb-2">Status</h2>
-              <div className="flex gap-4 items-center">
-                {/* Repair Status */}
-                <div>
-                  <span className="block text-sm text-muted-foreground mb-1">
-                    Repair Status
-                  </span>
-                  <Select
-                    value={repair.status}
-                    onValueChange={(val) =>
-                      updateRepairStatus(repair.id, val as RepairStatus)
-                    }
-                  >
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="Completed">Completed</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Payment Status */}
-                <div>
-                  <span className="block text-sm text-muted-foreground mb-1">
-                    Payment Status
-                  </span>
-                  <Select
-                    value={repair.paymentStatus}
-                    onValueChange={(val) =>
-                      updatePaymentStatus(repair.id, val as PaymentStatus)
-                    }
-                  >
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Unpaid">Unpaid</SelectItem>
-                      <SelectItem value="Partially Paid">
-                        Partially Paid
-                      </SelectItem>
-                      <SelectItem value="Paid">Paid</SelectItem>
-                      <SelectItem value="Refunded">Refunded</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Financial Info */}
-            {/* <div>
-              <h2 className="text-lg font-semibold mb-2">Financials</h2>
-              <table>
-                <tbody>
-                  <tr>
-                    <td>Estimated Cost</td>
-                    <td>${repair.estimatedCost.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>Final Cost</td>
-                    <td>${repair.finalCost?.toFixed(2) ?? "—"}</td>
-                  </tr>
-                  <tr>
-                    <td>Paid Amount</td>
-                    <td>${repair.paidAmount.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>Profit</td>
-                    <td className="font-semibold text-green-600">
-                      ${(repair.finalCost ?? 0) - (repair.partsCost ?? 0)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div> */}
-
-            <Separator />
-
-            {/* Notes */}
-            <div>
-              <h2 className="text-lg font-semibold">Notes</h2>
-              {/* <p className="text-muted-foreground">
-                {repair.notes || "No additional notes"}
-              </p> */}
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={`px-3 py-1 ${getStatusColor(repair.status)}`}
+              >
+                {getStatusIcon(repair.status)}
+                <span className="ml-1">{repair.status}</span>
+              </Badge>
             </div>
           </div>
-        </ScrollArea>
+        </DialogHeader>
 
-        <div className="flex justify-between items-center pt-4">
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div id="printable-repair" className="space-y-4 pr-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Customer Information Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <User className="h-5 w-5 text-blue-600" />
+                    Customer Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {repair.customerName}
+                      </p>
+                      <p className="text-sm text-gray-500">Customer</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <Phone className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {repair.customerPhone}
+                      </p>
+                      <p className="text-sm text-gray-500">Phone Number</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Device Information Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Smartphone className="h-5 w-5 text-purple-600" />
+                    Device Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                      <Smartphone className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {repair.deviceBrand} {repair.deviceModel}
+                      </p>
+                      <p className="text-sm text-gray-500">Device</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Issue Description
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {repair.issueDescription}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Status Management Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="h-5 w-5 text-indigo-600" />
+                  Status Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Repair Status
+                    </label>
+                    <Select
+                      value={repair.status}
+                      onValueChange={(val) =>
+                        updateRepairStatus(repair.id, val as RepairStatus)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(repair.status)}
+                          <SelectValue />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            Pending
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="In Progress">
+                          <div className="flex items-center gap-2">
+                            <Loader className="h-4 w-4" />
+                            In Progress
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Completed">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Completed
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Delivered">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Delivered
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Payment Status
+                    </label>
+                    <Select
+                      value={repair.paymentStatus}
+                      onValueChange={(val) =>
+                        updatePaymentStatus(repair.id, val as PaymentStatus)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          <SelectValue />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Unpaid">
+                          <div className="flex items-center gap-2">
+                            <XCircle className="h-4 w-4 text-red-500" />
+                            Unpaid
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Partially Paid">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-orange-500" />
+                            Partially Paid
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Paid">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            Paid
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Refunded">
+                          <div className="flex items-center gap-2">
+                            <XCircle className="h-4 w-4 text-purple-500" />
+                            Refunded
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex gap-4">
+                  <Badge
+                    variant="outline"
+                    className={`px-3 py-1 ${getStatusColor(repair.status)}`}
+                  >
+                    {getStatusIcon(repair.status)}
+                    <span className="ml-1">{repair.status}</span>
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className={`px-3 py-1 ${getPaymentStatusColor(
+                      repair.paymentStatus
+                    )}`}
+                  >
+                    <DollarSign className="h-4 w-4" />
+                    <span className="ml-1">{repair.paymentStatus}</span>
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Financial Information Card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                  Financial Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">
+                          Estimated Cost
+                        </p>
+                        <p className="text-2xl font-bold text-blue-700">
+                          ${repair.estimatedCost.toFixed(2)}
+                        </p>
+                      </div>
+                      <DollarSign className="h-8 w-8 text-blue-500" />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-green-900">
+                          Parts Used
+                        </p>
+                        <p className="text-2xl font-bold text-green-700">
+                          {repair.usedParts?.length || 0}
+                        </p>
+                      </div>
+                      <Smartphone className="h-8 w-8 text-green-500" />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-purple-900">
+                          Payments
+                        </p>
+                        <p className="text-2xl font-bold text-purple-700">
+                          {repair.payments?.length || 0}
+                        </p>
+                      </div>
+                      <CheckCircle className="h-8 w-8 text-purple-500" />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-orange-900">
+                          Last Updated
+                        </p>
+                        <p className="text-sm font-bold text-orange-700">
+                          {formatDate(repair.updatedAt)}
+                        </p>
+                      </div>
+                      <Calendar className="h-8 w-8 text-orange-500" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Repair History Card */}
+            {repair.history && repair.history.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Clock className="h-5 w-5 text-gray-600" />
+                    Repair History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {repair.history.slice(0, 5).map((historyItem, index) => (
+                      <div
+                        key={historyItem.id}
+                        className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-600">
+                            {formatDate(historyItem.timestamp)}
+                          </p>
+                          <p className="text-sm font-medium">
+                            {JSON.stringify(historyItem.event)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        <Separator className="my-3 flex-shrink-0" />
+
+        <div className="flex justify-between items-center flex-shrink-0">
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            className="flex items-center gap-2"
+          >
+            <Printer className="h-4 w-4" />
             Print Receipt
           </Button>
           <Button onClick={() => onOpenChange(false)}>Close</Button>

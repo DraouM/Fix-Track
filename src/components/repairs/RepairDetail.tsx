@@ -19,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useRepairActions } from "@/context/RepairContext";
+import { useRepairActions, useRepairContext } from "@/context/RepairContext";
 import { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
 import {
   Printer,
@@ -93,8 +93,12 @@ export function RepairDetail({
   onOpenChange,
 }: RepairDetailProps) {
   const { updateRepairStatus, updatePaymentStatus } = useRepairActions();
+  const { getItemById } = useRepairContext();
 
-  if (!repair) return null;
+  // Get the most up-to-date repair data from context
+  const currentRepair = repair ? getItemById(repair.id) || repair : null;
+
+  if (!currentRepair) return null;
 
   const handlePrint = () => {
     const printContent = document.getElementById("printable-repair");
@@ -104,7 +108,7 @@ export function RepairDetail({
     newWin.document.write(`
       <html>
         <head>
-          <title>Repair Receipt - Order #${repair.id}</title>
+          <title>Repair Receipt - Order #${currentRepair.id}</title>
           <style>
             body { 
               font-family: 'Arial', sans-serif; 
@@ -145,19 +149,19 @@ export function RepairDetail({
         <body>
           <div class="header">
             <h1>REPAIR RECEIPT</h1>
-            <p>Order #${repair.id}</p>
-            <p>Date: ${formatDate(repair.createdAt)}</p>
+            <p>Order #${currentRepair.id}</p>
+            <p>Date: ${formatDate(currentRepair.createdAt)}</p>
           </div>
           
           <div class="section">
             <h3>Customer Information</h3>
             <div class="info-row">
               <span class="label">Name:</span>
-              <span>${repair.customerName}</span>
+              <span>${currentRepair.customerName}</span>
             </div>
             <div class="info-row">
               <span class="label">Phone:</span>
-              <span>${repair.customerPhone}</span>
+              <span>${currentRepair.customerPhone}</span>
             </div>
           </div>
 
@@ -165,11 +169,13 @@ export function RepairDetail({
             <h3>Device Information</h3>
             <div class="info-row">
               <span class="label">Device:</span>
-              <span>${repair.deviceBrand} ${repair.deviceModel}</span>
+              <span>${currentRepair.deviceBrand} ${
+      currentRepair.deviceModel
+    }</span>
             </div>
             <div class="info-row">
               <span class="label">Issue:</span>
-              <span>${repair.issueDescription}</span>
+              <span>${currentRepair.issueDescription}</span>
             </div>
           </div>
 
@@ -177,15 +183,15 @@ export function RepairDetail({
             <h3>Status & Payment</h3>
             <div class="info-row">
               <span class="label">Repair Status:</span>
-              <span class="status">${repair.status}</span>
+              <span class="status">${currentRepair.status}</span>
             </div>
             <div class="info-row">
               <span class="label">Payment Status:</span>
-              <span class="status">${repair.paymentStatus}</span>
+              <span class="status">${currentRepair.paymentStatus}</span>
             </div>
             <div class="info-row">
               <span class="label">Estimated Cost:</span>
-              <span>$${repair.estimatedCost.toFixed(2)}</span>
+              <span>$${currentRepair.estimatedCost.toFixed(2)}</span>
             </div>
           </div>
 
@@ -221,16 +227,17 @@ export function RepairDetail({
                 Repair Details
               </DialogTitle>
               <DialogDescription className="text-base mt-1">
-                Order #{repair.id} • Created {formatDate(repair.createdAt)}
+                Order #{currentRepair.id} • Created{" "}
+                {formatDate(currentRepair.createdAt)}
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
               <Badge
                 variant="outline"
-                className={`px-3 py-1 ${getStatusColor(repair.status)}`}
+                className={`px-3 py-1 ${getStatusColor(currentRepair.status)}`}
               >
-                {getStatusIcon(repair.status)}
-                <span className="ml-1">{repair.status}</span>
+                {getStatusIcon(currentRepair.status)}
+                <span className="ml-1">{currentRepair.status}</span>
               </Badge>
             </div>
           </div>
@@ -254,7 +261,7 @@ export function RepairDetail({
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {repair.customerName}
+                        {currentRepair.customerName}
                       </p>
                       <p className="text-sm text-gray-500">Customer</p>
                     </div>
@@ -265,7 +272,7 @@ export function RepairDetail({
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {repair.customerPhone}
+                        {currentRepair.customerPhone}
                       </p>
                       <p className="text-sm text-gray-500">Phone Number</p>
                     </div>
@@ -288,7 +295,7 @@ export function RepairDetail({
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {repair.deviceBrand} {repair.deviceModel}
+                        {currentRepair.deviceBrand} {currentRepair.deviceModel}
                       </p>
                       <p className="text-sm text-gray-500">Device</p>
                     </div>
@@ -301,7 +308,7 @@ export function RepairDetail({
                           Issue Description
                         </p>
                         <p className="text-sm text-gray-600 mt-1">
-                          {repair.issueDescription}
+                          {currentRepair.issueDescription}
                         </p>
                       </div>
                     </div>
@@ -325,14 +332,17 @@ export function RepairDetail({
                       Repair Status
                     </label>
                     <Select
-                      value={repair.status}
+                      value={currentRepair.status}
                       onValueChange={(val) =>
-                        updateRepairStatus(repair.id, val as RepairStatus)
+                        updateRepairStatus(
+                          currentRepair.id,
+                          val as RepairStatus
+                        )
                       }
                     >
                       <SelectTrigger className="w-full">
                         <div className="flex items-center gap-2">
-                          {getStatusIcon(repair.status)}
+                          {getStatusIcon(currentRepair.status)}
                           <SelectValue />
                         </div>
                       </SelectTrigger>
@@ -370,9 +380,12 @@ export function RepairDetail({
                       Payment Status
                     </label>
                     <Select
-                      value={repair.paymentStatus}
+                      value={currentRepair.paymentStatus}
                       onValueChange={(val) =>
-                        updatePaymentStatus(repair.id, val as PaymentStatus)
+                        updatePaymentStatus(
+                          currentRepair.id,
+                          val as PaymentStatus
+                        )
                       }
                     >
                       <SelectTrigger className="w-full">
@@ -414,19 +427,21 @@ export function RepairDetail({
                 <div className="mt-4 flex gap-4">
                   <Badge
                     variant="outline"
-                    className={`px-3 py-1 ${getStatusColor(repair.status)}`}
+                    className={`px-3 py-1 ${getStatusColor(
+                      currentRepair.status
+                    )}`}
                   >
-                    {getStatusIcon(repair.status)}
-                    <span className="ml-1">{repair.status}</span>
+                    {getStatusIcon(currentRepair.status)}
+                    <span className="ml-1">{currentRepair.status}</span>
                   </Badge>
                   <Badge
                     variant="outline"
                     className={`px-3 py-1 ${getPaymentStatusColor(
-                      repair.paymentStatus
+                      currentRepair.paymentStatus
                     )}`}
                   >
                     <DollarSign className="h-4 w-4" />
-                    <span className="ml-1">{repair.paymentStatus}</span>
+                    <span className="ml-1">{currentRepair.paymentStatus}</span>
                   </Badge>
                 </div>
               </CardContent>
@@ -449,7 +464,7 @@ export function RepairDetail({
                           Estimated Cost
                         </p>
                         <p className="text-2xl font-bold text-blue-700">
-                          ${repair.estimatedCost.toFixed(2)}
+                          ${currentRepair.estimatedCost.toFixed(2)}
                         </p>
                       </div>
                       <DollarSign className="h-8 w-8 text-blue-500" />
@@ -463,7 +478,7 @@ export function RepairDetail({
                           Parts Used
                         </p>
                         <p className="text-2xl font-bold text-green-700">
-                          {repair.usedParts?.length || 0}
+                          {currentRepair.usedParts?.length || 0}
                         </p>
                       </div>
                       <Smartphone className="h-8 w-8 text-green-500" />
@@ -477,7 +492,7 @@ export function RepairDetail({
                           Payments
                         </p>
                         <p className="text-2xl font-bold text-purple-700">
-                          {repair.payments?.length || 0}
+                          {currentRepair.payments?.length || 0}
                         </p>
                       </div>
                       <CheckCircle className="h-8 w-8 text-purple-500" />
@@ -491,7 +506,7 @@ export function RepairDetail({
                           Last Updated
                         </p>
                         <p className="text-sm font-bold text-orange-700">
-                          {formatDate(repair.updatedAt)}
+                          {formatDate(currentRepair.updatedAt)}
                         </p>
                       </div>
                       <Calendar className="h-8 w-8 text-orange-500" />
@@ -502,7 +517,7 @@ export function RepairDetail({
             </Card>
 
             {/* Repair History Card */}
-            {repair.history && repair.history.length > 0 && (
+            {currentRepair.history && currentRepair.history.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -512,22 +527,24 @@ export function RepairDetail({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {repair.history.slice(0, 5).map((historyItem, index) => (
-                      <div
-                        key={historyItem.id}
-                        className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-600">
-                            {formatDate(historyItem.timestamp)}
-                          </p>
-                          <p className="text-sm font-medium">
-                            {JSON.stringify(historyItem.event)}
-                          </p>
+                    {currentRepair.history
+                      .slice(0, 5)
+                      .map((historyItem, index) => (
+                        <div
+                          key={historyItem.id}
+                          className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                        >
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-600">
+                              {formatDate(historyItem.timestamp)}
+                            </p>
+                            <p className="text-sm font-medium">
+                              {JSON.stringify(historyItem.event)}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </CardContent>
               </Card>

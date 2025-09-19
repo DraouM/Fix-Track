@@ -311,7 +311,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       clearError();
       await withAsync(
-        () => invoke("update_payment_status", { id, newStatus: status }),
+        () => invoke("update_payment_status", { id, newPaymentStatus: status }),
         {
           onSuccess: () => {
             console.log("✅ Payment status updated successfully");

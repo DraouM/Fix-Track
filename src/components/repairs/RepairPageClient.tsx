@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Icons } from "@/components/icons";
 
-// import { RepairForm } from "@/components/RepairForm";
+import RepairForm from "@/components/repairs/RepairForm";
 import { RepairTable } from "@/components/repairs/RepairTable";
 // import { Analytics } from "@/components/Analytics";
 import type { Repair } from "@/types/repair";
@@ -74,7 +74,7 @@ export function RepairsPageInner() {
                   : "Fill in the details for a new repair order."}
               </DialogDescription>
             </DialogHeader>
-            {/* <RepairForm
+            <RepairForm
               key={
                 repairToEdit
                   ? `edit-${repairToEdit.id}`
@@ -82,7 +82,7 @@ export function RepairsPageInner() {
               }
               repairToEdit={repairToEdit}
               onSuccess={handleFormSuccess}
-            /> */}
+            />
           </DialogContent>
         </Dialog>
       </div>

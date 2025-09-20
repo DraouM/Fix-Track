@@ -113,6 +113,14 @@ export interface RepairHistoryInput {
   changedBy?: string;
 }
 
+// Schema for used parts in the form
+const usedPartFormSchema = z.object({
+  partId: z.string(),
+  name: z.string().min(1, "Part name is required"),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+  unitCost: z.coerce.number().nonnegative("Unit cost must be non-negative"),
+});
+
 export const repairSchema = z.object({
   customerName: z
     .string()
@@ -133,6 +141,15 @@ export const repairSchema = z.object({
     "Delivered",
   ]),
   paymentStatus: z.enum(["Unpaid", "Paid", "Partially Paid", "Refunded"]),
+  usedParts: z.array(usedPartFormSchema).optional().default([]),
 });
 
 export type RepairFormValues = z.infer<typeof repairSchema>;
+
+// Type for used parts in the form (matches the structure used in RepairForm)
+export interface UsedPartForm {
+  partId: string;
+  name: string;
+  quantity: number;
+  unitCost: number;
+}

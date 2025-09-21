@@ -69,10 +69,11 @@ export function InventoryPageInner() {
       });
 
       // map snake_case → camelCase
-      const mapped = events.map((e) => ({
+      const mapped: InventoryHistoryEvent[] = events.map((e) => ({
         id: e.id,
+        itemId: item.id, // ✅ add the itemId from the current item
         date: e.date,
-        type: e.event_type, // ✅ map event_type → type
+        type: e.event_type as InventoryHistoryEvent["type"], // ✅ map event_type → type
         quantityChange: e.quantity_change, // ✅ map quantity_change → quantityChange
         notes: e.notes,
         relatedId: e.related_id,

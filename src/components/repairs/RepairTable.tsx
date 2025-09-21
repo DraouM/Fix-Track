@@ -30,9 +30,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Icons } from "@/components/icons";
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import {
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
+  X,
+  BarChart3,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RepairDetail } from "./RepairDetail";
+import { Input } from "@/components/ui/input";
 
 interface RepairTableProps {
   onEditRepair: (repair: Repair) => void;
@@ -98,7 +107,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       case "Refunded":
         return {
           variant: "outline" as const,
-          className: "text-gray-700",
+          className: "bg-purple-100 text-purple-800 ",
         };
       default:
         return { variant: "outline" as const, className: "" };
@@ -113,64 +122,198 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
 
   return (
     <div className="space-y-4">
-      {/* -------------------- Filters -------------------- */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <input
-          type="text"
-          placeholder="Search repairs..."
-          value={filters.searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="border rounded px-2 py-1"
-        />
+      {/* Compact Statistics Bar */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-blue-600" />
+              <span className="font-medium text-gray-700">Overview:</span>
+            </div>
+            <div className="flex gap-4 align-space-x-4 ">
+              <span className="text-gray-600">
+                <span className="font-semibold text-gray-900">
+                  {statistics.total}
+                </span>{" "}
+                Total
+              </span>
+              <span className="text-gray-600">
+                <span className="font-semibold text-blue-600">
+                  {statistics.filtered}
+                </span>{" "}
+                Filtered
+              </span>
+              <span className="text-gray-600">
+                <span className="font-semibold text-green-600">
+                  {formatCurrency(statistics.totalRevenue)}
+                </span>{" "}
+                Revenue
+              </span>
+              <span className="text-gray-600">
+                <span className="font-semibold text-yellow-600">
+                  {formatCurrency(statistics.pendingRevenue)}
+                </span>{" "}
+                Pending
+              </span>
+            </div>
+          </div>
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-8"
+            >
+              <X className="mr-1 h-3 w-3" />
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
 
-        <select
-          value={filters.status}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as RepairStatus | "All")
-          }
-          className="border rounded px-2 py-1"
-        >
-          <option value="All">All Status</option>
-          <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Completed">Completed</option>
-          <option value="Delivered">Delivered</option>
-        </select>
+      {/* Compact Search & Filters - Positioned Above Table */}
+      <div className=" rounded-t-lg ">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          {/* Search Bar */}
+          <div className="flex-1 min-w-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search by customer, device, or description..."
+                value={filters.searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
 
-        <select
-          value={filters.paymentStatus}
-          onChange={(e) =>
-            setPaymentStatusFilter(e.target.value as PaymentStatus | "All")
-          }
-          className="border rounded px-2 py-1"
-        >
-          <option value="All">All Payments</option>
-          <option value="Unpaid">Unpaid</option>
-          <option value="Partially Paid">Partially Paid</option>
-          <option value="Paid">Paid</option>
-          <option value="Refunded">Refunded</option>
-        </select>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-1">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <span className="text-sm text-gray-600 hidden sm:block">
+                Filters:
+              </span>
+            </div>
 
+            {/* Status Filter */}
+            <Select
+              value={filters.status}
+              onValueChange={(value) =>
+                setStatusFilter(value as RepairStatus | "All")
+              }
+            >
+              <SelectTrigger className="w-[140px] h-10 focus:ring-2 focus:ring-blue-500">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Status</SelectItem>
+                <SelectItem value="Pending">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    Pending
+                  </div>
+                </SelectItem>
+                <SelectItem value="In Progress">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    In Progress
+                  </div>
+                </SelectItem>
+                <SelectItem value="Completed">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Completed
+                  </div>
+                </SelectItem>
+                <SelectItem value="Delivered">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    Delivered
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Payment Filter */}
+            <Select
+              value={filters.paymentStatus}
+              onValueChange={(value) =>
+                setPaymentStatusFilter(value as PaymentStatus | "All")
+              }
+            >
+              <SelectTrigger className="w-[140px] h-10 focus:ring-2 focus:ring-blue-500">
+                <SelectValue placeholder="Payment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Payments</SelectItem>
+                <SelectItem value="Unpaid">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    Unpaid
+                  </div>
+                </SelectItem>
+                <SelectItem value="Partially Paid">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    Partially Paid
+                  </div>
+                </SelectItem>
+                <SelectItem value="Paid">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Paid
+                  </div>
+                </SelectItem>
+                <SelectItem value="Refunded">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                    Refunded
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Active Filters - Compact Display */}
         {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="text-sm text-red-500 underline"
-          >
-            Clear Filters
-          </button>
+          <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t">
+            {filters.searchTerm && (
+              <Badge
+                variant="secondary"
+                className="bg-blue-100 text-blue-800 text-xs"
+              >
+                "
+                {filters.searchTerm.length > 20
+                  ? filters.searchTerm.substring(0, 20) + "..."
+                  : filters.searchTerm}
+                "
+              </Badge>
+            )}
+            {filters.status !== "All" && (
+              <Badge
+                variant="secondary"
+                className="bg-green-100 text-green-800 text-xs"
+              >
+                {filters.status}
+              </Badge>
+            )}
+            {filters.paymentStatus !== "All" && (
+              <Badge
+                variant="secondary"
+                className="bg-purple-100 text-purple-800 text-xs"
+              >
+                {filters.paymentStatus}
+              </Badge>
+            )}
+          </div>
         )}
       </div>
 
-      {/* -------------------- Statistics -------------------- */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <div>Total Repairs: {statistics.total}</div>
-        <div>Filtered: {statistics.filtered}</div>
-        <div>Total Revenue: {statistics.totalRevenue}</div>
-        <div>Pending Revenue: {statistics.pendingRevenue}</div>
-      </div>
-
-      {/* -------------------- Table -------------------- */}
-      <div className="rounded-md border">
+      {/* Repairs Table */}
+      <div className="bg-white rounded-b-lg border border-t-0 shadow-sm overflow-hidden">
         <Table>
           <TableCaption>A list of your current repairs.</TableCaption>
           <TableHeader>

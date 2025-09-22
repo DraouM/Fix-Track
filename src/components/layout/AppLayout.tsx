@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -47,6 +48,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
       <LayoutContent>{children}</LayoutContent>
+      <Toaster />
     </SidebarProvider>
   );
 }

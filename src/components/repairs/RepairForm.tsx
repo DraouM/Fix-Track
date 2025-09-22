@@ -122,7 +122,7 @@ export default function RepairForm({
           deviceBrand: values.deviceBrand,
           deviceModel: values.deviceModel,
           issueDescription: values.issueDescription,
-          estimatedCost: values.estimatedCost,
+          estimatedCost: Number(values.estimatedCost), // Ensure it's a number
           status: values.repairStatus,
           paymentStatus: values.paymentStatus,
         };
@@ -135,7 +135,7 @@ export default function RepairForm({
           device_brand: values.deviceBrand,
           device_model: values.deviceModel,
           issue_description: values.issueDescription,
-          estimated_cost: values.estimatedCost,
+          estimated_cost: Number(values.estimatedCost), // Ensure it's a number
           status: values.repairStatus,
           payment_status: values.paymentStatus,
           used_parts: [],

@@ -237,7 +237,32 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     async (id: string, data: Partial<Repair>) => {
       setLoading(true);
       clearError();
-      await withAsync(() => invoke("update_repair", { id, data }), {
+
+      // Find the existing repair to merge with updates
+      const existingRepair = repairs.find((r) => r.id === id);
+      if (!existingRepair) {
+        setError("Repair not found");
+        setLoading(false);
+        return;
+      }
+
+      // Convert frontend Repair to backend RepairDb format
+      const repairData = {
+        id: existingRepair.id,
+        customer_name: data.customerName ?? existingRepair.customerName,
+        customer_phone: data.customerPhone ?? existingRepair.customerPhone,
+        device_brand: data.deviceBrand ?? existingRepair.deviceBrand,
+        device_model: data.deviceModel ?? existingRepair.deviceModel,
+        issue_description:
+          data.issueDescription ?? existingRepair.issueDescription,
+        estimated_cost: data.estimatedCost ?? existingRepair.estimatedCost,
+        status: data.status ?? existingRepair.status,
+        payment_status: data.paymentStatus ?? existingRepair.paymentStatus,
+        created_at: existingRepair.createdAt,
+        updated_at: new Date().toISOString(),
+      };
+
+      await withAsync(() => invoke("update_repair", { repair: repairData }), {
         onSuccess: () => {
           toast.success("Repair updated successfully");
           setRepairs((prev) =>
@@ -252,7 +277,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       setLoading(false);
     },
-    [clearError]
+    [repairs, clearError]
   );
 
   // ✅ Delete repair

@@ -163,7 +163,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       clearError();
 
       const repair = await withAsync(
-        () => invoke<RepairDb>("get_repair_by_id", { id }),
+        () => invoke<RepairDb>("get_repair_by_id", { repairId: id }),
         {
           onSuccess: (data) => {
             console.log("✅ Successfully fetched repair by ID:", data);
@@ -181,7 +181,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       );
 
-      if (repair) {
+      if (repair && id) {
         console.log("🔄 Fetching related data for repair:", id);
         // fetch related data
         const [paymentsData, partsData, historyData] = await Promise.all([
@@ -370,21 +370,33 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       clearError();
       const paymentData = {
-        ...payment,
         id: uuidv4(),
+        repair_id: repairId, // Keep as string for backend compatibility
+        amount: payment.amount,
         date: new Date().toISOString(),
+        method: payment.method,
+        received_by: null, // Optional field
       };
 
-      await withAsync(
-        () => invoke("add_payment", { repairId, payment: paymentData }),
-        {
-          onSuccess: () => {
-            toast.success("Payment added successfully");
-            fetchRepairById(repairId);
-          },
-          onError: (msg) => setError(msg),
-        }
-      );
+      await withAsync(() => invoke("add_payment", { payment: paymentData }), {
+        onSuccess: async () => {
+          // Add history entry for the payment
+          const historyEntry = {
+            id: uuidv4(),
+            repair_id: repairId,
+            date: new Date().toISOString(),
+            event_type: "payment_added",
+            details: `Payment of $${payment.amount} via ${payment.method}`,
+            changed_by: null,
+          };
+
+          await invoke("insert_repair_history", { event: historyEntry });
+
+          toast.success("Payment added successfully");
+          fetchRepairById(repairId);
+        },
+        onError: (msg) => setError(msg),
+      });
       setLoading(false);
     },
     [fetchRepairById, clearError]
@@ -421,7 +433,10 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       clearError();
       await withAsync(
-        () => invoke<RepairHistory[]>("get_history_for_repair", { repairId }),
+        () =>
+          invoke<RepairHistory[]>("get_history_for_repair", {
+            repairId: repairId,
+          }),
         {
           onSuccess: (data) => setHistory(data),
           onError: (msg) => setError(msg),

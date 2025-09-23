@@ -68,8 +68,9 @@ export interface Payment {
 // When adding a payment
 // Input for DB / API
 export interface PaymentInput {
-  repair_id: number;
+  repair_id: string; // Changed to string to match backend
   amount: number;
+  method: string;
 }
 
 // --- USED PARTS ---

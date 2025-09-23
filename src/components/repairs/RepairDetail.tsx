@@ -19,6 +19,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useRepairActions, useRepairContext } from "@/context/RepairContext";
 import { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
 import {
@@ -35,6 +43,7 @@ import {
   Calendar,
   Phone,
 } from "lucide-react";
+import { RepairPaymentForm } from "./RepairPaymentForm";
 
 interface RepairDetailProps {
   repair: Repair | null;
@@ -100,6 +109,9 @@ export function RepairDetail({
 
   if (!currentRepair) return null;
 
+  // At this point, currentRepair is guaranteed to be non-null
+  const repairData: Repair = currentRepair;
+
   const handlePrint = () => {
     const printContent = document.getElementById("printable-repair");
     if (!printContent) return;
@@ -108,7 +120,7 @@ export function RepairDetail({
     newWin.document.write(`
       <html>
         <head>
-          <title>Repair Receipt - Order #${currentRepair.id}</title>
+          <title>Repair Receipt - Order #${repairData.id}</title>
           <style>
             body { 
               font-family: 'Arial', sans-serif; 
@@ -149,19 +161,19 @@ export function RepairDetail({
         <body>
           <div class="header">
             <h1>REPAIR RECEIPT</h1>
-            <p>Order #${currentRepair.id}</p>
-            <p>Date: ${formatDate(currentRepair.createdAt)}</p>
+            <p>Order #${repairData.id}</p>
+            <p>Date: ${formatDate(repairData.createdAt)}</p>
           </div>
           
           <div class="section">
             <h3>Customer Information</h3>
             <div class="info-row">
               <span class="label">Name:</span>
-              <span>${currentRepair.customerName}</span>
+              <span>${repairData.customerName}</span>
             </div>
             <div class="info-row">
               <span class="label">Phone:</span>
-              <span>${currentRepair.customerPhone}</span>
+              <span>${repairData.customerPhone}</span>
             </div>
           </div>
 
@@ -169,13 +181,11 @@ export function RepairDetail({
             <h3>Device Information</h3>
             <div class="info-row">
               <span class="label">Device:</span>
-              <span>${currentRepair.deviceBrand} ${
-      currentRepair.deviceModel
-    }</span>
+              <span>${repairData.deviceBrand} ${repairData.deviceModel}</span>
             </div>
             <div class="info-row">
               <span class="label">Issue:</span>
-              <span>${currentRepair.issueDescription}</span>
+              <span>${repairData.issueDescription}</span>
             </div>
           </div>
 
@@ -183,15 +193,15 @@ export function RepairDetail({
             <h3>Status & Payment</h3>
             <div class="info-row">
               <span class="label">Repair Status:</span>
-              <span class="status">${currentRepair.status}</span>
+              <span class="status">${repairData.status}</span>
             </div>
             <div class="info-row">
               <span class="label">Payment Status:</span>
-              <span class="status">${currentRepair.paymentStatus}</span>
+              <span class="status">${repairData.paymentStatus}</span>
             </div>
             <div class="info-row">
               <span class="label">Estimated Cost:</span>
-              <span>$${currentRepair.estimatedCost.toFixed(2)}</span>
+              <span>$${repairData.estimatedCost.toFixed(2)}</span>
             </div>
           </div>
 
@@ -227,17 +237,17 @@ export function RepairDetail({
                 Repair Details
               </DialogTitle>
               <DialogDescription className="text-base mt-1">
-                Order #{currentRepair.id} • Created{" "}
-                {formatDate(currentRepair.createdAt)}
+                Order #{repairData.id} • Created{" "}
+                {formatDate(repairData.createdAt)}
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
               <Badge
                 variant="outline"
-                className={`px-3 py-1 ${getStatusColor(currentRepair.status)}`}
+                className={`px-3 py-1 ${getStatusColor(repairData.status)}`}
               >
-                {getStatusIcon(currentRepair.status)}
-                <span className="ml-1">{currentRepair.status}</span>
+                {getStatusIcon(repairData.status)}
+                <span className="ml-1">{repairData.status}</span>
               </Badge>
             </div>
           </div>
@@ -261,7 +271,7 @@ export function RepairDetail({
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {currentRepair.customerName}
+                        {repairData.customerName}
                       </p>
                       <p className="text-sm text-gray-500">Customer</p>
                     </div>
@@ -272,7 +282,7 @@ export function RepairDetail({
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {currentRepair.customerPhone}
+                        {repairData.customerPhone}
                       </p>
                       <p className="text-sm text-gray-500">Phone Number</p>
                     </div>
@@ -295,7 +305,7 @@ export function RepairDetail({
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {currentRepair.deviceBrand} {currentRepair.deviceModel}
+                        {repairData.deviceBrand} {repairData.deviceModel}
                       </p>
                       <p className="text-sm text-gray-500">Device</p>
                     </div>
@@ -308,7 +318,7 @@ export function RepairDetail({
                           Issue Description
                         </p>
                         <p className="text-sm text-gray-600 mt-1">
-                          {currentRepair.issueDescription}
+                          {repairData.issueDescription}
                         </p>
                       </div>
                     </div>
@@ -332,17 +342,14 @@ export function RepairDetail({
                       Repair Status
                     </label>
                     <Select
-                      value={currentRepair.status}
+                      value={repairData.status}
                       onValueChange={(val) =>
-                        updateRepairStatus(
-                          currentRepair.id,
-                          val as RepairStatus
-                        )
+                        updateRepairStatus(repairData.id, val as RepairStatus)
                       }
                     >
                       <SelectTrigger className="w-full">
                         <div className="flex items-center gap-2">
-                          {getStatusIcon(currentRepair.status)}
+                          {getStatusIcon(repairData.status)}
                           <SelectValue />
                         </div>
                       </SelectTrigger>
@@ -380,12 +387,9 @@ export function RepairDetail({
                       Payment Status
                     </label>
                     <Select
-                      value={currentRepair.paymentStatus}
+                      value={repairData.paymentStatus}
                       onValueChange={(val) =>
-                        updatePaymentStatus(
-                          currentRepair.id,
-                          val as PaymentStatus
-                        )
+                        updatePaymentStatus(repairData.id, val as PaymentStatus)
                       }
                     >
                       <SelectTrigger className="w-full">
@@ -427,21 +431,19 @@ export function RepairDetail({
                 <div className="mt-4 flex gap-4">
                   <Badge
                     variant="outline"
-                    className={`px-3 py-1 ${getStatusColor(
-                      currentRepair.status
-                    )}`}
+                    className={`px-3 py-1 ${getStatusColor(repairData.status)}`}
                   >
-                    {getStatusIcon(currentRepair.status)}
-                    <span className="ml-1">{currentRepair.status}</span>
+                    {getStatusIcon(repairData.status)}
+                    <span className="ml-1">{repairData.status}</span>
                   </Badge>
                   <Badge
                     variant="outline"
                     className={`px-3 py-1 ${getPaymentStatusColor(
-                      currentRepair.paymentStatus
+                      repairData.paymentStatus
                     )}`}
                   >
                     <DollarSign className="h-4 w-4" />
-                    <span className="ml-1">{currentRepair.paymentStatus}</span>
+                    <span className="ml-1">{repairData.paymentStatus}</span>
                   </Badge>
                 </div>
               </CardContent>
@@ -464,7 +466,7 @@ export function RepairDetail({
                           Estimated Cost
                         </p>
                         <p className="text-2xl font-bold text-blue-700">
-                          ${currentRepair.estimatedCost.toFixed(2)}
+                          ${repairData.estimatedCost.toFixed(2)}
                         </p>
                       </div>
                       <DollarSign className="h-8 w-8 text-blue-500" />
@@ -478,7 +480,7 @@ export function RepairDetail({
                           Parts Used
                         </p>
                         <p className="text-2xl font-bold text-green-700">
-                          {currentRepair.usedParts?.length || 0}
+                          {repairData.usedParts?.length || 0}
                         </p>
                       </div>
                       <Smartphone className="h-8 w-8 text-green-500" />
@@ -492,7 +494,7 @@ export function RepairDetail({
                           Payments
                         </p>
                         <p className="text-2xl font-bold text-purple-700">
-                          {currentRepair.payments?.length || 0}
+                          {repairData.payments?.length || 0}
                         </p>
                       </div>
                       <CheckCircle className="h-8 w-8 text-purple-500" />
@@ -506,18 +508,74 @@ export function RepairDetail({
                           Last Updated
                         </p>
                         <p className="text-sm font-bold text-orange-700">
-                          {formatDate(currentRepair.updatedAt)}
+                          {formatDate(repairData.updatedAt)}
                         </p>
                       </div>
                       <Calendar className="h-8 w-8 text-orange-500" />
                     </div>
                   </div>
+
+                  <div className="flex flex-col gap-4">
+                    {/* Inside RepairDetail, after showing Payment Status */}
+                    <Separator className="my-4" />
+                    <h4 className="text-sm font-medium mb-2">
+                      Record a Payment
+                    </h4>
+                    <RepairPaymentForm
+                      repair={repairData}
+                      onSuccess={() => {
+                        // you can refresh the detail view or just close the form
+                        console.log("Payment recorded successfully");
+                      }}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Payments Card */}
+            {repairData.payments && repairData.payments.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <DollarSign className="h-5 w-5 text-green-600" />
+                    Payment History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {repairData.payments.map((payment) => (
+                          <TableRow key={payment.id}>
+                            <TableCell>{formatDate(payment.paid_at)}</TableCell>
+                            <TableCell className="text-right">
+                              ${payment.amount.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <Separator className="my-3" />
+                  <div className="text-right font-semibold">
+                    Total Paid: $
+                    {repairData.payments
+                      .reduce((sum, p) => sum + p.amount, 0)
+                      .toFixed(2)}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Repair History Card */}
-            {currentRepair.history && currentRepair.history.length > 0 && (
+            {repairData.history && repairData.history.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -527,7 +585,7 @@ export function RepairDetail({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {currentRepair.history
+                    {repairData.history
                       .slice(0, 5)
                       .map((historyItem, index) => (
                         <div

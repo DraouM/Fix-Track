@@ -29,6 +29,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Icons } from "@/components/icons";
 import {
   MoreHorizontal,
@@ -41,6 +48,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RepairDetail } from "./RepairDetail";
+import { RepairPaymentForm } from "./RepairPaymentForm";
 import { Input } from "@/components/ui/input";
 
 interface RepairTableProps {
@@ -52,6 +60,9 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
     useRepairContext();
 
   const [selectedRepair, setSelectedRepair] = useState<Repair | null>(null);
+  const [paymentDialogRepair, setPaymentDialogRepair] = useState<Repair | null>(
+    null
+  );
 
   // ✅ Filters & Sorting
   const {
@@ -335,6 +346,9 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
                 Created
               </TableHead>
               <TableHead className="text-center">Actions</TableHead>
+
+              <TableHead className="text-right">Paid</TableHead>
+              <TableHead className="text-right">Remaining</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -409,6 +423,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
                       {new Date(repair.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-center">
+                      👉
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
@@ -433,8 +448,28 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
                           >
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                           </DropdownMenuItem>
+                          {/* ✅ New "Record Payment" action */}
+                          <DropdownMenuItem
+                            onClick={() => setPaymentDialogRepair(repair)} // <-- local state
+                          >
+                            Record Payment
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      $
+                      {repair.payments
+                        .reduce((sum, p) => sum + p.amount, 0)
+                        .toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      $
+                      {(
+                        repair.estimatedCost -
+                        repair.payments.reduce((sum, p) => sum + p.amount, 0)
+                      ).toFixed(2)}
                     </TableCell>
                   </TableRow>
                 );
@@ -454,6 +489,27 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
           }}
         />
       )}
+
+      {/* -------------------- Payment Dialog -------------------- */}
+      <Dialog
+        open={!!paymentDialogRepair}
+        onOpenChange={() => setPaymentDialogRepair(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>
+              Add a payment for {paymentDialogRepair?.customerName}'s repair.
+            </DialogDescription>
+          </DialogHeader>
+          {paymentDialogRepair && (
+            <RepairPaymentForm
+              repair={paymentDialogRepair}
+              onSuccess={() => setPaymentDialogRepair(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -40,12 +40,16 @@ export function useRepairFilters(repairs: Repair[]) {
   const repairsWithCalculations = useMemo(() => {
     return repairs.map((repair) => {
       const totalCost = repair.estimatedCost || 0;
-      const amountPaid = repair.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-      const remainingBalance = Math.max(0, totalCost - amountPaid);
+      // Use pre-calculated values from context if available, otherwise fallback to manual calculation
+      const amountPaid =
+        repair.totalPaid ??
+        (repair.payments?.reduce((sum, p) => sum + p.amount, 0) || 0);
+      const remainingBalance =
+        repair.remainingBalance ?? Math.max(0, totalCost - amountPaid);
 
       const createdAt = new Date(repair.createdAt);
       const updatedAt = new Date(repair.updatedAt);
-      
+
       // Use updatedAt as promised date for urgency calculation
       const promisedDate = updatedAt;
       const completedAt = ["completed", "delivered"].includes(repair.status)
@@ -75,15 +79,15 @@ export function useRepairFilters(repairs: Repair[]) {
 
   // -------------------- Filtering & Sorting --------------------
   const filteredAndSortedRepairs = useMemo(() => {
-    const term = (filters.searchTerm || '').toLowerCase();
+    const term = (filters.searchTerm || "").toLowerCase();
 
     const filtered = repairsWithCalculations.filter((r) => {
       // Safe access to string properties
-      const customerName = (r.customerName || '').toLowerCase();
-      const customerPhone = (r.customerPhone || '').toLowerCase();
-      const deviceBrand = (r.deviceBrand || '').toLowerCase();
-      const deviceModel = (r.deviceModel || '').toLowerCase();
-      const repairId = (r.id || '').toLowerCase();
+      const customerName = (r.customerName || "").toLowerCase();
+      const customerPhone = (r.customerPhone || "").toLowerCase();
+      const deviceBrand = (r.deviceBrand || "").toLowerCase();
+      const deviceModel = (r.deviceModel || "").toLowerCase();
+      const repairId = (r.id || "").toLowerCase();
 
       const matchesSearch =
         customerName.includes(term) ||
@@ -96,7 +100,8 @@ export function useRepairFilters(repairs: Repair[]) {
         filters.status === "All" || r.status === filters.status;
 
       const matchesPaymentStatus =
-        filters.paymentStatus === "All" || r.paymentStatus === filters.paymentStatus;
+        filters.paymentStatus === "All" ||
+        r.paymentStatus === filters.paymentStatus;
 
       // Safe date handling
       let repairDate: Date;
@@ -143,12 +148,12 @@ export function useRepairFilters(repairs: Repair[]) {
       if (aValue instanceof Date && bValue instanceof Date) {
         return dirMultiplier * (aValue.getTime() - bValue.getTime());
       }
-      
+
       // Handle string comparison
       if (typeof aValue === "string" && typeof bValue === "string") {
         return dirMultiplier * aValue.localeCompare(bValue);
       }
-      
+
       // Handle number comparison
       if (typeof aValue === "number" && typeof bValue === "number") {
         return dirMultiplier * (aValue - bValue);
@@ -162,26 +167,30 @@ export function useRepairFilters(repairs: Repair[]) {
   const handleSort = useCallback((key: RepairSortConfig["key"]) => {
     setSortConfig((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === "ascending" 
-        ? "descending" 
-        : "ascending"
+      direction:
+        prev.key === key && prev.direction === "ascending"
+          ? "descending"
+          : "ascending",
     }));
   }, []);
 
   const setSearchTerm = useCallback((term: string) => {
-    setFilters(prev => ({ ...prev, searchTerm: term }));
+    setFilters((prev) => ({ ...prev, searchTerm: term }));
   }, []);
 
   const setStatusFilter = useCallback((status: RepairStatus | "All") => {
-    setFilters(prev => ({ ...prev, status }));
+    setFilters((prev) => ({ ...prev, status }));
   }, []);
 
-  const setPaymentStatusFilter = useCallback((paymentStatus: PaymentStatus | "All") => {
-    setFilters(prev => ({ ...prev, paymentStatus }));
-  }, []);
+  const setPaymentStatusFilter = useCallback(
+    (paymentStatus: PaymentStatus | "All") => {
+      setFilters((prev) => ({ ...prev, paymentStatus }));
+    },
+    []
+  );
 
   const setDateRange = useCallback((start: Date | null, end: Date | null) => {
-    setFilters(prev => ({ ...prev, dateRange: { start, end } }));
+    setFilters((prev) => ({ ...prev, dateRange: { start, end } }));
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -219,7 +228,8 @@ export function useRepairFilters(repairs: Repair[]) {
       0
     );
 
-    const completedCount = (byStatus.Completed || 0) + (byStatus.Delivered || 0);
+    const completedCount =
+      (byStatus.Completed || 0) + (byStatus.Delivered || 0);
 
     return {
       total,
@@ -229,10 +239,11 @@ export function useRepairFilters(repairs: Repair[]) {
       totalRevenue,
       pendingRevenue,
       completionRate: total > 0 ? (completedCount / total) * 100 : 0,
-      averageRepairTime: repairsWithCalculations.reduce(
-        (sum, r) => sum + (r._calculated?.duration || 0),
-        0
-      ) / Math.max(1, completedCount),
+      averageRepairTime:
+        repairsWithCalculations.reduce(
+          (sum, r) => sum + (r._calculated?.duration || 0),
+          0
+        ) / Math.max(1, completedCount),
     };
   }, [repairs, filteredAndSortedRepairs, repairsWithCalculations]);
 
@@ -272,4 +283,3 @@ export function useRepairFilters(repairs: Repair[]) {
 //   const { repairs } = useRepairContext();
 //   return useRepairFilters(repairs);
 // }
-

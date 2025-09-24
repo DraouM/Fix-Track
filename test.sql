@@ -1,3 +1,8 @@
+-- DROP TABLE IF EXISTS repairs;
+-- DROP TABLE IF EXISTS repair_payments;
+-- DROP TABLE IF EXISTS repair_used_parts;
+-- DROP TABLE IF EXISTS repair_history;
+
 -- Insert mock repairs data
 INSERT INTO repairs (id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at) VALUES
 ('REP001', 'John Smith', '555-0101', 'Apple', 'iPhone 13 Pro', 'Screen cracked, needs replacement', 199.99, 'Completed', 'Paid', '2024-01-15 09:30:00', '2024-01-18 14:20:00'),

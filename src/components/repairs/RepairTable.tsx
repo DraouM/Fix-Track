@@ -364,12 +364,6 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
                 const paymentBadgeProps = getPaymentBadgeProps(
                   repair.paymentStatus
                 );
-                console.log(
-                  "🔍 Rendering repair:",
-                  repair.id,
-                  "Status:",
-                  repair.status
-                );
                 return (
                   <TableRow
                     key={repair.id}
@@ -459,16 +453,13 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
                     </TableCell>
 
                     <TableCell className="text-right">
-                      $
-                      {repair.payments
-                        .reduce((sum, p) => sum + p.amount, 0)
-                        .toFixed(2)}
+                      ${(repair.totalPaid || 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
                       $
-                      {(
-                        repair.estimatedCost -
-                        repair.payments.reduce((sum, p) => sum + p.amount, 0)
+                      {(repair.remainingBalance !== undefined
+                        ? repair.remainingBalance
+                        : repair.estimatedCost
                       ).toFixed(2)}
                     </TableCell>
                   </TableRow>

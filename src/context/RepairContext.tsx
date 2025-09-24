@@ -109,6 +109,23 @@ function mapRepairFromDB(dbRepair: RepairDb): Repair {
   };
 }
 
+// Calculate payment totals for a repair
+function calculatePaymentTotals(repair: Repair, allPayments: Payment[]) {
+  // Convert both to strings for comparison since we have mixed ID types
+  const repairPayments = allPayments.filter(
+    (p) => String(p.repair_id) === String(repair.id)
+  );
+  const totalPaid = repairPayments.reduce((sum, p) => sum + p.amount, 0);
+  const remainingBalance = repair.estimatedCost - totalPaid;
+
+  return {
+    ...repair,
+    payments: repairPayments,
+    totalPaid,
+    remainingBalance,
+  };
+}
+
 export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -139,19 +156,59 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log("🔄 Fetching all repairs from database...");
     setLoading(true);
     clearError();
+
     await withAsync(() => invoke<RepairDb[]>("get_repairs"), {
-      onSuccess: (data) => {
-        console.log("✅ Successfully fetched repairs:", data);
-        console.log("📊 Number of repairs fetched:", data.length);
-        const mappedRepairs = data.map(mapRepairFromDB);
-        console.log("🔄 Mapped repairs to frontend format:", mappedRepairs);
-        setRepairs(mappedRepairs);
+      onSuccess: async (repairsData) => {
+        console.log("✅ Successfully fetched repairs:", repairsData);
+        console.log("📊 Number of repairs fetched:", repairsData.length);
+
+        // // Handle empty repairs case early
+        // if (!repairsData || repairsData.length === 0) {
+        //   console.log("📭 No repairs found, setting empty array");
+        //   setRepairs([]);
+        //   return;
+        // }
+
+        const mappedRepairs = repairsData.map(mapRepairFromDB);
+
+        // For now, fetch payments for each repair individually
+        // TODO: Create get_all_payments backend function for better performance
+        try {
+          const repairsWithPayments = await Promise.all(
+            mappedRepairs.map(async (repair) => {
+              try {
+                const repairPayments = await invoke<Payment[]>(
+                  "get_payments_for_repair",
+                  { repairId: repair.id }
+                );
+                return calculatePaymentTotals(repair, repairPayments);
+              } catch (error) {
+                console.warn(
+                  `Failed to fetch payments for repair ${repair.id}:`,
+                  error
+                );
+                return calculatePaymentTotals(repair, []);
+              }
+            })
+          );
+
+          console.log(
+            "🔄 Mapped repairs with payment totals:",
+            repairsWithPayments
+          );
+          setRepairs(repairsWithPayments);
+        } catch (error) {
+          console.error("❌ Error calculating payment totals:", error);
+          // Fallback: set repairs without payment calculations
+          setRepairs(mappedRepairs);
+        }
       },
       onError: (msg) => {
         console.error("❌ Error fetching repairs:", msg);
         setError(msg);
       },
     });
+
     setLoading(false);
   }, [clearError]);
 
@@ -390,16 +447,22 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
             changed_by: null,
           };
 
-          await invoke("insert_repair_history", { event: historyEntry });
+          try {
+            await invoke("insert_repair_history", { event: historyEntry });
+          } catch (error) {
+            console.warn("Failed to insert payment history:", error);
+          }
 
           toast.success("Payment added successfully");
-          fetchRepairById(repairId);
+
+          // Refresh all repairs to update payment totals
+          fetchRepairs();
         },
         onError: (msg) => setError(msg),
       });
       setLoading(false);
     },
-    [fetchRepairById, clearError]
+    [fetchRepairs, clearError]
   );
 
   // ✅ Add used part

@@ -554,7 +554,7 @@ export function RepairDetail({
                       <TableBody>
                         {repairData.payments.map((payment) => (
                           <TableRow key={payment.id}>
-                            <TableCell>{formatDate(payment.paid_at)}</TableCell>
+                            <TableCell>{formatDate(payment.date)}</TableCell>
                             <TableCell className="text-right">
                               ${payment.amount.toFixed(2)}
                             </TableCell>

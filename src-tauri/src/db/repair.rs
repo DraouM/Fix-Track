@@ -146,6 +146,8 @@ pub fn delete_repair(id: String) -> Result<(), String> {
 #[tauri::command]
 pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
+
+    // Insert payment
     conn.execute(
         "INSERT INTO repair_payments (id, repair_id, amount, date, method, received_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
@@ -156,8 +158,42 @@ pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
             payment.method,
             payment.received_by
         ],
+    ).map_err(|e| e.to_string())?;
+
+    // Recalculate total paid
+    let total_paid: f64 = conn
+        .query_row(
+            "SELECT COALESCE(SUM(amount), 0) FROM repair_payments WHERE repair_id = ?1",
+            params![payment.repair_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    // Get estimated cost
+    let estimated_cost: f64 = conn
+        .query_row(
+            "SELECT estimated_cost FROM repairs WHERE id = ?1",
+            params![payment.repair_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    // Derive new payment status
+    let new_status = if total_paid == 0.0 {
+        "Unpaid"
+    } else if total_paid >= estimated_cost {
+        "Paid"
+    } else {
+        "Partially Paid"
+    };
+
+    // Update payment status
+    conn.execute(
+        "UPDATE repairs SET payment_status = ?2, updated_at = datetime('now') WHERE id = ?1",
+        params![payment.repair_id, new_status],
     )
     .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 

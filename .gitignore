@@ -40,8 +40,40 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# db
+# db - ignore database files and test data
 fixary.db
+fixary.db-journal
 data
-#
+test.sql
+
+# IDE and editor files
 .qoder
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Tauri build artifacts
+src-tauri/target/
+src-tauri/gen/
+
+# App System
+PAYMENT_SYSTEM_DOCUMENTATION.md

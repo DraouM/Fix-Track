@@ -53,8 +53,8 @@ export function RepairPaymentForm({
     },
   });
 
-  const totalPaid = repair.payments?.reduce((sum, p) => sum + p.amount, 0) ?? 0;
-  const remainingBalance = repair.estimatedCost - totalPaid;
+  const totalPaid = repair.totalPaid ?? 0;
+  const remainingBalance = repair.remainingBalance ?? repair.estimatedCost;
 
   const handleSubmit = async (values: PaymentFormValues) => {
     setLoading(true);

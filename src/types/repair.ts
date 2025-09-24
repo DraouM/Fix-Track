@@ -30,6 +30,10 @@ export interface Repair {
   payments: Payment[];
   history: RepairHistory[];
 
+  // Calculated payment fields
+  totalPaid?: number;
+  remainingBalance?: number;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -57,12 +61,14 @@ export interface RepairDb {
 }
 
 // --- PAYMENTS ---
-// Frontend
+// Frontend - Updated to match backend RepairPayment structure
 export interface Payment {
-  id: number;
-  repairId: number;
+  id: string; // Changed from number to string
+  repair_id: string; // Changed from repairId (number) to repair_id (string)
   amount: number;
-  paid_at: string;
+  date: string; // Changed from paid_at to date
+  method: string; // Added to match backend
+  received_by?: string; // Added to match backend
 }
 
 // When adding a payment

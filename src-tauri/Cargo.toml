@@ -29,3 +29,14 @@ rusqlite = { version = "0.29", features = ["bundled"] }
 lazy_static = "1.4"
 dirs = "6.0.0"
 
+# Performance optimizations for release builds
+[profile.release]
+lto = true                # Enable Link Time Optimization
+codegen-units = 1         # Use single codegen unit for better optimization
+panic = "abort"           # Smaller binary size
+strip = true              # Strip debug symbols
+opt-level = "z"           # Optimize for size
+
+[profile.dev]
+opt-level = 1             # Some optimization in dev for better performance
+

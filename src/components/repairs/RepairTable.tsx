@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRepairContext } from "@/context/RepairContext";
 import { useRepairFilters } from "@/hooks/useRepairFilters";
 import type { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
@@ -77,14 +77,17 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
     hasActiveFilters,
   } = useRepairFilters(repairs);
 
-  // ✅ Helpers
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
+  // ✅ Memoized helpers to prevent re-renders
+  const formatCurrency = useCallback(
+    (value: number) =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(value),
+    []
+  );
 
-  const getStatusColorClass = (status: RepairStatus) => {
+  const getStatusColorClass = useCallback((status: RepairStatus) => {
     switch (status) {
       case "Completed":
         return "border-l-green-500";
@@ -96,9 +99,9 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       default:
         return "border-l-muted-foreground";
     }
-  };
+  }, []);
 
-  const getPaymentBadgeProps = (status: PaymentStatus) => {
+  const getPaymentBadgeProps = useCallback((status: PaymentStatus) => {
     switch (status) {
       case "Paid":
         return {
@@ -123,13 +126,16 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       default:
         return { variant: "outline" as const, className: "" };
     }
-  };
+  }, []);
 
-  const handleDeleteRepair = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this repair?")) {
-      deleteRepair(id);
-    }
-  };
+  const handleDeleteRepair = useCallback(
+    (id: string) => {
+      if (window.confirm("Are you sure you want to delete this repair?")) {
+        deleteRepair(id);
+      }
+    },
+    [deleteRepair]
+  );
 
   return (
     <div className="space-y-4">

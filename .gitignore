@@ -77,3 +77,6 @@ src-tauri/gen/
 
 # App System
 PAYMENT_SYSTEM_DOCUMENTATION.md
+
+# App Architectures
+architectures

@@ -1,0 +1,170 @@
+/* Print Styles for Repair Management System */
+
+@media print {
+  /* Hide unnecessary elements */
+  .no-print,
+  button,
+  .print-hide,
+  nav,
+  footer,
+  header,
+  .sidebar {
+    display: none !important;
+  }
+
+  /* Reset page margins and padding */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    margin: 0.5in;
+    size: auto;
+  }
+
+  body {
+    font-family: 'Arial', sans-serif;
+    font-size: 12pt;
+    line-height: 1.4;
+    color: #000;
+    background: white;
+  }
+
+  /* Receipt-specific styles */
+  .print-receipt {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+  }
+
+  .print-receipt .header {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+  }
+
+  .print-receipt .header h1 {
+    font-size: 24pt;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+  }
+
+  .print-receipt .section {
+    margin-bottom: 20px;
+  }
+
+  .print-receipt .section h3 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+  }
+
+  .print-receipt .info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 2px 0;
+  }
+
+  .print-receipt .label {
+    font-weight: bold;
+    width: 40%;
+  }
+
+  .print-receipt .value {
+    width: 60%;
+    text-align: right;
+  }
+
+  .print-receipt .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border: 1px solid #000;
+    border-radius: 4px;
+    font-size: 10pt;
+    font-weight: bold;
+    background: #f0f0f0;
+  }
+
+  .print-receipt .total-row {
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+    padding: 10px 0;
+    margin: 15px 0;
+    font-weight: bold;
+    font-size: 14pt;
+  }
+
+  .print-receipt .footer {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 10pt;
+    font-style: italic;
+  }
+
+  /* Sticker-specific styles (small format) */
+  .print-sticker {
+    width: 4in;
+    height: 3in;
+    border: 2px solid #000;
+    padding: 10px;
+    font-size: 10pt;
+    line-height: 1.2;
+  }
+
+  .print-sticker .sticker-header {
+    text-align: center;
+    font-weight: bold;
+    font-size: 12pt;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #000;
+    padding-bottom: 5px;
+  }
+
+  .print-sticker .qr-placeholder {
+    width: 60px;
+    height: 60px;
+    border: 1px solid #000;
+    float: right;
+    margin: 0 0 10px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8pt;
+  }
+
+  /* Table styles for payments/parts */
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 1px solid #000;
+    padding: 8px;
+    text-align: left;
+    font-size: 10pt;
+  }
+
+  .print-table th {
+    background: #f0f0f0;
+    font-weight: bold;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+}

@@ -38,7 +38,7 @@ fn main() {
             get_repair_by_id,
             update_repair,
             update_repair_status,
-            // Removed update_payment_status as it's now automatically calculated
+            //Removed update_payment_status as it's now automatically calculated
             delete_repair,
             add_payment,
             get_payments_for_repair,

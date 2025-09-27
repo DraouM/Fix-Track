@@ -43,6 +43,8 @@ import {
   Phone,
 } from "lucide-react";
 import { RepairPaymentForm } from "./RepairPaymentForm";
+import { useState } from "react";
+import { usePrintUtils } from "@/hooks/usePrintUtils";
 
 interface RepairDetailProps {
   repair: Repair | null;
@@ -102,6 +104,11 @@ export function RepairDetail({
 }: RepairDetailProps) {
   const { updateRepairStatus } = useRepairActions();
   const { getItemById } = useRepairContext();
+  const { printReceipt, printSticker, downloadAsHTML } = usePrintUtils();
+
+  // Local state for loading indicators
+  const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
+  const [isGeneratingSticker, setIsGeneratingSticker] = useState(false);
 
   // Get the most up-to-date repair data from context
   const currentRepair = repair ? getItemById(repair.id) || repair : null;
@@ -111,109 +118,44 @@ export function RepairDetail({
   // At this point, currentRepair is guaranteed to be non-null
   const repairData: Repair = currentRepair;
 
-  const handlePrint = () => {
-    const printContent = document.getElementById("printable-repair");
-    if (!printContent) return;
-    const newWin = window.open("", "_blank");
-    if (!newWin) return;
-    newWin.document.write(`
-      <html>
-        <head>
-          <title>Repair Receipt - Order #${repairData.id}</title>
-          <style>
-            body { 
-              font-family: 'Arial', sans-serif; 
-              padding: 20px; 
-              line-height: 1.4; 
-              color: #000;
-            }
-            .header { 
-              text-align: center; 
-              border-bottom: 2px solid #000; 
-              padding-bottom: 15px; 
-              margin-bottom: 20px; 
-            }
-            .section { margin-bottom: 20px; }
-            .section h3 { 
-              margin: 0 0 10px 0; 
-              font-size: 16px; 
-              font-weight: bold; 
-              border-bottom: 1px solid #ccc; 
-              padding-bottom: 5px; 
-            }
-            .info-row { 
-              display: flex; 
-              justify-content: space-between; 
-              margin-bottom: 5px; 
-            }
-            .label { font-weight: bold; }
-            .status { 
-              display: inline-block; 
-              padding: 4px 8px; 
-              border: 1px solid #000; 
-              border-radius: 4px; 
-              font-size: 12px; 
-              font-weight: bold; 
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>REPAIR RECEIPT</h1>
-            <p>Order #${repairData.id}</p>
-            <p>Date: ${formatDate(repairData.createdAt)}</p>
-          </div>
-          
-          <div class="section">
-            <h3>Customer Information</h3>
-            <div class="info-row">
-              <span class="label">Name:</span>
-              <span>${repairData.customerName}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Phone:</span>
-              <span>${repairData.customerPhone}</span>
-            </div>
-          </div>
+  // ✅ Print functions using frontend printing
+  const handlePrintReceipt = async () => {
+    if (isGeneratingReceipt) return; // Prevent double-clicks
 
-          <div class="section">
-            <h3>Device Information</h3>
-            <div class="info-row">
-              <span class="label">Device:</span>
-              <span>${repairData.deviceBrand} ${repairData.deviceModel}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Issue:</span>
-              <span>${repairData.issueDescription}</span>
-            </div>
-          </div>
+    setIsGeneratingReceipt(true);
+    try {
+      const success = printReceipt(repairData, {
+        includePayments: true,
+        includeParts: true,
+      });
 
-          <div class="section">
-            <h3>Status & Payment</h3>
-            <div class="info-row">
-              <span class="label">Repair Status:</span>
-              <span class="status">${repairData.status}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Payment Status:</span>
-              <span class="status">${repairData.paymentStatus}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Estimated Cost:</span>
-              <span>$${repairData.estimatedCost.toFixed(2)}</span>
-            </div>
-          </div>
+      if (!success) {
+        // Fallback: download as HTML
+        downloadAsHTML(repairData, "receipt");
+      }
+    } catch (error) {
+      console.error("Failed to print receipt:", error);
+    } finally {
+      setIsGeneratingReceipt(false);
+    }
+  };
 
-          <div class="section">
-            <p style="text-align: center; margin-top: 30px; font-size: 12px;">
-              Thank you for choosing our repair service!
-            </p>
-          </div>
-        </body>
-      </html>
-    `);
-    newWin.document.close();
-    newWin.print();
+  const handlePrintSticker = async () => {
+    if (isGeneratingSticker) return; // Prevent double-clicks
+
+    setIsGeneratingSticker(true);
+    try {
+      const success = printSticker(repairData);
+
+      if (!success) {
+        // Fallback: download as HTML
+        downloadAsHTML(repairData, "sticker");
+      }
+    } catch (error) {
+      console.error("Failed to print sticker:", error);
+    } finally {
+      setIsGeneratingSticker(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -588,15 +530,35 @@ export function RepairDetail({
 
         <Separator className="my-3 flex-shrink-0" />
 
-        <div className="flex justify-between items-center flex-shrink-0">
-          <Button
-            variant="outline"
-            onClick={handlePrint}
-            className="flex items-center gap-2"
-          >
-            <Printer className="h-4 w-4" />
-            Print Receipt
-          </Button>
+        <div className="flex justify-between items-center flex-shrink-0 gap-2">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handlePrintReceipt}
+              disabled={isGeneratingReceipt}
+              className="flex items-center gap-2"
+            >
+              {isGeneratingReceipt ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <Printer className="h-4 w-4" />
+              )}
+              {isGeneratingReceipt ? "Generating..." : "Receipt PDF"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handlePrintSticker}
+              disabled={isGeneratingSticker}
+              className="flex items-center gap-2"
+            >
+              {isGeneratingSticker ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              {isGeneratingSticker ? "Generating..." : "Sticker PDF"}
+            </Button>
+          </div>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
         </div>
       </DialogContent>

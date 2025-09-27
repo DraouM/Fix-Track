@@ -75,9 +75,11 @@ logs
 src-tauri/target/
 src-tauri/gen/
 
-# App System
+# MD FILES
 PAYMENT_SYSTEM_DOCUMENTATION.md
 PERFORMANCE_OPTIMIZATION_PLAN.md
+FRONTEND_PRINTING_ARCHITECTURE.md
+PRINTING_OPTIONS.md
 
 # App Architectures
 architectures

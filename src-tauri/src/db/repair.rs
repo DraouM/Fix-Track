@@ -118,17 +118,7 @@ pub fn update_repair_status(id: String, new_status: String) -> Result<(), String
     Ok(())
 }
 
-/// Update payment status
-#[tauri::command]
-pub fn update_payment_status(id: String, new_payment_status: String) -> Result<(), String> {
-    let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
-    conn.execute(
-        "UPDATE repairs SET payment_status = ?2, updated_at = datetime('now') WHERE id = ?1",
-        params![id, new_payment_status],
-    )
-    .map_err(|e| e.to_string())?;
-    Ok(())
-}
+// Note: update_payment_status function removed as payment status is now automatically calculated by add_payment
 
 /// Delete repair (cascade will clear children)
 #[tauri::command]

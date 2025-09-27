@@ -56,7 +56,6 @@ interface RepairActions {
   updateRepair: (id: string, data: Partial<Repair>) => Promise<void>;
   deleteRepair: (id: string) => Promise<void>;
   updateRepairStatus: (id: string, status: RepairStatus) => Promise<void>;
-  updatePaymentStatus: (id: string, status: PaymentStatus) => Promise<void>;
   addPayment: (repairId: string, payment: PaymentInput) => Promise<void>;
   addUsedPart: (repairId: string, part: UsedPartInput) => Promise<void>;
   getRepairHistory: (repairId: string) => Promise<void>;
@@ -386,40 +385,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     [clearError]
   );
 
-  // ✅ Update payment status
-  const updatePaymentStatus = useCallback(
-    async (id: string, status: PaymentStatus) => {
-      console.log("🔄 Updating payment status:", { id, status });
-      setLoading(true);
-      clearError();
-      await withAsync(
-        () => invoke("update_payment_status", { id, newPaymentStatus: status }),
-        {
-          onSuccess: () => {
-            console.log("✅ Payment status updated successfully");
-            toast.success("Payment status updated");
-            setRepairs((prev) =>
-              prev.map((r) =>
-                r.id === id
-                  ? {
-                      ...r,
-                      paymentStatus: status,
-                      updatedAt: new Date().toISOString(),
-                    }
-                  : r
-              )
-            );
-          },
-          onError: (msg) => {
-            console.error("❌ Error updating payment status:", msg);
-            setError(msg);
-          },
-        }
-      );
-      setLoading(false);
-    },
-    [clearError]
-  );
+  // Payment status is now automatically determined by the backend based on payments
 
   // ✅ Add payment
   const addPayment = useCallback(
@@ -455,14 +421,16 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
 
           toast.success("Payment added successfully");
 
-          // Refresh all repairs to update payment totals
+          // Fetch the updated repair to get the new payment status and totals
+          await fetchRepairById(repairId);
+          // Also refresh all repairs to update payment totals in the list
           fetchRepairs();
         },
         onError: (msg) => setError(msg),
       });
       setLoading(false);
     },
-    [fetchRepairs, clearError]
+    [fetchRepairs, fetchRepairById, clearError]
   );
 
   // ✅ Add used part
@@ -552,7 +520,6 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       updateRepair,
       deleteRepair,
       updateRepairStatus,
-      updatePaymentStatus,
       addPayment,
       addUsedPart,
       getRepairHistory,
@@ -582,7 +549,6 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       updateRepair,
       deleteRepair,
       updateRepairStatus,
-      updatePaymentStatus,
       addPayment,
       addUsedPart,
       getRepairHistory,
@@ -648,7 +614,6 @@ export function useRepairActions(): RepairActions {
     updateRepair,
     deleteRepair,
     updateRepairStatus,
-    updatePaymentStatus,
     addPayment,
     addUsedPart,
     getRepairHistory,
@@ -666,7 +631,6 @@ export function useRepairActions(): RepairActions {
     updateRepair,
     deleteRepair,
     updateRepairStatus,
-    updatePaymentStatus,
     addPayment,
     addUsedPart,
     getRepairHistory,

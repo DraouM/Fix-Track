@@ -42,7 +42,7 @@ export function RepairPaymentForm({
   repair,
   onSuccess,
 }: RepairPaymentFormProps) {
-  const { updatePaymentStatus, addPayment } = useRepairContext();
+  const { addPayment } = useRepairContext(); // Removed updatePaymentStatus since it's now calculated automatically
   const [loading, setLoading] = useState(false);
 
   const form = useForm<PaymentFormValues>({
@@ -59,18 +59,9 @@ export function RepairPaymentForm({
   const handleSubmit = async (values: PaymentFormValues) => {
     setLoading(true);
 
-    const newTotalPaid = totalPaid + values.amount;
-
-    // Figure out new status
-    let newStatus: Repair["paymentStatus"] = "Unpaid";
-    if (newTotalPaid >= repair.estimatedCost) {
-      newStatus = "Paid";
-    } else if (newTotalPaid > 0) {
-      newStatus = "Partially Paid";
-    }
-
     try {
       // Add the payment to the repair's payments history
+      // The backend will automatically calculate and update the payment status
       await addPayment(repair.id, {
         repair_id: repair.id,
         amount: values.amount,
@@ -80,7 +71,7 @@ export function RepairPaymentForm({
       form.reset();
       onSuccess?.();
     } catch (err) {
-      console.error("Failed to update payment:", err);
+      console.error("Failed to add payment:", err);
     } finally {
       setLoading(false);
     }

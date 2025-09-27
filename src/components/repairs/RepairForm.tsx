@@ -1,19 +1,21 @@
 "use client";
 
 import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  repairSchema,
-  RepairFormValues,
   Repair,
   RepairStatus,
   PaymentStatus,
   UsedPartForm,
 } from "@/types/repair";
 import { useRepairContext } from "@/context/RepairContext";
+import {
+  calculatePaymentStatusFromRepair,
+  getPaymentStatusBadgeVariant,
+} from "@/lib/repairUtils";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormField,
@@ -54,6 +56,7 @@ interface RepairFormProps {
 }
 
 // Simplified form data structure to avoid type conflicts
+// Note: paymentStatus is now calculated, not manually set
 interface FormData {
   customerName: string;
   phoneNumber?: string;
@@ -63,7 +66,6 @@ interface FormData {
   estimatedCost: number;
   dateReceived: Date;
   repairStatus: RepairStatus;
-  paymentStatus: PaymentStatus;
   usedParts: UsedPartForm[];
 }
 
@@ -84,7 +86,6 @@ export default function RepairForm({
           estimatedCost: repairToEdit.estimatedCost,
           dateReceived: new Date(repairToEdit.createdAt),
           repairStatus: repairToEdit.status,
-          paymentStatus: repairToEdit.paymentStatus,
           usedParts:
             repairToEdit.usedParts?.map((part) => ({
               partId: part.id.toString(),
@@ -102,7 +103,6 @@ export default function RepairForm({
           estimatedCost: 0,
           dateReceived: new Date(),
           repairStatus: "Pending" as const,
-          paymentStatus: "Unpaid" as const,
           usedParts: [],
         },
   });
@@ -116,6 +116,7 @@ export default function RepairForm({
     try {
       if (repairToEdit) {
         // Convert form values to partial repair for update
+        // Note: paymentStatus is calculated by the backend based on payments
         const updateData: Partial<Repair> = {
           customerName: values.customerName,
           customerPhone: values.phoneNumber,
@@ -124,11 +125,12 @@ export default function RepairForm({
           issueDescription: values.issueDescription,
           estimatedCost: Number(values.estimatedCost), // Ensure it's a number
           status: values.repairStatus,
-          paymentStatus: values.paymentStatus,
+          // paymentStatus is omitted - it will be calculated by the backend
         };
         await updateRepair(repairToEdit.id, updateData);
       } else {
         // Convert form values to RepairDb format for creation
+        // For new repairs, payment status starts as "Unpaid" since no payments exist yet
         const createData = {
           customer_name: values.customerName,
           customer_phone: values.phoneNumber || "",
@@ -137,7 +139,7 @@ export default function RepairForm({
           issue_description: values.issueDescription,
           estimated_cost: Number(values.estimatedCost), // Ensure it's a number
           status: values.repairStatus,
-          payment_status: values.paymentStatus,
+          payment_status: "Unpaid" as PaymentStatus, // New repairs always start as unpaid
           used_parts: [],
           payments: [],
           history: [],
@@ -432,57 +434,52 @@ export default function RepairForm({
                 )}
               />
 
-              {/* Payment Status */}
-              <FormField
-                control={form.control}
-                name="paymentStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">
-                      Payment Status
-                    </FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={
-                        field.onChange as (val: PaymentStatus) => void
-                      }
-                    >
-                      <FormControl>
-                        <SelectTrigger className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                          <SelectValue placeholder="Select payment status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Unpaid">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                            Unpaid
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Partially Paid">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                            Partially Paid
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Paid">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            Paid
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Refunded">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                            Refunded
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Payment Status - Calculated and Read-Only */}
+              <div>
+                <FormLabel className="text-sm font-medium">
+                  Payment Status
+                </FormLabel>
+                <div className="mt-2">
+                  <Badge
+                    variant={
+                      getPaymentStatusBadgeVariant(
+                        repairToEdit
+                          ? calculatePaymentStatusFromRepair(repairToEdit)
+                          : "Unpaid"
+                      ) as any
+                    }
+                    className="text-sm px-3 py-1"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          repairToEdit
+                            ? calculatePaymentStatusFromRepair(repairToEdit) ===
+                              "Paid"
+                              ? "bg-green-500"
+                              : calculatePaymentStatusFromRepair(
+                                  repairToEdit
+                                ) === "Partially Paid"
+                              ? "bg-orange-500"
+                              : calculatePaymentStatusFromRepair(
+                                  repairToEdit
+                                ) === "Refunded"
+                              ? "bg-gray-500"
+                              : "bg-red-500"
+                            : "bg-red-500"
+                        }`}
+                      ></div>
+                      {repairToEdit
+                        ? calculatePaymentStatusFromRepair(repairToEdit)
+                        : "Unpaid"}
+                    </div>
+                  </Badge>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Payment status is automatically calculated based on payments
+                    received
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

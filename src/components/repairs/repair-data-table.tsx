@@ -46,7 +46,6 @@ interface DataTableProps<TData, TValue> {
 export function RepairDataTable<TData, TValue>({
   columns,
   data,
-  searchColumn = "customerName",
   searchPlaceholder = "Search customers, devices, descriptions...",
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);

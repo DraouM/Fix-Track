@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -101,7 +100,7 @@ export function RepairDetail({
   open,
   onOpenChange,
 }: RepairDetailProps) {
-  const { updateRepairStatus, updatePaymentStatus } = useRepairActions();
+  const { updateRepairStatus } = useRepairActions();
   const { getItemById } = useRepairContext();
 
   // Get the most up-to-date repair data from context
@@ -382,49 +381,26 @@ export function RepairDetail({
                     </Select>
                   </div>
 
+                  {/* Payment Status - Read-only */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">
                       Payment Status
                     </label>
-                    <Select
-                      value={repairData.paymentStatus}
-                      onValueChange={(val) =>
-                        updatePaymentStatus(repairData.id, val as PaymentStatus)
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4" />
-                          <SelectValue />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Unpaid">
-                          <div className="flex items-center gap-2">
-                            <XCircle className="h-4 w-4 text-red-500" />
-                            Unpaid
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Partially Paid">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-orange-500" />
-                            Partially Paid
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Paid">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                            Paid
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Refunded">
-                          <div className="flex items-center gap-2">
-                            <XCircle className="h-4 w-4 text-purple-500" />
-                            Refunded
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-2">
+                      <Badge
+                        variant="outline"
+                        className={`px-3 py-1 ${getPaymentStatusColor(
+                          repairData.paymentStatus
+                        )}`}
+                      >
+                        <DollarSign className="h-4 w-4" />
+                        <span className="ml-1">{repairData.paymentStatus}</span>
+                      </Badge>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Payment status is automatically calculated based on
+                        payments received
+                      </p>
+                    </div>
                   </div>
                 </div>
 

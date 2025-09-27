@@ -10,7 +10,7 @@ use db::inventory::{
 use db::repair::{
     add_payment, add_used_part, delete_repair, get_history_for_repair, get_payments_for_repair,
     get_repair_by_id, get_repairs, get_used_parts_for_repair, insert_repair, insert_repair_history,
-    update_payment_status, update_repair, update_repair_status,
+    update_repair, update_repair_status,
 };
 use db::schema;
 
@@ -38,7 +38,7 @@ fn main() {
             get_repair_by_id,
             update_repair,
             update_repair_status,
-            update_payment_status,
+            // Removed update_payment_status as it's now automatically calculated
             delete_repair,
             add_payment,
             get_payments_for_repair,

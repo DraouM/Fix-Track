@@ -80,6 +80,20 @@ export const getPaymentStatusFromAmounts = (
   return "Unpaid";
 };
 
+/**
+ * Calculate payment status from repair data
+ * This ensures consistent calculation across the app
+ */
+export const calculatePaymentStatusFromRepair = (repair: {
+  estimatedCost: number;
+  payments?: Array<{ amount: number }>;
+  totalPaid?: number;
+}): PaymentStatus => {
+  // Use totalPaid if available (already calculated), otherwise calculate from payments
+  const paid = repair.totalPaid ?? repairCalculatePaid(repair.payments || []);
+  return getPaymentStatusFromAmounts(repair.estimatedCost, paid);
+};
+
 /* -----------------------------
  * ✅ DATE / TIME HELPERS
  * ----------------------------- */

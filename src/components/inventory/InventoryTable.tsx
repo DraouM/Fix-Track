@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useCallback } from "react";
+import React from "react";
 import {
   Table,
   TableBody,
@@ -40,13 +40,6 @@ export const InventoryTable = React.memo(function InventoryTable({
   onDelete,
 }: InventoryTableProps) {
   // Memoized sort indicator to prevent re-renders
-  const renderSortIndicator = useCallback(
-    (key: keyof InventoryItem | "profit") => {
-      if (sortConfig.key !== key) return null;
-      return sortConfig.direction === "ascending" ? " ↑" : " ↓";
-    },
-    [sortConfig]
-  );
 
   const SortableHeader = ({
     columnKey,

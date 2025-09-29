@@ -6,7 +6,7 @@ import {
   InventoryProvider,
   useInventoryContext,
 } from "@/context/InventoryContext";
-import { InventoryTable } from "./InventoryTable";
+import { VirtualizedTable } from "./VirtualizedTable";
 import { InventoryForm } from "./InventoryForm";
 import { InventoryHistoryDialog } from "./InventoryHistoryDialog";
 import type { InventoryHistoryEvent, InventoryItem } from "@/types/inventory";
@@ -163,17 +163,23 @@ export function InventoryPageInner() {
         </div>
       </div>
       {/* Inventory Table plugged in */}
-      <InventoryTable
-        items={filteredAndSortedItems}
-        sortConfig={sortConfig}
-        onSort={handleSort}
-        onEdit={(item) => {
-          setEditItem(item);
-          setShowForm(true);
-        }}
-        onViewHistory={handleViewHistory}
-        onDelete={(id) => deleteInventoryItem(id)}
-      />
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <VirtualizedTable
+          items={filteredAndSortedItems}
+          sortConfig={sortConfig}
+          onSort={handleSort}
+          onEdit={(item) => {
+            setEditItem(item);
+            setShowForm(true);
+          }}
+          onViewHistory={handleViewHistory}
+          onDelete={(id) => deleteInventoryItem(id)}
+        />
+      )}
       {/* Add/Edit Form */}
       {showForm && (
         <Dialog open={showForm} onOpenChange={(o) => setShowForm(o)}>

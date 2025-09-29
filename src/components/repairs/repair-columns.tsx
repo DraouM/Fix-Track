@@ -40,7 +40,17 @@ export const createRepairColumns = (
   {
     accessorKey: "customerName",
     header: "Customer",
-    cell: ({ row }) => <div>{row.getValue("customerName")}</div>,
+    cell: ({ row }) => {
+      const repair = row.original;
+      return (
+        <div className="space-y-1">
+          <div className="font-medium">{repair.customerName}</div>
+          {repair.customerPhone && (
+            <div className="text-sm text-gray-500">{repair.customerPhone}</div>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "deviceModel",
@@ -76,25 +86,6 @@ export const createRepairColumns = (
             <SelectItem value="Delivered">Delivered</SelectItem>
           </SelectContent>
         </Select>
-      );
-    },
-  },
-  {
-    accessorKey: "paymentStatus",
-    header: "Payment",
-    filterFn: (row, id, value) => {
-      return row.getValue(id) === value;
-    },
-    cell: ({ row }) => {
-      const repair = row.original;
-      const badgeProps = actions.getPaymentBadgeProps(repair.paymentStatus);
-      return (
-        <Badge
-          variant={badgeProps.variant}
-          className={cn("text-xs", badgeProps.className)}
-        >
-          {repair.paymentStatus}
-        </Badge>
       );
     },
   },
@@ -149,24 +140,121 @@ export const createRepairColumns = (
     },
   },
   {
-    accessorKey: "totalPaid",
-    header: "Paid",
-    cell: ({ row }) => (
-      <div className="text-right">
-        ${(row.original.totalPaid || 0).toFixed(2)}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "remainingBalance",
-    header: "Remaining",
+    accessorKey: "paymentStatus",
+    header: "Payment",
+    filterFn: (row, id, value) => {
+      return row.getValue(id) === value;
+    },
     cell: ({ row }) => {
       const repair = row.original;
+      const badgeProps = actions.getPaymentBadgeProps(repair.paymentStatus);
+      return (
+        <Badge
+          variant={badgeProps.variant}
+          className={cn("text-xs", badgeProps.className)}
+        >
+          {repair.paymentStatus}
+        </Badge>
+      );
+    },
+  },
+  {
+    id: "payment",
+    header: "Amounts",
+    cell: ({ row }) => {
+      const repair = row.original;
+      const totalPaid = repair.totalPaid || 0;
       const remaining =
         repair.remainingBalance !== undefined
           ? repair.remainingBalance
-          : repair.estimatedCost;
-      return <div className="text-right">${remaining.toFixed(2)}</div>;
+          : repair.estimatedCost - totalPaid;
+
+      const badgeProps = actions.getPaymentBadgeProps(repair.paymentStatus);
+
+      return (
+        <div className="text-right space-y-1">
+          <div className="flex items-center justify-end gap-2">
+            <div className="text-sm font-medium text-green-600">
+              ${totalPaid.toFixed(2)}
+            </div>
+            <div className="text-xs text-gray-500">paid</div>
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <div
+              className={cn(
+                "text-sm font-medium",
+                remaining > 0 ? "text-orange-600" : "text-gray-500"
+              )}
+            >
+              ${remaining.toFixed(2)}
+            </div>
+            <div className="text-xs text-gray-500">remaining</div>
+          </div>
+          {remaining > 0 && (
+            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+              <div
+                className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (totalPaid / repair.estimatedCost) * 100
+                  )}%`,
+                }}
+              />
+            </div>
+          )}
+        </div>
+      );
+
+      /* 
+      // ALTERNATIVE IMPLEMENTATION - Status Badge + Amounts Combined
+      // Uncomment this block and comment out the above to switch to the enhanced version
+      
+      const badgeProps = actions.getPaymentBadgeProps(repair.paymentStatus);
+      
+      return (
+        <div className="text-right">
+          <div className="flex items-center justify-end gap-2 mb-1">
+            <Badge
+              variant={badgeProps.variant}
+              className={cn("text-xs px-2 py-0.5", badgeProps.className)}
+            >
+              {repair.paymentStatus}
+            </Badge>
+            <div className="text-sm font-medium text-green-600">
+              ${totalPaid.toFixed(2)}
+            </div>
+            <div className="text-xs text-gray-500">paid</div>
+          </div>
+          
+          <div className="flex items-center justify-end gap-2">
+            <div
+              className={cn(
+                "text-sm font-medium",
+                remaining > 0 ? "text-orange-600" : "text-gray-500"
+              )}
+            >
+              ${remaining.toFixed(2)}
+            </div>
+            <div className="text-xs text-gray-500">remaining</div>
+          </div>
+          
+          {remaining > 0 && (
+            <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+              <div
+                className="bg-green-500 h-1 rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (totalPaid / repair.estimatedCost) * 100
+                  )}%`,
+                }}
+              />
+            </div>
+          )}
+        </div>
+      );
+      */
     },
   },
 ];

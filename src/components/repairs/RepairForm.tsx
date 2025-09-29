@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
   Repair,
@@ -39,6 +40,10 @@ import {
   Wrench,
   DollarSign,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Save,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -49,11 +54,46 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 
 interface RepairFormProps {
   repairToEdit?: Repair | null;
   onSuccess: () => void;
 }
+
+// Wizard steps configuration
+const WIZARD_STEPS = [
+  {
+    id: "customer",
+    title: "Customer Info",
+    description: "Basic customer details",
+    icon: User,
+    color: "blue",
+  },
+  {
+    id: "device",
+    title: "Device Details",
+    description: "Device and issue information",
+    icon: AlertCircle,
+    color: "green",
+  },
+  {
+    id: "cost",
+    title: "Cost & Timeline",
+    description: "Pricing and scheduling",
+    icon: DollarSign,
+    color: "purple",
+  },
+  {
+    id: "status",
+    title: "Status & Parts",
+    description: "Repair status and parts used",
+    icon: Wrench,
+    color: "orange",
+  },
+] as const;
+
+type WizardStep = (typeof WIZARD_STEPS)[number]["id"];
 
 // Simplified form data structure to avoid type conflicts
 // Note: paymentStatus is now calculated, not manually set
@@ -74,6 +114,13 @@ export default function RepairForm({
   onSuccess,
 }: RepairFormProps) {
   const { createRepair, updateRepair } = useRepairContext();
+
+  // Wizard state
+  const [currentStep, setCurrentStep] = useState<WizardStep>("customer");
+  const [completedSteps, setCompletedSteps] = useState<Set<WizardStep>>(
+    new Set()
+  );
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
 
   const form = useForm<FormData>({
     defaultValues: repairToEdit
@@ -112,8 +159,76 @@ export default function RepairForm({
     name: "usedParts",
   });
 
+  // Auto-save functionality
+  useEffect(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      if (type === "change" && name) {
+        setIsAutoSaving(true);
+        // Debounce auto-save
+        const timeoutId = setTimeout(() => {
+          // Save to localStorage as draft
+          localStorage.setItem("repair-draft", JSON.stringify(value));
+          setIsAutoSaving(false);
+        }, 1000);
+
+        return () => clearTimeout(timeoutId);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Load draft on mount
+  useEffect(() => {
+    if (!repairToEdit) {
+      const draft = localStorage.getItem("repair-draft");
+      if (draft) {
+        try {
+          const draftData = JSON.parse(draft);
+          form.reset(draftData);
+        } catch (error) {
+          console.error("Failed to load draft:", error);
+        }
+      }
+    }
+  }, [form, repairToEdit]);
+
+  // Step navigation functions
+  const goToNextStep = () => {
+    const currentIndex = WIZARD_STEPS.findIndex(
+      (step) => step.id === currentStep
+    );
+    if (currentIndex < WIZARD_STEPS.length - 1) {
+      const nextStep = WIZARD_STEPS[currentIndex + 1];
+      setCurrentStep(nextStep.id);
+      setCompletedSteps((prev) => new Set([...prev, currentStep]));
+    }
+  };
+
+  const goToPreviousStep = () => {
+    const currentIndex = WIZARD_STEPS.findIndex(
+      (step) => step.id === currentStep
+    );
+    if (currentIndex > 0) {
+      const prevStep = WIZARD_STEPS[currentIndex - 1];
+      setCurrentStep(prevStep.id);
+    }
+  };
+
+  const goToStep = (stepId: WizardStep) => {
+    setCurrentStep(stepId);
+  };
+
+  // Calculate progress
+  const progress =
+    ((WIZARD_STEPS.findIndex((step) => step.id === currentStep) + 1) /
+      WIZARD_STEPS.length) *
+    100;
+
   async function onSubmit(values: FormData) {
     try {
+      // Clear draft on successful submit
+      localStorage.removeItem("repair-draft");
+
       if (repairToEdit) {
         // Convert form values to partial repair for update
         // Note: paymentStatus is calculated by the backend based on payments

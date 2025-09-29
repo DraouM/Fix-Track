@@ -2,6 +2,8 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
+
 import {
   Sidebar,
   SidebarContent,
@@ -121,8 +123,15 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-center px-2 py-2">
           <div className="flex items-center gap-2 group-data-[collapsible=icon]:gap-0">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Wrench className="size-4" />
+            <div className="flex aspect-square size-10 items-center justify-center overflow-hidden rounded-full">
+              <Image
+                src="/images/logo_1.png"
+                alt="Logo"
+                width={36}
+                height={36}
+                className="w-full h-full object-contain"
+                priority
+              />
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
               <span className="truncate font-semibold">FixTrack</span>

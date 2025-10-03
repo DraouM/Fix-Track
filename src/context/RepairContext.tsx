@@ -491,10 +491,9 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     fetchRepairs();
   }, [fetchRepairs]);
 
-  // ✅ Memoized value
-  const value = useMemo<RepairContextType>(
+  // ✅ Memoized value with optimized dependencies
+  const stateValue = useMemo<RepairState>(
     () => ({
-      // ✅ State
       repairs,
       filteredAndSortedRepairs,
       selectedRepair,
@@ -503,12 +502,29 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       history,
       loading,
       error,
-      searchTerm: filters.searchTerm, // Extract from filters object
-      statusFilter: filters.status, // Extract from filters object
-      paymentStatusFilter: filters.paymentStatus, // Extract from filters object
+      searchTerm: filters.searchTerm,
+      statusFilter: filters.status,
+      paymentStatusFilter: filters.paymentStatus,
       sortConfig,
+    }),
+    [
+      repairs,
+      filteredAndSortedRepairs,
+      selectedRepair,
+      payments,
+      usedParts,
+      history,
+      loading,
+      error,
+      filters.searchTerm,
+      filters.status,
+      filters.paymentStatus,
+      sortConfig,
+    ]
+  );
 
-      // ✅ Actions
+  const actionsValue = useMemo<RepairActions>(
+    () => ({
       setSearchTerm,
       setStatusFilter,
       setPaymentStatusFilter,
@@ -526,18 +542,6 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       getItemById,
     }),
     [
-      repairs,
-      filteredAndSortedRepairs,
-      selectedRepair,
-      payments,
-      usedParts,
-      history,
-      loading,
-      error,
-      filters.searchTerm,
-      filters.status,
-      filters.paymentStatus,
-      sortConfig,
       setSearchTerm,
       setStatusFilter,
       setPaymentStatusFilter,
@@ -554,6 +558,11 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       getRepairHistory,
       getItemById,
     ]
+  );
+
+  const value = useMemo<RepairContextType>(
+    () => ({ ...stateValue, ...actionsValue }),
+    [stateValue, actionsValue]
   );
 
   return (

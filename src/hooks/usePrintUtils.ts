@@ -374,82 +374,232 @@ export const usePrintUtils = () => {
     [formatPrintDate]
   );
 
-  // Print using window.print()
+  // Print using iframe method (avoids popup blockers) with window.open fallback
   const printDocument = useCallback(
     (htmlContent: string, title: string = "Print Document") => {
+      // Try iframe method first (doesn't trigger popup blockers)
       try {
-        const printWindow = window.open("", "_blank");
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "absolute";
+        iframe.style.top = "-10000px";
+        iframe.style.left = "-10000px";
+        iframe.style.width = "1px";
+        iframe.style.height = "1px";
+        iframe.style.border = "none";
+        iframe.style.visibility = "hidden";
+
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!doc) {
+          // Iframe method failed, try popup fallback
+          document.body.removeChild(iframe);
+          return fallbackPopupPrint(htmlContent, title);
+        }
+
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+
+        // Wait for content to load, then print
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+
+            // Clean up iframe after printing
+            setTimeout(() => {
+              if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+              }
+            }, 2000);
+          } catch (error) {
+            console.error("Iframe print error:", error);
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+            // Try popup fallback on iframe print failure
+            fallbackPopupPrint(htmlContent, title);
+          }
+        }, 200);
+
+        return true;
+      } catch (error) {
+        console.error("Iframe creation error:", error);
+        // Fallback to popup method
+        return fallbackPopupPrint(htmlContent, title);
+      }
+    },
+    []
+  );
+
+  // Fallback popup method (kept for browsers that don't support iframe printing)
+  const fallbackPopupPrint = useCallback(
+    (htmlContent: string, title: string) => {
+      let printWindow: Window | null = null;
+
+      try {
+        printWindow = window.open("", "_blank");
         if (!printWindow) {
-          toast.error("Popup blocked! Please allow popups for this site.");
+          toast.error("❌ Popup blocked! Please allow popups and try again.");
           return false;
         }
 
         printWindow.document.write(htmlContent);
         printWindow.document.close();
 
-        // Wait for content to load, then print
-        printWindow.onload = () => {
-          printWindow.focus();
-          printWindow.print();
-          // Close window after printing (optional)
-          setTimeout(() => {
-            printWindow.close();
-          }, 1000);
+        // Enhanced cleanup with timeout fallback
+        let cleanupTimer: NodeJS.Timeout;
+        let hasBeenCleaned = false;
+
+        const cleanup = () => {
+          if (!hasBeenCleaned && printWindow && !printWindow.closed) {
+            hasBeenCleaned = true;
+            clearTimeout(cleanupTimer);
+            try {
+              printWindow.close();
+            } catch (error) {
+              console.warn("Print window cleanup warning:", error);
+            }
+          }
         };
 
-        toast.success(`${title} ready for printing!`);
+        // Wait for content to load, then print
+        printWindow.onload = () => {
+          try {
+            printWindow!.focus();
+
+            setTimeout(() => {
+              if (printWindow && !printWindow.closed) {
+                printWindow.print();
+                cleanupTimer = setTimeout(cleanup, 5000);
+              }
+            }, 800);
+
+            printWindow!.onbeforeunload = cleanup;
+          } catch (error) {
+            console.error("Print execution error:", error);
+            cleanup();
+          }
+        };
+
+        // Fallback cleanup
+        setTimeout(() => {
+          if (!hasBeenCleaned) {
+            console.warn("Print window cleanup fallback triggered");
+            cleanup();
+          }
+        }, 15000);
+
         return true;
       } catch (error) {
-        console.error("Print error:", error);
-        toast.error("Failed to open print dialog");
+        console.error("Popup print error:", error);
+        toast.error("❌ Failed to open print dialog");
+
+        if (printWindow && !printWindow.closed) {
+          try {
+            printWindow.close();
+          } catch (cleanupError) {
+            console.warn("Error cleanup warning:", cleanupError);
+          }
+        }
+
         return false;
       }
     },
     []
   );
 
-  // Main print functions
+  // Enhanced print functions - focusing on print dialog success
   const printReceipt = useCallback(
-    (repair: Repair, options?: PrintOptions) => {
+    async (repair: Repair, options?: PrintOptions): Promise<boolean> => {
       const content = generatePrintContent(repair, {
         ...options,
         format: "receipt",
       });
-      return printDocument(content, "Receipt");
+
+      try {
+        const dialogOpened = printDocument(content, "Receipt");
+        if (dialogOpened) {
+          // Print dialog opened successfully - this is what we can verify
+          toast.success(
+            "🖨️ Receipt print dialog opened! Please complete printing."
+          );
+          return true;
+        } else {
+          // Failed to open print dialog (popup blocked, etc.)
+          toast.error(
+            "❌ Could not open print dialog. Please check popup settings."
+          );
+          return false;
+        }
+      } catch (error) {
+        console.error("Receipt printing error:", error);
+        toast.error("❌ Print failed. Please check your browser settings.");
+        return false;
+      }
     },
     [generatePrintContent, printDocument]
   );
 
   const printSticker = useCallback(
-    (repair: Repair) => {
+    async (repair: Repair): Promise<boolean> => {
       const content = generatePrintContent(repair, { format: "sticker" });
-      return printDocument(content, "Repair Sticker");
+
+      try {
+        const dialogOpened = printDocument(content, "Repair Sticker");
+        if (dialogOpened) {
+          // Print dialog opened successfully
+          toast.success(
+            "🖨️ Sticker print dialog opened! Please complete printing."
+          );
+          return true;
+        } else {
+          // Failed to open print dialog
+          toast.error(
+            "❌ Could not open print dialog. Please check popup settings."
+          );
+          return false;
+        }
+      } catch (error) {
+        console.error("Sticker printing error:", error);
+        toast.error("❌ Print failed. Please check your browser settings.");
+        return false;
+      }
     },
     [generatePrintContent, printDocument]
   );
 
-  // Download as HTML file (alternative)
+  // Keep download as a separate utility function (for manual fallback only)
   const downloadAsHTML = useCallback(
     (repair: Repair, format: "receipt" | "sticker" = "receipt") => {
+      let blobUrl: string | null = null;
+
       try {
         const content = generatePrintContent(repair, { format });
         const blob = new Blob([content], { type: "text/html" });
-        const url = URL.createObjectURL(blob);
+        blobUrl = URL.createObjectURL(blob);
 
         const link = document.createElement("a");
-        link.href = url;
+        link.href = blobUrl;
         link.download = `${format}-${repair.id}.html`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
 
-        toast.success(`${format} downloaded as HTML file!`);
+        toast.success(`📄 ${format} downloaded as HTML file!`);
         return true;
       } catch (error) {
         console.error("Download error:", error);
         toast.error("Failed to download file");
         return false;
+      } finally {
+        // Always cleanup blob URL to prevent memory leaks
+        if (blobUrl) {
+          setTimeout(() => {
+            URL.revokeObjectURL(blobUrl!);
+          }, 100); // Small delay to ensure download starts
+        }
       }
     },
     [generatePrintContent]
@@ -460,5 +610,16 @@ export const usePrintUtils = () => {
     printSticker,
     downloadAsHTML,
     generatePrintContent,
+    // Helper function for troubleshooting
+    showPrintTroubleshoot: () => {
+      toast.info(
+        "🛠️ Print Troubleshooting:\n" +
+          "1. Ensure popups are allowed\n" +
+          "2. Check if printer is connected\n" +
+          "3. Try refreshing the page\n" +
+          "4. Use 'Download' as backup",
+        { duration: 8000 }
+      );
+    },
   };
 };

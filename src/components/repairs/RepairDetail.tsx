@@ -16,6 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -41,10 +47,13 @@ import {
   FileText,
   Calendar,
   Phone,
+  MoreHorizontal,
+  Download,
 } from "lucide-react";
 import { RepairPaymentForm } from "./RepairPaymentForm";
 import { useState } from "react";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { toast } from "sonner";
 
 interface RepairDetailProps {
   repair: Repair | null;
@@ -104,7 +113,8 @@ export function RepairDetail({
 }: RepairDetailProps) {
   const { updateRepairStatus } = useRepairActions();
   const { getItemById } = useRepairContext();
-  const { printReceipt, printSticker, downloadAsHTML } = usePrintUtils();
+  const { printReceipt, printSticker, downloadAsHTML, showPrintTroubleshoot } =
+    usePrintUtils();
 
   // Local state for loading indicators
   const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
@@ -118,23 +128,22 @@ export function RepairDetail({
   // At this point, currentRepair is guaranteed to be non-null
   const repairData: Repair = currentRepair;
 
-  // ✅ Print functions using frontend printing
+  // ✅ Print functions using frontend printing (prioritizing actual printing)
   const handlePrintReceipt = async () => {
     if (isGeneratingReceipt) return; // Prevent double-clicks
 
     setIsGeneratingReceipt(true);
     try {
-      const success = printReceipt(repairData, {
+      await printReceipt(repairData, {
         includePayments: true,
         includeParts: true,
       });
-
-      if (!success) {
-        // Fallback: download as HTML
-        downloadAsHTML(repairData, "receipt");
-      }
+      // Success feedback is already handled in the print function
     } catch (error) {
       console.error("Failed to print receipt:", error);
+      toast.error(
+        "❌ Receipt printing failed. Please try again or check your printer."
+      );
     } finally {
       setIsGeneratingReceipt(false);
     }
@@ -145,14 +154,13 @@ export function RepairDetail({
 
     setIsGeneratingSticker(true);
     try {
-      const success = printSticker(repairData);
-
-      if (!success) {
-        // Fallback: download as HTML
-        downloadAsHTML(repairData, "sticker");
-      }
+      await printSticker(repairData);
+      // Success feedback is already handled in the print function
     } catch (error) {
       console.error("Failed to print sticker:", error);
+      toast.error(
+        "❌ Sticker printing failed. Please try again or check your printer."
+      );
     } finally {
       setIsGeneratingSticker(false);
     }
@@ -532,32 +540,63 @@ export function RepairDetail({
 
         <div className="flex justify-between items-center flex-shrink-0 gap-2">
           <div className="flex gap-2">
+            {/* Primary Print Actions */}
             <Button
-              variant="outline"
               onClick={handlePrintReceipt}
               disabled={isGeneratingReceipt}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
             >
               {isGeneratingReceipt ? (
                 <Loader className="h-4 w-4 animate-spin" />
               ) : (
                 <Printer className="h-4 w-4" />
               )}
-              {isGeneratingReceipt ? "Generating..." : "Receipt PDF"}
+              {isGeneratingReceipt ? "Printing..." : "Print Receipt"}
             </Button>
             <Button
-              variant="outline"
               onClick={handlePrintSticker}
               disabled={isGeneratingSticker}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
             >
               {isGeneratingSticker ? (
                 <Loader className="h-4 w-4 animate-spin" />
               ) : (
                 <FileText className="h-4 w-4" />
               )}
-              {isGeneratingSticker ? "Generating..." : "Sticker PDF"}
+              {isGeneratingSticker ? "Printing..." : "Print Sticker"}
             </Button>
+
+            {/* Backup Download Options (if needed) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => downloadAsHTML(repairData, "receipt")}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Receipt (Backup)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => downloadAsHTML(repairData, "sticker")}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Sticker (Backup)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={showPrintTroubleshoot}
+                  className="flex items-center gap-2 text-blue-600"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  Print Help & Tips
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
         </div>

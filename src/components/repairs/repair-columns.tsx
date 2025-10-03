@@ -19,7 +19,9 @@ import {
 import { Icons } from "@/components/icons";
 import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 import type { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
+import { format } from "date-fns";
 
 interface RepairColumnActions {
   onEditRepair: (repair: Repair) => void;
@@ -101,9 +103,19 @@ export const createRepairColumns = (
   {
     accessorKey: "createdAt",
     header: "Created",
-    cell: ({ row }) => (
-      <div>{new Date(row.getValue("createdAt")).toLocaleDateString()}</div>
-    ),
+    filterFn: (row, id, value: DateRange) => {
+      const rowDate = new Date(row.getValue(id));
+      const { from, to } = value;
+
+      if (from && to) {
+        return rowDate >= from && rowDate <= to;
+      } else if (from) {
+        return rowDate >= from;
+      }
+      return true;
+    },
+    cell: ({ row }) =>
+      format(new Date(row.getValue("createdAt")), "MMM dd, yyyy"),
   },
   {
     id: "actions",

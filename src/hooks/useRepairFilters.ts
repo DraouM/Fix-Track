@@ -1,5 +1,11 @@
 import { useState, useMemo, useCallback } from "react";
-import type { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
+import type {
+  Repair,
+  RepairStatus,
+  PaymentStatus,
+  DateRangeFilter,
+} from "@/types/repair";
+import { DateRange } from "react-day-picker";
 
 // ✅ Types - Adjusted to match context structure
 export type RepairSortConfig = {
@@ -15,10 +21,7 @@ export interface RepairFilterConfig {
   searchTerm: string;
   status: RepairStatus | "All";
   paymentStatus: PaymentStatus | "All";
-  dateRange: {
-    start: Date | null;
-    end: Date | null;
-  };
+  dateRange: DateRange | undefined;
 }
 
 // ✅ Hook - Refactored for context integration
@@ -28,7 +31,7 @@ export function useRepairFilters(repairs: Repair[]) {
     searchTerm: "",
     status: "All",
     paymentStatus: "All",
-    dateRange: { start: null, end: null },
+    dateRange: undefined,
   });
 
   const [sortConfig, setSortConfig] = useState<RepairSortConfig>({
@@ -103,7 +106,7 @@ export function useRepairFilters(repairs: Repair[]) {
         filters.paymentStatus === "All" ||
         r.paymentStatus === filters.paymentStatus;
 
-      // Safe date handling
+      // Enhanced date filtering with proper null safety
       let repairDate: Date;
       try {
         repairDate = r.createdAt ? new Date(r.createdAt) : new Date(0);
@@ -112,8 +115,9 @@ export function useRepairFilters(repairs: Repair[]) {
       }
 
       const matchesDateRange =
-        (!filters.dateRange.start || repairDate >= filters.dateRange.start) &&
-        (!filters.dateRange.end || repairDate <= filters.dateRange.end);
+        !filters.dateRange?.from ||
+        (repairDate >= filters.dateRange.from &&
+          (!filters.dateRange.to || repairDate <= filters.dateRange.to));
 
       return (
         matchesSearch &&
@@ -189,8 +193,8 @@ export function useRepairFilters(repairs: Repair[]) {
     []
   );
 
-  const setDateRange = useCallback((start: Date | null, end: Date | null) => {
-    setFilters((prev) => ({ ...prev, dateRange: { start, end } }));
+  const setDateRange = useCallback((range: DateRange | undefined) => {
+    setFilters((prev) => ({ ...prev, dateRange: range }));
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -198,7 +202,7 @@ export function useRepairFilters(repairs: Repair[]) {
       searchTerm: "",
       status: "All",
       paymentStatus: "All",
-      dateRange: { start: null, end: null },
+      dateRange: undefined,
     });
     setSortConfig({ key: "createdAt", direction: "descending" });
   }, []);
@@ -252,8 +256,7 @@ export function useRepairFilters(repairs: Repair[]) {
       filters.searchTerm !== "" ||
       filters.status !== "All" ||
       filters.paymentStatus !== "All" ||
-      filters.dateRange.start !== null ||
-      filters.dateRange.end !== null
+      !!filters.dateRange?.from
     );
   }, [filters]);
 

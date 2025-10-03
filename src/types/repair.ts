@@ -1,6 +1,7 @@
 // src/types/repair.ts
 
 import z from "zod";
+import { DateRange } from "react-day-picker";
 
 // --- ENUM TYPES ---
 export type RepairStatus =
@@ -159,4 +160,27 @@ export interface UsedPartForm {
   name: string;
   quantity: number;
   unitCost: number;
+}
+
+// Date filtering types
+export interface DateRangeFilter {
+  from?: Date;
+  to?: Date;
+}
+
+// Enhanced filter configuration for repairs
+export interface RepairDateFilterOptions {
+  /** Filter by creation date */
+  createdAt?: DateRange;
+  /** Filter by last updated date */
+  updatedAt?: DateRange;
+  /** Filter by completion date (for completed/delivered repairs) */
+  completedAt?: DateRange;
+}
+
+// Quick date preset type
+export interface DateRangePreset {
+  label: string;
+  value: DateRange;
+  description?: string;
 }

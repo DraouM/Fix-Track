@@ -34,6 +34,10 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X, Filter } from "lucide-react";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -57,6 +61,7 @@ export function RepairDataTable<TData, TValue>({
   // Additional filter states
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("All");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // Trigger re-filter when status filters change
   useEffect(() => {
@@ -76,6 +81,24 @@ export function RepairDataTable<TData, TValue>({
 
     setColumnFilters(newColumnFilters);
   }, [statusFilter, paymentStatusFilter]);
+
+  // Add this effect to handle date filtering
+  useEffect(() => {
+    if (dateRange?.from || dateRange?.to) {
+      setColumnFilters((prev) => [
+        ...prev.filter((filter) => filter.id !== "createdAt"),
+        {
+          id: "createdAt",
+          value: dateRange,
+        },
+      ]);
+    } else {
+      // Remove date filter when no date range is selected
+      setColumnFilters((prev) =>
+        prev.filter((filter) => filter.id !== "createdAt")
+      );
+    }
+  }, [dateRange]);
 
   const table = useReactTable({
     data,
@@ -215,6 +238,15 @@ export function RepairDataTable<TData, TValue>({
             </SelectContent>
           </Select>
 
+          {/* Date Range Filter */}
+          <DateRangePicker
+            date={dateRange}
+            onDateChange={setDateRange}
+            placeholder="Pick dates"
+            className="w-[160px] h-10"
+            showPresets={true}
+          />
+
           {/* Page Size Selector */}
           <Select
             value={`${table.getState().pagination.pageSize}`}
@@ -239,7 +271,8 @@ export function RepairDataTable<TData, TValue>({
       {/* Active Filters Display */}
       {(globalFilter ||
         statusFilter !== "All" ||
-        paymentStatusFilter !== "All") && (
+        paymentStatusFilter !== "All" ||
+        dateRange?.from) && (
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-sm text-gray-600">Active filters:</span>
           {globalFilter && (
@@ -270,6 +303,15 @@ export function RepairDataTable<TData, TValue>({
               Payment: {paymentStatusFilter}
             </Badge>
           )}
+          {dateRange?.from && (
+            <Badge
+              variant="secondary"
+              className="bg-orange-100 text-orange-800 text-xs"
+            >
+              Date: {format(dateRange.from!, "MMM dd")}
+              {dateRange.to && ` - ${format(dateRange.to, "MMM dd")}`}
+            </Badge>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -277,6 +319,7 @@ export function RepairDataTable<TData, TValue>({
               setGlobalFilter("");
               setStatusFilter("All");
               setPaymentStatusFilter("All");
+              setDateRange(undefined);
             }}
             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-7"
           >

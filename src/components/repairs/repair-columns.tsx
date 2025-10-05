@@ -23,6 +23,47 @@ import { DateRange } from "react-day-picker";
 import type { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
 import { format } from "date-fns";
 
+// Status color configuration
+const getStatusConfig = (status: RepairStatus) => {
+  switch (status) {
+    case "Pending":
+      return {
+        color: "bg-yellow-100 text-yellow-800 border-yellow-300",
+        hoverColor: "hover:bg-yellow-200 hover:border-yellow-400",
+        icon: "⏳",
+        selectColor: "text-yellow-700 hover:text-yellow-800",
+      };
+    case "In Progress":
+      return {
+        color: "bg-blue-100 text-blue-800 border-blue-300",
+        hoverColor: "hover:bg-blue-200 hover:border-blue-400",
+        icon: "🔧",
+        selectColor: "text-blue-700 hover:text-blue-800",
+      };
+    case "Completed":
+      return {
+        color: "bg-green-100 text-green-800 border-green-300",
+        hoverColor: "hover:bg-green-200 hover:border-green-400",
+        icon: "✅",
+        selectColor: "text-green-700 hover:text-green-800",
+      };
+    case "Delivered":
+      return {
+        color: "bg-purple-100 text-purple-800 border-purple-300",
+        hoverColor: "hover:bg-purple-200 hover:border-purple-400",
+        icon: "📦",
+        selectColor: "text-purple-700 hover:text-purple-800",
+      };
+    default:
+      return {
+        color: "bg-gray-100 text-gray-800 border-gray-300",
+        hoverColor: "hover:bg-gray-200 hover:border-gray-400",
+        icon: "❓",
+        selectColor: "text-gray-700 hover:text-gray-800",
+      };
+  }
+};
+
 interface RepairColumnActions {
   onEditRepair: (repair: Repair) => void;
   onViewRepair: (repair: Repair) => void;
@@ -71,23 +112,56 @@ export const createRepairColumns = (
     },
     cell: ({ row }) => {
       const repair = row.original;
+      const statusConfig = getStatusConfig(repair.status);
+
       return (
-        <Select
-          value={repair.status}
-          onValueChange={(newStatus: RepairStatus) => {
-            actions.updateRepairStatus(repair.id, newStatus);
-          }}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue>{repair.status}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Pending">Pending</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
-            <SelectItem value="Delivered">Delivered</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select
+            value={repair.status}
+            onValueChange={(newStatus: RepairStatus) => {
+              actions.updateRepairStatus(repair.id, newStatus);
+            }}
+          >
+            <SelectTrigger
+              className={cn(
+                "h-8 min-w-[140px] transition-all duration-200",
+                statusConfig.color,
+                statusConfig.hoverColor
+              )}
+            >
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{statusConfig.icon}</span>
+                  <span className="font-medium">{repair.status}</span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {(
+                [
+                  "Pending",
+                  "In Progress",
+                  "Completed",
+                  "Delivered",
+                ] as RepairStatus[]
+              ).map((status) => {
+                const config = getStatusConfig(status);
+                return (
+                  <SelectItem
+                    key={status}
+                    value={status}
+                    className="py-2 transition-colors duration-200 hover:bg-muted"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{config.icon}</span>
+                      <span className="font-medium">{status}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
       );
     },
   },
@@ -184,13 +258,20 @@ export const createRepairColumns = (
       const badgeProps = actions.getPaymentBadgeProps(repair.paymentStatus);
 
       return (
-        <div className="text-right space-y-1">
-          <div className="flex items-center justify-end gap-2">
+        <div className="text-right">
+          <div className="flex items-center justify-end gap-2 mb-1">
+            <Badge
+              variant={badgeProps.variant}
+              className={cn("text-xs px-2 py-0.5", badgeProps.className)}
+            >
+              {repair.paymentStatus}
+            </Badge>
             <div className="text-sm font-medium text-green-600">
               ${totalPaid.toFixed(2)}
             </div>
             <div className="text-xs text-gray-500">paid</div>
           </div>
+
           <div className="flex items-center justify-end gap-2">
             <div
               className={cn(
@@ -202,6 +283,7 @@ export const createRepairColumns = (
             </div>
             <div className="text-xs text-gray-500">remaining</div>
           </div>
+
           {remaining > 0 && (
             <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
               <div

@@ -40,6 +40,7 @@ import {
   LogOut,
   User,
   ChevronUp,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +71,11 @@ export function AppSidebar() {
       title: "Repairs",
       icon: Wrench,
       href: "/repairs",
+    },
+    {
+      title: "Suppliers",
+      icon: Building2,
+      href: "/suppliers",
     },
     {
       title: "Customers",

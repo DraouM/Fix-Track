@@ -255,17 +255,9 @@ export const createRepairColumns = (
           ? repair.remainingBalance
           : repair.estimatedCost - totalPaid;
 
-      const badgeProps = actions.getPaymentBadgeProps(repair.paymentStatus);
-
       return (
-        <div className="text-right">
-          <div className="flex items-center justify-end gap-2 mb-1">
-            <Badge
-              variant={badgeProps.variant}
-              className={cn("text-xs px-2 py-0.5", badgeProps.className)}
-            >
-              {repair.paymentStatus}
-            </Badge>
+        <div className="text-right space-y-1">
+          <div className="flex items-center justify-end gap-2">
             <div className="text-sm font-medium text-green-600">
               ${totalPaid.toFixed(2)}
             </div>

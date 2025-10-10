@@ -92,15 +92,16 @@ export default function DashboardPage() {
   };
 
   return (
-    <DashboardContent
-      items={items}
-      loading={loading}
-      error={error}
-      success={success}
-      onInitDatabase={initDatabase}
-      onAddTestItem={addTestItem}
-      onLoadItems={loadItems}
-      onDeleteItem={deleteItem}
-    />
+    // <DashboardContent
+    //   items={items}
+    //   loading={loading}
+    //   error={error}
+    //   success={success}
+    //   onInitDatabase={initDatabase}
+    //   onAddTestItem={addTestItem}
+    //   onLoadItems={loadItems}
+    //   onDeleteItem={deleteItem}
+    // />
+    <DashboardContent />
   );
 }

@@ -4,6 +4,8 @@
 import { useCallback } from "react";
 import { Repair } from "@/types/repair";
 import { toast } from "sonner";
+import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
+import { StickerTemplate } from "@/components/helpers/StickerTemplate";
 
 interface PrintOptions {
   includePayments?: boolean;
@@ -24,7 +26,7 @@ export const usePrintUtils = () => {
     });
   }, []);
 
-  // Generate print content HTML
+  // Generate print content HTML using optimized components
   const generatePrintContent = useCallback(
     (repair: Repair, options: PrintOptions = {}) => {
       const {
@@ -33,343 +35,235 @@ export const usePrintUtils = () => {
         includeParts = true,
       } = options;
 
-      const totalPaid = repair.totalPaid || 0;
-      const remaining = repair.estimatedCost - totalPaid;
-
       if (format === "sticker") {
-        return `
+        // We'll use innerHTML approach for sticker since it's simpler
+        const stickerHTML = `
         <!DOCTYPE html>
         <html>
           <head>
             <title>Repair Sticker - ${repair.id}</title>
             <style>
               * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { 
-                font-family: 'Arial', sans-serif; 
-                font-size: 10pt;
-                line-height: 1.2;
-                color: #000;
-                background: white;
-              }
-              .sticker {
-                width: 4in;
-                height: 3in;
-                border: 2px solid #000;
-                padding: 10px;
-                position: relative;
-              }
-              .header {
-                text-align: center;
-                font-weight: bold;
-                font-size: 12pt;
-                margin-bottom: 10px;
-                border-bottom: 1px solid #000;
-                padding-bottom: 5px;
-              }
-              .qr-placeholder {
-                width: 60px;
-                height: 60px;
-                border: 1px solid #000;
-                float: right;
-                margin: 0 0 10px 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 8pt;
-                background: #f9f9f9;
-              }
-              .field {
-                margin-bottom: 5px;
-                font-size: 9pt;
-              }
-              .label {
-                font-weight: bold;
-                display: inline-block;
-                width: 60px;
+              @media print {
+                @page {
+                  size: 2in 1in;
+                  margin: 0;
+                }
+                body { 
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 7px;
+                  line-height: 1.2;
+                  color: #000;
+                  background: white;
+                  width: 2in;
+                  height: 1in;
+                  padding: 2mm;
+                }
+                .phone-sticker {
+                  width: 2in !important;
+                  height: 1in !important;
+                  padding: 2mm !important;
+                  border: 1px solid #000 !important;
+                }
               }
             </style>
           </head>
           <body>
-            <div class="sticker">
-              <div class="header">REPAIR TAG</div>
-              <div class="qr-placeholder">QR<br/>CODE</div>
-              <div class="field">
-                <span class="label">ID:</span> ${repair.id}
-              </div>
-              <div class="field">
-                <span class="label">Phone:</span> ${repair.customerPhone}
-              </div>
-              <div class="field">
-                <span class="label">Device:</span> ${repair.deviceBrand} ${
-          repair.deviceModel
-        }
-              </div>
-              <div class="field">
-                <span class="label">Issue:</span> ${repair.issueDescription.substring(
-                  0,
-                  50
-                )}${repair.issueDescription.length > 50 ? "..." : ""}
-              </div>
-              <div class="field">
-                <span class="label">Date:</span> ${formatPrintDate(
-                  repair.createdAt
-                )}
+            <div class="phone-sticker">
+              <div style="display: flex; flex-direction: column; height: 100%; gap: 1mm;">
+                <div style="font-size: 7px; text-align: center;">
+                  ${repair.deviceBrand} ${repair.deviceModel}
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 6px; margin-top: auto; padding-top: 1mm; border-top: 1px solid #000;">
+                  <span>${repair.customerPhone}</span>
+                  <span>${
+                    formatPrintDate(repair.createdAt).split(",")[0]
+                  }</span>
+                </div>
               </div>
             </div>
           </body>
         </html>
       `;
+        return stickerHTML;
       }
 
-      // Receipt format
-      return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Repair Receipt - ${repair.id}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { 
-              font-family: 'Arial', sans-serif; 
-              font-size: 12pt;
-              line-height: 1.4;
-              color: #000;
-              background: white;
-              padding: 20px;
-            }
-            .receipt {
-              max-width: 600px;
-              margin: 0 auto;
-            }
-            .header {
-              text-align: center;
-              border-bottom: 2px solid #000;
-              padding-bottom: 15px;
-              margin-bottom: 20px;
-            }
-            .header h1 {
-              font-size: 24pt;
-              font-weight: bold;
-              margin-bottom: 10px;
-            }
-            .header .company {
-              font-size: 14pt;
-              margin-bottom: 5px;
-            }
-            .section {
-              margin-bottom: 20px;
-            }
-            .section h3 {
-              font-size: 14pt;
-              font-weight: bold;
-              margin-bottom: 10px;
-              border-bottom: 1px solid #ccc;
-              padding-bottom: 5px;
-            }
-            .info-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 8px;
-              padding: 2px 0;
-            }
-            .label {
-              font-weight: bold;
-              width: 40%;
-            }
-            .value {
-              width: 60%;
-              text-align: right;
-            }
-            .status-badge {
-              display: inline-block;
-              padding: 4px 8px;
-              border: 1px solid #000;
-              border-radius: 4px;
-              font-size: 10pt;
-              font-weight: bold;
-              background: #f0f0f0;
-            }
-            .total-section {
-              border-top: 2px solid #000;
-              padding-top: 15px;
-              margin-top: 20px;
-            }
-            .total-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 8px;
-              font-size: 14pt;
-            }
-            .total-row.final {
-              font-weight: bold;
-              border-top: 1px solid #000;
-              padding-top: 8px;
-              margin-top: 8px;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 30px;
-              font-size: 10pt;
-              font-style: italic;
-              border-top: 1px solid #ccc;
-              padding-top: 15px;
-            }
-            .table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 15px 0;
-            }
-            .table th,
-            .table td {
-              border: 1px solid #000;
-              padding: 8px;
-              text-align: left;
-              font-size: 10pt;
-            }
-            .table th {
-              background: #f0f0f0;
-              font-weight: bold;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">
-            <div class="header">
-              <h1>REPAIR RECEIPT</h1>
-              <div class="company">Fixary Repair Shop</div>
-              <div>Order #${repair.id}</div>
-              <div>Date: ${formatPrintDate(repair.createdAt)}</div>
-            </div>
-            
-            <div class="section">
-              <h3>Customer Information</h3>
-              <div class="info-row">
-                <span class="label">Name:</span>
-                <span class="value">${repair.customerName}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Phone:</span>
-                <span class="value">${repair.customerPhone}</span>
-              </div>
-            </div>
+      // For receipt, generate HTML that will use our optimized ReceiptTemplate
+      const receiptHTML = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Repair Receipt - ${repair.id}</title>
+            <style>
+              ${document.querySelector("#print-styles")?.textContent || ""}
+              @media print {
+                @page {
+                  size: 80mm auto;
+                  margin: 0;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <div id="receipt-print-template" class="print-active" data-print-type="receipt">
+              <div class="thermal-receipt" style="width: 80mm; padding: 3mm; font-family: 'Courier New', Courier, monospace; font-size: 9px; line-height: 1.2; color: #000; background-color: #fff;">
+                <!-- Header - Shop Name -->
+                <div style="text-align: center; margin-bottom: 6px; border-bottom: 1px dashed #000; padding-bottom: 6px;">
+                  <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">YOUR REPAIR SHOP</div>
+                  <div style="font-size: 8px;">123 Main St, City, State</div>
+                  <div style="font-size: 8px;">Tel: (555) 123-4567</div>
+                </div>
 
-            <div class="section">
-              <h3>Device Information</h3>
-              <div class="info-row">
-                <span class="label">Device:</span>
-                <span class="value">${repair.deviceBrand} ${
-        repair.deviceModel
-      }</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Issue:</span>
-                <span class="value">${repair.issueDescription}</span>
-              </div>
-            </div>
+                <!-- Receipt Type -->
+                <div style="text-align: center; font-size: 10px; font-weight: bold; margin: 4px 0;">REPAIR RECEIPT</div>
 
-            <div class="section">
-              <h3>Repair Status</h3>
-              <div class="info-row">
-                <span class="label">Status:</span>
-                <span class="value">
-                  <span class="status-badge">${repair.status}</span>
-                </span>
-              </div>
-              <div class="info-row">
-                <span class="label">Payment Status:</span>
-                <span class="value">
-                  <span class="status-badge">${repair.paymentStatus}</span>
-                </span>
-              </div>
-            </div>
+                <!-- Order Info -->
+                <div style="margin-bottom: 4px; font-size: 8px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Order #:</span>
+                    <span style="font-weight: bold;">${repair.id}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Date:</span>
+                    <span>${formatPrintDate(repair.createdAt)}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Status:</span>
+                    <span style="font-weight: bold;">${repair.status}</span>
+                  </div>
+                </div>
 
-            ${
-              includePayments && repair.payments && repair.payments.length > 0
-                ? `
-              <div class="section">
-                <h3>Payment History</h3>
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Method</th>
-                      <th>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${repair.payments
-                      .map(
-                        (payment) => `
-                      <tr>
-                        <td>${formatPrintDate(payment.date)}</td>
-                        <td>${payment.method}</td>
-                        <td>$${payment.amount.toFixed(2)}</td>
-                      </tr>
-                    `
-                      )
-                      .join("")}
-                  </tbody>
-                </table>
-              </div>
-            `
-                : ""
-            }
+                <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
 
-            ${
-              includeParts && repair.usedParts && repair.usedParts.length > 0
-                ? `
-              <div class="section">
-                <h3>Parts Used</h3>
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Part</th>
-                      <th>Qty</th>
-                      <th>Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <!-- Customer Info -->
+                <div style="margin-bottom: 4px; font-size: 8px;">
+                  <div style="font-weight: bold; margin-bottom: 2px;">CUSTOMER:</div>
+                  <div>${repair.customerName}</div>
+                  <div>${repair.customerPhone}</div>
+                </div>
+
+                <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+
+                <!-- Device Info -->
+                <div style="margin-bottom: 4px; font-size: 8px;">
+                  <div style="font-weight: bold; margin-bottom: 2px;">DEVICE:</div>
+                  <div>${repair.deviceBrand} ${repair.deviceModel}</div>
+                  <div style="margin-top: 2px;">
+                    <div style="font-weight: bold;">Issue:</div>
+                    <div style="white-space: pre-wrap; word-break: break-word;">${
+                      repair.issueDescription
+                    }</div>
+                  </div>
+                </div>
+
+                <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+
+                <!-- Parts Used -->
+                ${
+                  includeParts &&
+                  repair.usedParts &&
+                  repair.usedParts.length > 0
+                    ? `
+                  <div style="margin-bottom: 4px; font-size: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 2px;">PARTS USED:</div>
                     ${repair.usedParts
                       .map(
-                        (part) => `
-                      <tr>
-                        <td>${part.partName}</td>
-                        <td>${part.quantity}</td>
-                        <td>$${part.cost.toFixed(2)}</td>
-                      </tr>
+                        (part, index) => `
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
+                        <span>${part.partName} x${part.quantity}</span>
+                        <span>$${part.cost.toFixed(2)}</span>
+                      </div>
                     `
                       )
                       .join("")}
-                  </tbody>
-                </table>
-              </div>
-            `
-                : ""
-            }
+                  </div>
+                  <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
+                `
+                    : ""
+                }
 
-            <div class="total-section">
-              <div class="total-row">
-                <span>Estimated Cost:</span>
-                <span>$${repair.estimatedCost.toFixed(2)}</span>
-              </div>
-              <div class="total-row">
-                <span>Amount Paid:</span>
-                <span>$${totalPaid.toFixed(2)}</span>
-              </div>
-              <div class="total-row final">
-                <span>Balance Due:</span>
-                <span>$${remaining.toFixed(2)}</span>
+                <!-- Financial Summary -->
+                <div style="margin-bottom: 4px; font-size: 9px;">
+                  <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px;">
+                    <span>REPAIR COST:</span>
+                    <span>$${repair.estimatedCost.toFixed(2)}</span>
+                  </div>
+
+                  ${
+                    includePayments &&
+                    repair.payments &&
+                    repair.payments.length > 0
+                      ? `
+                    <div style="margin-top: 4px; font-size: 8px;">
+                      <div style="font-weight: bold; margin-bottom: 2px;">PAYMENTS:</div>
+                      ${repair.payments
+                        .map(
+                          (payment) => `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
+                          <span>${formatPrintDate(payment.date)}</span>
+                          <span>$${payment.amount.toFixed(2)}</span>
+                        </div>
+                      `
+                        )
+                        .join("")}
+                      <div style="border-top: 1px solid #000; margin-top: 3px; padding-top: 3px;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                          <span>TOTAL PAID:</span>
+                          <span>$${(
+                            repair.payments?.reduce(
+                              (sum, p) => sum + p.amount,
+                              0
+                            ) || 0
+                          ).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  `
+                      : ""
+                  }
+
+                  <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; font-size: 10px; font-weight: bold;">
+                    <div style="display: flex; justify-content: space-between;">
+                      <span>BALANCE DUE:</span>
+                      <span>$${(
+                        repair.estimatedCost -
+                        (repair.payments?.reduce(
+                          (sum, p) => sum + p.amount,
+                          0
+                        ) || 0)
+                      ).toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div style="margin-top: 3px; font-size: 8px; text-align: center;">
+                    <div style="font-weight: bold;">Payment Status: ${
+                      repair.paymentStatus
+                    }</div>
+                  </div>
+                </div>
+
+                <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
+
+                <!-- Footer -->
+                <div style="text-align: center; font-size: 7px; margin-top: 4px;">
+                  <div style="margin-bottom: 2px;">Thank you for your business!</div>
+                  <div>30-day warranty on parts & labor</div>
+                  <div style="margin-top: 4px; font-weight: bold;">Keep this receipt for your records</div>
+                </div>
+
+                <!-- Barcode placeholder -->
+                <div style="text-align: center; margin-top: 6px; font-size: 7px;">
+                  <div style="border: 1px solid #000; padding: 4px; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;">*${
+                    repair.id
+                  }*</div>
+                </div>
               </div>
             </div>
+          </body>
+        </html>
+      `;
 
-            <div class="footer">
-              <p>Thank you for choosing Fixary Repair Shop!</p>
-              <p>Keep this receipt for your records</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+      return receiptHTML;
     },
     [formatPrintDate]
   );
@@ -401,6 +295,45 @@ export const usePrintUtils = () => {
         doc.write(htmlContent);
         doc.close();
 
+        // If this is a receipt or sticker print, we need to inject the React component
+        if (title.includes("Receipt") || title.includes("Sticker")) {
+          // Wait for content to load, then inject our React components
+          setTimeout(() => {
+            try {
+              const printType = title.includes("Sticker")
+                ? "sticker"
+                : "receipt";
+              const templateId =
+                printType === "sticker"
+                  ? "sticker-print-template"
+                  : "receipt-print-template";
+
+              // Get the template container
+              const templateContainer =
+                iframe.contentDocument?.getElementById(templateId);
+              if (templateContainer) {
+                // Add print styles
+                const style = iframe.contentDocument?.createElement("style");
+                if (style) {
+                  style.textContent = `
+                    @media print {
+                      body { margin: 0; padding: 0; }
+                      ${
+                        printType === "receipt"
+                          ? "@page { size: 80mm auto; margin: 0; }"
+                          : "@page { size: 2in 1in; margin: 0; }"
+                      }
+                    }
+                  `;
+                  iframe.contentDocument?.head?.appendChild(style);
+                }
+              }
+            } catch (error) {
+              console.warn("Template injection warning:", error);
+            }
+          }, 100);
+        }
+
         // Wait for content to load, then print
         setTimeout(() => {
           try {
@@ -421,7 +354,7 @@ export const usePrintUtils = () => {
             // Try popup fallback on iframe print failure
             fallbackPopupPrint(htmlContent, title);
           }
-        }, 200);
+        }, 300);
 
         return true;
       } catch (error) {
@@ -513,26 +446,15 @@ export const usePrintUtils = () => {
   // Enhanced print functions - focusing on print dialog success
   const printReceipt = useCallback(
     async (repair: Repair, options?: PrintOptions): Promise<boolean> => {
-      const content = generatePrintContent(repair, {
-        ...options,
-        format: "receipt",
-      });
-
       try {
-        const dialogOpened = printDocument(content, "Receipt");
-        if (dialogOpened) {
-          // Print dialog opened successfully - this is what we can verify
-          toast.success(
-            "🖨️ Receipt print dialog opened! Please complete printing."
-          );
-          return true;
-        } else {
-          // Failed to open print dialog (popup blocked, etc.)
-          toast.error(
-            "❌ Could not open print dialog. Please check popup settings."
-          );
-          return false;
-        }
+        // Generate the HTML with our optimized receipt template
+        const content = generatePrintContent(repair, {
+          ...options,
+          format: "receipt",
+        });
+
+        // Use iframe method to avoid popup blockers
+        return printDocument(content, "Receipt");
       } catch (error) {
         console.error("Receipt printing error:", error);
         toast.error("❌ Print failed. Please check your browser settings.");
@@ -544,23 +466,12 @@ export const usePrintUtils = () => {
 
   const printSticker = useCallback(
     async (repair: Repair): Promise<boolean> => {
-      const content = generatePrintContent(repair, { format: "sticker" });
-
       try {
-        const dialogOpened = printDocument(content, "Repair Sticker");
-        if (dialogOpened) {
-          // Print dialog opened successfully
-          toast.success(
-            "🖨️ Sticker print dialog opened! Please complete printing."
-          );
-          return true;
-        } else {
-          // Failed to open print dialog
-          toast.error(
-            "❌ Could not open print dialog. Please check popup settings."
-          );
-          return false;
-        }
+        // Generate the HTML with our sticker template
+        const content = generatePrintContent(repair, { format: "sticker" });
+
+        // Use iframe method to avoid popup blockers
+        return printDocument(content, "Sticker");
       } catch (error) {
         console.error("Sticker printing error:", error);
         toast.error("❌ Print failed. Please check your browser settings.");

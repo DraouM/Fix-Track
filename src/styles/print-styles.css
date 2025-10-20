@@ -1,0 +1,194 @@
+/* Print Styles for Repair App - Thermal Receipt & Small Sticker */
+
+/* Hide all print templates by default */
+#receipt-print-template,
+#sticker-print-template {
+  display: none;
+}
+
+/* Print Media Queries */
+@media print {
+  /* Hide everything except the active print template */
+  body > *:not(#receipt-print-template):not(#sticker-print-template) {
+    display: none !important;
+  }
+
+  /* Show only the active template */
+  .print-active {
+    display: block !important;
+  }
+
+  /* Hide non-active templates even in print mode */
+  #receipt-print-template:not(.print-active),
+  #sticker-print-template:not(.print-active) {
+    display: none !important;
+  }
+
+  /* Thermal Receipt Page Setup - 80mm width, continuous paper */
+  @page receipt {
+    size: 80mm auto; /* Width fixed, height auto for continuous paper */
+    margin: 0; /* No margins for thermal printers */
+  }
+
+  /* Alternative for 58mm thermal printers (uncomment if needed) */
+  /* @page receipt {
+    size: 58mm auto;
+    margin: 0;
+  } */
+
+  /* Small Phone Sticker Page Setup - 2" x 1" label */
+  @page sticker {
+    size: 2in 1in; /* Small label size */
+    margin: 0; /* No margins for precise label printing */
+  }
+
+  /* Alternative sticker sizes (uncomment as needed) */
+  /* Common phone sticker: 2.25" x 1.25" */
+  /* @page sticker {
+    size: 2.25in 1.25in;
+    margin: 0;
+  } */
+
+  /* Smaller option: 1.5" x 1" */
+  /* @page sticker {
+    size: 1.5in 1in;
+    margin: 0;
+  } */
+
+  /* Apply page setup based on data attribute */
+  [data-print-type="receipt"] {
+    page: receipt;
+  }
+
+  [data-print-type="sticker"] {
+    page: sticker;
+  }
+
+  /* General print optimizations */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Ensure backgrounds print (important for borders and contrast) */
+  body {
+    background: white;
+  }
+
+  /* Remove shadows and animations in print */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Thermal receipt specific styles */
+  .thermal-receipt {
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 5mm !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Ensure thermal receipt uses only black ink */
+  .thermal-receipt * {
+    color: black !important;
+    background: white !important;
+    border-color: black !important;
+  }
+
+  /* Phone sticker specific styles */
+  .phone-sticker {
+    width: 2in !important;
+    height: 1in !important;
+    margin: 0 !important;
+    padding: 0.5mm !important;
+    background: white !important;
+    color: black !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Prevent page breaks inside elements */
+  .thermal-receipt > *,
+  .phone-sticker > * {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Force single page for stickers */
+  .phone-sticker {
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Additional page break prevention */
+  #sticker-print-template {
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Font optimization for print - monospace for receipts */
+  .thermal-receipt {
+    font-family: 'Courier New', Courier, monospace !important;
+    line-height: 1.4 !important;
+  }
+
+  .phone-sticker {
+    font-family: Arial, Helvetica, sans-serif !important;
+    line-height: 1.0 !important;
+  }
+
+  /* Ensure crisp text rendering */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Remove any flex gaps that might cause spacing issues */
+  .phone-sticker * {
+    flex-shrink: 0;
+  }
+}
+
+/* Screen display - for testing print layouts */
+@media screen {
+  /* Optional: Add a class to preview print layouts */
+  .print-preview #receipt-print-template,
+  .print-preview #sticker-print-template {
+    display: block;
+    border: 2px dashed #ccc;
+    margin: 20px;
+    background: white;
+  }
+
+  .print-preview #receipt-print-template {
+    width: 80mm;
+    padding: 20px;
+  }
+
+  .print-preview #sticker-print-template {
+    width: 2in;
+    height: 1in;
+    padding: 10px;
+  }
+
+  /* Visual indicator for print templates in dev mode */
+  #receipt-print-template::before,
+  #sticker-print-template::before {
+    content: "🖨️ PRINT TEMPLATE (Hidden on screen)";
+    display: block;
+    padding: 5px;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    font-size: 10px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+}

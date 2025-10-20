@@ -63,6 +63,10 @@ interface RepairDetailProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface PrintOptions {
+  useEscPos?: boolean;
+}
+
 const getStatusColor = (status: RepairStatus) => {
   switch (status) {
     case "Pending":
@@ -121,6 +125,10 @@ export function RepairDetail({
   // Local state for loading indicators
   const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
   const [isGeneratingSticker, setIsGeneratingSticker] = useState(false);
+  const [isGeneratingEscPosReceipt, setIsGeneratingEscPosReceipt] =
+    useState(false);
+  const [isGeneratingEscPosSticker, setIsGeneratingEscPosSticker] =
+    useState(false);
 
   // Get the most up-to-date repair data from context
   const currentRepair = repair ? getItemById(repair.id) || repair : null;
@@ -149,6 +157,26 @@ export function RepairDetail({
     }
   };
 
+  const handlePrintReceiptEscPos = async () => {
+    if (isGeneratingEscPosReceipt) return;
+
+    setIsGeneratingEscPosReceipt(true);
+    try {
+      await printReceipt(repairData, {
+        includePayments: true,
+        includeParts: true,
+        useEscPos: true,
+      });
+    } catch (error) {
+      console.error("Failed to print ESC/POS receipt:", error);
+      toast.error(
+        "❌ ESC/POS receipt printing failed. Please try again or check your printer."
+      );
+    } finally {
+      setIsGeneratingEscPosReceipt(false);
+    }
+  };
+
   const handlePrintSticker = async () => {
     if (isGeneratingSticker) return;
 
@@ -162,6 +190,24 @@ export function RepairDetail({
       );
     } finally {
       setIsGeneratingSticker(false);
+    }
+  };
+
+  const handlePrintStickerEscPos = async () => {
+    if (isGeneratingEscPosSticker) return;
+
+    setIsGeneratingEscPosSticker(true);
+    try {
+      await printSticker(repairData, {
+        useEscPos: true,
+      });
+    } catch (error) {
+      console.error("Failed to print ESC/POS sticker:", error);
+      toast.error(
+        "❌ ESC/POS sticker printing failed. Please try again or check your printer."
+      );
+    } finally {
+      setIsGeneratingEscPosSticker(false);
     }
   };
 
@@ -536,6 +582,20 @@ export function RepairDetail({
                 )}
                 {isGeneratingReceipt ? "Printing..." : "Print Receipt"}
               </Button>
+
+              <Button
+                onClick={handlePrintReceiptEscPos}
+                disabled={isGeneratingEscPosReceipt}
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+              >
+                {isGeneratingEscPosReceipt ? (
+                  <Loader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Printer className="h-4 w-4" />
+                )}
+                {isGeneratingEscPosReceipt ? "ESC/POS..." : "ESC/POS Receipt"}
+              </Button>
+
               <Button
                 onClick={handlePrintSticker}
                 disabled={isGeneratingSticker}
@@ -547,6 +607,19 @@ export function RepairDetail({
                   <FileText className="h-4 w-4" />
                 )}
                 {isGeneratingSticker ? "Printing..." : "Print Sticker"}
+              </Button>
+
+              <Button
+                onClick={handlePrintStickerEscPos}
+                disabled={isGeneratingEscPosSticker}
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
+              >
+                {isGeneratingEscPosSticker ? (
+                  <Loader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                {isGeneratingEscPosSticker ? "ESC/POS..." : "ESC/POS Sticker"}
               </Button>
 
               <DropdownMenu>

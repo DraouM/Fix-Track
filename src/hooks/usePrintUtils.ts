@@ -6,15 +6,21 @@ import { Repair } from "@/types/repair";
 import { toast } from "sonner";
 import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
 import { StickerTemplate } from "@/components/helpers/StickerTemplate";
+import { useEscPosPrinter } from "./useEscPosPrinter";
 
 interface PrintOptions {
   includePayments?: boolean;
   includeParts?: boolean;
   includeHistory?: boolean;
   format?: "receipt" | "sticker" | "invoice";
+  useEscPos?: boolean;
+  printerName?: string;
 }
 
 export const usePrintUtils = () => {
+  const { generateReceiptCommands, generateStickerCommands, sendToPrinter } =
+    useEscPosPrinter();
+
   // Format date for printing
   const formatPrintDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -51,30 +57,46 @@ export const usePrintUtils = () => {
                 }
                 body { 
                   font-family: Arial, Helvetica, sans-serif;
-                  font-size: 7px;
-                  line-height: 1.2;
+                  font-size: 4px;
+                  line-height: 1.0;
                   color: #000;
                   background: white;
                   width: 2in;
                   height: 1in;
-                  padding: 2mm;
+                  padding: 0.5mm;
                 }
                 .phone-sticker {
                   width: 2in !important;
                   height: 1in !important;
-                  padding: 2mm !important;
-                  border: 1px solid #000 !important;
+                  padding: 0.5mm !important;
+                  box-sizing: border-box !important;
                 }
               }
             </style>
           </head>
           <body>
             <div class="phone-sticker">
-              <div style="display: flex; flex-direction: column; height: 100%; gap: 1mm;">
-                <div style="font-size: 7px; text-align: center;">
+              <div style="display: flex; flex-direction: column; height: 100%; gap: 0.2mm;">
+                <!-- Header - Shop name and Order # -->
+                <div style="text-align: center; border-bottom: 0.5px solid #000; padding-bottom: 0.3mm; font-size: 5px; font-weight: bold;">
+                  <div>YOUR REPAIR SHOP</div>
+                  <div style="font-size: 4px;">#${repair.id}</div>
+                </div>
+
+                <!-- Device Info - Compact -->
+                <div style="font-size: 5px; text-align: center; font-weight: bold;">
                   ${repair.deviceBrand} ${repair.deviceModel}
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 6px; margin-top: auto; padding-top: 1mm; border-top: 1px solid #000;">
+
+                <!-- Issue description - truncated -->
+                <div style="font-size: 4px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  ${repair.issueDescription.substring(0, 25)}${
+          repair.issueDescription.length > 25 ? "..." : ""
+        }
+                </div>
+
+                <!-- Bottom row: Phone and Date -->
+                <div style="display: flex; justify-content: space-between; font-size: 4px; margin-top: auto; padding-top: 0.3mm; border-top: 0.5px solid #000;">
                   <span>${repair.customerPhone}</span>
                   <span>${
                     formatPrintDate(repair.createdAt).split(",")[0]
@@ -295,45 +317,6 @@ export const usePrintUtils = () => {
         doc.write(htmlContent);
         doc.close();
 
-        // If this is a receipt or sticker print, we need to inject the React component
-        if (title.includes("Receipt") || title.includes("Sticker")) {
-          // Wait for content to load, then inject our React components
-          setTimeout(() => {
-            try {
-              const printType = title.includes("Sticker")
-                ? "sticker"
-                : "receipt";
-              const templateId =
-                printType === "sticker"
-                  ? "sticker-print-template"
-                  : "receipt-print-template";
-
-              // Get the template container
-              const templateContainer =
-                iframe.contentDocument?.getElementById(templateId);
-              if (templateContainer) {
-                // Add print styles
-                const style = iframe.contentDocument?.createElement("style");
-                if (style) {
-                  style.textContent = `
-                    @media print {
-                      body { margin: 0; padding: 0; }
-                      ${
-                        printType === "receipt"
-                          ? "@page { size: 80mm auto; margin: 0; }"
-                          : "@page { size: 2in 1in; margin: 0; }"
-                      }
-                    }
-                  `;
-                  iframe.contentDocument?.head?.appendChild(style);
-                }
-              }
-            } catch (error) {
-              console.warn("Template injection warning:", error);
-            }
-          }, 100);
-        }
-
         // Wait for content to load, then print
         setTimeout(() => {
           try {
@@ -447,38 +430,103 @@ export const usePrintUtils = () => {
   const printReceipt = useCallback(
     async (repair: Repair, options?: PrintOptions): Promise<boolean> => {
       try {
-        // Generate the HTML with our optimized receipt template
+        // Check if we should use ESC/POS
+        if (options?.useEscPos) {
+          // Generate ESC/POS commands
+          const commands = generateReceiptCommands(repair, {
+            includePayments: options.includePayments,
+            includeParts: options.includeParts,
+            autoCut: true,
+          });
+
+          // Send commands to printer
+          const result = await sendToPrinter(commands);
+          if (result.success) {
+            toast.success("✅ ESC/POS receipt printed successfully!");
+          } else {
+            // Provide more detailed error information
+            toast.error(
+              `❌ Failed to print ESC/POS receipt: ${
+                result.message || "Unknown error"
+              }`
+            );
+            // Offer fallback to HTML printing
+            toast.info("📄 You can still print using the regular print option");
+          }
+          return result.success;
+        }
+
+        // Use existing HTML-based printing
         const content = generatePrintContent(repair, {
           ...options,
           format: "receipt",
         });
 
-        // Use iframe method to avoid popup blockers
         return printDocument(content, "Receipt");
       } catch (error) {
         console.error("Receipt printing error:", error);
         toast.error("❌ Print failed. Please check your browser settings.");
+        // Offer fallback to download
+        toast.info(
+          "📄 You can download the receipt as HTML and print manually"
+        );
         return false;
       }
     },
-    [generatePrintContent, printDocument]
+    [
+      generatePrintContent,
+      printDocument,
+      generateReceiptCommands,
+      sendToPrinter,
+    ]
   );
 
   const printSticker = useCallback(
-    async (repair: Repair): Promise<boolean> => {
+    async (repair: Repair, options?: PrintOptions): Promise<boolean> => {
       try {
-        // Generate the HTML with our sticker template
-        const content = generatePrintContent(repair, { format: "sticker" });
+        // Check if we should use ESC/POS
+        if (options?.useEscPos) {
+          // Generate ESC/POS commands
+          const commands = generateStickerCommands(repair, {
+            autoCut: true,
+          });
 
-        // Use iframe method to avoid popup blockers
+          // Send commands to printer
+          const result = await sendToPrinter(commands);
+          if (result.success) {
+            toast.success("✅ ESC/POS sticker printed successfully!");
+          } else {
+            // Provide more detailed error information
+            toast.error(
+              `❌ Failed to print ESC/POS sticker: ${
+                result.message || "Unknown error"
+              }`
+            );
+            // Offer fallback to HTML printing
+            toast.info("📄 You can still print using the regular print option");
+          }
+          return result.success;
+        }
+
+        // Use existing HTML-based printing
+        const content = generatePrintContent(repair, { format: "sticker" });
         return printDocument(content, "Sticker");
       } catch (error) {
         console.error("Sticker printing error:", error);
         toast.error("❌ Print failed. Please check your browser settings.");
+        // Offer fallback to download
+        toast.info(
+          "📄 You can download the sticker as HTML and print manually"
+        );
         return false;
       }
     },
-    [generatePrintContent, printDocument]
+    [
+      generatePrintContent,
+      printDocument,
+      generateStickerCommands,
+      sendToPrinter,
+    ]
   );
 
   // Keep download as a separate utility function (for manual fallback only)

@@ -41,6 +41,8 @@ import {
   User,
   ChevronUp,
   Building2,
+  ShoppingCart,
+  PrinterIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -78,14 +80,19 @@ export function AppSidebar() {
       href: "/suppliers",
     },
     {
+      title: "Shopping List",
+      icon: ShoppingCart,
+      href: "/shopping-list",
+    },
+    {
       title: "Customers",
       icon: Users,
       href: "/customers",
     },
     {
-      title: "Calendar",
-      icon: Calendar,
-      href: "/calendar",
+      title: "Print",
+      icon: PrinterIcon,
+      href: "/print-settings",
     },
     {
       title: "Reports",

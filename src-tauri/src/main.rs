@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod db;
+mod printer; // Add this line
 
 use db::inventory::{
     delete_item, get_history_for_item, get_item_by_id, get_items, get_low_stock_items,
@@ -13,6 +14,7 @@ use db::repair::{
     update_repair, update_repair_status,
 };
 use db::schema;
+use printer::{get_available_printers, print_escpos_commands}; // Add this line
 
 fn main() {
     // Initialize database path
@@ -46,6 +48,9 @@ fn main() {
             get_used_parts_for_repair,
             insert_repair_history,
             get_history_for_repair,
+            // PRINTER - Add these lines
+            print_escpos_commands,
+            get_available_printers,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

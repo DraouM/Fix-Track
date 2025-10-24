@@ -14,13 +14,21 @@ use db::repair::{
     update_repair, update_repair_status,
 };
 use db::schema;
-use printer::{get_available_printers, print_escpos_commands}; // Add this line
+use printer::{get_available_printers, get_printer_status, print_escpos_commands}; // Add this line
+use std::panic;
 
 fn main() {
+    // Set up panic handler for better crash reporting
+    panic::set_hook(Box::new(|panic_info| {
+        eprintln!("Application panicked: {}", panic_info);
+        // In a real application, you might want to log this to a file or send it to a server
+    }));
+
     // Initialize database path
     db::init_db_path();
 
-    tauri::Builder::default()
+    // Use a more robust approach to start the application
+    match tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             schema::init_database,
             // INVENTORY
@@ -51,7 +59,19 @@ fn main() {
             // PRINTER - Add these lines
             print_escpos_commands,
             get_available_printers,
+            get_printer_status,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+    {
+        Ok(app) => {
+            app.run(|_app_handle, _event| {
+                // Handle application events if needed
+            });
+            // app.run never returns, so we don't need to handle errors here
+        }
+        Err(error) => {
+            eprintln!("Error building Tauri application: {}", error);
+            std::process::exit(1);
+        }
+    }
 }

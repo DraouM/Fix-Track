@@ -1,15 +1,22 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import {
   SidebarProvider,
   SidebarInset,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
+import { AppLoader } from "@/components/helpers/AppLoader";
+import { ErrorBoundary } from "@/components/helpers/ErrorBoundary";
+import { ContextInitializer } from "@/components/helpers/ContextInitializer";
+
+// Import context providers directly instead of dynamically
+import { InventoryProvider } from "@/context/InventoryContext";
+import { RepairProvider } from "@/context/RepairContext";
+import { SupplierProvider } from "@/context/SupplierContext";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -20,24 +27,25 @@ function LayoutContent({ children }: AppLayoutProps) {
 
   return (
     <SidebarInset>
-      {/* <header
-        className={cn(
-          "flex h-16 shrink-0 items-center gap-2 border-b px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300",
-          state === "expanded" ? "ml-0 pl-64" : "ml-0 pl-8"
-        )}
-      >
-        <SidebarTrigger className="-ml-1" />
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold">FixTrack Dashboard</h1>
-        </div>
-      </header> */}
       <main
         className={cn(
           "flex-1 transition-all duration-300",
           state === "expanded" ? "ml-0 pl-64" : "ml-0 pl-0"
         )}
       >
-        {children}
+        <ErrorBoundary>
+          <Suspense
+            fallback={<AppLoader message="Initializing application..." />}
+          >
+            <InventoryProvider>
+              <RepairProvider>
+                <SupplierProvider>
+                  <ContextInitializer>{children}</ContextInitializer>
+                </SupplierProvider>
+              </RepairProvider>
+            </InventoryProvider>
+          </Suspense>
+        </ErrorBoundary>
       </main>
     </SidebarInset>
   );

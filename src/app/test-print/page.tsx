@@ -1,6 +1,10 @@
 "use client";
 
 import { TestReceiptPrint } from "@/components/helpers/TestReceiptPrint";
+import { TestStickerPrint } from "@/components/helpers/TestStickerPrint";
+import { TestEscPosPrint } from "@/components/helpers/TestEscPosPrint";
+import { EscPosTestComponent } from "@/components/helpers/EscPosTestComponent";
+import { EscPosValidationTest } from "@/components/helpers/EscPosValidationTest"; // Add this import
 
 export default function TestPrintPage() {
   return (
@@ -20,12 +24,34 @@ export default function TestPrintPage() {
               printer
             </li>
             <li>For best results, use Chrome or Edge browser</li>
-            <li>
-              If printing fails, try the "Download Receipt" option as backup
-            </li>
+            <li>If printing fails, try the "Download" option as backup</li>
+            <li>Sticker prints are optimized for 2" x 1" label printers</li>
           </ul>
         </div>
-        <TestReceiptPrint />
+
+        {/* Add validation test at the top */}
+        <div className="mb-8">
+          <EscPosValidationTest />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="border rounded-lg p-4">
+            <TestReceiptPrint />
+          </div>
+          <div className="border rounded-lg p-4">
+            <TestStickerPrint />
+          </div>
+        </div>
+
+        {/* Add ESC/POS testing section */}
+        <div className="mt-8 border rounded-lg p-4">
+          <TestEscPosPrint />
+        </div>
+
+        {/* Add ESC/POS test component for development */}
+        <div className="mt-8 border rounded-lg p-4">
+          <EscPosTestComponent />
+        </div>
       </div>
     </div>
   );

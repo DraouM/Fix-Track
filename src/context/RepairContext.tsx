@@ -34,6 +34,7 @@ interface RepairState {
   usedParts: UsedPart[];
   history: RepairHistory[];
   loading: boolean;
+  initialized: boolean;
   error: string | null;
   searchTerm: string;
   statusFilter: RepairStatus | "All";
@@ -43,6 +44,7 @@ interface RepairState {
 
 // ✅ Actions shape
 interface RepairActions {
+  initialize: () => Promise<void>;
   setSearchTerm: (term: string) => void;
   setStatusFilter: (status: RepairStatus | "All") => void;
   setPaymentStatusFilter: (paymentStatus: PaymentStatus | "All") => void;
@@ -134,6 +136,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
   const [usedParts, setUsedParts] = useState<UsedPart[]>([]);
   const [history, setHistory] = useState<RepairHistory[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // ✅ Use the filtering/sorting hook (you'll need to create useRepairFilters)
@@ -210,6 +213,26 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setLoading(false);
   }, [clearError]);
+
+  // ✅ Initialize data
+  const initialize = useCallback(async () => {
+    if (initialized) return;
+
+    setLoading(true);
+    clearError();
+    setError(null);
+
+    try {
+      await fetchRepairs();
+      setInitialized(true);
+    } catch (err) {
+      console.error("Failed to initialize repairs:", err);
+      setError(`Failed to initialize repairs: ${err}`);
+      toast.error(`Failed to initialize repairs: ${err}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchRepairs, initialized, clearError]);
 
   // ✅ Fetch repair by ID
   const fetchRepairById = useCallback(
@@ -486,10 +509,14 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     [repairs]
   );
 
-  // ✅ Initialize data
+  // ✅ Initialize data on mount
   useEffect(() => {
-    fetchRepairs();
-  }, [fetchRepairs]);
+    const initTimer = setTimeout(() => {
+      initialize();
+    }, 20);
+
+    return () => clearTimeout(initTimer);
+  }, [initialize]);
 
   // ✅ Memoized value with optimized dependencies
   const stateValue = useMemo<RepairState>(
@@ -501,6 +528,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       usedParts,
       history,
       loading,
+      initialized,
       error,
       searchTerm: filters.searchTerm,
       statusFilter: filters.status,
@@ -515,6 +543,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       usedParts,
       history,
       loading,
+      initialized,
       error,
       filters.searchTerm,
       filters.status,
@@ -525,6 +554,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const actionsValue = useMemo<RepairActions>(
     () => ({
+      initialize,
       setSearchTerm,
       setStatusFilter,
       setPaymentStatusFilter,
@@ -542,6 +572,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       getItemById,
     }),
     [
+      initialize,
       setSearchTerm,
       setStatusFilter,
       setPaymentStatusFilter,
@@ -588,6 +619,7 @@ export function useRepairState(): RepairState {
     usedParts,
     history,
     loading,
+    initialized,
     error,
     searchTerm,
     statusFilter,
@@ -602,6 +634,7 @@ export function useRepairState(): RepairState {
     usedParts,
     history,
     loading,
+    initialized,
     error,
     searchTerm,
     statusFilter,
@@ -612,6 +645,7 @@ export function useRepairState(): RepairState {
 
 export function useRepairActions(): RepairActions {
   const {
+    initialize,
     setSearchTerm,
     setStatusFilter,
     setPaymentStatusFilter,
@@ -629,6 +663,7 @@ export function useRepairActions(): RepairActions {
     getItemById,
   } = useRepairContext();
   return {
+    initialize,
     setSearchTerm,
     setStatusFilter,
     setPaymentStatusFilter,

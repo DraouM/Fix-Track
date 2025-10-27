@@ -27,6 +27,8 @@ interface InventoryState {
   inventoryItems: InventoryItem[];
   filteredAndSortedItems: InventoryItem[];
   loading: boolean;
+  initialized: boolean;
+  error: string | null;
   searchTerm: string;
   selectedBrand: PhoneBrand;
   selectedType: ItemType;
@@ -35,6 +37,7 @@ interface InventoryState {
 
 // ✅ Actions shape
 interface InventoryActions {
+  initialize: () => Promise<void>;
   setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
   setSelectedBrand: React.Dispatch<React.SetStateAction<PhoneBrand>>;
   setSelectedType: React.Dispatch<React.SetStateAction<ItemType>>;
@@ -97,6 +100,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // ✅ Use the filtering/sorting hook
   const {
@@ -114,26 +119,46 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ✅ Fetch items from DB
   const fetchItems = useCallback(async () => {
-    setLoading(true);
     try {
       const dbItems = await invoke<InventoryItemDB[]>("get_items");
       console.info("Fetched items from DB:", dbItems);
 
       setInventoryItems(dbItems.map(mapItemFromDB));
     } catch (err) {
-      toast.error(`Failed to load inventory: ${err}`);
+      console.error("Failed to fetch inventory items:", err);
+      setError(`Failed to load inventory: ${err}`);
       setInventoryItems([]);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   // ✅ Initialize tables + load data
+  const initialize = useCallback(async () => {
+    if (initialized) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      await invoke("init_database");
+      await fetchItems();
+      setInitialized(true);
+    } catch (err) {
+      console.error("Failed to initialize inventory:", err);
+      setError(`Failed to initialize inventory: ${err}`);
+      toast.error(`Failed to initialize inventory: ${err}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchItems, initialized]);
+
+  // ✅ Initialize on mount with a slight delay to prevent blocking
   useEffect(() => {
-    invoke("init_database")
-      .then(fetchItems)
-      .catch((err) => toast.error("Failed to initialize database: " + err));
-  }, [fetchItems]);
+    const initTimer = setTimeout(() => {
+      initialize();
+    }, 10);
+
+    return () => clearTimeout(initTimer);
+  }, [initialize]);
 
   const addInventoryItem = useCallback(
     async (itemData: InventoryFormValues) => {
@@ -294,12 +319,15 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
       inventoryItems,
       filteredAndSortedItems,
       loading,
+      initialized,
+      error,
       searchTerm,
       selectedBrand,
       selectedType,
       sortConfig,
 
       // ✅ Actions
+      initialize,
       setSearchTerm,
       setSelectedBrand,
       setSelectedType,
@@ -315,10 +343,13 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
       inventoryItems,
       filteredAndSortedItems,
       loading,
+      initialized,
+      error,
       searchTerm,
       selectedBrand,
       selectedType,
       sortConfig,
+      initialize,
       setSearchTerm,
       setSelectedBrand,
       setSelectedType,
@@ -339,7 +370,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-// Base hook to ensure we’re in a provider
+// Base hook to ensure we're in a provider
 export function useInventoryContext() {
   const context = useContext(InventoryContext);
   if (!context) {
@@ -356,6 +387,8 @@ export function useInventoryState(): InventoryState {
     inventoryItems,
     filteredAndSortedItems,
     loading,
+    initialized,
+    error,
     searchTerm,
     selectedBrand,
     selectedType,
@@ -366,6 +399,8 @@ export function useInventoryState(): InventoryState {
     inventoryItems,
     filteredAndSortedItems,
     loading,
+    initialized,
+    error,
     searchTerm,
     selectedBrand,
     selectedType,
@@ -376,6 +411,7 @@ export function useInventoryState(): InventoryState {
 // ✅ Only returns actions (no state)
 export function useInventoryActions(): InventoryActions {
   const {
+    initialize,
     setSearchTerm,
     setSelectedBrand,
     setSelectedType,
@@ -389,6 +425,7 @@ export function useInventoryActions(): InventoryActions {
   } = useInventoryContext();
 
   return {
+    initialize,
     setSearchTerm,
     setSelectedBrand,
     setSelectedType,

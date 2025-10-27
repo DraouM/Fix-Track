@@ -1,7 +1,7 @@
 // hooks/usePrintUtils.ts
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Repair } from "@/types/repair";
 import { toast } from "sonner";
 import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
@@ -20,6 +20,14 @@ interface PrintOptions {
 export const usePrintUtils = () => {
   const { generateReceiptCommands, generateStickerCommands, sendToPrinter } =
     useEscPosPrinter();
+
+  // State for printer selection dialog
+  const [isPrinterSelectionOpen, setIsPrinterSelectionOpen] = useState(false);
+  const [pendingPrintJob, setPendingPrintJob] = useState<{
+    repair: Repair;
+    options?: PrintOptions;
+    type: "receipt" | "sticker";
+  } | null>(null);
 
   // Format date for printing
   const formatPrintDate = useCallback((dateString: string) => {
@@ -432,6 +440,13 @@ export const usePrintUtils = () => {
       try {
         // Check if we should use ESC/POS
         if (options?.useEscPos) {
+          // If no printer is specified, open the printer selection dialog
+          if (!options.printerName) {
+            setPendingPrintJob({ repair, options, type: "receipt" });
+            setIsPrinterSelectionOpen(true);
+            return true; // We'll handle the actual printing after selection
+          }
+
           // Generate ESC/POS commands
           const commands = generateReceiptCommands(repair, {
             includePayments: options.includePayments,
@@ -444,14 +459,9 @@ export const usePrintUtils = () => {
           if (result.success) {
             toast.success("✅ ESC/POS receipt printed successfully!");
           } else {
-            // Provide more detailed error information
             toast.error(
-              `❌ Failed to print ESC/POS receipt: ${
-                result.message || "Unknown error"
-              }`
+              `❌ Failed to print ESC/POS receipt: ${result.message}`
             );
-            // Offer fallback to HTML printing
-            toast.info("📄 You can still print using the regular print option");
           }
           return result.success;
         }
@@ -466,10 +476,6 @@ export const usePrintUtils = () => {
       } catch (error) {
         console.error("Receipt printing error:", error);
         toast.error("❌ Print failed. Please check your browser settings.");
-        // Offer fallback to download
-        toast.info(
-          "📄 You can download the receipt as HTML and print manually"
-        );
         return false;
       }
     },
@@ -486,6 +492,13 @@ export const usePrintUtils = () => {
       try {
         // Check if we should use ESC/POS
         if (options?.useEscPos) {
+          // If no printer is specified, open the printer selection dialog
+          if (!options.printerName) {
+            setPendingPrintJob({ repair, options, type: "sticker" });
+            setIsPrinterSelectionOpen(true);
+            return true; // We'll handle the actual printing after selection
+          }
+
           // Generate ESC/POS commands
           const commands = generateStickerCommands(repair, {
             autoCut: true,
@@ -496,14 +509,9 @@ export const usePrintUtils = () => {
           if (result.success) {
             toast.success("✅ ESC/POS sticker printed successfully!");
           } else {
-            // Provide more detailed error information
             toast.error(
-              `❌ Failed to print ESC/POS sticker: ${
-                result.message || "Unknown error"
-              }`
+              `❌ Failed to print ESC/POS sticker: ${result.message}`
             );
-            // Offer fallback to HTML printing
-            toast.info("📄 You can still print using the regular print option");
           }
           return result.success;
         }
@@ -514,10 +522,6 @@ export const usePrintUtils = () => {
       } catch (error) {
         console.error("Sticker printing error:", error);
         toast.error("❌ Print failed. Please check your browser settings.");
-        // Offer fallback to download
-        toast.info(
-          "📄 You can download the sticker as HTML and print manually"
-        );
         return false;
       }
     },
@@ -527,6 +531,29 @@ export const usePrintUtils = () => {
       generateStickerCommands,
       sendToPrinter,
     ]
+  );
+
+  // Handle printer selection from the dialog
+  const handlePrinterSelection = useCallback(
+    async (printerName: string) => {
+      if (!pendingPrintJob) return;
+
+      const { repair, options, type } = pendingPrintJob;
+
+      // Update options with selected printer
+      const updatedOptions = { ...options, printerName };
+
+      // Execute the pending print job
+      if (type === "receipt") {
+        await printReceipt(repair, updatedOptions);
+      } else {
+        await printSticker(repair, updatedOptions);
+      }
+
+      // Clear pending job
+      setPendingPrintJob(null);
+    },
+    [pendingPrintJob, printReceipt, printSticker]
   );
 
   // Keep download as a separate utility function (for manual fallback only)
@@ -569,6 +596,11 @@ export const usePrintUtils = () => {
     printSticker,
     downloadAsHTML,
     generatePrintContent,
+    // Printer selection dialog state and handlers
+    isPrinterSelectionOpen,
+    setIsPrinterSelectionOpen,
+    handlePrinterSelection,
+    pendingPrintJob,
     // Helper function for troubleshooting
     showPrintTroubleshoot: () => {
       toast.info(

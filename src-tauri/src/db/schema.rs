@@ -92,6 +92,38 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
         )",
         [],
     )?;
+
+    // Suppliers table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS suppliers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            contact_name TEXT,
+            email TEXT,
+            phone TEXT,
+            address TEXT,
+            notes TEXT,
+            preferred_payment_method TEXT,
+            credit_balance REAL,
+            active INTEGER NOT NULL DEFAULT 1, -- 1 for active, 0 for inactive
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
+    // Supplier payments table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS supplier_payments (
+            id TEXT PRIMARY KEY,
+            supplier_id TEXT NOT NULL,
+            amount REAL NOT NULL,
+            method TEXT NOT NULL,
+            date TEXT NOT NULL,
+            notes TEXT,
+            FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
     // Sales table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sales (

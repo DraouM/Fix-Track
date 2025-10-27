@@ -5,6 +5,8 @@ import { useState } from "react";
 import { PrinterSelector } from "@/components/helpers/PrinterSelector";
 import { TestEscPosPrint } from "@/components/helpers/TestEscPosPrint";
 import { EscPosTestComponent } from "@/components/helpers/EscPosTestComponent";
+import { PrinterStatusIndicator } from "@/components/helpers/PrinterStatusIndicator";
+import { PrinterSelectionDialog } from "@/components/helpers/PrinterSelectionDialog";
 import {
   Card,
   CardContent,
@@ -16,12 +18,18 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Save, PrinterIcon, AlertCircle } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
+import { usePrintUtils } from "@/hooks/usePrintUtils";
 
 export default function PrintSettingsPage() {
   const [selectedPrinter, setSelectedPrinter] = useState<string>("");
   const [autoCutEnabled, setAutoCutEnabled] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState(false);
+  const {
+    isPrinterSelectionOpen,
+    setIsPrinterSelectionOpen,
+    handlePrinterSelection,
+  } = usePrintUtils();
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -73,6 +81,14 @@ export default function PrintSettingsPage() {
                   selectedPrinter={selectedPrinter}
                 />
               </div>
+
+              {/* Printer Status Indicator */}
+              {selectedPrinter && (
+                <div className="pt-4">
+                  <Label>Printer Status</Label>
+                  <PrinterStatusIndicator printerName={selectedPrinter} />
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -194,6 +210,15 @@ export default function PrintSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Printer Selection Dialog */}
+      <PrinterSelectionDialog
+        open={isPrinterSelectionOpen}
+        onOpenChange={setIsPrinterSelectionOpen}
+        onPrinterSelect={handlePrinterSelection}
+        title="Select Printer"
+        description="Choose a printer for testing"
+      />
     </div>
   );
 }

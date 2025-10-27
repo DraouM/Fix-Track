@@ -33,6 +33,16 @@ const nextConfig: NextConfig = {
   // Experimental optimizations
   experimental: {
     scrollRestoration: true,
+    optimizePackageImports: [
+      "@tauri-apps/api",
+      "@tanstack/react-query",
+      "@tanstack/react-table",
+      "@tanstack/react-virtual",
+      "sonner",
+      "uuid",
+      "date-fns",
+      "recharts",
+    ],
   },
 
   // Bundle optimization
@@ -41,6 +51,18 @@ const nextConfig: NextConfig = {
     if (!dev && !isServer) {
       config.optimization.usedExports = true;
       config.optimization.sideEffects = false;
+
+      // Optimize chunk splitting
+      config.optimization.splitChunks = {
+        chunks: "all",
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: "vendors",
+            chunks: "all",
+          },
+        },
+      };
     }
 
     return config;

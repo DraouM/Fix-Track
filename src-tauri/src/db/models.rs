@@ -46,3 +46,15 @@ pub struct RepairHistory {
     pub details: String,
     pub changed_by: Option<String>,
 }
+
+/// SUPPLIERS
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SupplierHistoryEvent {
+    pub id: String,
+    pub supplier_id: String,
+    pub date: String, // ISO string
+    // pub type: String, // e.g., Payment Made, Credit Adjusted, etc.
+    pub notes: Option<String>,
+    pub amount: Option<f64>,
+    pub changed_by: Option<String>,
+}

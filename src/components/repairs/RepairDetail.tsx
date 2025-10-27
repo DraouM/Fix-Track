@@ -51,11 +51,13 @@ import {
   Download,
 } from "lucide-react";
 import { RepairPaymentForm } from "./RepairPaymentForm";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { toast } from "sonner";
 import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
 import { StickerTemplate } from "@/components/helpers/StickerTemplate";
+import { PrinterSelectionDialog } from "@/components/helpers/PrinterSelectionDialog";
+import { reportError } from "@/lib/crashReporter";
 
 interface RepairDetailProps {
   repair: Repair | null;
@@ -119,8 +121,15 @@ export function RepairDetail({
 }: RepairDetailProps) {
   const { updateRepairStatus } = useRepairActions();
   const { getItemById } = useRepairContext();
-  const { printReceipt, printSticker, downloadAsHTML, showPrintTroubleshoot } =
-    usePrintUtils();
+  const {
+    printReceipt,
+    printSticker,
+    downloadAsHTML,
+    showPrintTroubleshoot,
+    isPrinterSelectionOpen,
+    setIsPrinterSelectionOpen,
+    handlePrinterSelection,
+  } = usePrintUtils();
 
   // Local state for loading indicators
   const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
@@ -129,26 +138,81 @@ export function RepairDetail({
     useState(false);
   const [isGeneratingEscPosSticker, setIsGeneratingEscPosSticker] =
     useState(false);
+  const [hasError, setHasError] = useState(false);
 
   // Get the most up-to-date repair data from context
   const currentRepair = repair ? getItemById(repair.id) || repair : null;
+
+  // Error boundary effect
+  useEffect(() => {
+    const handleError = (error: Error) => {
+      console.error("RepairDetail error:", error);
+      reportError(error, "RepairDetail");
+      setHasError(true);
+      toast.error("❌ An error occurred. Please try again.");
+    };
+
+    // Add error boundary
+    try {
+      // Validate repair data
+      if (repair && !repair.id) {
+        throw new Error("Invalid repair data: missing ID");
+      }
+    } catch (error) {
+      handleError(error as Error);
+    }
+  }, [repair]);
+
+  if (hasError) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Error</DialogTitle>
+            <DialogDescription>
+              An error occurred while loading the repair details. Please try
+              again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            <Button onClick={() => window.location.reload()}>
+              Reload Page
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (!currentRepair) return null;
 
   const repairData: Repair = currentRepair;
 
-  // Print handlers
+  // Print handlers with error handling
   const handlePrintReceipt = async () => {
     if (isGeneratingReceipt) return;
 
     setIsGeneratingReceipt(true);
     try {
-      await printReceipt(repairData, {
+      // Validate repair data before printing
+      if (!repairData.id) {
+        throw new Error("Invalid repair data for printing");
+      }
+
+      const success = await printReceipt(repairData, {
         includePayments: true,
         includeParts: true,
       });
+
+      if (!success) {
+        toast.error("❌ Receipt printing failed. Please try again.");
+      }
     } catch (error) {
       console.error("Failed to print receipt:", error);
+      reportError(error as Error, "RepairDetail.handlePrintReceipt");
       toast.error(
         "❌ Receipt printing failed. Please try again or check your printer."
       );
@@ -162,13 +226,23 @@ export function RepairDetail({
 
     setIsGeneratingEscPosReceipt(true);
     try {
-      await printReceipt(repairData, {
+      // Validate repair data before printing
+      if (!repairData.id) {
+        throw new Error("Invalid repair data for ESC/POS printing");
+      }
+
+      const success = await printReceipt(repairData, {
         includePayments: true,
         includeParts: true,
         useEscPos: true,
       });
+
+      if (!success) {
+        toast.error("❌ ESC/POS receipt printing failed. Please try again.");
+      }
     } catch (error) {
       console.error("Failed to print ESC/POS receipt:", error);
+      reportError(error as Error, "RepairDetail.handlePrintReceiptEscPos");
       toast.error(
         "❌ ESC/POS receipt printing failed. Please try again or check your printer."
       );
@@ -182,9 +256,19 @@ export function RepairDetail({
 
     setIsGeneratingSticker(true);
     try {
-      await printSticker(repairData);
+      // Validate repair data before printing
+      if (!repairData.id) {
+        throw new Error("Invalid repair data for sticker printing");
+      }
+
+      const success = await printSticker(repairData);
+
+      if (!success) {
+        toast.error("❌ Sticker printing failed. Please try again.");
+      }
     } catch (error) {
       console.error("Failed to print sticker:", error);
+      reportError(error as Error, "RepairDetail.handlePrintSticker");
       toast.error(
         "❌ Sticker printing failed. Please try again or check your printer."
       );
@@ -198,11 +282,21 @@ export function RepairDetail({
 
     setIsGeneratingEscPosSticker(true);
     try {
-      await printSticker(repairData, {
+      // Validate repair data before printing
+      if (!repairData.id) {
+        throw new Error("Invalid repair data for ESC/POS sticker printing");
+      }
+
+      const success = await printSticker(repairData, {
         useEscPos: true,
       });
+
+      if (!success) {
+        toast.error("❌ ESC/POS sticker printing failed. Please try again.");
+      }
     } catch (error) {
       console.error("Failed to print ESC/POS sticker:", error);
+      reportError(error as Error, "RepairDetail.handlePrintStickerEscPos");
       toast.error(
         "❌ ESC/POS sticker printing failed. Please try again or check your printer."
       );
@@ -223,19 +317,24 @@ export function RepairDetail({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Date formatting error:", error);
+      return "Invalid Date";
+    }
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="pb-4 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div>
@@ -244,7 +343,9 @@ export function RepairDetail({
                 </DialogTitle>
                 <DialogDescription className="text-base mt-1">
                   Order #{repairData.id} • Created{" "}
-                  {formatDate(repairData.createdAt)}
+                  {repairData.createdAt
+                    ? formatDate(repairData.createdAt)
+                    : "N/A"}
                 </DialogDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -277,7 +378,7 @@ export function RepairDetail({
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">
-                          {repairData.customerName}
+                          {repairData.customerName || "Unknown Customer"}
                         </p>
                         <p className="text-sm text-gray-500">Customer</p>
                       </div>
@@ -288,7 +389,7 @@ export function RepairDetail({
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">
-                          {repairData.customerPhone}
+                          {repairData.customerPhone || "No phone provided"}
                         </p>
                         <p className="text-sm text-gray-500">Phone Number</p>
                       </div>
@@ -311,7 +412,8 @@ export function RepairDetail({
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">
-                          {repairData.deviceBrand} {repairData.deviceModel}
+                          {repairData.deviceBrand || "Unknown"}{" "}
+                          {repairData.deviceModel || "Device"}
                         </p>
                         <p className="text-sm text-gray-500">Device</p>
                       </div>
@@ -324,7 +426,8 @@ export function RepairDetail({
                             Issue Description
                           </p>
                           <p className="text-sm text-gray-600 mt-1">
-                            {repairData.issueDescription}
+                            {repairData.issueDescription ||
+                              "No description provided"}
                           </p>
                         </div>
                       </div>
@@ -430,7 +533,7 @@ export function RepairDetail({
                             Estimated Cost
                           </p>
                           <p className="text-2xl font-bold text-blue-700">
-                            ${repairData.estimatedCost.toFixed(2)}
+                            ${(repairData.estimatedCost || 0).toFixed(2)}
                           </p>
                         </div>
                         <DollarSign className="h-8 w-8 text-blue-500" />
@@ -472,7 +575,9 @@ export function RepairDetail({
                             Last Updated
                           </p>
                           <p className="text-sm font-bold text-orange-700">
-                            {formatDate(repairData.updatedAt)}
+                            {repairData.updatedAt
+                              ? formatDate(repairData.updatedAt)
+                              : "N/A"}
                           </p>
                         </div>
                         <Calendar className="h-8 w-8 text-orange-500" />
@@ -492,77 +597,89 @@ export function RepairDetail({
               </Card>
 
               {/* Payments Card */}
-              {repairData.payments && repairData.payments.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <DollarSign className="h-5 w-5 text-green-600" />
-                      Payment History
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {repairData.payments.map((payment) => (
-                            <TableRow key={payment.id}>
-                              <TableCell>{formatDate(payment.date)}</TableCell>
-                              <TableCell className="text-right">
-                                ${payment.amount.toFixed(2)}
-                              </TableCell>
+              {repairData.payments &&
+                Array.isArray(repairData.payments) &&
+                repairData.payments.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <DollarSign className="h-5 w-5 text-green-600" />
+                        Payment History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Date</TableHead>
+                              <TableHead className="text-right">
+                                Amount
+                              </TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                    <Separator className="my-3" />
-                    <div className="text-right font-semibold">
-                      Total Paid: $
-                      {repairData.payments
-                        .reduce((sum, p) => sum + p.amount, 0)
-                        .toFixed(2)}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                          </TableHeader>
+                          <TableBody>
+                            {repairData.payments.map((payment) => (
+                              <TableRow key={payment.id}>
+                                <TableCell>
+                                  {payment.date
+                                    ? formatDate(payment.date)
+                                    : "N/A"}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  ${(payment.amount || 0).toFixed(2)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      <Separator className="my-3" />
+                      <div className="text-right font-semibold">
+                        Total Paid: $
+                        {repairData.payments
+                          .reduce((sum, p) => sum + (p.amount || 0), 0)
+                          .toFixed(2)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
               {/* Repair History Card */}
-              {repairData.history && repairData.history.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Clock className="h-5 w-5 text-gray-600" />
-                      Repair History
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {repairData.history.slice(0, 5).map((historyItem) => (
-                        <div
-                          key={historyItem.id}
-                          className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                          <div className="flex-1">
-                            <p className="text-sm text-gray-600">
-                              {formatDate(historyItem.timestamp)}
-                            </p>
-                            <p className="text-sm font-medium">
-                              {JSON.stringify(historyItem.event)}
-                            </p>
+              {repairData.history &&
+                Array.isArray(repairData.history) &&
+                repairData.history.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Clock className="h-5 w-5 text-gray-600" />
+                        Repair History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {repairData.history.slice(0, 5).map((historyItem) => (
+                          <div
+                            key={historyItem.id}
+                            className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                          >
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-600">
+                                {historyItem.timestamp
+                                  ? formatDate(historyItem.timestamp)
+                                  : "N/A"}
+                              </p>
+                              <p className="text-sm font-medium">
+                                {JSON.stringify(historyItem.event)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
             </div>
           </div>
 
@@ -657,6 +774,15 @@ export function RepairDetail({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Printer Selection Dialog */}
+      <PrinterSelectionDialog
+        open={isPrinterSelectionOpen}
+        onOpenChange={setIsPrinterSelectionOpen}
+        onPrinterSelect={handlePrinterSelection}
+        title="Select Printer"
+        description="Choose a printer for your document"
+      />
 
       {/* Hidden Print Templates - These are rendered outside the dialog */}
       {repairData && (

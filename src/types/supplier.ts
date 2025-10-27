@@ -54,7 +54,8 @@ export type SupplierHistoryEventType =
   | "Supplier Updated"
   | "Payment Made"
   | "Credit Balance Adjusted"
-  | "Purchase Order Created";
+  | "Purchase Order Created"
+  | "Other";
 
 export interface SupplierHistoryEvent {
   id: string;

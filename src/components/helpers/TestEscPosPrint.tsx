@@ -3,12 +3,19 @@ import { useState } from "react";
 import { testRepairData } from "./test-receipt-data";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Printer, Download, Info } from "lucide-react";
+import { AlertCircle, Printer, Download, Info, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
+import { PrinterSelectionDialog } from "@/components/helpers/PrinterSelectionDialog";
 
 export function TestEscPosPrint() {
-  const { printReceipt, printSticker } = usePrintUtils();
+  const {
+    printReceipt,
+    printSticker,
+    isPrinterSelectionOpen,
+    setIsPrinterSelectionOpen,
+    handlePrinterSelection,
+  } = usePrintUtils();
   const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
   const [isPrintingSticker, setIsPrintingSticker] = useState(false);
 
@@ -111,7 +118,7 @@ export function TestEscPosPrint() {
         >
           {isPrintingReceipt ? (
             <>
-              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Printing...
             </>
           ) : (
@@ -129,7 +136,7 @@ export function TestEscPosPrint() {
         >
           {isPrintingSticker ? (
             <>
-              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Printing...
             </>
           ) : (
@@ -140,6 +147,15 @@ export function TestEscPosPrint() {
           )}
         </Button>
       </div>
+
+      {/* Printer Selection Dialog */}
+      <PrinterSelectionDialog
+        open={isPrinterSelectionOpen}
+        onOpenChange={setIsPrinterSelectionOpen}
+        onPrinterSelect={handlePrinterSelection}
+        title="Select Printer"
+        description="Choose a printer for your test document"
+      />
     </div>
   );
 }

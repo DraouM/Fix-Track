@@ -220,45 +220,100 @@ fn print_to_usb_printer_escpos_with_timeout(
     }
 }
 
-// USB Printer Support with escposify
+// USB Printer Support with escposify and enhanced device handling
 fn print_to_usb_printer_escpos(commands: &[u8]) -> Result<(), String> {
     #[cfg(windows)]
     {
-        // For Windows, we'll try to connect to a generic USB printer using escposify
-        let printer_path = r"\\.\USBPRINT"; // Generic USB printer path
+        // Try multiple approaches for Windows USB printer communication
+        let device_paths = [
+            r"\\.\USBPRINT", // Generic USB printer path
+            r"\\.\LPT1",     // Parallel port fallback
+        ];
 
-        // First check if the device exists and is accessible
-        if !std::path::Path::new(printer_path).exists() {
-            return Err("No USB printer connected".to_string());
-        }
-
-        // Use escposify with a file device for Windows USB printing
-        match std::fs::OpenOptions::new().write(true).open(printer_path) {
-            Ok(file) => {
-                let device = EscposFile::from(file);
-                let mut printer = Printer::new(device, None, None);
-
-                // Send the commands to the printer
-                for byte in commands {
-                    printer
-                        .chain_write_u8(*byte)
-                        .map_err(|e| format!("Failed to send commands to USB printer: {}", e))?;
-                }
-                printer
-                    .flush()
-                    .map_err(|e| format!("Failed to flush USB printer: {}", e))?;
-
-                log_info("Successfully sent commands to USB printer using escposify")?;
-                Ok(())
+        for printer_path in &device_paths {
+            // First check if the device exists and is accessible
+            if !std::path::Path::new(printer_path).exists() {
+                continue;
             }
-            Err(e) => Err(format!("Failed to open USB printer: {}", e)),
+
+            // Try to open with standard file operations
+            match std::fs::OpenOptions::new().write(true).open(printer_path) {
+                Ok(file) => {
+                    let device = EscposFile::from(file);
+                    let mut printer = Printer::new(device, None, None);
+
+                    // Send the commands to the printer
+                    for byte in commands {
+                        printer.chain_write_u8(*byte).map_err(|e| {
+                            format!(
+                                "Failed to send commands to USB printer at {}: {}",
+                                printer_path, e
+                            )
+                        })?;
+                    }
+                    printer.flush().map_err(|e| {
+                        format!("Failed to flush USB printer at {}: {}", printer_path, e)
+                    })?;
+
+                    log_info(&format!(
+                        "Successfully sent commands to USB printer at {} using escposify",
+                        printer_path
+                    ))?;
+                    return Ok(());
+                }
+                Err(_) => {
+                    // Try with different options
+                    match std::fs::OpenOptions::new()
+                        .write(true)
+                        .create(false)
+                        .open(printer_path)
+                    {
+                        Ok(file) => {
+                            let device = EscposFile::from(file);
+                            let mut printer = Printer::new(device, None, None);
+
+                            // Send the commands to the printer
+                            for byte in commands {
+                                printer.chain_write_u8(*byte).map_err(|e| {
+                                    format!(
+                                        "Failed to send commands to USB printer at {}: {}",
+                                        printer_path, e
+                                    )
+                                })?;
+                            }
+                            printer.flush().map_err(|e| {
+                                format!("Failed to flush USB printer at {}: {}", printer_path, e)
+                            })?;
+
+                            log_info(&format!(
+                                "Successfully sent commands to USB printer at {} using escposify",
+                                printer_path
+                            ))?;
+                            return Ok(());
+                        }
+                        Err(_) => continue,
+                    }
+                }
+            }
         }
+
+        // If we get here, we couldn't connect to any USB printer
+        Err("No accessible USB printer found".to_string())
     }
 
     #[cfg(unix)]
     {
         // On Unix systems, we would typically write to /dev/usb/lp0 or similar using escposify
-        let device_paths = ["/dev/usb/lp0", "/dev/usb/lp1", "/dev/usblp0", "/dev/usblp1"];
+        let device_paths = [
+            "/dev/usb/lp0",
+            "/dev/usb/lp1",
+            "/dev/usb/lp2",
+            "/dev/usb/lp3",
+            "/dev/usblp0",
+            "/dev/usblp1",
+            "/dev/usblp2",
+            "/dev/usblp3",
+        ];
 
         // Try each device path until one works
         for device_path in &device_paths {
@@ -267,6 +322,7 @@ fn print_to_usb_printer_escpos(commands: &[u8]) -> Result<(), String> {
                 continue;
             }
 
+            // Try to open with different permissions
             match std::fs::OpenOptions::new().write(true).open(device_path) {
                 Ok(file) => {
                     let device = EscposFile::from(file);
@@ -297,9 +353,50 @@ fn print_to_usb_printer_escpos(commands: &[u8]) -> Result<(), String> {
                         }
                     }
                 }
-                Err(e) => {
-                    log_error(&format!("Failed to open {}: {}", device_path, e))?;
-                    continue;
+                Err(_) => {
+                    // Try with different permissions
+                    match std::fs::OpenOptions::new()
+                        .write(true)
+                        .read(true)
+                        .open(device_path)
+                    {
+                        Ok(file) => {
+                            let device = EscposFile::from(file);
+                            let mut printer = Printer::new(device, None, None);
+
+                            // Send the commands to the printer
+                            for byte in commands {
+                                match printer.chain_write_u8(*byte) {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        log_error(&format!(
+                                            "Failed to write to {}: {}",
+                                            device_path, e
+                                        ))?;
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            match printer.flush() {
+                                Ok(_) => {
+                                    log_info(&format!(
+                                        "Successfully sent commands to USB printer at {} using escposify",
+                                        device_path
+                                    ))?;
+                                    return Ok(());
+                                }
+                                Err(e) => {
+                                    log_error(&format!("Failed to flush {}: {}", device_path, e))?;
+                                    continue;
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            log_error(&format!("Failed to open {}: {}", device_path, e))?;
+                            continue;
+                        }
+                    }
                 }
             }
         }
@@ -390,7 +487,7 @@ fn print_to_usb_printer_with_timeout(commands: &[u8], timeout: Duration) -> Resu
     }
 }
 
-// USB Printer Support (original implementation)
+// USB Printer Support with enhanced detection
 fn get_usb_printers() -> Result<Vec<String>, String> {
     let mut printers = Vec::new();
 
@@ -405,7 +502,7 @@ fn get_usb_printers() -> Result<Vec<String>, String> {
 
         // Run the USB printer detection in a separate thread with timeout
         let _handle = thread::spawn(move || {
-            let result = std::panic::catch_unwind(|| get_windows_usb_printers());
+            let result = std::panic::catch_unwind(|| get_windows_usb_printers_enhanced());
             let _ = sender.send(result);
         });
 
@@ -424,7 +521,7 @@ fn get_usb_printers() -> Result<Vec<String>, String> {
 
     #[cfg(unix)]
     {
-        match get_unix_usb_printers() {
+        match get_unix_usb_printers_enhanced() {
             Ok(usb_printers) => printers.extend(usb_printers),
             Err(e) => log_error(&format!("Failed to get Unix USB printers: {}", e))?,
         }
@@ -434,13 +531,27 @@ fn get_usb_printers() -> Result<Vec<String>, String> {
 }
 
 #[cfg(windows)]
-fn get_windows_usb_printers() -> Result<Vec<String>, String> {
+fn get_windows_usb_printers_enhanced() -> Result<Vec<String>, String> {
     use std::mem;
     use std::ptr;
     use winapi::shared::minwindef::*;
     use winapi::um::setupapi::*;
 
     let mut printers = Vec::new();
+
+    // Common ESC/POS printer VIDs
+    let escpos_vids = [
+        "04b8", // Epson
+        "0416", // Generic
+        "0483", // STMicroelectronics
+        "0471", // Philips
+        "0525", // Netchip
+        "067b", // Prolific
+        "03f0", // HP
+        "04f9", // Brother
+        "1504", // Xprinter
+        "0493", // Seiko Instruments
+    ];
 
     unsafe {
         // Define the USB device class GUID (GUID_DEVCLASS_USB)
@@ -470,30 +581,61 @@ fn get_windows_usb_printers() -> Result<Vec<String>, String> {
                 break;
             }
 
-            // Get the device description with bounds checking
-            let mut device_desc_buffer = [0u16; 256];
-            let mut required_size = 0;
-
-            if SetupDiGetDeviceRegistryPropertyW(
+            // Get the device instance ID
+            let mut instance_id_buffer = [0u16; 256];
+            if SetupDiGetDeviceInstanceIdW(
                 device_info_set,
-                &mut device_info_data as *mut SP_DEVINFO_DATA,
-                SPDRP_DEVICEDESC,
+                &mut device_info_data,
+                instance_id_buffer.as_mut_ptr(),
+                instance_id_buffer.len() as DWORD,
                 ptr::null_mut(),
-                device_desc_buffer.as_mut_ptr() as *mut u8,
-                (device_desc_buffer.len() * 2) as DWORD,
-                &mut required_size,
             ) != 0
             {
-                // Convert wide string to regular string with proper bounds checking
-                let device_desc = {
-                    let len = (required_size as usize / 2).min(device_desc_buffer.len() - 1);
-                    device_desc_buffer[len] = 0; // Ensure null termination
-                    String::from_utf16_lossy(&device_desc_buffer[..len])
-                };
+                // Extract VID and PID from instance ID
+                let instance_id = String::from_utf16_lossy(&instance_id_buffer);
+                if let Some((vid, pid)) = extract_vid_pid_from_instance_id(&instance_id) {
+                    // Check if this is a known ESC/POS printer VID
+                    if escpos_vids.contains(&vid.as_str()) {
+                        // Get the device description
+                        let mut device_desc_buffer = [0u16; 256];
+                        let mut required_size = 0;
 
-                // Only add USB printers
-                if device_desc.contains("USB") {
-                    printers.push(format!("USB Printer: {}", device_desc));
+                        if SetupDiGetDeviceRegistryPropertyW(
+                            device_info_set,
+                            &mut device_info_data as *mut SP_DEVINFO_DATA,
+                            SPDRP_DEVICEDESC,
+                            ptr::null_mut(),
+                            device_desc_buffer.as_mut_ptr() as *mut u8,
+                            (device_desc_buffer.len() * 2) as DWORD,
+                            &mut required_size,
+                        ) != 0
+                        {
+                            // Convert wide string to regular string
+                            let device_desc = {
+                                let len =
+                                    (required_size as usize / 2).min(device_desc_buffer.len() - 1);
+                                device_desc_buffer[len] = 0;
+                                String::from_utf16_lossy(&device_desc_buffer[..len])
+                            };
+
+                            // Try to get the device interface for communication
+                            if let Ok(device_path) =
+                                get_usb_printer_device_path(&device_info_data, device_info_set)
+                            {
+                                printers.push(format!(
+                                    "USB Printer: {} (VID: {}, PID: {}, Path: {})",
+                                    device_desc, vid, pid, device_path
+                                ));
+                            } else {
+                                printers.push(format!(
+                                    "USB Printer: {} (VID: {}, PID: {})",
+                                    device_desc, vid, pid
+                                ));
+                            }
+                        } else {
+                            printers.push(format!("USB Printer (VID: {}, PID: {})", vid, pid));
+                        }
+                    }
                 }
             }
 
@@ -512,67 +654,107 @@ fn get_windows_usb_printers() -> Result<Vec<String>, String> {
     Ok(printers)
 }
 
-// Helper function to test if a specific USB printer is accessible
 #[cfg(windows)]
-fn test_usb_printer_connection(vid: &str, _pid: &str) -> bool {
-    // Common printer vendor IDs
-    let common_printer_vids = ["04b8", "0416", "0483", "0471", "0525", "067b"]; // EPSON, Generic, STMicro, PHILIPS, etc.
-
-    if common_printer_vids.contains(&vid.to_lowercase().as_str()) {
-        // Try to construct a more specific device path and test access
-        // For ESC/POS printers, we'll try the standard USB printer path
-        test_generic_usb_printer_connection()
-    } else {
-        // For unknown VID, we'll be conservative and not test connection
-        // to avoid potential hangs
-        true // Assume it's accessible
-    }
-}
-
-// Helper function to test if a generic USB printer is accessible
-#[cfg(windows)]
-fn test_generic_usb_printer_connection() -> bool {
-    // Try to open the generic USB printer device
-    let printer_path = r"\\.\USBPRINT";
-
-    use std::ffi::OsString;
-    use std::os::windows::ffi::OsStrExt;
-    use std::ptr;
-    use winapi::um::fileapi::{CreateFileW, OPEN_EXISTING};
-    use winapi::um::handleapi::CloseHandle;
-    use winapi::um::winnt::{FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ, GENERIC_WRITE};
-
-    let wide_path: Vec<u16> = OsString::from(printer_path)
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect();
-
-    unsafe {
-        let handle = CreateFileW(
-            wide_path.as_ptr(),
-            GENERIC_WRITE,
-            FILE_SHARE_READ,
-            ptr::null_mut(),
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            ptr::null_mut(),
-        );
-
-        if handle != winapi::um::handleapi::INVALID_HANDLE_VALUE {
-            CloseHandle(handle);
-            true
-        } else {
-            // Don't hang on failure, just return false
-            false
+fn extract_vid_pid_from_instance_id(instance_id: &str) -> Option<(String, String)> {
+    // Instance ID format: USB\VID_04B8&PID_0202\5&3753798&0&2
+    let parts: Vec<&str> = instance_id.split('\\').collect();
+    if parts.len() >= 2 {
+        let vid_pid_part = parts[1]; // VID_04B8&PID_0202
+        let vid_pid_parts: Vec<&str> = vid_pid_part.split('&').collect();
+        if vid_pid_parts.len() >= 2 {
+            let vid = vid_pid_parts[0].strip_prefix("VID_")?.to_lowercase();
+            let pid = vid_pid_parts[1].strip_prefix("PID_")?.to_lowercase();
+            return Some((vid, pid));
         }
     }
+    None
+}
+
+#[cfg(windows)]
+fn get_usb_printer_device_path(
+    device_info_data: &winapi::um::setupapi::SP_DEVINFO_DATA,
+    device_info_set: winapi::um::setupapi::HDEVINFO,
+) -> Result<String, String> {
+    use std::mem;
+    use std::ptr;
+    use winapi::shared::minwindef::*;
+    use winapi::um::setupapi::*;
+
+    unsafe {
+        // Get device interface data
+        let mut interface_data: SP_DEVICE_INTERFACE_DATA = mem::zeroed();
+        interface_data.cbSize = mem::size_of::<SP_DEVICE_INTERFACE_DATA>() as DWORD;
+
+        // Try to get the device interface for the printer class
+        let printer_interface_guid = winapi::shared::guiddef::GUID {
+            Data1: 0x4D36E978,
+            Data2: 0xE325,
+            Data3: 0x11CE,
+            Data4: [0xBF, 0xC1, 0x08, 0x00, 0x2B, 0xE1, 0x03, 0x18], // Printer class GUID
+        };
+
+        let mut interface_index = 0;
+        loop {
+            if SetupDiEnumDeviceInterfaces(
+                device_info_set,
+                device_info_data as *const SP_DEVINFO_DATA as *mut SP_DEVINFO_DATA,
+                &printer_interface_guid,
+                interface_index,
+                &mut interface_data,
+            ) == 0
+            {
+                break;
+            }
+
+            // Get the required size for the device interface detail
+            let mut required_size = 0;
+            SetupDiGetDeviceInterfaceDetailW(
+                device_info_set,
+                &mut interface_data,
+                ptr::null_mut(),
+                0,
+                &mut required_size,
+                ptr::null_mut(),
+            );
+
+            if required_size == 0 {
+                interface_index += 1;
+                continue;
+            }
+
+            // Allocate buffer for device interface detail
+            let mut detail_data_buffer = vec![0u16; (required_size as usize + 2) / 2];
+            let detail_data =
+                detail_data_buffer.as_mut_ptr() as *mut SP_DEVICE_INTERFACE_DETAIL_DATA_W;
+            (*detail_data).cbSize = mem::size_of::<SP_DEVICE_INTERFACE_DETAIL_DATA_W>() as DWORD;
+
+            if SetupDiGetDeviceInterfaceDetailW(
+                device_info_set,
+                &mut interface_data,
+                detail_data,
+                required_size,
+                ptr::null_mut(),
+                ptr::null_mut(),
+            ) != 0
+            {
+                // Extract the device path
+                let device_path = String::from_utf16_lossy(&detail_data_buffer[2..]);
+                return Ok(device_path.trim_end_matches('\0').to_string());
+            }
+
+            interface_index += 1;
+        }
+    }
+
+    // Fallback to generic USB printer path
+    Ok("\\\\.\\USBPRINT".to_string())
 }
 
 #[cfg(unix)]
-fn get_unix_usb_printers() -> Result<Vec<String>, String> {
+fn get_unix_usb_printers_enhanced() -> Result<Vec<String>, String> {
     let mut printers = Vec::new();
 
-    // Method 1: Check standard USB printer device paths
+    // Method 1: Check standard USB printer device paths with enhanced detection
     let device_paths = [
         "/dev/usb/lp0",
         "/dev/usb/lp1",
@@ -590,10 +772,12 @@ fn get_unix_usb_printers() -> Result<Vec<String>, String> {
 
     for device_path in &device_paths {
         if std::path::Path::new(device_path).exists() {
-            // Try to get more information about the device
-            match get_unix_device_info(device_path) {
+            // Try to get more detailed information about the device
+            match get_unix_device_info_enhanced(device_path) {
                 Ok(info) => {
-                    if info.to_lowercase().contains("printer") {
+                    if info.to_lowercase().contains("printer")
+                        || info.to_lowercase().contains("escpos")
+                    {
                         printers.push(format!("{} ({})", info, device_path));
                     } else {
                         // If we can't determine it's a printer from the info,
@@ -609,17 +793,14 @@ fn get_unix_usb_printers() -> Result<Vec<String>, String> {
         }
     }
 
-    // Method 2: Use lsusb to enumerate USB devices
-    match enumerate_usb_devices_with_lsusb() {
+    // Method 2: Use lsusb to enumerate USB devices with enhanced filtering
+    match enumerate_usb_devices_with_lsusb_enhanced() {
         Ok(usb_devices) => {
             for device in usb_devices {
-                // Check if it's a known printer device
-                if is_known_printer_device(&device.vid, &device.pid) {
-                    printers.push(format!(
-                        "{} {} (VID: {}, PID: {})",
-                        device.manufacturer, device.product, device.vid, device.pid
-                    ));
-                }
+                printers.push(format!(
+                    "{} {} (VID: {}, PID: {})",
+                    device.manufacturer, device.product, device.vid, device.pid
+                ));
             }
         }
         Err(e) => {
@@ -633,12 +814,11 @@ fn get_unix_usb_printers() -> Result<Vec<String>, String> {
     Ok(printers)
 }
 
-// Helper function to get device information on Unix systems
 #[cfg(unix)]
-fn get_unix_device_info(device_path: &str) -> Result<String, String> {
+fn get_unix_device_info_enhanced(device_path: &str) -> Result<String, String> {
     use std::process::Command;
 
-    // Try to get device information using udevadm or lsusb
+    // Try to get device information using udevadm
     let output = Command::new("udevadm")
         .args(&["info", "--query=property", "--name", device_path])
         .output();
@@ -650,6 +830,8 @@ fn get_unix_device_info(device_path: &str) -> Result<String, String> {
             for line in stdout.lines() {
                 if line.starts_with("ID_MODEL=") {
                     return Ok(line[9..].to_string());
+                } else if line.starts_with("ID_VENDOR=") {
+                    return Ok(line[10..].to_string());
                 }
             }
             Ok(format!("USB Device ({})", device_path))
@@ -678,11 +860,25 @@ struct UsbDevice {
     product: String,
 }
 
-// Enumerate USB devices using lsusb
+// Enumerate USB devices using lsusb with enhanced filtering
 #[cfg(unix)]
-fn enumerate_usb_devices_with_lsusb() -> Result<Vec<UsbDevice>, String> {
+fn enumerate_usb_devices_with_lsusb_enhanced() -> Result<Vec<UsbDevice>, String> {
     use regex::Regex;
     use std::process::Command;
+
+    // Common ESC/POS printer VIDs
+    let escpos_vids = [
+        "04b8", // Epson
+        "0416", // Generic
+        "0483", // STMicroelectronics
+        "0471", // Philips
+        "0525", // Netchip
+        "067b", // Prolific
+        "03f0", // HP
+        "04f9", // Brother
+        "1504", // Xprinter
+        "0493", // Seiko Instruments
+    ];
 
     let output = Command::new("lsusb")
         .output()
@@ -707,34 +903,28 @@ fn enumerate_usb_devices_with_lsusb() -> Result<Vec<UsbDevice>, String> {
                 let pid = captures[2].to_string();
                 let manufacturer_product = captures[3].to_string();
 
-                // Split manufacturer and product
-                let parts: Vec<&str> = manufacturer_product.splitn(2, ' ').collect();
-                let (manufacturer, product) = if parts.len() >= 2 {
-                    (parts[0].to_string(), parts[1..].join(" "))
-                } else {
-                    (manufacturer_product.clone(), manufacturer_product)
-                };
+                // Check if this is a known ESC/POS printer
+                if escpos_vids.contains(&vid.as_str()) {
+                    // Split manufacturer and product
+                    let parts: Vec<&str> = manufacturer_product.splitn(2, ' ').collect();
+                    let (manufacturer, product) = if parts.len() >= 2 {
+                        (parts[0].to_string(), parts[1..].join(" "))
+                    } else {
+                        (manufacturer_product.clone(), manufacturer_product)
+                    };
 
-                devices.push(UsbDevice {
-                    vid,
-                    pid,
-                    manufacturer,
-                    product,
-                });
+                    devices.push(UsbDevice {
+                        vid,
+                        pid,
+                        manufacturer,
+                        product,
+                    });
+                }
             }
         }
     }
 
     Ok(devices)
-}
-
-// Check if a device is a known printer based on VID/PID
-#[cfg(unix)]
-fn is_known_printer_device(vid: &str, pid: &str) -> bool {
-    // Common printer vendor IDs
-    let common_printer_vids = ["04b8", "0416", "0483", "0471", "0525", "067b"]; // EPSON, Generic, STMicro, PHILIPS, etc.
-
-    common_printer_vids.contains(&vid.to_lowercase().as_str())
 }
 
 fn print_to_usb_printer(commands: &[u8]) -> Result<(), String> {

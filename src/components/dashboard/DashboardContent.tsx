@@ -35,10 +35,10 @@
 // }
 
 // export function DashboardContent({
-//   items,
-//   loading,
-//   error,
-//   success,
+//   items = [],
+//   loading = false,
+//   error = "",
+//   success = "",
 //   onInitDatabase,
 //   onAddTestItem,
 //   onLoadItems,
@@ -558,6 +558,8 @@ export function DashboardContent() {
             value={`$${totalInventoryValue.toLocaleString()}`}
             subtitle={`Potential profit: $${potentialProfit.toLocaleString()}`}
             color="blue"
+            trend={undefined}
+            trendUp={undefined}
           />
           <StatCard
             icon={TrendingUp}
@@ -566,6 +568,7 @@ export function DashboardContent() {
             trend={Math.abs(revenueChange)}
             trendUp={parseFloat(revenueChange) > 0}
             color="green"
+            subtitle={undefined}
           />
           <StatCard
             icon={Wrench}
@@ -573,6 +576,8 @@ export function DashboardContent() {
             value={activeRepairs}
             subtitle={`${completedRepairs} completed this month`}
             color="orange"
+            trend={undefined}
+            trendUp={undefined}
           />
           <StatCard
             icon={AlertTriangle}
@@ -580,6 +585,8 @@ export function DashboardContent() {
             value={outOfStockItems.length + lowStockItems.length}
             subtitle={`${outOfStockItems.length} out of stock`}
             color="red"
+            trend={undefined}
+            trendUp={undefined}
           />
         </div>
 

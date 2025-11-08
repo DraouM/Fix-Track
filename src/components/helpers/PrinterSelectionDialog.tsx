@@ -67,7 +67,28 @@ export function PrinterSelectionDialog({
 
   const handleConfirm = () => {
     if (selectedPrinter) {
-      onPrinterSelect(selectedPrinter);
+      // Extract printer address from the selected printer string
+      // Format: "USB Printer: Name (VID: xxxx, PID: xxxx, Path: path)" or "Network Printer (IP:PORT)"
+      let printerAddress = selectedPrinter;
+      
+      // Try to extract address from printer string
+      if (selectedPrinter.includes("(") && selectedPrinter.includes(")")) {
+        const addrStart = selectedPrinter.indexOf("(");
+        const addrEnd = selectedPrinter.indexOf(")");
+        const addressPart = selectedPrinter.substring(addrStart + 1, addrEnd);
+        
+        // Check if it's a network printer (contains IP:PORT)
+        if (addressPart.includes(":") && addressPart.split(":").length === 2) {
+          const parts = addressPart.split(":");
+          if (parts[0].match(/^\d+\.\d+\.\d+\.\d+$/) || parts[0].includes(".")) {
+            printerAddress = addressPart; // Use IP:PORT format
+          }
+        } else if (addressPart.startsWith("USB:") || addressPart.startsWith("\\\\.\\")) {
+          printerAddress = addressPart;
+        }
+      }
+      
+      onPrinterSelect(printerAddress);
       onOpenChange(false);
     } else {
       toast.error("Please select a printer");

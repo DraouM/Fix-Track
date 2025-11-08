@@ -4,7 +4,6 @@ import React, { useRef, useState, memo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { InventoryItem } from "@/types/inventory";
 import type { SortConfig } from "@/hooks/useInventoryFilters";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,7 +28,6 @@ import {
   Trash,
   TrendingUp,
   TrendingDown,
-  Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -63,15 +61,15 @@ const SortableHeader = ({
 }) => (
   <Tooltip>
     <TooltipTrigger asChild>
-      <Button
-        variant="ghost"
-        onClick={() => onSort(columnKey)}
-        className={cn(
-          "h-auto p-0 font-semibold hover:bg-transparent hover:text-foreground",
-          sortConfig?.key === columnKey && "text-foreground",
-          className
-        )}
-      >
+        <Button
+          variant="ghost"
+          onClick={() => onSort(columnKey)}
+          className={cn(
+            "h-auto p-0 text-sm font-medium hover:bg-transparent hover:text-foreground",
+            sortConfig?.key === columnKey && "text-foreground",
+            className
+          )}
+        >
         <div className="flex items-center gap-1.5">
           {children}
           <div
@@ -114,10 +112,6 @@ const InventoryRow = memo(function InventoryRow({
   onDelete: (id: string) => void;
 }) {
   const profit = (item.sellingPrice ?? 0) - (item.buyingPrice ?? 0);
-  const profitPercentage = item.buyingPrice
-    ? (profit / item.buyingPrice) * 100
-    : 0;
-
   const isPositive = profit > 0;
   const isNegative = profit < 0;
 
@@ -130,17 +124,17 @@ const InventoryRow = memo(function InventoryRow({
     <div
       key={item.id}
       role="row"
-      className="absolute top-0 left-0 w-full flex items-center border-b hover:bg-muted/50 transition-colors group"
+      className="absolute top-0 left-0 w-full flex items-center border-b border-border/40 hover:bg-muted/30 transition-colors group"
       style={{
         height: `${virtualRow.size}px`,
         transform: `translateY(${virtualRow.start}px)`,
       }}
     >
       {/* Product Name */}
-      <div className="flex-[2] pl-4 font-medium truncate pr-2">
+      <div className="flex-[2] pl-4 truncate pr-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="truncate block cursor-default">
+            <span className="truncate block cursor-default text-sm">
               {item.itemName}
             </span>
           </TooltipTrigger>
@@ -152,82 +146,67 @@ const InventoryRow = memo(function InventoryRow({
 
       {/* Brand */}
       <div className="flex-1">
-        <Badge variant="outline" className="font-medium">
+        <span className="text-sm text-muted-foreground">
           {item.phoneBrand}
-        </Badge>
+        </span>
       </div>
 
       {/* Category */}
       <div className="flex-1">
-        <Badge variant="secondary" className="font-medium">
+        <span className="text-sm text-muted-foreground">
           {item.itemType}
-        </Badge>
+        </span>
       </div>
 
       {/* Cost */}
-      <div className="flex-1 text-right pr-4 font-mono font-semibold">
+      <div className="flex-1 text-right pr-4 font-mono text-sm text-muted-foreground">
         ${(item.buyingPrice ?? 0).toFixed(2)}
       </div>
 
       {/* Price */}
-      <div className="flex-1 text-right pr-4 font-mono font-semibold text-blue-600">
+      <div className="flex-1 text-right pr-4 font-mono text-sm text-foreground">
         ${(item.sellingPrice ?? 0).toFixed(2)}
       </div>
 
       {/* Profit */}
       <div className="flex-1 text-right pr-4">
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex items-center justify-end gap-1.5">
+          {isPositive && <TrendingUp className="h-3.5 w-3.5 text-green-600" />}
+          {isNegative && <TrendingDown className="h-3.5 w-3.5 text-red-600" />}
           <span
             className={cn(
-              "font-mono text-sm font-semibold px-2 py-1 rounded-md",
-              isPositive && "text-green-600 bg-green-50",
-              isNegative && "text-red-600 bg-red-50",
-              !isPositive && !isNegative && "text-muted-foreground bg-muted"
+              "font-mono text-sm",
+              isPositive && "text-green-600",
+              isNegative && "text-red-600",
+              !isPositive && !isNegative && "text-muted-foreground"
             )}
           >
             ${Math.abs(profit).toFixed(2)}
           </span>
-          <div className="flex items-center gap-1">
-            {isPositive && <TrendingUp className="h-3 w-3 text-green-600" />}
-            {isNegative && <TrendingDown className="h-3 w-3 text-red-600" />}
-            {!isPositive && !isNegative && (
-              <Minus className="h-3 w-3 text-muted-foreground" />
-            )}
-            <span
-              className={cn(
-                "text-xs font-medium",
-                isPositive && "text-green-600",
-                isNegative && "text-red-600",
-                !isPositive && !isNegative && "text-muted-foreground"
-              )}
-            >
-              {profitPercentage >= 0 ? "+" : ""}
-              {profitPercentage.toFixed(1)}%
-            </span>
-          </div>
         </div>
       </div>
 
       {/* Stock */}
       <div className="flex-1 text-right pr-4">
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-1.5">
           {(isOutOfStock || isLowStock) && (
             <AlertTriangle
               className={cn(
-                "h-4 w-4",
+                "h-3.5 w-3.5",
                 isOutOfStock ? "text-red-500" : "text-amber-500"
               )}
             />
           )}
-          <Badge
-            variant={isOutOfStock ? "destructive" : "secondary"}
+          <span
             className={cn(
-              "font-mono font-semibold min-w-[3rem]",
-              isLowStock && "bg-amber-50 text-amber-700 border-amber-200"
+              "font-mono text-sm min-w-[2.5rem] text-right",
+              isOutOfStock && "text-red-600 font-medium",
+              isLowStock && "text-amber-600",
+              !isOutOfStock && !isLowStock && "text-muted-foreground"
             )}
           >
             {quantity}
-          </Badge>
+          </span>
         </div>
       </div>
 
@@ -282,14 +261,14 @@ export const VirtualizedTable = memo(function VirtualizedTable({
   });
 
   return (
-    <div className="border rounded-lg bg-background shadow-sm">
+    <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
       <TooltipProvider>
         {/* Header */}
         <div
-          className="sticky top-0 bg-muted/50 backdrop-blur-sm border-b z-10"
+          className="sticky top-0 bg-muted/30 backdrop-blur-sm border-b border-border/40 z-10"
           style={{ height: HEADER_HEIGHT }}
         >
-          <div className="flex w-full h-full items-center text-sm">
+          <div className="flex w-full h-full items-center text-sm text-muted-foreground">
             <div className="flex-[2] pl-4">
               <SortableHeader
                 columnKey="itemName"
@@ -360,7 +339,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 Stock
               </SortableHeader>
             </div>
-            <div className="w-24 text-center pr-4 text-muted-foreground font-semibold">
+            <div className="w-24 text-center pr-4 text-muted-foreground text-sm font-medium">
               Actions
             </div>
           </div>

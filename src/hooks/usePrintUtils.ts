@@ -15,6 +15,7 @@ interface PrintOptions {
   format?: "receipt" | "sticker" | "invoice";
   useEscPos?: boolean;
   printerName?: string;
+  printerAddress?: string; // Printer address (IP:PORT, USB:path, or Bluetooth address)
 }
 
 export const usePrintUtils = () => {
@@ -454,8 +455,9 @@ export const usePrintUtils = () => {
             autoCut: true,
           });
 
-          // Send commands to printer
-          const result = await sendToPrinter(commands);
+          // Send commands to printer with selected printer address
+          const printerAddress = options.printerName || options.printerAddress;
+          const result = await sendToPrinter(commands, printerAddress);
           if (result.success) {
             toast.success("✅ ESC/POS receipt printed successfully!");
           } else {
@@ -504,8 +506,9 @@ export const usePrintUtils = () => {
             autoCut: true,
           });
 
-          // Send commands to printer
-          const result = await sendToPrinter(commands);
+          // Send commands to printer with selected printer address
+          const printerAddress = options.printerName || options.printerAddress;
+          const result = await sendToPrinter(commands, printerAddress);
           if (result.success) {
             toast.success("✅ ESC/POS sticker printed successfully!");
           } else {

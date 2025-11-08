@@ -38,7 +38,8 @@ export const useEscPosPrinter = () => {
 
   // Send ESC/POS commands to printer via Tauri backend
   const sendToPrinter = async (
-    commands: Uint8Array
+    commands: Uint8Array,
+    printerAddress?: string
   ): Promise<{ success: boolean; message: string }> => {
     try {
       // Validate input
@@ -59,6 +60,7 @@ export const useEscPosPrinter = () => {
       const result = await Promise.race([
         invoke<string>("print_escpos_commands", {
           commands: commandsArray,
+          printer_address: printerAddress || null,
         }),
         new Promise<string>((_, reject) =>
           setTimeout(
@@ -71,8 +73,15 @@ export const useEscPosPrinter = () => {
       console.log("Print result:", result);
       return { success: true, message: result as string };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
+      // Handle different error types (Tauri errors, standard Errors, strings, etc.)
+      let errorMessage = "Unknown error occurred";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "string") {
+        errorMessage = error;
+      } else if (error && typeof error === "object" && "message" in error) {
+        errorMessage = String(error.message);
+      }
       console.error("Failed to send print commands:", errorMessage);
 
       // Provide user-friendly error messages

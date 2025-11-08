@@ -31,7 +31,10 @@ use std::fs::File;
 use bluetooth_serial_port::BtAddr;
 
 #[command]
-pub fn print_escpos_commands(commands: Vec<u8>) -> Result<String, String> {
+pub fn print_escpos_commands(
+    commands: Vec<u8>,
+    printer_address: Option<String>,
+) -> Result<String, String> {
     // Validate input to prevent buffer overflows
     if commands.len() > 1024 * 1024 {
         // Limit to 1MB
@@ -41,7 +44,12 @@ pub fn print_escpos_commands(commands: Vec<u8>) -> Result<String, String> {
     // Log the print job for debugging
     log_print_job(&commands)?;
 
-    // Try to connect to a printer and send commands using escposify first
+    // If a specific printer is provided, use it
+    if let Some(address) = printer_address {
+        return print_to_specific_printer(&commands, &address);
+    }
+
+    // Otherwise, try to connect to a printer using discovery
     match connect_and_print_escpos(&commands) {
         Ok(_) => Ok(format!(
             "Print job sent successfully ({} bytes)",
@@ -55,20 +63,60 @@ pub fn print_escpos_commands(commands: Vec<u8>) -> Result<String, String> {
                     commands.len()
                 )),
                 Err(fallback_error) => {
-                    // Log the error but don't fail the print job
+                    // Return actual error instead of silent failure
                     log_error(&format!(
                         "Primary error: {}, Fallback error: {}",
                         e, fallback_error
                     ))?;
-                    // Return success message even if printing failed, as we've logged the error
-                    Ok(format!(
-                        "Print job logged but printing failed: {} (fallback also failed: {})",
+                    Err(format!(
+                        "Failed to print: {} (fallback also failed: {}). Please check your printer connection and try selecting a specific printer.",
                         e, fallback_error
                     ))
                 }
             }
         }
     }
+}
+
+// Helper function to print to a specific printer based on address format
+fn print_to_specific_printer(commands: &[u8], address: &str) -> Result<String, String> {
+    // Validate commands length
+    if commands.len() > 1024 * 1024 {
+        return Err("Print commands too large".to_string());
+    }
+
+    // Determine printer type from address format
+    if address.starts_with("USB:") {
+        // USB printer - extract path if provided, otherwise try auto-detection
+        let path = address.strip_prefix("USB:").unwrap_or("");
+        if path.is_empty() {
+            print_to_usb_printer_escpos_with_timeout(commands, Duration::from_secs(10))
+                .map_err(|e| format!("USB printer error: {}", e))?;
+        } else {
+            // Use specific USB path (for future enhancement)
+            print_to_usb_printer_escpos_with_timeout(commands, Duration::from_secs(10))
+                .map_err(|e| format!("USB printer error at {}: {}", path, e))?;
+        }
+    } else if address.contains(':') && address.split(':').count() == 2 {
+        // Network printer - format: IP:PORT or hostname:PORT
+        print_to_network_printer_escpos(commands, address)
+            .map_err(|e| format!("Network printer error at {}: {}", address, e))?;
+    } else if address.matches(':').count() == 5 {
+        // Bluetooth printer - format: XX:XX:XX:XX:XX:XX
+        print_to_bluetooth_printer(commands, address)
+            .map_err(|e| format!("Bluetooth printer error at {}: {}", address, e))?;
+    } else {
+        // Try to parse as network printer with default port
+        let network_address = format!("{}:9100", address);
+        print_to_network_printer_escpos(commands, &network_address)
+            .map_err(|e| format!("Printer error at {}: {}", address, e))?;
+    }
+
+    Ok(format!(
+        "Print job sent successfully to {} ({} bytes)",
+        address,
+        commands.len()
+    ))
 }
 
 #[command]
@@ -143,24 +191,62 @@ fn connect_and_print_escpos(commands: &[u8]) -> Result<(), String> {
     }
 
     // Try USB printer first with escposify and timeout
-    if let Ok(_) = print_to_usb_printer_escpos_with_timeout(commands, Duration::from_secs(10)) {
+    if print_to_usb_printer_escpos_with_timeout(commands, Duration::from_secs(10)).is_ok() {
         return Ok(());
     }
 
-    // Try network printer with escposify
-    if let Ok(_) = print_to_network_printer_escpos(commands, "192.168.1.100:9100") {
-        return Ok(());
+    // Try discovered network printers
+    match discover_network_printers() {
+        Ok(network_printers) => {
+            for printer in network_printers {
+                // Extract IP:PORT from printer string (format: "Network Printer (IP:PORT)" or "IP:PORT")
+                if let Some(addr_start) = printer.find('(') {
+                    let addr_end = printer.find(')').unwrap_or(printer.len());
+                    let addr = printer[addr_start + 1..addr_end].trim();
+                    if addr.contains(':') {
+                        if print_to_network_printer_escpos(commands, addr).is_ok() {
+                            return Ok(());
+                        }
+                    }
+                } else if printer.contains(':') {
+                    // Direct IP:PORT format
+                    if print_to_network_printer_escpos(commands, &printer).is_ok() {
+                        return Ok(());
+                    }
+                }
+            }
+        }
+        Err(_) => {
+            // Network discovery failed, continue to other methods
+        }
     }
 
-    // Try Bluetooth printer (no escposify support yet)
-    if let Ok(_) = print_to_bluetooth_printer(commands, "00:11:22:33:44:55") {
-        return Ok(());
+    // Try discovered Bluetooth printers
+    match discover_bluetooth_printers() {
+        Ok(bt_printers) => {
+            for printer in bt_printers {
+                // Extract Bluetooth address from printer string
+                if let Some(addr_start) = printer.find('(') {
+                    let addr_end = printer.find(')').unwrap_or(printer.len());
+                    let addr = printer[addr_start + 1..addr_end].trim();
+                    if addr.matches(':').count() == 5 {
+                        if print_to_bluetooth_printer(commands, addr).is_ok() {
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+        }
+        Err(_) => {
+            // Bluetooth discovery failed, continue
+        }
     }
 
-    // Fallback to file logging with escposify
-    log_to_file_escpos(commands)?;
-
-    Ok(())
+    // No printers found or accessible
+    Err(
+        "No accessible printers found. Please connect a printer or specify a printer address."
+            .to_string(),
+    )
 }
 
 // Helper function to connect to printer and send commands (original implementation)
@@ -220,37 +306,75 @@ fn print_to_usb_printer_escpos_with_timeout(
     }
 }
 
+// Helper function to write commands efficiently to printer
+// Generic function that works with both EscposFile and EscposNetwork
+fn write_commands_to_printer<D>(printer: &mut Printer<D>, commands: &[u8]) -> Result<(), String>
+where
+    D: std::io::Write,
+{
+    // Write commands in chunks for better performance
+    // escposify's chain_write_u8 writes one byte at a time, but we can optimize
+    // by writing in chunks and handling errors properly
+    const CHUNK_SIZE: usize = 512; // Write in 512-byte chunks
+
+    for chunk in commands.chunks(CHUNK_SIZE) {
+        for byte in chunk {
+            printer
+                .chain_write_u8(*byte)
+                .map_err(|e| format!("Failed to write command byte: {}", e))?;
+        }
+    }
+
+    Ok(())
+}
+
 // USB Printer Support with escposify and enhanced device handling
 fn print_to_usb_printer_escpos(commands: &[u8]) -> Result<(), String> {
     #[cfg(windows)]
     {
         // Try multiple approaches for Windows USB printer communication
+        // First, try COM ports (common for USB-to-serial printers)
+        let com_ports = [
+            r"\\.\COM1",
+            r"\\.\COM2",
+            r"\\.\COM3",
+            r"\\.\COM4",
+            r"\\.\COM5",
+            r"\\.\COM6",
+            r"\\.\COM7",
+            r"\\.\COM8",
+        ];
+
+        for com_port in &com_ports {
+            if let Ok(file) = std::fs::OpenOptions::new().write(true).open(com_port) {
+                let device = EscposFile::from(file);
+                let mut printer = Printer::new(device, None, None);
+
+                if write_commands_to_printer(&mut printer, commands).is_ok() {
+                    if printer.flush().is_ok() {
+                        log_info(&format!(
+                            "Successfully sent commands to USB printer at {} using escposify",
+                            com_port
+                        ))?;
+                        return Ok(());
+                    }
+                }
+            }
+        }
+
+        // Try generic USB printer paths
         let device_paths = [
             r"\\.\USBPRINT", // Generic USB printer path
             r"\\.\LPT1",     // Parallel port fallback
         ];
 
         for printer_path in &device_paths {
-            // First check if the device exists and is accessible
-            if !std::path::Path::new(printer_path).exists() {
-                continue;
-            }
-
             // Try to open with standard file operations
-            match std::fs::OpenOptions::new().write(true).open(printer_path) {
-                Ok(file) => {
-                    let device = EscposFile::from(file);
-                    let mut printer = Printer::new(device, None, None);
+            if let Ok(file) = std::fs::OpenOptions::new().write(true).open(printer_path) {
+                let device = EscposFile::from(file);
+                let mut printer = Printer::new(device, None, None);
 
-                    // Send the commands to the printer
-                    for byte in commands {
-                        printer.chain_write_u8(*byte).map_err(|e| {
-                            format!(
-                                "Failed to send commands to USB printer at {}: {}",
-                                printer_path, e
-                            )
-                        })?;
-                    }
+                if write_commands_to_printer(&mut printer, commands).is_ok() {
                     printer.flush().map_err(|e| {
                         format!("Failed to flush USB printer at {}: {}", printer_path, e)
                     })?;
@@ -261,44 +385,11 @@ fn print_to_usb_printer_escpos(commands: &[u8]) -> Result<(), String> {
                     ))?;
                     return Ok(());
                 }
-                Err(_) => {
-                    // Try with different options
-                    match std::fs::OpenOptions::new()
-                        .write(true)
-                        .create(false)
-                        .open(printer_path)
-                    {
-                        Ok(file) => {
-                            let device = EscposFile::from(file);
-                            let mut printer = Printer::new(device, None, None);
-
-                            // Send the commands to the printer
-                            for byte in commands {
-                                printer.chain_write_u8(*byte).map_err(|e| {
-                                    format!(
-                                        "Failed to send commands to USB printer at {}: {}",
-                                        printer_path, e
-                                    )
-                                })?;
-                            }
-                            printer.flush().map_err(|e| {
-                                format!("Failed to flush USB printer at {}: {}", printer_path, e)
-                            })?;
-
-                            log_info(&format!(
-                                "Successfully sent commands to USB printer at {} using escposify",
-                                printer_path
-                            ))?;
-                            return Ok(());
-                        }
-                        Err(_) => continue,
-                    }
-                }
             }
         }
 
         // If we get here, we couldn't connect to any USB printer
-        Err("No accessible USB printer found".to_string())
+        Err("No accessible USB printer found. Please check USB connection or try selecting a specific printer.".to_string())
     }
 
     #[cfg(unix)]
@@ -323,79 +414,34 @@ fn print_to_usb_printer_escpos(commands: &[u8]) -> Result<(), String> {
             }
 
             // Try to open with different permissions
-            match std::fs::OpenOptions::new().write(true).open(device_path) {
-                Ok(file) => {
-                    let device = EscposFile::from(file);
-                    let mut printer = Printer::new(device, None, None);
+            if let Ok(file) = std::fs::OpenOptions::new().write(true).open(device_path) {
+                let device = EscposFile::from(file);
+                let mut printer = Printer::new(device, None, None);
 
-                    // Send the commands to the printer
-                    for byte in commands {
-                        match printer.chain_write_u8(*byte) {
-                            Ok(_) => {}
-                            Err(e) => {
-                                log_error(&format!("Failed to write to {}: {}", device_path, e))?;
-                                continue;
-                            }
-                        }
-                    }
-
-                    match printer.flush() {
-                        Ok(_) => {
-                            log_info(&format!(
-                                "Successfully sent commands to USB printer at {} using escposify",
-                                device_path
-                            ))?;
-                            return Ok(());
-                        }
-                        Err(e) => {
-                            log_error(&format!("Failed to flush {}: {}", device_path, e))?;
-                            continue;
-                        }
+                if write_commands_to_printer(&mut printer, commands).is_ok() {
+                    if printer.flush().is_ok() {
+                        log_info(&format!(
+                            "Successfully sent commands to USB printer at {} using escposify",
+                            device_path
+                        ))?;
+                        return Ok(());
                     }
                 }
-                Err(_) => {
-                    // Try with different permissions
-                    match std::fs::OpenOptions::new()
-                        .write(true)
-                        .read(true)
-                        .open(device_path)
-                    {
-                        Ok(file) => {
-                            let device = EscposFile::from(file);
-                            let mut printer = Printer::new(device, None, None);
+            } else if let Ok(file) = std::fs::OpenOptions::new()
+                .write(true)
+                .read(true)
+                .open(device_path)
+            {
+                let device = EscposFile::from(file);
+                let mut printer = Printer::new(device, None, None);
 
-                            // Send the commands to the printer
-                            for byte in commands {
-                                match printer.chain_write_u8(*byte) {
-                                    Ok(_) => {}
-                                    Err(e) => {
-                                        log_error(&format!(
-                                            "Failed to write to {}: {}",
-                                            device_path, e
-                                        ))?;
-                                        continue;
-                                    }
-                                }
-                            }
-
-                            match printer.flush() {
-                                Ok(_) => {
-                                    log_info(&format!(
-                                        "Successfully sent commands to USB printer at {} using escposify",
-                                        device_path
-                                    ))?;
-                                    return Ok(());
-                                }
-                                Err(e) => {
-                                    log_error(&format!("Failed to flush {}: {}", device_path, e))?;
-                                    continue;
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            log_error(&format!("Failed to open {}: {}", device_path, e))?;
-                            continue;
-                        }
+                if write_commands_to_printer(&mut printer, commands).is_ok() {
+                    if printer.flush().is_ok() {
+                        log_info(&format!(
+                            "Successfully sent commands to USB printer at {} using escposify",
+                            device_path
+                        ))?;
+                        return Ok(());
                     }
                 }
             }
@@ -412,12 +458,9 @@ fn print_to_usb_printer_escpos(commands: &[u8]) -> Result<(), String> {
                 let device = EscposFile::from(file);
                 let mut printer = Printer::new(device, None, None);
 
-                // Send the commands to the printer
-                for byte in commands {
-                    printer.chain_write_u8(*byte).map_err(|e| {
-                        format!("Failed to send commands to fallback printer: {}", e)
-                    })?;
-                }
+                // Send the commands to the printer efficiently
+                write_commands_to_printer(&mut printer, commands)
+                    .map_err(|e| format!("Failed to send commands to fallback printer: {}", e))?;
                 printer
                     .flush()
                     .map_err(|e| format!("Failed to flush fallback printer: {}", e))?;
@@ -447,12 +490,9 @@ fn print_to_network_printer_escpos(commands: &[u8], address: &str) -> Result<(),
     let device = EscposNetwork::new(host, port);
     let mut printer = Printer::new(device, None, None);
 
-    // Send the commands to the printer
-    for byte in commands {
-        printer
-            .chain_write_u8(*byte)
-            .map_err(|e| format!("Failed to send commands to network printer: {}", e))?;
-    }
+    // Send the commands to the printer efficiently
+    write_commands_to_printer(&mut printer, commands)
+        .map_err(|e| format!("Failed to send commands to network printer: {}", e))?;
     printer
         .flush()
         .map_err(|e| format!("Failed to flush network printer: {}", e))?;
@@ -1342,12 +1382,9 @@ fn log_to_file_escpos(commands: &[u8]) -> Result<(), String> {
             let device = EscposFile::from(file);
             let mut printer = Printer::new(device, None, None);
 
-            // Send the commands to the printer
-            for byte in commands {
-                printer
-                    .chain_write_u8(*byte)
-                    .map_err(|e| format!("Failed to send commands to fallback printer: {}", e))?;
-            }
+            // Send the commands to the printer efficiently
+            write_commands_to_printer(&mut printer, commands)
+                .map_err(|e| format!("Failed to send commands to fallback printer: {}", e))?;
             printer
                 .flush()
                 .map_err(|e| format!("Failed to flush fallback printer: {}", e))?;

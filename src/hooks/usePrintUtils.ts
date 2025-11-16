@@ -58,59 +58,71 @@ export const usePrintUtils = () => {
           <head>
             <title>Repair Sticker - ${repair.id}</title>
             <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; }
+              * { 
+                margin: 0; 
+                padding: 0; 
+                box-sizing: border-box; 
+              }
               @media print {
                 @page {
                   size: 2in 1in;
                   margin: 0;
                 }
+                html, body {
+                  width: 2in;
+                  height: 1in;
+                  margin: 0;
+                  padding: 0;
+                  overflow: hidden;
+                }
                 body { 
-                  font-family: Arial, Helvetica, sans-serif;
+                  font-family: 'Courier New', Courier, monospace;
                   font-size: 4px;
                   line-height: 1.0;
                   color: #000;
                   background: white;
-                  width: 2in;
-                  height: 1in;
-                  padding: 0.5mm;
+                  padding: 0.3mm;
+                  page-break-after: avoid;
+                  page-break-inside: avoid;
                 }
                 .phone-sticker {
-                  width: 2in !important;
-                  height: 1in !important;
-                  padding: 0.5mm !important;
-                  box-sizing: border-box !important;
+                  width: 2in;
+                  height: 1in;
+                  padding: 0.3mm;
+                  box-sizing: border-box;
+                  display: flex;
+                  flex-direction: column;
+                  page-break-after: avoid;
+                  page-break-inside: avoid;
+                  overflow: hidden;
                 }
               }
             </style>
           </head>
           <body>
             <div class="phone-sticker">
-              <div style="display: flex; flex-direction: column; height: 100%; gap: 0.2mm;">
-                <!-- Header - Shop name and Order # -->
-                <div style="text-align: center; border-bottom: 0.5px solid #000; padding-bottom: 0.3mm; font-size: 5px; font-weight: bold;">
-                  <div>YOUR REPAIR SHOP</div>
-                  <div style="font-size: 4px;">#${repair.id}</div>
-                </div>
+              <!-- Header - Order # -->
+              <div style="text-align: center; border-bottom: 0.5px dashed #000; padding-bottom: 0.2mm; font-size: 5px; font-weight: bold;">
+                <!-- YOUR REPAIR SHOP -->
+                <div style="font-size: 3px; font-weight: normal;">#${
+                  repair.id
+                }</div>
+              </div>
 
-                <!-- Device Info - Compact -->
-                <div style="font-size: 5px; text-align: center; font-weight: bold;">
-                  ${repair.deviceBrand} ${repair.deviceModel}
-                </div>
+              <!-- Device Info - Compact but clear -->
+              <div style="font-size: 5px; text-align: center; font-weight: bold; margin: 0.2mm 0;">
+                ${repair.deviceBrand} ${repair.deviceModel}
+              </div>
 
-                <!-- Issue description - truncated -->
-                <div style="font-size: 4px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                  ${repair.issueDescription.substring(0, 25)}${
+              <!-- Issue description and phone number -->
+              <div style="font-size: 3px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0.2mm 0;">
+                ${repair.issueDescription.substring(0, 25)}${
           repair.issueDescription.length > 25 ? "..." : ""
         }
-                </div>
-
-                <!-- Bottom row: Phone and Date -->
-                <div style="display: flex; justify-content: space-between; font-size: 4px; margin-top: auto; padding-top: 0.3mm; border-top: 0.5px solid #000;">
-                  <span>${repair.customerPhone}</span>
-                  <span>${
-                    formatPrintDate(repair.createdAt).split(",")[0]
-                  }</span>
-                </div>
+              </div>
+              
+              <div style="font-size: 3px; text-align: center; margin: 0.2mm 0;">
+                ${repair.customerPhone}
               </div>
             </div>
           </body>
@@ -308,10 +320,11 @@ export const usePrintUtils = () => {
         iframe.style.position = "absolute";
         iframe.style.top = "-10000px";
         iframe.style.left = "-10000px";
-        iframe.style.width = "1px";
-        iframe.style.height = "1px";
+        iframe.style.width = "2in";
+        iframe.style.height = "1in";
         iframe.style.border = "none";
         iframe.style.visibility = "hidden";
+        iframe.style.overflow = "hidden";
 
         document.body.appendChild(iframe);
 
@@ -346,7 +359,7 @@ export const usePrintUtils = () => {
             // Try popup fallback on iframe print failure
             fallbackPopupPrint(htmlContent, title);
           }
-        }, 300);
+        }, 500);
 
         return true;
       } catch (error) {
@@ -364,7 +377,8 @@ export const usePrintUtils = () => {
       let printWindow: Window | null = null;
 
       try {
-        printWindow = window.open("", "_blank");
+        // Create popup with sticker-appropriate dimensions
+        printWindow = window.open("", "_blank", "width=300,height=150");
         if (!printWindow) {
           toast.error("❌ Popup blocked! Please allow popups and try again.");
           return false;

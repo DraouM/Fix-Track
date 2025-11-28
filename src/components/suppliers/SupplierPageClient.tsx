@@ -1,145 +1,214 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Plus,
   Search,
-  Filter,
-  MoreHorizontal,
+  Download,
+  Upload,
+  Building2,
+  Package,
+  DollarSign,
+  TrendingUp,
+  User,
+  Mail,
+  Phone,
+  MapPin,
   Pencil,
   Trash,
-  Phone,
-  Mail,
-  MapPin,
-  TrendingUp,
-  Clock,
-  DollarSign,
-  Package,
-  User,
-  Building2,
+  MoreHorizontal,
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Download,
-  Upload,
+  Clock,
+  CreditCard,
 } from "lucide-react";
+import type { Supplier, PaymentMethod } from "@/types/supplier";
+import {
+  formatCurrency,
+  formatDate,
+  getPaymentMethodDisplayText,
+} from "@/lib/supplierUtils";
+import {
+  useSupplierState,
+  useSupplierActions,
+} from "@/context/SupplierContext";
 
-// Sample supplier data - replace with your database
-const suppliersData = [
-  {
-    id: "1",
-    name: "TechParts Supply Co.",
-    contactPerson: "John Smith",
-    email: "john@techparts.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Tech Street, Silicon Valley, CA",
-    status: "active",
-    productsSupplied: 24,
-    totalOrders: 156,
-    avgDeliveryTime: 3,
-    reliabilityScore: 98,
-    outstandingBalance: 2400,
-    lastOrderDate: "2025-10-01",
-    paymentTerms: "Net 30",
-  },
-  {
-    id: "2",
-    name: "Mobile Parts Direct",
-    contactPerson: "Sarah Johnson",
-    email: "sarah@mobileparts.com",
-    phone: "+1 (555) 234-5678",
-    address: "456 Phone Ave, New York, NY",
-    status: "active",
-    productsSupplied: 18,
-    totalOrders: 89,
-    avgDeliveryTime: 5,
-    reliabilityScore: 92,
-    outstandingBalance: 0,
-    lastOrderDate: "2025-09-28",
-    paymentTerms: "Net 15",
-  },
-  {
-    id: "3",
-    name: "Global Electronics Hub",
-    contactPerson: "Mike Chen",
-    email: "mike@globalelectronics.com",
-    phone: "+1 (555) 345-6789",
-    address: "789 Circuit Blvd, Austin, TX",
-    status: "active",
-    productsSupplied: 32,
-    totalOrders: 203,
-    avgDeliveryTime: 4,
-    reliabilityScore: 95,
-    outstandingBalance: 5600,
-    lastOrderDate: "2025-10-03",
-    paymentTerms: "Net 45",
-  },
-  {
-    id: "4",
-    name: "Repair Components Inc.",
-    contactPerson: "Emily Davis",
-    email: "emily@repaircomponents.com",
-    phone: "+1 (555) 456-7890",
-    address: "321 Parts Lane, Chicago, IL",
-    status: "inactive",
-    productsSupplied: 12,
-    totalOrders: 45,
-    avgDeliveryTime: 7,
-    reliabilityScore: 85,
-    outstandingBalance: 1200,
-    lastOrderDate: "2025-08-15",
-    paymentTerms: "Net 30",
-  },
-  {
-    id: "5",
-    name: "Swift Supply Solutions",
-    contactPerson: "David Park",
-    email: "david@swiftsupply.com",
-    phone: "+1 (555) 567-8901",
-    address: "654 Quick St, Seattle, WA",
-    status: "active",
-    productsSupplied: 28,
-    totalOrders: 178,
-    avgDeliveryTime: 2,
-    reliabilityScore: 99,
-    outstandingBalance: 3200,
-    lastOrderDate: "2025-10-04",
-    paymentTerms: "Net 30",
-  },
-];
+const SupplierPageClient = () => {
+  // Use actual supplier context instead of mock data
+  const { suppliers, loading, error } = useSupplierState();
+  const { deleteSupplier } = useSupplierActions();
 
-const SuppliersListPage = () => {
-  const [suppliers, setSuppliers] = useState(suppliersData);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState(null);
-
-  // Calculate summary metrics
-  const activeSuppliers = suppliers.filter((s) => s.status === "active").length;
-  const totalProducts = suppliers.reduce(
-    (sum, s) => sum + s.productsSupplied,
-    0
-  );
-  const totalOutstanding = suppliers.reduce(
-    (sum, s) => sum + s.outstandingBalance,
-    0
-  );
-  const avgReliability = (
-    suppliers.reduce((sum, s) => sum + s.reliabilityScore, 0) / suppliers.length
-  ).toFixed(1);
-
-  // Filter suppliers
-  const filteredSuppliers = suppliers.filter((supplier) => {
-    const matchesSearch =
-      supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || supplier.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  // Filter and sort state
+  const [filters, setFilters] = useState({
+    searchTerm: "",
+    active: "All" as boolean | "All",
   });
 
-  const StatCard = ({ icon: Icon, title, value, subtitle, color = "blue" }) => {
+  const [sortConfig, setSortConfig] = useState({
+    key: "name" as keyof Supplier | "outstandingBalance" | "status",
+    direction: "asc" as "asc" | "desc",
+  });
+
+  // Local UI state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
+    null
+  );
+
+  // Filter and sort suppliers
+  const filteredAndSortedSuppliers = useMemo(() => {
+    let filtered = suppliers.filter((supplier) => {
+      const matchesSearch =
+        !filters.searchTerm ||
+        supplier.name
+          .toLowerCase()
+          .includes(filters.searchTerm.toLowerCase()) ||
+        supplier.contactName
+          ?.toLowerCase()
+          .includes(filters.searchTerm.toLowerCase()) ||
+        supplier.email
+          ?.toLowerCase()
+          .includes(filters.searchTerm.toLowerCase()) ||
+        supplier.phone
+          ?.toLowerCase()
+          .includes(filters.searchTerm.toLowerCase());
+
+      const matchesActive =
+        filters.active === "All" ||
+        (filters.active === true && supplier.status === "active") ||
+        (filters.active === false && supplier.status === "inactive");
+
+      return matchesSearch && matchesActive;
+    });
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      // Handle special cases for sorting
+      if (sortConfig.key === "outstandingBalance") {
+        aValue = a.outstandingBalance || 0;
+        bValue = b.outstandingBalance || 0;
+      } else if (sortConfig.key === "status") {
+        aValue = a.status;
+        bValue = b.status;
+      } else {
+        // Handle regular properties
+        aValue = a[sortConfig.key as keyof Supplier];
+        bValue = b[sortConfig.key as keyof Supplier];
+      }
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortConfig.direction === "asc"
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [suppliers, filters, sortConfig]);
+
+  // Calculate summary metrics from actual data
+  const metrics = useMemo(() => {
+    const suppliersList = filteredAndSortedSuppliers;
+    const activeCount = suppliersList.filter(
+      (s) => s.status === "active"
+    ).length;
+    const totalBalance = suppliersList.reduce(
+      (sum, s) => sum + (s.outstandingBalance || 0),
+      0
+    );
+    const suppliersWithBalance = suppliersList.filter(
+      (s) => (s.outstandingBalance || 0) > 0
+    ).length;
+
+    return {
+      total: suppliersList.length,
+      active: activeCount,
+      inactive: suppliersList.length - activeCount,
+      totalBalance,
+      suppliersWithBalance,
+    };
+  }, [filteredAndSortedSuppliers]);
+
+  // Handle search term change
+  const setSearchTerm = (term: string) => {
+    setFilters((prev) => ({ ...prev, searchTerm: term }));
+  };
+
+  // Handle active filter change
+  const setActiveFilter = (active: boolean | "All") => {
+    setFilters((prev) => ({ ...prev, active }));
+  };
+
+  // Reset filters to show all suppliers
+  const showAllSuppliers = () => {
+    setFilters({
+      searchTerm: "",
+      active: "All",
+    });
+    setSortConfig({
+      key: "name",
+      direction: "asc",
+    });
+  };
+
+  // Handle sort
+  const handleSort = (key: any) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  // Handle delete with confirmation
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this supplier?")) {
+      try {
+        await deleteSupplier(id);
+      } catch (error) {
+        console.error("Failed to delete supplier:", error);
+        alert("Failed to delete supplier. Please try again.");
+      }
+    }
+  };
+
+  // Handle edit
+  const handleEdit = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setShowAddModal(true);
+  };
+
+  // Close modal
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setSelectedSupplier(null);
+  };
+
+  // Initialize suppliers data on component mount
+  // useEffect(() => {
+  //   initialize();
+  // }, [initialize]);
+
+  // Stat Card Component
+  const StatCard = ({
+    icon: Icon,
+    title,
+    value,
+    subtitle,
+    color = "blue",
+  }: {
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    value: string | number;
+    subtitle?: string;
+    color?: "blue" | "green" | "orange" | "purple";
+  }) => {
     const colorClasses = {
       blue: "bg-blue-100 text-blue-600",
       green: "bg-green-100 text-green-600",
@@ -148,7 +217,7 @@ const SuppliersListPage = () => {
     };
 
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-2">
           <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
             <Icon className="w-5 h-5" />
@@ -165,45 +234,62 @@ const SuppliersListPage = () => {
     );
   };
 
-  const getReliabilityBadge = (score) => {
-    if (score >= 95)
-      return { color: "bg-green-100 text-green-700", label: "Excellent" };
-    if (score >= 85)
-      return { color: "bg-blue-100 text-blue-700", label: "Good" };
-    if (score >= 75)
-      return { color: "bg-orange-100 text-orange-700", label: "Fair" };
-    return { color: "bg-red-100 text-red-700", label: "Poor" };
-  };
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading suppliers...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleDelete = (id) => {
-    if (confirm("Are you sure you want to delete this supplier?")) {
-      setSuppliers(suppliers.filter((s) => s.id !== id));
-    }
-  };
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Error Loading Suppliers
+          </h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            // onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Suppliers</h1>
             <p className="text-gray-600 mt-1">
-              Manage your supplier relationships and orders
+              Manage your supplier relationships and credit balances
             </p>
           </div>
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+          <div className="flex flex-wrap gap-3 justify-start sm:justify-end">
+            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-colors">
               <Download className="w-4 h-4" />
               Export
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
+            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-colors">
               <Upload className="w-4 h-4" />
               Import
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add Supplier
@@ -216,107 +302,122 @@ const SuppliersListPage = () => {
           <StatCard
             icon={Building2}
             title="Active Suppliers"
-            value={activeSuppliers}
-            subtitle={`${suppliers.length} total suppliers`}
+            value={metrics.active}
+            subtitle={`${metrics.total} total suppliers`}
             color="blue"
           />
           <StatCard
-            icon={Package}
-            title="Products Supplied"
-            value={totalProducts}
-            subtitle="Across all suppliers"
+            icon={CheckCircle2}
+            title="With Balance"
+            value={metrics.suppliersWithBalance}
+            subtitle="Suppliers with credit"
             color="green"
           />
           <StatCard
             icon={DollarSign}
-            title="Outstanding Balance"
-            value={`$${totalOutstanding.toLocaleString()}`}
-            subtitle="Total payables"
+            title="Total Credit Balance"
+            value={formatCurrency(metrics.totalBalance)}
+            subtitle="Total outstanding"
             color="orange"
           />
           <StatCard
             icon={TrendingUp}
-            title="Avg Reliability"
-            value={`${avgReliability}%`}
-            subtitle="Overall performance"
+            title="Inactive Suppliers"
+            value={metrics.inactive}
+            subtitle="Not currently active"
             color="purple"
           />
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search suppliers by name, contact, or email..."
-                value={searchTerm}
+                placeholder="Search suppliers by name, contact, email, or phone..."
+                value={filters.searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
-            {/* Status Filter */}
-            <div className="flex gap-2">
+            {/* Active Filter */}
+            <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setStatusFilter("all")}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  statusFilter === "all"
+                onClick={showAllSuppliers}
+                className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                  filters.active === "All"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                All ({suppliers.length})
+                All ({metrics.total})
               </button>
               <button
-                onClick={() => setStatusFilter("active")}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  statusFilter === "active"
+                onClick={() => setActiveFilter(true)}
+                className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                  filters.active === true
                     ? "bg-green-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                Active ({activeSuppliers})
+                Active ({metrics.active})
               </button>
               <button
-                onClick={() => setStatusFilter("inactive")}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  statusFilter === "inactive"
+                onClick={() => setActiveFilter(false)}
+                className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                  filters.active === false
                     ? "bg-gray-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                Inactive ({suppliers.length - activeSuppliers})
+                Inactive ({metrics.inactive})
               </button>
             </div>
           </div>
         </div>
 
         {/* Suppliers Table */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Supplier
+                  <th
+                    className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort("name")}
+                  >
+                    Supplier{" "}
+                    {sortConfig.key === "name" &&
+                      (sortConfig.direction === "asc" ? "↑" : "↓")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Contact
+                    Contact Info
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Products
+                    Payment Method
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort("outstandingBalance")}
+                  >
+                    Credit Balance{" "}
+                    {sortConfig.key === "outstandingBalance" &&
+                      (sortConfig.direction === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort("status")}
+                  >
+                    Status{" "}
+                    {sortConfig.key === "status" &&
+                      (sortConfig.direction === "asc" ? "↑" : "↓")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Performance
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Balance
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Status
+                    Last Updated
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Actions
@@ -324,129 +425,125 @@ const SuppliersListPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredSuppliers.map((supplier) => {
-                  const reliabilityBadge = getReliabilityBadge(
-                    supplier.reliabilityScore
-                  );
-                  return (
-                    <tr
-                      key={supplier.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                            <Building2 className="w-5 h-5 text-blue-600" />
+                {filteredAndSortedSuppliers.map((supplier) => (
+                  <tr
+                    key={supplier.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <Building2 className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {supplier.name}
                           </div>
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              {supplier.name}
-                            </div>
+                          {supplier.contactName && (
                             <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                               <User className="w-3 h-3" />
-                              {supplier.contactPerson}
+                              {supplier.contactName}
                             </div>
-                          </div>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="space-y-1">
+                        {supplier.email && (
                           <div className="flex items-center gap-2 text-sm text-gray-700">
-                            <Mail className="w-4 h-4 text-gray-400" />
-                            {supplier.email}
+                            <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{supplier.email}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-700">
-                            <Phone className="w-4 h-4 text-gray-400" />
-                            {supplier.phone}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          <div className="text-sm font-medium text-gray-900">
-                            {supplier.productsSupplied} products
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {supplier.totalOrders} total orders
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-2">
-                          <div
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${reliabilityBadge.color}`}
-                          >
-                            {supplier.reliabilityScore}%{" "}
-                            {reliabilityBadge.label}
-                          </div>
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <Clock className="w-3 h-3" />
-                            {supplier.avgDeliveryTime} days avg
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          <div
-                            className={`text-sm font-semibold ${
-                              supplier.outstandingBalance > 0
-                                ? "text-orange-600"
-                                : "text-green-600"
-                            }`}
-                          >
-                            ${supplier.outstandingBalance.toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {supplier.paymentTerms}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {supplier.status === "active" ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                            <XCircle className="w-3 h-3" />
-                            Inactive
-                          </span>
                         )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedSupplier(supplier);
-                              setShowAddModal(true);
-                            }}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Edit supplier"
-                          >
-                            <Pencil className="w-4 h-4 text-gray-600" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(supplier.id)}
-                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete supplier"
-                          >
-                            <Trash className="w-4 h-4 text-red-600" />
-                          </button>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <MoreHorizontal className="w-4 h-4 text-gray-600" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        {supplier.phone && (
+                          <div className="flex items-center gap-2 text-sm text-gray-700">
+                            <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span>{supplier.phone}</span>
+                          </div>
+                        )}
+                        {supplier.address && (
+                          <div className="flex items-start gap-2 text-sm text-gray-500">
+                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                            <span className="truncate max-w-[200px]">
+                              {supplier.address}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm">
+                        <CreditCard className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-700">
+                          {getPaymentMethodDisplayText(
+                            supplier.preferredPaymentMethod
+                          )}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div
+                        className={`text-sm font-semibold ${
+                          (supplier.outstandingBalance || 0) > 0
+                            ? "text-orange-600"
+                            : "text-green-600"
+                        }`}
+                      >
+                        {formatCurrency(supplier.outstandingBalance || 0)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {supplier.status === "active" ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                          <XCircle className="w-3 h-3" />
+                          Inactive
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <Clock className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">
+                          {formatDate(supplier.updatedAt)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleEdit(supplier)}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Edit supplier"
+                        >
+                          <Pencil className="w-4 h-4 text-gray-600" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(supplier.id)}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete supplier"
+                          disabled={loading}
+                        >
+                          <Trash className="w-4 h-4 text-red-600" />
+                        </button>
+                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                          <MoreHorizontal className="w-4 h-4 text-gray-600" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
           {/* Empty State */}
-          {filteredSuppliers.length === 0 && (
+          {filteredAndSortedSuppliers.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <Building2 className="w-8 h-8 text-gray-400" />
@@ -455,11 +552,19 @@ const SuppliersListPage = () => {
                 No suppliers found
               </h3>
               <p className="text-gray-500 max-w-sm text-sm mb-4">
-                {searchTerm || statusFilter !== "all"
+                {filters.searchTerm || filters.active !== "All"
                   ? "Try adjusting your search or filters"
                   : "Get started by adding your first supplier"}
               </p>
-              {!searchTerm && statusFilter === "all" && (
+              {filters.searchTerm || filters.active !== "All" ? (
+                <button
+                  onClick={showAllSuppliers}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Show All Suppliers
+                </button>
+              ) : (
                 <button
                   onClick={() => setShowAddModal(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
@@ -472,12 +577,11 @@ const SuppliersListPage = () => {
           )}
 
           {/* Footer */}
-          {filteredSuppliers.length > 0 && (
+          {filteredAndSortedSuppliers.length > 0 && (
             <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
-              <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-gray-600">
                 <span>
-                  Showing {filteredSuppliers.length} of {suppliers.length}{" "}
-                  suppliers
+                  Showing {filteredAndSortedSuppliers.length} supplier(s)
                 </span>
                 <span>Last updated: {new Date().toLocaleDateString()}</span>
               </div>
@@ -494,26 +598,21 @@ const SuppliersListPage = () => {
                   {selectedSupplier ? "Edit Supplier" : "Add New Supplier"}
                 </h2>
                 <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedSupplier(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
+                  onClick={handleCloseModal}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
                 >
                   ×
                 </button>
               </div>
               <div className="text-center py-8 text-gray-500">
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-blue-500" />
-                <p>Form component will be added here</p>
+                <p>Supplier form component will be added here</p>
                 <p className="text-sm mt-2">
-                  This will include all supplier fields
+                  This will include: name, contact details, payment method,
+                  credit balance, etc.
                 </p>
                 <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSelectedSupplier(null);
-                  }}
+                  onClick={handleCloseModal}
                   className="mt-4 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
                 >
                   Close
@@ -527,4 +626,4 @@ const SuppliersListPage = () => {
   );
 };
 
-export default SuppliersListPage;
+export default SupplierPageClient;

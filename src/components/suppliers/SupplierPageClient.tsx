@@ -20,14 +20,9 @@ import {
   XCircle,
   AlertCircle,
   Clock,
-  CreditCard,
 } from "lucide-react";
 import type { Supplier, PaymentMethod } from "@/types/supplier";
-import {
-  formatCurrency,
-  formatDate,
-  getPaymentMethodDisplayText,
-} from "@/lib/supplierUtils";
+import { formatCurrency, formatDate } from "@/lib/supplierUtils";
 import {
   useSupplierState,
   useSupplierActions,
@@ -217,17 +212,23 @@ const SupplierPageClient = () => {
     };
 
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
         <div className="flex items-center gap-3 mb-2">
           <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
             <Icon className="w-5 h-5" />
           </div>
-          <span className="text-sm font-medium text-gray-600">{title}</span>
+          <span className="text-sm font-medium text-gray-600 truncate">
+            {title}
+          </span>
         </div>
-        <div className="mt-3">
-          <div className="text-2xl font-bold text-gray-900">{value}</div>
+        <div className="mt-2">
+          <div className="text-xl font-bold text-gray-900 truncate">
+            {value}
+          </div>
           {subtitle && (
-            <div className="text-sm text-gray-500 mt-1">{subtitle}</div>
+            <div className="text-xs text-gray-500 mt-1 truncate">
+              {subtitle}
+            </div>
           )}
         </div>
       </div>
@@ -237,10 +238,12 @@ const SupplierPageClient = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading suppliers...</p>
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Loading suppliers...</p>
+          </div>
         </div>
       </div>
     );
@@ -249,56 +252,60 @@ const SupplierPageClient = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Error Loading Suppliers
-          </h3>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            // onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Try Again
-          </button>
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Error Loading Suppliers
+            </h3>
+            <p className="text-gray-600 mb-4 text-center max-w-md">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-6 w-full">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Suppliers</h1>
-            <p className="text-gray-600 mt-1">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 truncate">
+              Suppliers
+            </h1>
+            <p className="text-gray-600 mt-1 text-sm">
               Manage your supplier relationships and credit balances
             </p>
           </div>
-          <div className="flex flex-wrap gap-3 justify-start sm:justify-end">
-            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-colors">
+          <div className="flex flex-wrap gap-2 justify-start">
+            <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors">
               <Download className="w-4 h-4" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-colors">
+            <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors">
               <Upload className="w-4 h-4" />
-              Import
+              <span className="hidden sm:inline">Import</span>
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Add Supplier
+              <span className="hidden sm:inline">Add Supplier</span>
             </button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Building2}
             title="Active Suppliers"
@@ -337,10 +344,10 @@ const SupplierPageClient = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search suppliers by name, contact, email, or phone..."
+                placeholder="Search suppliers..."
                 value={filters.searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
 
@@ -348,7 +355,7 @@ const SupplierPageClient = () => {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={showAllSuppliers}
-                className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filters.active === "All"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -358,7 +365,7 @@ const SupplierPageClient = () => {
               </button>
               <button
                 onClick={() => setActiveFilter(true)}
-                className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filters.active === true
                     ? "bg-green-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -368,7 +375,7 @@ const SupplierPageClient = () => {
               </button>
               <button
                 onClick={() => setActiveFilter(false)}
-                className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filters.active === false
                     ? "bg-gray-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -383,43 +390,46 @@ const SupplierPageClient = () => {
         {/* Suppliers Table */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th
-                    className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort("name")}
                   >
-                    Supplier{" "}
-                    {sortConfig.key === "name" &&
-                      (sortConfig.direction === "asc" ? "↑" : "↓")}
+                    <div className="flex items-center">
+                      Supplier
+                      {sortConfig.key === "name" &&
+                        (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Contact Info
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Payment Method
-                  </th>
                   <th
-                    className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort("outstandingBalance")}
                   >
-                    Credit Balance{" "}
-                    {sortConfig.key === "outstandingBalance" &&
-                      (sortConfig.direction === "asc" ? "↑" : "↓")}
+                    <div className="flex items-center">
+                      Credit Balance
+                      {sortConfig.key === "outstandingBalance" &&
+                        (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                    </div>
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort("status")}
                   >
-                    Status{" "}
-                    {sortConfig.key === "status" &&
-                      (sortConfig.direction === "asc" ? "↑" : "↓")}
+                    <div className="flex items-center">
+                      Status
+                      {sortConfig.key === "status" &&
+                        (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">
                     Last Updated
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -430,26 +440,28 @@ const SupplierPageClient = () => {
                     key={supplier.id}
                     className="hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
                           <Building2 className="w-5 h-5 text-blue-600" />
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 truncate">
                             {supplier.name}
                           </div>
                           {supplier.contactName && (
-                            <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                              <User className="w-3 h-3" />
-                              {supplier.contactName}
+                            <div className="text-sm text-gray-500 flex items-center gap-1 mt-1 truncate">
+                              <User className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">
+                                {supplier.contactName}
+                              </span>
                             </div>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
+                    <td className="px-4 py-4">
+                      <div className="space-y-1 min-w-0">
                         {supplier.email && (
                           <div className="flex items-center gap-2 text-sm text-gray-700">
                             <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -459,32 +471,22 @@ const SupplierPageClient = () => {
                         {supplier.phone && (
                           <div className="flex items-center gap-2 text-sm text-gray-700">
                             <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <span>{supplier.phone}</span>
+                            <span className="truncate">{supplier.phone}</span>
                           </div>
                         )}
                         {supplier.address && (
-                          <div className="flex items-start gap-2 text-sm text-gray-500">
+                          <div className="flex items-start gap-2 text-sm text-gray-500 mt-1">
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                            <span className="truncate max-w-[200px]">
+                            <span className="truncate max-w-[120px] md:max-w-[150px]">
                               {supplier.address}
                             </span>
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <CreditCard className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="text-gray-700">
-                          {getPaymentMethodDisplayText(
-                            supplier.preferredPaymentMethod
-                          )}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div
-                        className={`text-sm font-semibold ${
+                        className={`text-sm font-semibold truncate ${
                           (supplier.outstandingBalance || 0) > 0
                             ? "text-orange-600"
                             : "text-green-600"
@@ -493,20 +495,20 @@ const SupplierPageClient = () => {
                         {formatCurrency(supplier.outstandingBalance || 0)}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       {supplier.status === "active" ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                           <CheckCircle2 className="w-3 h-3" />
-                          Active
+                          <span className="hidden md:inline">Active</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                           <XCircle className="w-3 h-3" />
-                          Inactive
+                          <span className="hidden md:inline">Inactive</span>
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 hidden md:table-cell">
                       <div className="flex items-center gap-1 text-sm text-gray-500">
                         <Clock className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate">
@@ -514,8 +516,8 @@ const SupplierPageClient = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => handleEdit(supplier)}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -531,7 +533,7 @@ const SupplierPageClient = () => {
                         >
                           <Trash className="w-4 h-4 text-red-600" />
                         </button>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors md:hidden">
                           <MoreHorizontal className="w-4 h-4 text-gray-600" />
                         </button>
                       </div>
@@ -544,14 +546,14 @@ const SupplierPageClient = () => {
 
           {/* Empty State */}
           {filteredAndSortedSuppliers.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <Building2 className="w-8 h-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 No suppliers found
               </h3>
-              <p className="text-gray-500 max-w-sm text-sm mb-4">
+              <p className="text-gray-500 max-w-xs text-sm mb-4">
                 {filters.searchTerm || filters.active !== "All"
                   ? "Try adjusting your search or filters"
                   : "Get started by adding your first supplier"}
@@ -559,7 +561,7 @@ const SupplierPageClient = () => {
               {filters.searchTerm || filters.active !== "All" ? (
                 <button
                   onClick={showAllSuppliers}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
                 >
                   <Plus className="w-4 h-4" />
                   Show All Suppliers
@@ -567,7 +569,7 @@ const SupplierPageClient = () => {
               ) : (
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
                 >
                   <Plus className="w-4 h-4" />
                   Add First Supplier
@@ -578,12 +580,14 @@ const SupplierPageClient = () => {
 
           {/* Footer */}
           {filteredAndSortedSuppliers.length > 0 && (
-            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+            <div className="border-t border-gray-200 px-4 py-4 bg-gray-50">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-gray-600">
-                <span>
+                <span className="truncate">
                   Showing {filteredAndSortedSuppliers.length} supplier(s)
                 </span>
-                <span>Last updated: {new Date().toLocaleDateString()}</span>
+                <span className="truncate">
+                  Last updated: {new Date().toLocaleDateString()}
+                </span>
               </div>
             </div>
           )}
@@ -591,29 +595,31 @@ const SupplierPageClient = () => {
 
         {/* Add/Edit Modal Placeholder */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-white rounded-lg w-full max-w-md my-8">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h2 className="text-lg font-bold text-gray-900">
                   {selectedSupplier ? "Edit Supplier" : "Add New Supplier"}
                 </h2>
                 <button
                   onClick={handleCloseModal}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                  className="text-gray-400 hover:text-gray-600 text-xl"
                 >
                   ×
                 </button>
               </div>
-              <div className="text-center py-8 text-gray-500">
+              <div className="p-4 text-center">
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 text-blue-500" />
-                <p>Supplier form component will be added here</p>
-                <p className="text-sm mt-2">
+                <p className="text-gray-700">
+                  Supplier form component will be added here
+                </p>
+                <p className="text-xs mt-2 text-gray-500">
                   This will include: name, contact details, payment method,
                   credit balance, etc.
                 </p>
                 <button
                   onClick={handleCloseModal}
-                  className="mt-4 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                  className="mt-4 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 text-gray-700 text-sm"
                 >
                   Close
                 </button>

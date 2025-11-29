@@ -36,20 +36,22 @@ export const getPaymentMethodDisplayText = (method?: PaymentMethod): string =>
 /**
  * Get status badge variant for supplier
  */
-export const getSupplierStatusBadgeVariant = (active: boolean): string =>
-  active ? "success" : "destructive";
+export const getSupplierStatusBadgeVariant = (
+  status: "active" | "inactive"
+): string => (status === "active" ? "success" : "destructive");
 
 /**
  * Get display text for supplier status
  */
-export const getSupplierStatusDisplayText = (active: boolean): string =>
-  active ? "Active" : "Inactive";
+export const getSupplierStatusDisplayText = (
+  status: "active" | "inactive"
+): string => (status === "active" ? "Active" : "Inactive");
 
 /**
  * Check if supplier has outstanding balance
  */
 export const hasOutstandingBalance = (supplier: Supplier): boolean =>
-  (supplier.creditBalance || 0) > 0;
+  (supplier.outstandingBalance || 0) > 0;
 
 /**
  * Check if supplier is overdue (balance > 0 for extended period)
@@ -74,7 +76,7 @@ export const isSupplierOverdue = (supplier: Supplier): boolean => {
  */
 export const calculateTotalCreditBalance = (suppliers: Supplier[]): number =>
   suppliers.reduce(
-    (total, supplier) => total + (supplier.creditBalance || 0),
+    (total, supplier) => total + (supplier.outstandingBalance || 0),
     0
   );
 
@@ -99,7 +101,7 @@ export const addToSupplierBalance = (
 
   return {
     ...supplier,
-    creditBalance: (supplier.creditBalance || 0) + amount,
+    outstandingBalance: (supplier.outstandingBalance || 0) + amount,
     updatedAt: new Date().toISOString(),
     history: [...(supplier.history || []), historyEvent],
   };
@@ -117,7 +119,7 @@ export const makeSupplierPayment = (
 ): Supplier => {
   if (amount <= 0) return supplier;
 
-  const paymentAmount = Math.min(amount, supplier.creditBalance || 0);
+  const paymentAmount = Math.min(amount, supplier.outstandingBalance || 0);
 
   return addToSupplierBalance(
     supplier,
@@ -135,7 +137,7 @@ export const adjustSupplierBalance = (
   newBalance: number,
   reason: string
 ): Supplier => {
-  const currentBalance = supplier.creditBalance || 0;
+  const currentBalance = supplier.outstandingBalance || 0;
   const adjustment = newBalance - currentBalance;
 
   return addToSupplierBalance(
@@ -230,8 +232,8 @@ export const getRecentActivity = (
  */
 export const filterSuppliersByStatus = (
   suppliers: Supplier[],
-  active: boolean
-): Supplier[] => suppliers.filter((supplier) => supplier.active === active);
+  status: "active" | "inactive"
+): Supplier[] => suppliers.filter((supplier) => supplier.status === status);
 
 /**
  * Filter suppliers with outstanding balance
@@ -255,7 +257,7 @@ export const filterSuppliersByPaymentMethod = (
  */
 export const sortSuppliersByBalance = (suppliers: Supplier[]): Supplier[] =>
   [...suppliers].sort(
-    (a, b) => (b.creditBalance || 0) - (a.creditBalance || 0)
+    (a, b) => (b.outstandingBalance || 0) - (a.outstandingBalance || 0)
   );
 
 /**
@@ -305,7 +307,7 @@ export const filterSuppliers = (
   suppliers: Supplier[],
   filters: {
     query?: string;
-    active?: boolean;
+    status?: "active" | "inactive";
     hasBalance?: boolean;
     paymentMethod?: PaymentMethod;
   }
@@ -316,8 +318,8 @@ export const filterSuppliers = (
     filtered = searchSuppliers(filtered, filters.query);
   }
 
-  if (filters.active !== undefined) {
-    filtered = filterSuppliersByStatus(filtered, filters.active);
+  if (filters.status !== undefined) {
+    filtered = filterSuppliersByStatus(filtered, filters.status);
   }
 
   if (filters.hasBalance) {
@@ -341,7 +343,7 @@ export const filterSuppliers = (
 export const generateSupplierStats = (suppliers: Supplier[]) => {
   const stats = {
     total: suppliers.length,
-    active: suppliers.filter((s) => s.active).length,
+    active: suppliers.filter((s) => s.status === "active").length,
     withBalance: suppliers.filter(hasOutstandingBalance).length,
     totalCreditBalance: calculateTotalCreditBalance(suppliers),
     byPaymentMethod: {} as Record<PaymentMethod, number>,
@@ -425,9 +427,23 @@ export const formatCurrency = (amount: number): string =>
     currency: "USD",
   }).format(amount);
 
-export const formatDate = (date: string | Date): string =>
-  new Date(date).toLocaleDateString("en-US", {
+export const formatDate = (date: string | Date): string => {
+  // Handle null, undefined, or empty values
+  if (!date) {
+    return "N/A";
+  }
+
+  const dateObj = new Date(date);
+
+  // Check if the date is valid
+  if (isNaN(dateObj.getTime())) {
+    console.warn("Invalid date value:", date);
+    return "Invalid Date";
+  }
+
+  return dateObj.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+};

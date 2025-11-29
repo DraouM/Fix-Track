@@ -24,6 +24,22 @@ import type {
   SupplierHistoryEventType,
 } from "@/types/supplier";
 
+// ✅ Interface for backend SupplierFrontend struct
+interface SupplierFrontend {
+  id: string;
+  name: string;
+  contact_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+  preferred_payment_method?: string;
+  outstanding_balance: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ✅ State shape
 interface SupplierState {
   suppliers: Supplier[];
@@ -74,63 +90,6 @@ const SupplierContext = createContext<SupplierContextType | undefined>(
   undefined
 );
 
-// ✅ Database interface matching your schema
-interface SupplierDB {
-  id: string | number;
-  name: string;
-  contact_name?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-  preferred_payment_method?: PaymentMethod;
-  credit_balance?: number;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-  history?: SupplierHistoryEvent[];
-}
-
-// ✅ Utility: wrap async calls with error handling
-async function withAsync<T>(
-  action: () => Promise<T>,
-  {
-    onSuccess,
-    onError,
-  }: { onSuccess?: (res: T) => void; onError?: (msg: string) => void } = {}
-) {
-  try {
-    const result = await action();
-    onSuccess?.(result);
-    return result;
-  } catch (err) {
-    const errorMessage =
-      err instanceof Error ? err.message : "Unexpected error";
-    onError?.(errorMessage);
-    toast.error(errorMessage);
-    throw err;
-  }
-}
-
-// ✅ Map DB supplier to frontend Supplier
-function mapSupplierFromDB(dbSupplier: SupplierDB): Supplier {
-  return {
-    id: String(dbSupplier.id),
-    name: dbSupplier.name,
-    contactName: dbSupplier.contact_name,
-    email: dbSupplier.email,
-    phone: dbSupplier.phone,
-    address: dbSupplier.address,
-    notes: dbSupplier.notes,
-    preferredPaymentMethod: dbSupplier.preferred_payment_method,
-    creditBalance: dbSupplier.credit_balance ?? 0,
-    active: dbSupplier.active,
-    createdAt: dbSupplier.created_at,
-    updatedAt: dbSupplier.updated_at,
-    history: dbSupplier.history || [],
-  };
-}
-
 export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -161,11 +120,11 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     clearError();
 
-    await withAsync(() => invoke<SupplierDB[]>("get_suppliers"), {
+    await withAsync(() => invoke<SupplierFrontend[]>("get_suppliers"), {
       onSuccess: (suppliersData) => {
         console.log("✅ Successfully fetched suppliers:", suppliersData);
         console.log("📊 Number of suppliers fetched:", suppliersData.length);
-
+        // Map the SupplierFrontend data to Supplier interface
         const mappedSuppliers = suppliersData.map(mapSupplierFromDB);
         console.log("🔄 Mapped suppliers to frontend format:", mappedSuppliers);
         setSuppliers(mappedSuppliers);
@@ -207,10 +166,12 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       clearError();
 
       await withAsync(
-        () => invoke<SupplierDB>("get_supplier_by_id", { supplierId: id }),
+        () =>
+          invoke<SupplierFrontend>("get_supplier_by_id", { supplierId: id }),
         {
           onSuccess: (data) => {
             console.log("✅ Successfully fetched supplier by ID:", data);
+            // Map the SupplierFrontend data to Supplier interface
             const mappedSupplier = mapSupplierFromDB(data);
             console.log(
               "🔄 Mapped supplier to frontend format:",
@@ -240,32 +201,35 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       clearError();
 
-      const supplierData = {
-        ...data,
+      const supplierData: SupplierFrontend = {
         id: uuidv4(),
+        name: data.name,
+        contact_name: data.contactName,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        notes: data.notes,
+        preferred_payment_method: data.preferredPaymentMethod,
+        status: data.status,
+        outstanding_balance: data.outstandingBalance || 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      console.log("📝 Supplier data with ID and timestamps:", supplierData);
 
       await withAsync(
         () => invoke("insert_supplier", { supplier: supplierData }),
         {
-          onSuccess: async (newSupplierId) => {
-            console.log(
-              "✅ Supplier created successfully with ID:",
-              newSupplierId
-            );
+          onSuccess: async () => {
+            console.log("✅ Supplier created successfully");
 
             // Add history entry for supplier creation
-            const historyEntry = {
+            const historyEntry: SupplierHistoryEvent = {
               id: uuidv4(),
-              supplier_id: newSupplierId,
+              supplierId: supplierData.id,
               date: new Date().toISOString(),
-              type: "Supplier Created" as SupplierHistoryEventType,
+              type: "Supplier Created",
               notes: "Supplier account created",
               amount: 0,
-              changed_by: null,
             };
 
             try {
@@ -300,42 +264,46 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       // Find the existing supplier to merge with updates
       const existingSupplier = suppliers.find((s) => s.id === id);
       if (!existingSupplier) {
-        setError("Supplier not found");
+        const errorMessage = "Supplier not found";
+        setError(errorMessage);
         setLoading(false);
+        toast.error(errorMessage);
         return;
       }
 
-      // Convert frontend Supplier to backend SupplierDB format
-      const supplierData = {
+      // Create updated supplier object with snake_case fields for backend
+      const updatedSupplier: SupplierFrontend = {
         id: existingSupplier.id,
-        name: data.name ?? existingSupplier.name,
-        contact_name: data.contactName ?? existingSupplier.contactName,
-        email: data.email ?? existingSupplier.email,
-        phone: data.phone ?? existingSupplier.phone,
-        address: data.address ?? existingSupplier.address,
-        notes: data.notes ?? existingSupplier.notes,
+        name: data.name || existingSupplier.name,
+        contact_name: data.contactName || existingSupplier.contactName,
+        email: data.email || existingSupplier.email,
+        phone: data.phone || existingSupplier.phone,
+        address: data.address || existingSupplier.address,
+        notes: data.notes || existingSupplier.notes,
         preferred_payment_method:
-          data.preferredPaymentMethod ??
+          data.preferredPaymentMethod ||
           existingSupplier.preferredPaymentMethod,
-        credit_balance: data.creditBalance ?? existingSupplier.creditBalance,
-        active: data.active ?? existingSupplier.active,
+        status: data.status || existingSupplier.status,
+        outstanding_balance:
+          data.outstandingBalance !== undefined
+            ? data.outstandingBalance
+            : existingSupplier.outstandingBalance,
         created_at: existingSupplier.createdAt,
         updated_at: new Date().toISOString(),
       };
 
       await withAsync(
-        () => invoke("update_supplier", { supplier: supplierData }),
+        () => invoke("update_supplier", { supplier: updatedSupplier }),
         {
           onSuccess: async () => {
             // Add history entry for supplier update
-            const historyEntry = {
+            const historyEntry: SupplierHistoryEvent = {
               id: uuidv4(),
-              supplier_id: id,
+              supplierId: id,
               date: new Date().toISOString(),
-              type: "Supplier Updated" as SupplierHistoryEventType,
+              type: "Supplier Updated",
               notes: "Supplier information updated",
               amount: 0,
-              changed_by: null,
             };
 
             try {
@@ -345,20 +313,23 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             }
 
             toast.success("Supplier updated successfully");
+            // Map the updated supplier back to camelCase for frontend
+            const mappedSupplier = mapSupplierFromDB(updatedSupplier);
             setSuppliers((prev) =>
-              prev.map((s) =>
-                s.id === id
-                  ? { ...s, ...data, updatedAt: new Date().toISOString() }
-                  : s
-              )
+              prev.map((s) => (s.id === id ? mappedSupplier : s))
             );
+            if (selectedSupplier?.id === id) {
+              setSelectedSupplier(mappedSupplier);
+            }
           },
-          onError: (msg) => setError(msg),
+          onError: (msg) => {
+            setError(msg);
+          },
         }
       );
       setLoading(false);
     },
-    [suppliers, clearError]
+    [suppliers, selectedSupplier, clearError, fetchSuppliers]
   );
 
   // ✅ Delete supplier
@@ -366,13 +337,17 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
     async (id: string) => {
       setLoading(true);
       clearError();
+
       await withAsync(() => invoke("delete_supplier", { id }), {
         onSuccess: () => {
           toast.success("Supplier deleted successfully");
           setSuppliers((prev) => prev.filter((s) => s.id !== id));
           if (selectedSupplier?.id === id) setSelectedSupplier(null);
         },
-        onError: (msg) => setError(msg),
+        onError: (msg) => {
+          setError(msg);
+          toast.error(msg);
+        },
       });
       setLoading(false);
     },
@@ -390,30 +365,26 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       clearError();
 
-      const paymentData = {
-        id: uuidv4(),
-        supplier_id: supplierId,
-        amount: amount,
-        date: new Date().toISOString(),
-        method: method,
-        notes: notes || null,
-      };
-
       await withAsync(
-        () => invoke("add_supplier_payment", { payment: paymentData }),
+        () =>
+          invoke("add_supplier_payment", {
+            supplierId,
+            amount,
+            method,
+            notes: notes || null,
+          }),
         {
           onSuccess: async () => {
             // Add history entry for the payment
-            const historyEntry = {
+            const historyEntry: SupplierHistoryEvent = {
               id: uuidv4(),
-              supplier_id: supplierId,
+              supplierId: supplierId,
               date: new Date().toISOString(),
-              type: "Payment Made" as SupplierHistoryEventType,
+              type: "Payment Made",
               notes: `Payment of $${amount} via ${method}${
                 notes ? `: ${notes}` : ""
               }`,
               amount: amount,
-              changed_by: null,
             };
 
             try {
@@ -429,7 +400,10 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             // Also refresh all suppliers to update credit balances in the list
             fetchSuppliers();
           },
-          onError: (msg) => setError(msg),
+          onError: (msg) => {
+            setError(msg);
+            toast.error(msg);
+          },
         }
       );
       setLoading(false);
@@ -448,14 +422,13 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
         {
           onSuccess: async () => {
             // Add history entry for credit adjustment
-            const historyEntry = {
+            const historyEntry: SupplierHistoryEvent = {
               id: uuidv4(),
-              supplier_id: supplierId,
+              supplierId: supplierId,
               date: new Date().toISOString(),
-              type: "Credit Balance Adjusted" as SupplierHistoryEventType,
+              type: "Credit Balance Adjusted",
               notes: notes || `Credit balance adjusted by $${amount}`,
               amount: amount,
-              changed_by: null,
             };
 
             try {
@@ -473,7 +446,10 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             await fetchSupplierById(supplierId);
             fetchSuppliers();
           },
-          onError: (msg) => setError(msg),
+          onError: (msg) => {
+            setError(msg);
+            toast.error(msg);
+          },
         }
       );
       setLoading(false);
@@ -486,6 +462,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
     async (supplierId: string) => {
       setLoading(true);
       clearError();
+
       await withAsync(
         () =>
           invoke<SupplierHistoryEvent[]>("get_supplier_history", {
@@ -504,7 +481,10 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
               )
             );
           },
-          onError: (msg) => setError(msg),
+          onError: (msg) => {
+            setError(msg);
+            toast.error(msg);
+          },
         }
       );
       setLoading(false);
@@ -670,5 +650,47 @@ export function useSupplierActions(): SupplierActions {
     adjustCredit,
     getSupplierHistory,
     getSupplierById,
+  };
+}
+
+// ✅ Utility: wrap async calls with error handling
+async function withAsync<T>(
+  action: () => Promise<T>,
+  {
+    onSuccess,
+    onError,
+  }: { onSuccess?: (res: T) => void; onError?: (msg: string) => void } = {}
+) {
+  try {
+    const result = await action();
+    onSuccess?.(result);
+    return result;
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Unexpected error";
+    onError?.(errorMessage);
+    toast.error(errorMessage);
+    throw err;
+  }
+}
+
+// ✅ Map DB supplier to frontend Supplier
+function mapSupplierFromDB(dbSupplier: any): Supplier {
+  return {
+    id: String(dbSupplier.id),
+    name: dbSupplier.name,
+    contactName: dbSupplier.contact_name,
+    email: dbSupplier.email,
+    phone: dbSupplier.phone,
+    address: dbSupplier.address,
+    notes: dbSupplier.notes,
+    preferredPaymentMethod: dbSupplier.preferred_payment_method,
+    // Map outstanding_balance to outstandingBalance
+    outstandingBalance: dbSupplier.outstanding_balance ?? 0,
+    // Map status string to status enum
+    status: dbSupplier.status,
+    createdAt: dbSupplier.created_at,
+    updatedAt: dbSupplier.updated_at,
+    history: dbSupplier.history || [],
   };
 }

@@ -27,11 +27,12 @@ import {
   useSupplierState,
   useSupplierActions,
 } from "@/context/SupplierContext";
+import { SupplierForm } from "./SupplierForm";
 
 const SupplierPageClient = () => {
   // Use actual supplier context instead of mock data
   const { suppliers, loading, error } = useSupplierState();
-  const { deleteSupplier } = useSupplierActions();
+  const { deleteSupplier, initialize } = useSupplierActions();
 
   // Filter and sort state
   const [filters, setFilters] = useState({
@@ -185,6 +186,12 @@ const SupplierPageClient = () => {
     setSelectedSupplier(null);
   };
 
+  // Handle add new supplier
+  const handleAddNew = () => {
+    setSelectedSupplier(null);
+    setShowAddModal(true);
+  };
+
   // Initialize suppliers data on component mount
   // useEffect(() => {
   //   initialize();
@@ -295,7 +302,7 @@ const SupplierPageClient = () => {
               <span className="hidden sm:inline">Import</span>
             </button>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={handleAddNew}
               className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -596,39 +603,16 @@ const SupplierPageClient = () => {
           )}
         </div>
 
-        {/* Add/Edit Modal Placeholder */}
+        {/* Add/Edit Modal Placeholder - Replaced with actual SupplierForm */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-lg w-full max-w-md my-8">
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h2 className="text-lg font-bold text-gray-900">
-                  {selectedSupplier ? "Edit Supplier" : "Add New Supplier"}
-                </h2>
-                <button
-                  onClick={handleCloseModal}
-                  className="text-gray-400 hover:text-gray-600 text-xl"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="p-4 text-center">
-                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-blue-500" />
-                <p className="text-gray-700">
-                  Supplier form component will be added here
-                </p>
-                <p className="text-xs mt-2 text-gray-500">
-                  This will include: name, contact details, payment method,
-                  credit balance, etc.
-                </p>
-                <button
-                  onClick={handleCloseModal}
-                  className="mt-4 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 text-gray-700 text-sm"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
+          <SupplierForm
+            supplier={selectedSupplier || undefined}
+            onSuccess={() => {
+              handleCloseModal();
+              // Refresh the supplier list
+              initialize();
+            }}
+          />
         )}
       </div>
     </div>

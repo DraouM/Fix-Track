@@ -1,6 +1,5 @@
 "use client";
 
-import { z } from "zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,65 +28,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Building2, User, Mail, Phone, MapPin, CreditCard } from "lucide-react";
 import { toast } from "sonner";
-import type { Supplier } from "@/types/supplier";
-
-const supplierFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  contactName: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  notes: z.string().optional(),
-  preferredPaymentMethod: z
-    .enum(["Bank Transfer", "Cash", "Check", "Credit Card"])
-    .optional(),
-  active: z.boolean().default(true),
-});
-
-type SupplierFormValues = z.infer<typeof supplierFormSchema>;
+import { Supplier, supplierSchema } from "@/types/supplier";
+import { useSupplierActions } from "@/context/SupplierContext";
 
 interface SupplierFormProps {
-  supplier?: Supplier;
+  supplier?: Supplier | null;
   onSuccess?: () => void;
+  trigger?: React.ReactNode;
 }
 
-export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
+export function SupplierForm({
+  supplier = null,
+  onSuccess,
+  trigger,
+}: SupplierFormProps) {
   const [open, setOpen] = useState(false);
   const isEditing = !!supplier;
+  const { createSupplier, updateSupplier } = useSupplierActions();
 
-  const form = useForm<SupplierFormValues>({
-    resolver: zodResolver(supplierFormSchema),
+  const form = useForm({
+    resolver: zodResolver(supplierSchema),
     defaultValues: {
-      name: supplier?.name ?? "",
-      contactName: supplier?.contactName ?? "",
-      email: supplier?.email ?? "",
-      phone: supplier?.phone ?? "",
-      address: supplier?.address ?? "",
-      notes: supplier?.notes ?? "",
-      preferredPaymentMethod: supplier?.preferredPaymentMethod,
-      active: supplier?.active ?? true,
+      name: supplier?.name || "",
+      contactName: supplier?.contactName || "",
+      email: supplier?.email || "",
+      phone: supplier?.phone || "",
+      address: supplier?.address || "",
+      notes: supplier?.notes || "",
+      preferredPaymentMethod: supplier?.preferredPaymentMethod || undefined,
+      status: supplier?.status || "active",
+      outstandingBalance: supplier?.outstandingBalance || 0,
     },
   });
 
-  async function onSubmit(data: SupplierFormValues) {
+  async function onSubmit(data: any) {
     try {
-      // TODO: Implement supplier creation/update
-      const response = await fetch("/api/suppliers", {
-        method: isEditing ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isEditing ? { ...data, id: supplier.id } : data),
-      });
-
-      if (!response.ok) throw new Error("Failed to save supplier");
-
-      toast.success(
-        isEditing
-          ? "Supplier updated successfully"
-          : "Supplier created successfully"
-      );
+      if (isEditing && supplier) {
+        await updateSupplier(supplier.id, data);
+        toast.success("Supplier updated successfully");
+      } else {
+        await createSupplier(data);
+        toast.success("Supplier created successfully");
+      }
       setOpen(false);
-      form.reset();
       onSuccess?.();
     } catch (error) {
       toast.error("Failed to save supplier");
@@ -98,125 +83,237 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>{isEditing ? "Edit Supplier" : "Add Supplier"}</Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <Button>{isEditing ? "Edit Supplier" : "Add Supplier"}</Button>
+        )}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-blue-600" />
             {isEditing ? "Edit Supplier" : "Add New Supplier"}
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="contactName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contact Person</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input type="tel" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Supplier Information Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-gray-600" />
+                <h4 className="font-medium text-gray-900">
+                  Supplier Information
+                </h4>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supplier Name *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            placeholder="Enter supplier name"
+                            className="pl-10"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="contactName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Person</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            placeholder="Contact person name"
+                            className="pl-10"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="preferredPaymentMethod"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred Payment Method</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select payment method" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Bank Transfer">
-                        Bank Transfer
-                      </SelectItem>
-                      <SelectItem value="Cash">Cash</SelectItem>
-                      <SelectItem value="Check">Check</SelectItem>
-                      <SelectItem value="Credit Card">Credit Card</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end gap-4">
+
+            {/* Contact Information Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-gray-600" />
+                <h4 className="font-medium text-gray-900">
+                  Contact Information
+                </h4>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                            <Input
+                              type="email"
+                              placeholder="email@example.com"
+                              className="pl-10"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                            <Input
+                              type="tel"
+                              placeholder="+1 (555) 123-4567"
+                              className="pl-10"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Textarea
+                            placeholder="Enter full address"
+                            className="pl-10"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Business Information Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-gray-600" />
+                <h4 className="font-medium text-gray-900">
+                  Business Information
+                </h4>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <FormField
+                  control={form.control}
+                  name="preferredPaymentMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preferred Payment Method</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select payment method" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Bank Transfer">
+                            Bank Transfer
+                          </SelectItem>
+                          <SelectItem value="Cash">Cash</SelectItem>
+                          <SelectItem value="Check">Check</SelectItem>
+                          <SelectItem value="Credit Card">
+                            Credit Card
+                          </SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || "active"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Additional notes about this supplier"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -224,8 +321,12 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {isEditing ? "Update Supplier" : "Create Supplier"}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting
+                  ? "Saving..."
+                  : isEditing
+                  ? "Update Supplier"
+                  : "Create Supplier"}
               </Button>
             </div>
           </form>

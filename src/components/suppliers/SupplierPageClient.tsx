@@ -475,11 +475,12 @@ const SupplierPageClient = () => {
                           </div>
                         )}
                         {supplier.address && (
-                          <div className="flex items-start gap-2 text-sm text-gray-500 mt-1">
+                          <div
+                            className="text-sm text-gray-500 flex items-start gap-2 mt-1 truncate"
+                            title={supplier.address}
+                          >
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                            <span className="truncate max-w-[120px] md:max-w-[150px]">
-                              {supplier.address}
-                            </span>
+                            <span className="truncate">{supplier.address}</span>
                           </div>
                         )}
                       </div>
@@ -512,7 +513,9 @@ const SupplierPageClient = () => {
                       <div className="flex items-center gap-1 text-sm text-gray-500">
                         <Clock className="w-3 h-3 flex-shrink-0" />
                         <span className="truncate">
-                          {formatDate(supplier.updatedAt)}
+                          {supplier.updatedAt
+                            ? formatDate(supplier.updatedAt)
+                            : "invalid date"}
                         </span>
                       </div>
                     </td>

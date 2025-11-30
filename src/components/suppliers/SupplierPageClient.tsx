@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Search,
@@ -28,8 +29,10 @@ import {
   useSupplierActions,
 } from "@/context/SupplierContext";
 import { SupplierForm } from "./SupplierForm";
+import SupplierDetail from "./SupplierDetail";
 
 const SupplierPageClient = () => {
+  const router = useRouter();
   // Use actual supplier context instead of mock data
   const { suppliers, loading, error } = useSupplierState();
   const { deleteSupplier, initialize } = useSupplierActions();
@@ -50,6 +53,7 @@ const SupplierPageClient = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
     null
   );
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Filter and sort suppliers
   const filteredAndSortedSuppliers = useMemo(() => {
@@ -445,7 +449,11 @@ const SupplierPageClient = () => {
                 {filteredAndSortedSuppliers.map((supplier) => (
                   <tr
                     key={supplier.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedSupplier(supplier);
+                      setShowDetailModal(true);
+                    }}
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
@@ -529,21 +537,30 @@ const SupplierPageClient = () => {
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-1">
                         <button
-                          onClick={() => handleEdit(supplier)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(supplier);
+                          }}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                           title="Edit supplier"
                         >
                           <Pencil className="w-4 h-4 text-gray-600" />
                         </button>
                         <button
-                          onClick={() => handleDelete(supplier.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(supplier.id);
+                          }}
                           className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete supplier"
                           disabled={loading}
                         >
                           <Trash className="w-4 h-4 text-red-600" />
                         </button>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors md:hidden">
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors md:hidden"
+                        >
                           <MoreHorizontal className="w-4 h-4 text-gray-600" />
                         </button>
                       </div>
@@ -613,6 +630,26 @@ const SupplierPageClient = () => {
               initialize();
             }}
           />
+        )}
+
+        {/* Supplier Detail Modal */}
+        {showDetailModal && selectedSupplier && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center rounded-t-lg">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Supplier Details
+                </h2>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="text-gray-400 hover:text-gray-500 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              <SupplierDetail supplierId={selectedSupplier.id} />
+            </div>
+          </div>
         )}
       </div>
     </div>

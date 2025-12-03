@@ -77,7 +77,7 @@ export const usePrintUtils = () => {
                 }
                 body { 
                   font-family: 'Courier New', Courier, monospace;
-                  font-size: 4px;
+                  font-size: 12px; /* Increased from 4px to 12px */
                   line-height: 1.0;
                   color: #000;
                   background: white;
@@ -101,27 +101,25 @@ export const usePrintUtils = () => {
           </head>
           <body>
             <div class="phone-sticker">
-              <!-- Header - Order # -->
-              <div style="text-align: center; border-bottom: 0.5px dashed #000; padding-bottom: 0.2mm; font-size: 5px; font-weight: bold;">
+              <!-- Header - Order # without dashed line and without repair ID -->
+              <div style="text-align: center; padding-bottom: 0.2mm; font-size: 15px; font-weight: bold;">
                 <!-- YOUR REPAIR SHOP -->
-                <div style="font-size: 3px; font-weight: normal;">#${
-                  repair.id
-                }</div>
+                <!-- Removed repair ID display -->
               </div>
 
               <!-- Device Info - Compact but clear -->
-              <div style="font-size: 5px; text-align: center; font-weight: bold; margin: 0.2mm 0;">
+              <div style="font-size: 15px; text-align: center; font-weight: bold; margin: 0.2mm 0;">
                 ${repair.deviceBrand} ${repair.deviceModel}
               </div>
 
               <!-- Issue description and phone number -->
-              <div style="font-size: 3px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0.2mm 0;">
+              <div style="font-size: 12px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0.2mm 0;">
                 ${repair.issueDescription.substring(0, 25)}${
           repair.issueDescription.length > 25 ? "..." : ""
         }
               </div>
               
-              <div style="font-size: 3px; text-align: center; margin: 0.2mm 0;">
+              <div style="font-size: 12px; text-align: center; margin: 0.2mm 0;">
                 ${repair.customerPhone}
               </div>
             </div>

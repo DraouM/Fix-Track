@@ -40,9 +40,6 @@ import {
   Wrench,
   DollarSign,
   AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  Check,
   Save,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -54,46 +51,11 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
 
 interface RepairFormProps {
   repairToEdit?: Repair | null;
   onSuccess: () => void;
 }
-
-// Wizard steps configuration
-const WIZARD_STEPS = [
-  {
-    id: "customer",
-    title: "Customer Info",
-    description: "Basic customer details",
-    icon: User,
-    color: "blue",
-  },
-  {
-    id: "device",
-    title: "Device Details",
-    description: "Device and issue information",
-    icon: AlertCircle,
-    color: "green",
-  },
-  {
-    id: "cost",
-    title: "Cost & Timeline",
-    description: "Pricing and scheduling",
-    icon: DollarSign,
-    color: "purple",
-  },
-  {
-    id: "status",
-    title: "Status & Parts",
-    description: "Repair status and parts used",
-    icon: Wrench,
-    color: "orange",
-  },
-] as const;
-
-type WizardStep = (typeof WIZARD_STEPS)[number]["id"];
 
 // Simplified form data structure to avoid type conflicts
 // Note: paymentStatus is now calculated, not manually set
@@ -114,13 +76,8 @@ export default function RepairForm({
   onSuccess,
 }: RepairFormProps) {
   const { createRepair, updateRepair } = useRepairContext();
-
-  // Wizard state
-  const [currentStep, setCurrentStep] = useState<WizardStep>("customer");
-  const [completedSteps, setCompletedSteps] = useState<Set<WizardStep>>(
-    new Set()
-  );
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormData>({
     defaultValues: repairToEdit
@@ -192,39 +149,8 @@ export default function RepairForm({
     }
   }, [form, repairToEdit]);
 
-  // Step navigation functions
-  const goToNextStep = () => {
-    const currentIndex = WIZARD_STEPS.findIndex(
-      (step) => step.id === currentStep
-    );
-    if (currentIndex < WIZARD_STEPS.length - 1) {
-      const nextStep = WIZARD_STEPS[currentIndex + 1];
-      setCurrentStep(nextStep.id);
-      setCompletedSteps((prev) => new Set([...prev, currentStep]));
-    }
-  };
-
-  const goToPreviousStep = () => {
-    const currentIndex = WIZARD_STEPS.findIndex(
-      (step) => step.id === currentStep
-    );
-    if (currentIndex > 0) {
-      const prevStep = WIZARD_STEPS[currentIndex - 1];
-      setCurrentStep(prevStep.id);
-    }
-  };
-
-  const goToStep = (stepId: WizardStep) => {
-    setCurrentStep(stepId);
-  };
-
-  // Calculate progress
-  const progress =
-    ((WIZARD_STEPS.findIndex((step) => step.id === currentStep) + 1) /
-      WIZARD_STEPS.length) *
-    100;
-
   async function onSubmit(values: FormData) {
+    setIsSubmitting(true);
     try {
       // Clear draft on successful submit
       localStorage.removeItem("repair-draft");
@@ -264,36 +190,27 @@ export default function RepairForm({
       onSuccess();
     } catch (err) {
       console.error("Failed to save repair:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-6 max-h-[75vh] overflow-y-auto pr-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit(onSubmit)(e);
+        }}
+        className="space-y-4"
       >
-        {/* Header Section */}
-        <div className="border-b pb-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Wrench className="h-5 w-5 text-blue-600" />
-            {repairToEdit ? "Update Repair" : "New Repair"}
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            {repairToEdit
-              ? "Modify repair details"
-              : "Fill in the repair information below"}
-          </p>
-        </div>
-
         {/* Customer Information Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-3">
-            <User className="h-4 w-4 text-gray-600" />
-            <h4 className="font-medium text-gray-900">Customer Information</h4>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-            {/* Customer Name */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <User className="h-4 w-4 text-blue-600" />
+            Customer Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <FormField
               control={form.control}
               name="customerName"
@@ -307,7 +224,7 @@ export default function RepairForm({
                       <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         placeholder="Enter customer name"
-                        className="pl-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="pl-10 h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                         {...field}
                       />
                     </div>
@@ -317,7 +234,6 @@ export default function RepairForm({
               )}
             />
 
-            {/* Phone */}
             <FormField
               control={form.control}
               name="phoneNumber"
@@ -331,7 +247,7 @@ export default function RepairForm({
                       <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         placeholder="e.g., +1 (555) 123-4567"
-                        className="pl-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="pl-10 h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                         {...field}
                       />
                     </div>
@@ -344,12 +260,12 @@ export default function RepairForm({
         </div>
 
         {/* Device Information Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertCircle className="h-4 w-4 text-gray-600" />
-            <h4 className="font-medium text-gray-900">Device Information</h4>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-green-600" />
+            Device Information
+          </h3>
+          <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -362,7 +278,7 @@ export default function RepairForm({
                     <FormControl>
                       <Input
                         placeholder="e.g., Apple, Samsung, Google"
-                        className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                         {...field}
                       />
                     </FormControl>
@@ -381,7 +297,7 @@ export default function RepairForm({
                     <FormControl>
                       <Input
                         placeholder="e.g., iPhone 13, Galaxy S21"
-                        className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                         {...field}
                       />
                     </FormControl>
@@ -391,7 +307,6 @@ export default function RepairForm({
               />
             </div>
 
-            {/* Issue Description */}
             <FormField
               control={form.control}
               name="issueDescription"
@@ -403,7 +318,8 @@ export default function RepairForm({
                   <FormControl>
                     <textarea
                       {...field}
-                      className="w-full min-h-[100px] border rounded-md p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      rows={3}
+                      className="w-full min-h-[100px] border border-gray-300 rounded-md p-3 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 resize-none"
                       placeholder="Describe the issue in detail (e.g., Screen cracked on bottom left corner, phone turns on but display is black...)"
                     />
                   </FormControl>
@@ -414,14 +330,13 @@ export default function RepairForm({
           </div>
         </div>
 
-        {/* Cost and Timeline Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-3">
-            <DollarSign className="h-4 w-4 text-gray-600" />
-            <h4 className="font-medium text-gray-900">Cost & Timeline</h4>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-            {/* Estimated Cost */}
+        {/* Cost & Timeline Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-purple-600" />
+            Cost & Timeline
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <FormField
               control={form.control}
               name="estimatedCost"
@@ -437,8 +352,11 @@ export default function RepairForm({
                         type="number"
                         step="0.01"
                         placeholder="0.00"
-                        className="pl-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="pl-10 h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                         {...field}
+                        onChange={(e) =>
+                          field.onChange(parseFloat(e.target.value) || 0)
+                        }
                       />
                     </div>
                   </FormControl>
@@ -447,7 +365,6 @@ export default function RepairForm({
               )}
             />
 
-            {/* Date Received */}
             <FormField
               control={form.control}
               name="dateReceived"
@@ -461,7 +378,7 @@ export default function RepairForm({
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "w-full justify-start text-left font-normal focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                          "w-full justify-start text-left font-normal h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500",
                           !field.value && "text-muted-foreground"
                         )}
                       >
@@ -489,15 +406,14 @@ export default function RepairForm({
           </div>
         </div>
 
-        {/* Status Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertCircle className="h-4 w-4 text-gray-600" />
-            <h4 className="font-medium text-gray-900">Status Information</h4>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+        {/* Status & Parts Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-orange-600" />
+            Status & Parts
+          </h3>
+          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Repair Status */}
               <FormField
                 control={form.control}
                 name="repairStatus"
@@ -513,7 +429,7 @@ export default function RepairForm({
                       }
                     >
                       <FormControl>
-                        <SelectTrigger className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <SelectTrigger className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500">
                           <SelectValue placeholder="Select repair status" />
                         </SelectTrigger>
                       </FormControl>
@@ -549,7 +465,6 @@ export default function RepairForm({
                 )}
               />
 
-              {/* Payment Status - Calculated and Read-Only */}
               <div>
                 <FormLabel className="text-sm font-medium">
                   Payment Status
@@ -596,127 +511,150 @@ export default function RepairForm({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Parts Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-gray-600" />
-              <h4 className="font-medium text-gray-900">Parts Used</h4>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
-              onClick={() =>
-                append({
-                  partId: Date.now().toString(),
-                  name: "",
-                  quantity: 1,
-                  unitCost: 0,
-                })
-              }
-            >
-              <Plus className="mr-1 h-4 w-4" /> Add Part
-            </Button>
-          </div>
-
-          {fields.length === 0 ? (
-            <div className="bg-gray-50 rounded-lg p-6 text-center">
-              <Wrench className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No parts added yet</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Click "Add Part" to include replacement parts
-              </p>
-            </div>
-          ) : (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="space-y-3">
-                {fields.map((fieldItem, index) => (
-                  <div
-                    key={fieldItem.id}
-                    className="bg-white rounded-md p-3 border border-gray-200"
-                  >
-                    <div className="flex gap-3 items-start">
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Part name (e.g., Screen, Battery, Charging Port)"
-                          className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          {...form.register(`usedParts.${index}.name` as const)}
-                        />
-                      </div>
-                      <div className="w-20">
-                        <Input
-                          type="number"
-                          placeholder="Qty"
-                          className="focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          {...form.register(
-                            `usedParts.${index}.quantity` as const,
-                            {
-                              valueAsNumber: true,
-                            }
-                          )}
-                        />
-                      </div>
-                      <div className="w-28">
-                        <div className="relative">
-                          <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="Cost"
-                            className="pl-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            {...form.register(
-                              `usedParts.${index}.unitCost` as const,
-                              {
-                                valueAsNumber: true,
-                              }
-                            )}
-                          />
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-red-50 hover:text-red-600"
-                        onClick={() => remove(index)}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Wrench className="h-4 w-4 text-gray-600" />
+                  <h4 className="font-medium text-gray-900 text-sm">
+                    Parts Used
+                  </h4>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
+                  onClick={() =>
+                    append({
+                      partId: Date.now().toString(),
+                      name: "",
+                      quantity: 1,
+                      unitCost: 0,
+                    })
+                  }
+                >
+                  <Plus className="mr-1 h-4 w-4" /> Add Part
+                </Button>
               </div>
+
+              {fields.length === 0 ? (
+                <div className="bg-gray-50 rounded-lg p-4 text-center border border-dashed border-gray-300">
+                  <Wrench className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No parts added yet</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Click "Add Part" to include replacement parts
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {fields.map((fieldItem, index) => (
+                    <div
+                      key={fieldItem.id}
+                      className="bg-gray-50 rounded-md p-2 border border-gray-200"
+                    >
+                      <div className="flex gap-3 items-start">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="md:col-span-1">
+                            <Input
+                              placeholder="Part name"
+                              className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                              {...form.register(
+                                `usedParts.${index}.name` as const
+                              )}
+                            />
+                          </div>
+                          <div className="md:col-span-1">
+                            <Input
+                              type="number"
+                              placeholder="Quantity"
+                              className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                              {...form.register(
+                                `usedParts.${index}.quantity` as const,
+                                {
+                                  valueAsNumber: true,
+                                }
+                              )}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 0;
+                                form.setValue(
+                                  `usedParts.${index}.quantity` as any,
+                                  value
+                                );
+                              }}
+                            />
+                          </div>
+                          <div className="md:col-span-1">
+                            <div className="relative">
+                              <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="Unit cost"
+                                className="pl-8 h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                                {...form.register(
+                                  `usedParts.${index}.unitCost` as const,
+                                  {
+                                    valueAsNumber: true,
+                                  }
+                                )}
+                                onChange={(e) => {
+                                  const value = parseFloat(e.target.value) || 0;
+                                  form.setValue(
+                                    `usedParts.${index}.unitCost` as any,
+                                    value
+                                  );
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-red-50 hover:text-red-600 h-10 w-10"
+                          onClick={() => remove(index)}
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Submit Section */}
-        <div className="border-t pt-6 space-y-3">
+        {/* Submit Button */}
+        <div className="flex justify-end pt-4">
           <Button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 h-12 text-base font-medium"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            disabled={isSubmitting}
           >
-            {repairToEdit ? (
+            {isSubmitting ? (
               <>
-                <Wrench className="mr-2 h-5 w-5" />
-                Update Repair
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                {repairToEdit ? "Updating..." : "Creating..."}
               </>
             ) : (
               <>
-                <Plus className="mr-2 h-5 w-5" />
-                Create Repair
+                <Save className="h-4 w-4" />
+                {repairToEdit ? "Update Repair" : "Create Repair"}
               </>
             )}
           </Button>
-          <p className="text-xs text-gray-500 text-center">
-            * Required fields must be filled out
-          </p>
         </div>
+
+        {/* Auto-save indicator */}
+        {isAutoSaving && (
+          <div className="flex items-center gap-2 text-sm text-blue-600">
+            <div className="h-2 w-2 bg-blue-600 rounded-full animate-pulse"></div>
+            Saving draft...
+          </div>
+        )}
       </form>
     </Form>
   );

@@ -21,12 +21,16 @@ import { RepairPaymentForm } from "./RepairPaymentForm";
 import { RepairDataTable } from "./repair-data-table";
 import { createRepairColumns } from "./repair-columns";
 
+// Import print utilities
+import { usePrintUtils } from "@/hooks/usePrintUtils";
+
 interface RepairTableProps {
   onEditRepair: (repair: Repair) => void;
 }
 
 export function RepairTable({ onEditRepair }: RepairTableProps) {
   const { repairs, updateRepairStatus, deleteRepair } = useRepairContext();
+  const { printSticker, printReceipt } = usePrintUtils(); // Add print sticker hook
 
   const [selectedRepair, setSelectedRepair] = useState<Repair | null>(null);
   const [paymentDialogRepair, setPaymentDialogRepair] = useState<Repair | null>(
@@ -82,6 +86,38 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
     [deleteRepair]
   );
 
+  // ✅ Handle print sticker functionality
+  const handlePrintSticker = useCallback(
+    async (repair: Repair) => {
+      try {
+        const success = await printSticker(repair);
+        if (!success) {
+          alert("Failed to print sticker. Please check your printer settings.");
+        }
+      } catch (error) {
+        console.error("Error printing sticker:", error);
+        alert("An error occurred while printing the sticker.");
+      }
+    },
+    [printSticker]
+  );
+
+  // ✅ Handle print receipt functionality
+  const handlePrintReceipt = useCallback(
+    async (repair: Repair) => {
+      try {
+        const success = await printReceipt(repair);
+        if (!success) {
+          alert("Failed to print receipt. Please check your printer settings.");
+        }
+      } catch (error) {
+        console.error("Error printing receipt:", error);
+        alert("An error occurred while printing the receipt.");
+      }
+    },
+    [printReceipt]
+  );
+
   // ✅ Create column actions for TanStack Table
   const columnActions = useMemo(
     () => ({
@@ -92,6 +128,8 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       updateRepairStatus,
       formatCurrency,
       getPaymentBadgeProps,
+      onPrintSticker: handlePrintSticker, // Add print sticker action
+      onPrintReceipt: handlePrintReceipt, // Add print receipt action
     }),
     [
       onEditRepair,
@@ -99,6 +137,8 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       updateRepairStatus,
       formatCurrency,
       getPaymentBadgeProps,
+      handlePrintSticker, // Add print sticker to dependencies
+      handlePrintReceipt, // Add print receipt to dependencies
     ]
   );
 
@@ -132,13 +172,15 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       {/* -------------------- Payment Dialog -------------------- */}
       <Dialog
         open={!!paymentDialogRepair}
-        onOpenChange={() => setPaymentDialogRepair(null)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setPaymentDialogRepair(null);
+        }}
       >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Record Payment</DialogTitle>
             <DialogDescription>
-              Add a payment for {paymentDialogRepair?.customerName}'s repair.
+              Add a payment for this repair order
             </DialogDescription>
           </DialogHeader>
           {paymentDialogRepair && (

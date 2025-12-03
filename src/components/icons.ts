@@ -1,5 +1,37 @@
-
-import {ArrowRight, Check, ChevronsUpDown, Circle, Copy, Edit, ExternalLink, File, HelpCircle, Home, Loader2, Mail, MessageSquare, Moon, Plus, PlusCircle, Search, Server, Settings, Share2, Shield, Sun, Trash, User, X, Workflow, Wrench, Package, BarChart3, ShoppingCart, History } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  ChevronsUpDown,
+  Circle,
+  Copy,
+  Edit,
+  ExternalLink,
+  File,
+  HelpCircle,
+  Home,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Moon,
+  Plus,
+  PlusCircle,
+  Receipt,
+  Search,
+  Server,
+  Settings,
+  Share2,
+  Shield,
+  Sun,
+  Trash,
+  User,
+  X,
+  Workflow,
+  Wrench,
+  Package,
+  BarChart3,
+  ShoppingCart,
+  History,
+} from "lucide-react";
 
 const Icons = {
   arrowRight: ArrowRight,
@@ -20,6 +52,7 @@ const Icons = {
   messageSquare: MessageSquare,
   plus: Plus,
   plusCircle: PlusCircle,
+  receipt: Receipt, // Added for Receipt printing
   search: Search,
   server: Server,
   settings: Settings,
@@ -35,4 +68,4 @@ const Icons = {
   history: History, // Added for Inventory History
 };
 
-export {Icons};
+export { Icons };

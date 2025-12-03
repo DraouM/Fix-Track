@@ -124,17 +124,17 @@ export function RepairsPageInner() {
     };
 
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-            <Icon className="w-5 h-5" />
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <div className={`p-1.5 rounded-lg ${colorClasses[color]}`}>
+            <Icon className="w-4 h-4" />
           </div>
           <span className="text-sm font-medium text-gray-600">{title}</span>
         </div>
-        <div className="mt-3">
-          <div className="text-2xl font-bold text-gray-900">{value}</div>
+        <div className="mt-2">
+          <div className="text-xl font-bold text-gray-900">{value}</div>
           {subtitle && (
-            <div className="text-sm text-gray-500 mt-1">{subtitle}</div>
+            <div className="text-xs text-gray-500 mt-1">{subtitle}</div>
           )}
         </div>
       </div>
@@ -142,8 +142,8 @@ export function RepairsPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -174,7 +174,7 @@ export function RepairsPageInner() {
                   Add Repair
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto">
+              <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
                     {repairToEdit ? "Edit Repair" : "New Repair"}
@@ -200,7 +200,7 @@ export function RepairsPageInner() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Wrench}
             title="Total Repairs"

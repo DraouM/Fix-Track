@@ -48,7 +48,8 @@ import {
   Calendar,
   Phone,
   MoreHorizontal,
-  Download,
+  Truck, // Added back as it's still being used
+  // Download,  // Commented out as it's not currently used
 } from "lucide-react";
 import { RepairPaymentForm } from "./RepairPaymentForm";
 import { useState, useEffect } from "react";
@@ -56,7 +57,7 @@ import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { toast } from "sonner";
 import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
 import { StickerTemplate } from "@/components/helpers/StickerTemplate";
-import { PrinterSelectionDialog } from "@/components/helpers/PrinterSelectionDialog";
+// import { PrinterSelectionDialog } from "@/components/helpers/PrinterSelectionDialog";  // Commented out as it's not currently used
 import { reportError } from "@/lib/crashReporter";
 
 interface RepairDetailProps {
@@ -104,11 +105,11 @@ const getStatusIcon = (status: RepairStatus) => {
     case "Pending":
       return <Clock className="h-4 w-4" />;
     case "In Progress":
-      return <Loader className="h-4 w-4" />;
+      return <Loader className="h-4 w-4 animate-spin" />;
     case "Completed":
       return <CheckCircle className="h-4 w-4" />;
     case "Delivered":
-      return <CheckCircle className="h-4 w-4" />;
+      return <Truck className="h-4 w-4" />;
     default:
       return <XCircle className="h-4 w-4" />;
   }
@@ -124,20 +125,20 @@ export function RepairDetail({
   const {
     printReceipt,
     printSticker,
-    downloadAsHTML,
+    // downloadAsHTML,  // Commented out as it's not currently used
     showPrintTroubleshoot,
-    isPrinterSelectionOpen,
-    setIsPrinterSelectionOpen,
-    handlePrinterSelection,
+    // isPrinterSelectionOpen,  // Commented out as it's not currently used
+    // setIsPrinterSelectionOpen,  // Commented out as it's not currently used
+    // handlePrinterSelection,  // Commented out as it's not currently used
   } = usePrintUtils();
 
   // Local state for loading indicators
   const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
   const [isGeneratingSticker, setIsGeneratingSticker] = useState(false);
-  const [isGeneratingEscPosReceipt, setIsGeneratingEscPosReceipt] =
-    useState(false);
-  const [isGeneratingEscPosSticker, setIsGeneratingEscPosSticker] =
-    useState(false);
+  // const [isGeneratingEscPosReceipt, setIsGeneratingEscPosReceipt] =  // Commented out as it's not currently used
+  //   useState(false);
+  // const [isGeneratingEscPosSticker, setIsGeneratingEscPosSticker] =  // Commented out as it's not currently used
+  //   useState(false);
   const [hasError, setHasError] = useState(false);
 
   // Get the most up-to-date repair data from context
@@ -221,6 +222,7 @@ export function RepairDetail({
     }
   };
 
+  /*
   const handlePrintReceiptEscPos = async () => {
     if (isGeneratingEscPosReceipt) return;
 
@@ -250,6 +252,7 @@ export function RepairDetail({
       setIsGeneratingEscPosReceipt(false);
     }
   };
+  */
 
   const handlePrintSticker = async () => {
     if (isGeneratingSticker) return;
@@ -277,6 +280,7 @@ export function RepairDetail({
     }
   };
 
+  /*
   const handlePrintStickerEscPos = async () => {
     if (isGeneratingEscPosSticker) return;
 
@@ -304,6 +308,7 @@ export function RepairDetail({
       setIsGeneratingEscPosSticker(false);
     }
   };
+  */
 
   const handlePopupBlocked = () => {
     toast.info(
@@ -334,7 +339,7 @@ export function RepairDetail({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader className="pb-4 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div>
@@ -466,25 +471,25 @@ export function RepairDetail({
                           <SelectItem value="Pending">
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4" />
-                              Pending
+                              <span>Pending</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="In Progress">
                             <div className="flex items-center gap-2">
-                              <Loader className="h-4 w-4" />
-                              In Progress
+                              <Loader className="h-4 w-4 animate-spin" />
+                              <span>In Progress</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="Completed">
                             <div className="flex items-center gap-2">
                               <CheckCircle className="h-4 w-4" />
-                              Completed
+                              <span>Completed</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="Delivered">
                             <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4" />
-                              Delivered
+                              <Truck className="h-4 w-4" />
+                              <span>Delivered</span>
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -517,133 +522,174 @@ export function RepairDetail({
               </Card>
 
               {/* Financial Information Card */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
+              <Card className="shadow-sm border border-gray-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
                     <DollarSign className="h-5 w-5 text-green-600" />
                     Financial Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-blue-900">
+                          <p className="text-xs font-medium text-blue-700 uppercase tracking-wide">
                             Estimated Cost
                           </p>
-                          <p className="text-2xl font-bold text-blue-700">
+                          <p className="text-xl font-bold text-blue-900 mt-1">
                             ${(repairData.estimatedCost || 0).toFixed(2)}
                           </p>
                         </div>
-                        <DollarSign className="h-8 w-8 text-blue-500" />
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <DollarSign className="h-6 w-6 text-blue-600" />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="p-4 bg-green-50 rounded-xl border border-green-100 hover:bg-green-100 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-green-900">
+                          <p className="text-xs font-medium text-green-700 uppercase tracking-wide">
                             Parts Used
                           </p>
-                          <p className="text-2xl font-bold text-green-700">
+                          <p className="text-xl font-bold text-green-900 mt-1">
                             {repairData.usedParts?.length || 0}
                           </p>
                         </div>
-                        <Smartphone className="h-8 w-8 text-green-500" />
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <Smartphone className="h-6 w-6 text-green-600" />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 hover:bg-purple-100 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-purple-900">
+                          <p className="text-xs font-medium text-purple-700 uppercase tracking-wide">
                             Payments
                           </p>
-                          <p className="text-2xl font-bold text-purple-700">
+                          <p className="text-xl font-bold text-purple-900 mt-1">
                             {repairData.payments?.length || 0}
                           </p>
                         </div>
-                        <CheckCircle className="h-8 w-8 text-purple-500" />
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <CheckCircle className="h-6 w-6 text-purple-600" />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 hover:bg-orange-100 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-orange-900">
+                          <p className="text-xs font-medium text-orange-700 uppercase tracking-wide">
                             Last Updated
                           </p>
-                          <p className="text-sm font-bold text-orange-700">
+                          <p className="text-sm font-bold text-orange-900 mt-1">
                             {repairData.updatedAt
                               ? formatDate(repairData.updatedAt)
                               : "N/A"}
                           </p>
                         </div>
-                        <Calendar className="h-8 w-8 text-orange-500" />
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                          <Calendar className="h-6 w-6 text-orange-600" />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <Separator className="my-4" />
-                  <h4 className="text-sm font-medium mb-2">Record a Payment</h4>
-                  <RepairPaymentForm
-                    repair={repairData}
-                    onSuccess={() => {
-                      console.log("Payment recorded successfully");
-                    }}
-                  />
+                  <Separator className="my-6" />
+
+                  {/* Combined Payment Section - Record Payment and Payment History side-by-side */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Payment History Section - Now on the left */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                        Payment History
+                      </h4>
+                      {repairData.payments &&
+                      Array.isArray(repairData.payments) &&
+                      repairData.payments.length > 0 ? (
+                        <div className="border rounded-xl overflow-hidden shadow-sm">
+                          <Table>
+                            <TableHeader className="bg-gray-50">
+                              <TableRow>
+                                <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                  Date
+                                </TableHead>
+                                <TableHead className="text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                  Amount
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {repairData.payments.map((payment) => (
+                                <TableRow
+                                  key={payment.id}
+                                  className="hover:bg-gray-50"
+                                >
+                                  <TableCell className="py-3">
+                                    <div className="text-sm text-gray-900">
+                                      {payment.date
+                                        ? formatDate(payment.date)
+                                        : "N/A"}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right py-3">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      ${(payment.amount || 0).toFixed(2)}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                          <div className="p-4 bg-gray-50 border-t">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-700">
+                                Total Paid
+                              </span>
+                              <span className="text-lg font-bold text-green-700">
+                                $
+                                {repairData.payments
+                                  .reduce((sum, p) => sum + (p.amount || 0), 0)
+                                  .toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-200">
+                          <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <DollarSign className="h-6 w-6 text-gray-400" />
+                          </div>
+                          <p className="text-sm font-medium text-gray-900 mb-1">
+                            No payment history yet
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Record a payment to see history
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Record a Payment Section - Now on the right */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                        Record a Payment
+                      </h4>
+                      <div className="border rounded-xl p-5 bg-white shadow-sm">
+                        <RepairPaymentForm
+                          repair={repairData}
+                          onSuccess={() => {
+                            console.log("Payment recorded successfully");
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-
-              {/* Payments Card */}
-              {repairData.payments &&
-                Array.isArray(repairData.payments) &&
-                repairData.payments.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <DollarSign className="h-5 w-5 text-green-600" />
-                        Payment History
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Date</TableHead>
-                              <TableHead className="text-right">
-                                Amount
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {repairData.payments.map((payment) => (
-                              <TableRow key={payment.id}>
-                                <TableCell>
-                                  {payment.date
-                                    ? formatDate(payment.date)
-                                    : "N/A"}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  ${(payment.amount || 0).toFixed(2)}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      <Separator className="my-3" />
-                      <div className="text-right font-semibold">
-                        Total Paid: $
-                        {repairData.payments
-                          .reduce((sum, p) => sum + (p.amount || 0), 0)
-                          .toFixed(2)}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
 
               {/* Repair History Card */}
               {repairData.history &&
@@ -701,19 +747,6 @@ export function RepairDetail({
               </Button>
 
               <Button
-                onClick={handlePrintReceiptEscPos}
-                disabled={isGeneratingEscPosReceipt}
-                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
-              >
-                {isGeneratingEscPosReceipt ? (
-                  <Loader className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Printer className="h-4 w-4" />
-                )}
-                {isGeneratingEscPosReceipt ? "ESC/POS..." : "ESC/POS Receipt"}
-              </Button>
-
-              <Button
                 onClick={handlePrintSticker}
                 disabled={isGeneratingSticker}
                 className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
@@ -726,19 +759,6 @@ export function RepairDetail({
                 {isGeneratingSticker ? "Printing..." : "Print Sticker"}
               </Button>
 
-              <Button
-                onClick={handlePrintStickerEscPos}
-                disabled={isGeneratingEscPosSticker}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
-              >
-                {isGeneratingEscPosSticker ? (
-                  <Loader className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4" />
-                )}
-                {isGeneratingEscPosSticker ? "ESC/POS..." : "ESC/POS Sticker"}
-              </Button>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon">
@@ -746,20 +766,6 @@ export function RepairDetail({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => downloadAsHTML(repairData, "receipt")}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download Receipt (Backup)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => downloadAsHTML(repairData, "sticker")}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download Sticker (Backup)
-                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={showPrintTroubleshoot}
                     className="flex items-center gap-2 text-blue-600"
@@ -774,15 +780,6 @@ export function RepairDetail({
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Printer Selection Dialog */}
-      <PrinterSelectionDialog
-        open={isPrinterSelectionOpen}
-        onOpenChange={setIsPrinterSelectionOpen}
-        onPrinterSelect={handlePrinterSelection}
-        title="Select Printer"
-        description="Choose a printer for your document"
-      />
 
       {/* Hidden Print Templates - These are rendered outside the dialog */}
       {repairData && (

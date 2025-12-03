@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Icons } from "@/components/icons";
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Printer, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import type { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
@@ -75,6 +75,10 @@ interface RepairColumnActions {
     variant: "default" | "destructive" | "secondary" | "outline";
     className: string;
   };
+  // Add print sticker function
+  onPrintSticker: (repair: Repair) => void;
+  // Add print receipt function
+  onPrintReceipt: (repair: Repair) => void;
 }
 
 export const createRepairColumns = (
@@ -197,31 +201,56 @@ export const createRepairColumns = (
     cell: ({ row }) => {
       const repair = row.original;
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => actions.onViewRepair(repair)}>
-              <Icons.search className="mr-2 h-4 w-4" /> View
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onEditRepair(repair)}>
-              <Edit className="mr-2 h-4 w-4" /> Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => actions.onDeleteRepair(repair.id)}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onPaymentDialog(repair)}>
-              Record Payment
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1">
+          {/* Direct Print Sticker Button */}
+          <Button
+            variant="ghost"
+            className="h-8 w-8 p-0"
+            onClick={() => actions.onPrintSticker(repair)}
+            title="Print Sticker"
+          >
+            <span className="sr-only">Print Sticker</span>
+            <FileText className="h-4 w-4" />
+          </Button>
+
+          {/* Direct Print Receipt Button */}
+          <Button
+            variant="ghost"
+            className="h-8 w-8 p-0"
+            onClick={() => actions.onPrintReceipt(repair)}
+            title="Print Receipt"
+          >
+            <span className="sr-only">Print Receipt</span>
+            <Printer className="h-4 w-4" />
+          </Button>
+
+          {/* Actions Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => actions.onViewRepair(repair)}>
+                <Icons.search className="mr-2 h-4 w-4" /> View
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => actions.onEditRepair(repair)}>
+                <Edit className="mr-2 h-4 w-4" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => actions.onDeleteRepair(repair.id)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => actions.onPaymentDialog(repair)}>
+                Record Payment
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       );
     },
   },

@@ -1,10 +1,27 @@
+/*
+🖨️ Printer Requirements
+Sticker Printer (Thermal)
+
+Width: 2 inches (50.8 mm) - Most common
+Height: 1 inch (25.4 mm) - Standard
+Alternative: 4" x 6" (101.6mm x 152.4mm) - Larger labels
+Type: Thermal sticker printer (like Zebra, Brother QL series)
+Paper: Die-cut labels, continuous roll
+Connection: USB, Bluetooth, or Network
+
+*/
+
 import { Repair } from "@/types/repair";
+import { getShopInfo } from "@/lib/shopInfo";
 
 interface StickerTemplateProps {
   repair: Repair;
 }
 
 export function StickerTemplate({ repair }: StickerTemplateProps) {
+  // Get shop information
+  const shopInfo = getShopInfo();
+
   return (
     <div
       className="phone-sticker"
@@ -13,7 +30,7 @@ export function StickerTemplate({ repair }: StickerTemplateProps) {
         height: "1in",
         padding: "0.3mm",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: "4px",
+        fontSize: "12px",
         lineHeight: "1.0",
         color: "#000",
         backgroundColor: "#fff",
@@ -22,26 +39,36 @@ export function StickerTemplate({ repair }: StickerTemplateProps) {
         flexDirection: "column",
       }}
     >
-      {/* Header - Order # */}
+      {/* Header - Shop Name or Logo */}
       <div
         style={{
           textAlign: "center",
-          borderBottom: "0.5px dashed #000",
           paddingBottom: "0.2mm",
-          fontSize: "5px",
+          fontSize: "12px",
           fontWeight: "bold",
         }}
       >
-        {/* YOUR REPAIR SHOP */}
-        <div style={{ fontSize: "3px", fontWeight: "normal" }}>
-          #{repair.id}
-        </div>
+        {shopInfo.logoUrl ? (
+          <img
+            src={shopInfo.logoUrl}
+            alt="Shop Logo"
+            style={{
+              maxWidth: "30mm",
+              maxHeight: "8mm",
+              width: "auto",
+              height: "auto",
+              objectFit: "contain",
+            }}
+          />
+        ) : (
+          shopInfo.shopName
+        )}
       </div>
 
       {/* Device Info - Compact but clear */}
       <div
         style={{
-          fontSize: "5px",
+          fontSize: "15px",
           textAlign: "center",
           fontWeight: "bold",
           margin: "0.2mm 0",
@@ -53,7 +80,7 @@ export function StickerTemplate({ repair }: StickerTemplateProps) {
       {/* Issue description and phone number */}
       <div
         style={{
-          fontSize: "3px",
+          fontSize: "12px",
           textAlign: "center",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -67,7 +94,7 @@ export function StickerTemplate({ repair }: StickerTemplateProps) {
 
       <div
         style={{
-          fontSize: "3px",
+          fontSize: "12px",
           textAlign: "center",
           margin: "0.2mm 0",
         }}

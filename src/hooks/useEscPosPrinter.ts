@@ -5,6 +5,7 @@
 import ReceiptPrinterEncoder from "@point-of-sale/receipt-printer-encoder";
 
 import { Repair } from "@/types/repair";
+import { getShopInfo } from "@/lib/shopInfo";
 
 // Add Tauri import for invoking commands
 import { invoke } from "@tauri-apps/api/core";
@@ -25,6 +26,9 @@ interface PrinterStatus {
 }
 
 export const useEscPosPrinter = () => {
+  // Get shop information
+  const shopInfo = getShopInfo();
+
   // Format date for printing
   const formatPrintDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -195,212 +199,222 @@ export const useEscPosPrinter = () => {
         printerName,
       });
 
-      // Parse the status string into a PrinterStatus object
-      // In a real implementation, this would be a proper JSON response
-      const status: PrinterStatus = {
-        online: true,
-        paperStatus: "ok",
-        errorStatus: "ok",
-        message: statusString as string,
-      };
+      // Parse status string (expecting JSON)
+      let parsedStatus: PrinterStatus;
+      try {
+        parsedStatus = JSON.parse(statusString);
+      } catch (parseError) {
+        console.error("Failed to parse printer status:", parseError);
+        return {
+          success: false,
+          status: {
+            online: false,
+            paperStatus: "ok",
+            errorStatus: "other",
+            message: "Failed to parse printer status",
+          },
+          message: "Failed to parse printer status response",
+        };
+      }
 
-      return { success: true, status };
+      return { success: true, status: parsedStatus };
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
       console.error("Failed to get printer status:", errorMessage);
 
-      // Return offline status on error
-      const status: PrinterStatus = {
-        online: false,
-        paperStatus: "ok",
-        errorStatus: "other",
-        message: errorMessage,
+      return {
+        success: false,
+        status: {
+          online: false,
+          paperStatus: "ok",
+          errorStatus: "other",
+          message: errorMessage,
+        },
+        message: `Failed to get printer status: ${errorMessage}`,
       };
-
-      return { success: false, status, message: errorMessage };
     }
   };
 
-  // Generate ESC/POS commands for a receipt
+  // Generate ESC/POS commands for receipt
   const generateReceiptCommands = (
     repair: Repair,
     options: EscPosPrintOptions = {}
   ): Uint8Array => {
-    try {
-      const {
-        includePayments = true,
-        includeParts = true,
-        autoCut = true,
-      } = options;
+    const {
+      includePayments = true,
+      includeParts = true,
+      autoCut = true,
+    } = options;
 
-      // Validate repair data
-      if (!repair) {
-        throw new Error("Invalid repair data provided");
-      }
+    // Initialize encoder with proper character encoding
+    const encoder = new ReceiptPrinterEncoder();
 
-      // Use the default export correctly
-      const encoder = new ReceiptPrinterEncoder();
+    // Build the receipt content
+    encoder.initialize().align("center");
 
-      // Start building the receipt
-      encoder
-        .initialize()
-        .align("center")
-        .size("double-width-double-height")
-        .text("YOUR REPAIR SHOP")
-        .newline()
-        .text("123 Main St, City, State")
-        .newline()
-        .text("Tel: (555) 123-4567")
-        .newline()
-        .newline()
-        .align("center")
-        .size("double-width-double-height")
-        .text("REPAIR RECEIPT")
-        .newline()
-        .newline()
-        .align("left")
-        .text(`Order #: ${repair.id || "N/A"}`)
-        .newline()
-        .text(
-          `Date: ${
-            repair.createdAt ? formatPrintDate(repair.createdAt) : "N/A"
-          }`
-        )
-        .newline()
-        .text(`Status: ${repair.status || "Unknown"}`)
-        .newline()
-        .newline()
-        .text("--------------------------------")
-        .newline()
-        .text(`CUSTOMER:`)
-        .newline()
-        .text(repair.customerName || "Unknown Customer")
-        .newline()
-        .text(repair.customerPhone || "No phone provided")
-        .newline()
-        .newline()
-        .text("--------------------------------")
-        .newline()
-        .text(`DEVICE:`)
-        .newline()
-        .text(
-          `${repair.deviceBrand || "Unknown"} ${repair.deviceModel || "Device"}`
-        )
-        .newline()
-        .text("Issue:")
-        .newline()
-        .text(repair.issueDescription || "No description provided")
-        .newline()
-        .newline()
-        .text("--------------------------------");
+    // Add logo placeholder for ESC/POS (text-based representation)
+    if (shopInfo.logoUrl) {
+      encoder.text("[LOGO]").newline();
+    }
 
-      // Add parts if requested and available
-      if (
-        includeParts &&
-        repair.usedParts &&
-        Array.isArray(repair.usedParts) &&
-        repair.usedParts.length > 0
-      ) {
-        encoder.newline().newline().text("PARTS USED:").newline();
-        repair.usedParts.forEach((part) => {
-          encoder
-            .text(
-              `${part.partName || "Unknown part"} x${
-                part.quantity || 0
-              }      $${(part.cost || 0).toFixed(2)}`
-            )
-            .newline();
-        });
-        encoder.text("--------------------------------");
-      }
+    encoder
+      .text(shopInfo.shopName)
+      .newline()
+      .text(shopInfo.address)
+      .newline()
+      .text("Tel: " + shopInfo.phoneNumber)
+      .newline();
 
-      // Financial summary
-      encoder
-        .newline()
-        .newline()
-        .align("left")
-        .text(
-          `REPAIR COST:              $${(repair.estimatedCost || 0).toFixed(2)}`
+    if (shopInfo.email) {
+      encoder.text("Email: " + shopInfo.email).newline();
+    }
+
+    if (shopInfo.website) {
+      encoder.text("Web: " + shopInfo.website).newline();
+    }
+
+    encoder
+      .newline()
+      .align("center")
+      .size("double-width-double-height")
+      .text("REPAIR RECEIPT")
+      .newline()
+      .newline()
+      .align("left")
+      .text(`Order #: ${repair.id || "N/A"}`)
+      .newline()
+      .text(
+        `Date: ${repair.createdAt ? formatPrintDate(repair.createdAt) : "N/A"}`
+      )
+      .newline()
+      .text(`Status: ${repair.status || "Unknown"}`)
+      .newline()
+      .newline()
+      .text("--------------------------------")
+      .newline()
+      .text(`CUSTOMER:`)
+      .newline()
+      .text(repair.customerName || "Unknown Customer")
+      .newline()
+      .text(repair.customerPhone || "No phone provided")
+      .newline()
+      .newline()
+      .text("--------------------------------")
+      .newline()
+      .text(`DEVICE:`)
+      .newline()
+      .text(
+        `${repair.deviceBrand || "Unknown"} ${repair.deviceModel || "Device"}`
+      )
+      .newline()
+      .text("Issue:")
+      .newline()
+      .text(repair.issueDescription || "No description provided")
+      .newline()
+      .newline()
+      .text("--------------------------------");
+
+    // Add parts if requested and available
+    if (
+      includeParts &&
+      repair.usedParts &&
+      Array.isArray(repair.usedParts) &&
+      repair.usedParts.length > 0
+    ) {
+      encoder.text("PARTS USED:").newline().text("----------------").newline();
+
+      repair.usedParts.forEach((part) => {
+        encoder.text(
+          `${part.partName} x${part.quantity} @ $${part.cost.toFixed(2)} = $${(
+            part.cost * part.quantity
+          ).toFixed(2)}`
         );
+        encoder.newline();
+      });
 
-      // Add payments if requested and available
-      if (
-        includePayments &&
-        repair.payments &&
-        Array.isArray(repair.payments) &&
-        repair.payments.length > 0
-      ) {
-        encoder.newline().newline().text("PAYMENTS:").newline();
-        repair.payments.forEach((payment) => {
-          encoder
-            .text(
-              `${payment.date ? formatPrintDate(payment.date) : "N/A"}      $${(
-                payment.amount || 0
-              ).toFixed(2)}`
-            )
-            .newline();
-        });
+      encoder.text("----------------").newline().newline();
+    }
 
-        const totalPaid = (repair.payments || []).reduce(
-          (sum, p) => sum + (p.amount || 0),
-          0
-        );
-        const balance = (repair.estimatedCost || 0) - totalPaid;
+    // Add financial information
+    encoder
+      .text(`REPAIR COST:             $${repair.estimatedCost.toFixed(2)}`)
+      .newline();
 
-        encoder
-          .text("--------------------------------")
-          .newline()
-          .text(`TOTAL PAID:               $${totalPaid.toFixed(2)}`)
-          .newline()
-          .text("================================")
-          .newline()
-          .size("double-width-double-height")
-          .text(`BALANCE DUE:              $${balance.toFixed(2)}`)
-          .newline();
-      } else {
-        const balance = repair.estimatedCost || 0;
-        encoder
-          .newline()
-          .text("================================")
-          .newline()
-          .size("double-width-double-height")
-          .text(`BALANCE DUE:              $${balance.toFixed(2)}`)
-          .newline();
-      }
-
+    // Add payments if requested and available
+    if (
+      includePayments &&
+      repair.payments &&
+      Array.isArray(repair.payments) &&
+      repair.payments.length > 0
+    ) {
       encoder
-        .align("center")
-        .text("--------------------------------")
         .newline()
-        .text("Thank you for your business!")
+        .text("PAYMENTS:")
         .newline()
-        .text("30-day warranty on parts & labor")
-        .newline()
-        .text("Keep this receipt for your records")
-        .newline()
+        .text("----------------")
         .newline();
 
-      // Add barcode if repair ID exists
-      if (repair.id) {
-        encoder.barcode(repair.id, "code128", { width: 2, height: 40 });
-      }
+      repair.payments.forEach((payment) => {
+        encoder.text(
+          `${formatPrintDate(payment.date)} - ${payment.method}: $${
+            payment.amount || 0
+          }`.padEnd(32)
+        );
+        encoder.newline();
+      });
 
-      // Add auto-cut if requested
-      if (autoCut) {
-        encoder.cut("full");
-      }
-
-      // Generate and return the commands
-      return encoder.encode();
-    } catch (error) {
-      console.error("Error generating receipt commands:", error);
-      throw new Error(
-        `Failed to generate receipt: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+      const totalPaid = (repair.payments || []).reduce(
+        (sum, p) => sum + (p.amount || 0),
+        0
       );
+      const balance = (repair.estimatedCost || 0) - totalPaid;
+
+      encoder
+        .text("--------------------------------")
+        .newline()
+        .text(`TOTAL PAID:               $${totalPaid.toFixed(2)}`)
+        .newline()
+        .text("================================")
+        .newline()
+        .size("double-width-double-height")
+        .text(`BALANCE DUE:              $${balance.toFixed(2)}`)
+        .newline();
+    } else {
+      const balance = repair.estimatedCost || 0;
+      encoder
+        .newline()
+        .text("================================")
+        .newline()
+        .size("double-width-double-height")
+        .text(`BALANCE DUE:              $${balance.toFixed(2)}`)
+        .newline();
     }
+
+    encoder
+      .align("center")
+      .text("--------------------------------")
+      .newline()
+      .text("Thank you for your business!")
+      .newline()
+      .text("30-day warranty on parts & labor")
+      .newline()
+      .text("Keep this receipt for your records")
+      .newline()
+      .newline();
+
+    // Add barcode if repair ID exists
+    if (repair.id) {
+      encoder.barcode(repair.id, "code128", { width: 2, height: 40 });
+    }
+
+    // Add auto-cut if requested
+    if (autoCut) {
+      encoder.cut("full");
+    }
+
+    // Generate and return the commands
+    return encoder.encode();
   };
 
   // Generate ESC/POS commands for a sticker
@@ -423,7 +437,7 @@ export const useEscPosPrinter = () => {
       encoder
         .initialize()
         .align("center")
-        .text("YOUR REPAIR SHOP")
+        .text(shopInfo.shopName)
         .newline()
         .text(`#${repair.id || "N/A"}`)
         .newline()

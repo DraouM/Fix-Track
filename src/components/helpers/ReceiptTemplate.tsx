@@ -11,6 +11,7 @@ Connection: USB, Bluetooth, or Network
 */
 
 import { Repair } from "@/types/repair";
+import { getShopInfo } from "@/lib/shopInfo";
 
 interface ReceiptTemplateProps {
   repair: Repair;
@@ -33,6 +34,9 @@ export function ReceiptTemplate({
     });
   };
 
+  // Get shop information
+  const shopInfo = getShopInfo();
+
   const totalPaid = repair.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const balance = repair.estimatedCost - totalPaid;
 
@@ -49,7 +53,7 @@ export function ReceiptTemplate({
         backgroundColor: "#fff",
       }}
     >
-      {/* Header - Shop Name */}
+      {/* Header - Shop Information */}
       <div
         style={{
           textAlign: "center",
@@ -58,13 +62,39 @@ export function ReceiptTemplate({
           paddingBottom: "6px",
         }}
       >
+        {/* Logo */}
+        {shopInfo.logoUrl && (
+          <div style={{ marginBottom: "4px" }}>
+            <img
+              src={shopInfo.logoUrl}
+              alt="Shop Logo"
+              style={{
+                maxWidth: "50mm",
+                maxHeight: "15mm",
+                width: "auto",
+                height: "auto",
+                objectFit: "contain",
+              }}
+            />
+          </div>
+        )}
+
+        {/* Shop Name */}
         <div
           style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "2px" }}
         >
-          YOUR REPAIR SHOP
+          {shopInfo.shopName}
         </div>
-        <div style={{ fontSize: "8px" }}>123 Main St, City, State</div>
-        <div style={{ fontSize: "8px" }}>Tel: (555) 123-4567</div>
+
+        {/* Contact Information */}
+        <div style={{ fontSize: "8px" }}>{shopInfo.address}</div>
+        <div style={{ fontSize: "8px" }}>Tel: {shopInfo.phoneNumber}</div>
+        {shopInfo.email && (
+          <div style={{ fontSize: "8px" }}>Email: {shopInfo.email}</div>
+        )}
+        {shopInfo.website && (
+          <div style={{ fontSize: "8px" }}>Web: {shopInfo.website}</div>
+        )}
       </div>
 
       {/* Receipt Type */}

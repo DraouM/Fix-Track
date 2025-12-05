@@ -16,6 +16,7 @@ import {
   Download,
   Filter,
   Search,
+  Pencil,
 } from "lucide-react";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -223,7 +224,13 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
               <Download className="h-4 w-4 mr-2" />
               Export Report
             </Button>
-            <Button onClick={handleEditSupplier}>Edit Supplier</Button>
+            <Button
+              onClick={handleEditSupplier}
+              className="flex items-center gap-2"
+            >
+              <Pencil className="h-4 w-4" />
+              Edit Supplier
+            </Button>
           </div>
         </div>
 
@@ -528,13 +535,28 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
 
         {/* Edit Supplier Modal */}
         {showEditModal && (
-          <SupplierForm
-            supplier={supplier}
-            onSuccess={() => {
-              handleCloseEditModal();
-              // In a real implementation, we would refresh the supplier data
-            }}
-          />
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+              <div className="flex justify-between items-center p-4 border-b">
+                <h3 className="text-lg font-semibold">Edit Supplier</h3>
+                <button
+                  onClick={handleCloseEditModal}
+                  className="text-gray-400 hover:text-gray-500 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 flex flex-col">
+                <SupplierForm
+                  supplier={supplier}
+                  onSuccess={() => {
+                    handleCloseEditModal();
+                    // In a real implementation, we would refresh the supplier data
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

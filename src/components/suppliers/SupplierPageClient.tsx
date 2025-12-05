@@ -181,6 +181,7 @@ const SupplierPageClient = () => {
   // Handle edit
   const handleEdit = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
+    setShowDetailModal(false); // Close the detail modal if it's open
     setShowAddModal(true);
   };
 
@@ -188,6 +189,8 @@ const SupplierPageClient = () => {
   const handleCloseModal = () => {
     setShowAddModal(false);
     setSelectedSupplier(null);
+    // Also close the detail modal if it's open
+    setShowDetailModal(false);
   };
 
   // Handle add new supplier
@@ -307,7 +310,7 @@ const SupplierPageClient = () => {
             </button>
             <button
               onClick={handleAddNew}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors shadow-lg"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Add Supplier</span>
@@ -594,13 +597,14 @@ const SupplierPageClient = () => {
                   Show All Suppliers
                 </button>
               ) : (
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add First Supplier
-                </button>
+                <div className="text-center">
+                  <div className="text-gray-500 mb-4">
+                    Get started by adding your first supplier
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Use the "Add Supplier" button in the top right corner
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -622,14 +626,31 @@ const SupplierPageClient = () => {
 
         {/* Add/Edit Modal Placeholder - Replaced with actual SupplierForm */}
         {showAddModal && (
-          <SupplierForm
-            supplier={selectedSupplier || undefined}
-            onSuccess={() => {
-              handleCloseModal();
-              // Refresh the supplier list
-              initialize();
-            }}
-          />
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+              <div className="flex justify-between items-center p-4 border-b">
+                <h3 className="text-lg font-semibold">
+                  {selectedSupplier ? "Edit Supplier" : "Add New Supplier"}
+                </h3>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-400 hover:text-gray-500 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 flex flex-col">
+                <SupplierForm
+                  supplier={selectedSupplier || undefined}
+                  onSuccess={() => {
+                    handleCloseModal();
+                    // Refresh the supplier list
+                    initialize();
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Supplier Detail Modal */}

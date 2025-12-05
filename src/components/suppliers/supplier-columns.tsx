@@ -10,7 +10,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2, Mail, Phone } from "lucide-react";
+import {
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react";
 import { Supplier } from "@/types/supplier";
 
 interface SupplierColumnProps {
@@ -51,7 +58,7 @@ export const supplierColumns = ({
               <Mail className="h-4 w-4" />
               <a
                 href={`mailto:${supplier.email}`}
-                className="text-blue-600 hover:underline"
+                className="text-blue-600 hover:underline truncate"
               >
                 {supplier.email}
               </a>
@@ -62,10 +69,19 @@ export const supplierColumns = ({
               <Phone className="h-4 w-4" />
               <a
                 href={`tel:${supplier.phone}`}
-                className="text-blue-600 hover:underline"
+                className="text-blue-600 hover:underline truncate"
               >
                 {supplier.phone}
               </a>
+            </div>
+          )}
+          {supplier.address && (
+            <div
+              className="text-sm text-gray-500 flex items-start gap-2 mt-1 truncate"
+              title={supplier.address}
+            >
+              <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span className="truncate">{supplier.address}</span>
             </div>
           )}
         </div>
@@ -81,13 +97,13 @@ export const supplierColumns = ({
     },
   },
   {
-    accessorKey: "active",
+    accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const isActive = row.getValue("active") as boolean;
+      const status = row.getValue("status") as string;
       return (
-        <Badge variant={isActive ? "default" : "secondary"}>
-          {isActive ? "Active" : "Inactive"}
+        <Badge variant={status === "active" ? "default" : "secondary"}>
+          {status === "active" ? "Active" : "Inactive"}
         </Badge>
       );
     },

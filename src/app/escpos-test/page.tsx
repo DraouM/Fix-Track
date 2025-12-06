@@ -4,7 +4,7 @@
 import { useEffect } from "react";
 import { useEscPosPrinter } from "@/hooks/useEscPosPrinter";
 import { testRepairData } from "@/components/helpers/test-receipt-data";
-import { FontChangeTest } from "@/components/helpers/FontChangeTest";
+// import { FontChangeTest } from "@/components/helpers/FontChangeTest";
 
 export default function EscPosTestPage() {
   const { generateReceiptCommands, generateStickerCommands } =
@@ -64,9 +64,7 @@ export default function EscPosTestPage() {
         </div>
 
         {/* Add the font change test */}
-        <div className="mb-6">
-          <FontChangeTest />
-        </div>
+        <div className="mb-6">{/* <FontChangeTest /> */}</div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white border rounded-lg p-6 shadow-sm">

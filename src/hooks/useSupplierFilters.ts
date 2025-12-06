@@ -1,8 +1,9 @@
 // hooks/useSupplierFilters.ts
 import { useState, useMemo } from "react";
+import type { Supplier } from "@/types/supplier";
 
 export interface SupplierSortConfig {
-  key: "name" | "creditBalance" | "createdAt" | "updatedAt";
+  key: keyof Supplier | "outstandingBalance" | "status";
   direction: "asc" | "desc";
 }
 
@@ -11,7 +12,7 @@ export interface SupplierFilters {
   active: boolean | "All";
 }
 
-export function useSupplierFilters(suppliers: any[]) {
+export function useSupplierFilters(suppliers: Supplier[]) {
   const [filters, setFilters] = useState<SupplierFilters>({
     searchTerm: "",
     active: "All",
@@ -62,20 +63,37 @@ export function useSupplierFilters(suppliers: any[]) {
           ?.toLowerCase()
           .includes(filters.searchTerm.toLowerCase());
 
+      // Fix: Use status property instead of active
       const matchesActive =
-        filters.active === "All" || supplier.active === filters.active;
+        filters.active === "All" ||
+        (filters.active === true && supplier.status === "active") ||
+        (filters.active === false && supplier.status === "inactive");
 
       return matchesSearch && matchesActive;
     });
 
     // Apply sorting
     filtered.sort((a, b) => {
-      let aValue = a[sortConfig.key];
-      let bValue = b[sortConfig.key];
+      let aValue: any;
+      let bValue: any;
 
-      if (sortConfig.key === "creditBalance") {
-        aValue = aValue || 0;
-        bValue = bValue || 0;
+      // Handle special cases for sorting
+      if (sortConfig.key === "outstandingBalance") {
+        aValue = a.outstandingBalance || 0;
+        bValue = b.outstandingBalance || 0;
+      } else if (sortConfig.key === "status") {
+        aValue = a.status;
+        bValue = b.status;
+      } else {
+        // Handle regular properties
+        aValue = a[sortConfig.key as keyof Supplier];
+        bValue = b[sortConfig.key as keyof Supplier];
+      }
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortConfig.direction === "asc"
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
       }
 
       if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;

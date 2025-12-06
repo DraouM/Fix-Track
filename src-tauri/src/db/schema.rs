@@ -124,6 +124,22 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
         )",
         [],
     )?;
+
+    // Supplier history table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS supplier_history (
+            id TEXT PRIMARY KEY,
+            supplier_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            type TEXT NOT NULL,
+            notes TEXT,
+            amount REAL,
+            changed_by TEXT,
+            FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
     // Sales table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sales (

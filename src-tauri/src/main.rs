@@ -14,6 +14,10 @@ use db::repair::{
     update_repair, update_repair_status,
 };
 use db::schema;
+use db::supplier::{
+    add_supplier_payment, adjust_supplier_credit, delete_supplier, get_supplier_by_id,
+    get_supplier_history, get_suppliers, insert_supplier, insert_supplier_history, update_supplier,
+};
 use printer::{get_available_printers, get_printer_status, print_escpos_commands}; // Add this line
 use std::panic;
 
@@ -56,6 +60,16 @@ fn main() {
             get_used_parts_for_repair,
             insert_repair_history,
             get_history_for_repair,
+            // SUPPLIERS
+            get_suppliers,
+            get_supplier_by_id,
+            insert_supplier,
+            update_supplier,
+            delete_supplier,
+            add_supplier_payment,
+            adjust_supplier_credit,
+            get_supplier_history,
+            insert_supplier_history,
             // PRINTER - Add these lines
             print_escpos_commands,
             get_available_printers,

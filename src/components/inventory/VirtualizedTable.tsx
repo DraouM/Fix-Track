@@ -61,15 +61,15 @@ const SortableHeader = ({
 }) => (
   <Tooltip>
     <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          onClick={() => onSort(columnKey)}
-          className={cn(
-            "h-auto p-0 text-sm font-medium hover:bg-transparent hover:text-foreground",
-            sortConfig?.key === columnKey && "text-foreground",
-            className
-          )}
-        >
+      <Button
+        variant="ghost"
+        onClick={() => onSort(columnKey)}
+        className={cn(
+          "h-auto p-0 text-sm font-medium hover:bg-transparent hover:text-foreground",
+          sortConfig?.key === columnKey && "text-foreground",
+          className
+        )}
+      >
         <div className="flex items-center gap-1.5">
           {children}
           <div
@@ -90,7 +90,7 @@ const SortableHeader = ({
       </Button>
     </TooltipTrigger>
     {tooltip && (
-      <TooltipContent>
+      <TooltipContent side="top" align="center">
         <p className="text-xs">{tooltip}</p>
       </TooltipContent>
     )}
@@ -138,7 +138,7 @@ const InventoryRow = memo(function InventoryRow({
               {item.itemName}
             </span>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent side="top" align="center">
             <p>{item.itemName}</p>
           </TooltipContent>
         </Tooltip>
@@ -146,16 +146,12 @@ const InventoryRow = memo(function InventoryRow({
 
       {/* Brand */}
       <div className="flex-1">
-        <span className="text-sm text-muted-foreground">
-          {item.phoneBrand}
-        </span>
+        <span className="text-sm text-muted-foreground">{item.phoneBrand}</span>
       </div>
 
       {/* Category */}
       <div className="flex-1">
-        <span className="text-sm text-muted-foreground">
-          {item.itemType}
-        </span>
+        <span className="text-sm text-muted-foreground">{item.itemType}</span>
       </div>
 
       {/* Cost */}
@@ -348,7 +344,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
         {/* Rows */}
         <div
           ref={parentRef}
-          className="overflow-auto"
+          className="overflow-auto relative"
           style={{ height: "calc(100vh - 280px)", minHeight: "400px" }}
         >
           <div

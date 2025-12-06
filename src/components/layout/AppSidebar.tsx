@@ -89,11 +89,11 @@ export function AppSidebar() {
       icon: Users,
       href: "/customers",
     },
-    {
-      title: "Print",
-      icon: PrinterIcon,
-      href: "/print-settings",
-    },
+    // {
+    //   title: "Print",
+    //   icon: PrinterIcon,
+    //   href: "/print-settings",
+    // },
     {
       title: "Reports",
       icon: BarChart3,

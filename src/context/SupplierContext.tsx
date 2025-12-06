@@ -366,21 +366,30 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       clearError();
 
       await withAsync(
-        () =>
-          invoke("add_supplier_payment", {
+        async () => {
+          // 1. Add payment record
+          await invoke("add_supplier_payment", {
+            id: uuidv4(),
             supplierId,
             amount,
             method,
             notes: notes || null,
-          }),
+          });
+
+          // 2. Adjust credit balance (Negative amount because payment reduces debt)
+          await invoke("adjust_supplier_credit", {
+            supplierId,
+            amount: -amount,
+          });
+        },
         {
           onSuccess: async () => {
-            // Add history entry for the payment
+             // Add history entry for the payment
             const historyEntry: SupplierHistoryEvent = {
               id: uuidv4(),
               supplierId: supplierId,
               date: new Date().toISOString(),
-              type: "Payment Made",
+              type: "Payment Made", 
               notes: `Payment of $${amount} via ${method}${
                 notes ? `: ${notes}` : ""
               }`,
@@ -460,7 +469,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
   // ✅ Get supplier history
   const getSupplierHistory = useCallback(
     async (supplierId: string) => {
-      setLoading(true);
+      // Don't set global loading here to avoid unmounting the UI
       clearError();
 
       await withAsync(
@@ -487,7 +496,6 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
           },
         }
       );
-      setLoading(false);
     },
     [clearError]
   );

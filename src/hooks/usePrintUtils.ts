@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
 import { StickerTemplate } from "@/components/helpers/StickerTemplate";
 import { useEscPosPrinter } from "./useEscPosPrinter";
+import { getShopInfo } from "@/lib/shopInfo";
 
 interface PrintOptions {
   includePayments?: boolean;
@@ -40,6 +41,9 @@ export const usePrintUtils = () => {
       minute: "2-digit",
     });
   }, []);
+
+  // Get shop information
+  const shopInfo = getShopInfo();
 
   // Generate print content HTML using optimized components
   const generatePrintContent = useCallback(
@@ -102,9 +106,8 @@ export const usePrintUtils = () => {
           <body>
             <div class="phone-sticker">
               <!-- Header - Order # without dashed line and without repair ID -->
-              <div style="text-align: center; padding-bottom: 0.2mm; font-size: 15px; font-weight: bold;">
-                <!-- YOUR REPAIR SHOP -->
-                <!-- Removed repair ID display -->
+              <div style="text-align: center; padding-bottom: 0.2mm; font-size: 12px; font-weight: bold;">
+                ${shopInfo.shopName}
               </div>
 
               <!-- Device Info - Compact but clear -->
@@ -150,9 +153,28 @@ export const usePrintUtils = () => {
               <div class="thermal-receipt" style="width: 80mm; padding: 3mm; font-family: 'Courier New', Courier, monospace; font-size: 9px; line-height: 1.2; color: #000; background-color: #fff;">
                 <!-- Header - Shop Name -->
                 <div style="text-align: center; margin-bottom: 6px; border-bottom: 1px dashed #000; padding-bottom: 6px;">
-                  <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">YOUR REPAIR SHOP</div>
-                  <div style="font-size: 8px;">123 Main St, City, State</div>
-                  <div style="font-size: 8px;">Tel: (555) 123-4567</div>
+                  ${
+                    shopInfo.logoUrl
+                      ? `<div style="margin-bottom: 4px;"><img src="${shopInfo.logoUrl}" alt="Shop Logo" style="max-width: 50mm; max-height: 15mm; width: auto; height: auto; object-fit: contain;" /></div>`
+                      : ""
+                  }
+                  <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">${
+                    shopInfo.shopName
+                  }</div>
+                  <div style="font-size: 8px;">${shopInfo.address}</div>
+                  <div style="font-size: 8px;">Tel: ${
+                    shopInfo.phoneNumber
+                  }</div>
+                  ${
+                    shopInfo.email
+                      ? `<div style="font-size: 8px;">Email: ${shopInfo.email}</div>`
+                      : ""
+                  }
+                  ${
+                    shopInfo.website
+                      ? `<div style="font-size: 8px;">Web: ${shopInfo.website}</div>`
+                      : ""
+                  }
                 </div>
 
                 <!-- Receipt Type -->
@@ -288,7 +310,6 @@ export const usePrintUtils = () => {
                 <!-- Footer -->
                 <div style="text-align: center; font-size: 7px; margin-top: 4px;">
                   <div style="margin-bottom: 2px;">Thank you for your business!</div>
-                  <div>30-day warranty on parts & labor</div>
                   <div style="margin-top: 4px; font-weight: bold;">Keep this receipt for your records</div>
                 </div>
 

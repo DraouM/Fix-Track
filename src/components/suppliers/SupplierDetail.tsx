@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  ArrowLeft,
   Building2,
   User,
   Mail,
@@ -14,9 +13,11 @@ import {
   XCircle,
   AlertCircle,
   Download,
-  Filter,
   Search,
   Pencil,
+  DollarSign,
+  MoreVertical,
+  Trash2,
 } from "lucide-react";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -25,120 +26,76 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatCurrency, formatDate } from "@/lib/supplierUtils";
-import type { Supplier, SupplierHistoryEvent } from "@/types/supplier";
+import {
+  useSupplierState,
+  useSupplierActions,
+} from "@/context/SupplierContext";
 import { SupplierForm } from "./SupplierForm";
-
-// Mock payment history data
-const MOCK_PAYMENT_HISTORY: SupplierHistoryEvent[] = [
-  {
-    id: "pay_001",
-    supplierId: "sup_001",
-    date: "2025-10-15T10:30:00Z",
-    type: "Payment Made",
-    notes: "Bank transfer payment for October invoice",
-    amount: 2500.0,
-    relatedId: "inv_001",
-  },
-  {
-    id: "pay_002",
-    supplierId: "sup_001",
-    date: "2025-09-20T14:15:00Z",
-    type: "Payment Made",
-    notes: "Check payment for September delivery",
-    amount: 1850.75,
-    relatedId: "inv_002",
-  },
-  {
-    id: "pay_003",
-    supplierId: "sup_001",
-    date: "2025-08-05T09:45:00Z",
-    type: "Payment Made",
-    notes: "Cash payment for urgent order",
-    amount: 750.5,
-    relatedId: "inv_003",
-  },
-  {
-    id: "pay_004",
-    supplierId: "sup_001",
-    date: "2025-07-12T16:20:00Z",
-    type: "Payment Made",
-    notes: "Credit card payment",
-    amount: 3200.0,
-    relatedId: "inv_004",
-  },
-  {
-    id: "pay_005",
-    supplierId: "sup_001",
-    date: "2025-06-18T11:30:00Z",
-    type: "Payment Made",
-    notes: "Bank transfer payment",
-    amount: 1950.25,
-    relatedId: "inv_005",
-  },
-  {
-    id: "po_001",
-    supplierId: "sup_001",
-    date: "2025-10-20T09:15:00Z",
-    type: "Purchase Order Created",
-    notes: "New order for iPhone screens",
-    amount: 4200.0,
-    relatedId: "po_001",
-  },
-  {
-    id: "adj_001",
-    supplierId: "sup_001",
-    date: "2025-05-10T13:45:00Z",
-    type: "Credit Balance Adjusted",
-    notes: "Manual adjustment for returned items",
-    amount: -150.0,
-    relatedId: "ret_001",
-  },
-];
-
-// Mock supplier data
-const MOCK_SUPPLIER: Supplier = {
-  id: "sup_001",
-  name: "TechParts Supply Co.",
-  contactName: "John Smith",
-  email: "john.smith@techparts.com",
-  phone: "+1 (555) 123-4567",
-  address: "123 Tech Street, Silicon Valley, CA 94000",
-  notes:
-    "Reliable supplier for mobile phone parts. Preferred vendor for Samsung and Apple components.",
-  preferredPaymentMethod: "Bank Transfer",
-  status: "active",
-  createdAt: "2024-01-15T08:00:00Z",
-  updatedAt: "2025-10-20T14:30:00Z",
-  outstandingBalance: 1250.75,
-  history: MOCK_PAYMENT_HISTORY,
-};
+import { SupplierPaymentModal } from "./SupplierPaymentModal";
 
 interface SupplierDetailProps {
   supplierId: string;
 }
 
 export function SupplierDetail({ supplierId }: SupplierDetailProps) {
-  const [supplier] = useState<Supplier>(MOCK_SUPPLIER);
-  const [paymentHistory] =
-    useState<SupplierHistoryEvent[]>(MOCK_PAYMENT_HISTORY);
+  const { suppliers } = useSupplierState();
+  const { getSupplierHistory, getSupplierById } = useSupplierActions();
+  
+  // Get supplier from context
+  const supplier = getSupplierById(supplierId);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Fetch history when supplierId changes
+  useEffect(() => {
+    if (supplierId) {
+      getSupplierHistory(supplierId);
+    }
+  }, [supplierId, getSupplierHistory]);
+
+  if (!supplier) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+        <p className="text-gray-600">Loading supplier details...</p>
+      </div>
+    );
+  }
+
+  // Use history from the supplier object (enhanced by the context)
+  const history = supplier.history || [];
 
   // Filter payment history based on search and filters
-  const filteredPaymentHistory = paymentHistory.filter((event) => {
+  const filteredHistory = history.filter((event) => {
     const matchesSearch =
       !searchTerm ||
       event.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.relatedId?.toLowerCase().includes(searchTerm.toLowerCase());
+      event.relatedId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.type.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesPaymentMethod =
       paymentMethodFilter === "all" ||
@@ -148,22 +105,10 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
       (event.type === "Credit Balance Adjusted" &&
         paymentMethodFilter === "adjustment");
 
-    const matchesStatus =
-      statusFilter === "all" ||
-      (event.type === "Payment Made" && statusFilter === "completed") ||
-      (event.type === "Purchase Order Created" && statusFilter === "pending");
+    const matchesStatus = statusFilter === "all"; 
 
     return matchesSearch && matchesPaymentMethod && matchesStatus;
   });
-
-  // Get unique payment methods from history
-  const paymentMethods = Array.from(
-    new Set(
-      paymentHistory
-        .filter((event) => event.type === "Payment Made")
-        .map((event) => "Payment")
-    )
-  );
 
   const getStatusBadgeVariant = (type: string) => {
     switch (type) {
@@ -178,23 +123,7 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
     }
   };
 
-  const getPaymentMethodVariant = (type: string) => {
-    switch (type) {
-      case "Bank Transfer":
-        return "default";
-      case "Cash":
-        return "success";
-      case "Check":
-        return "warning";
-      case "Credit Card":
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
   const handleExportReport = () => {
-    // In a real implementation, this would generate and download a report
     alert("Export functionality would be implemented here");
   };
 
@@ -209,30 +138,86 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
   return (
     <div className="min-h-screen bg-gray-50 p-0">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header - simplified for modal */}
-        <div className="flex items-center justify-between p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Supplier Details
-            </h1>
-            <p className="text-gray-600">
-              View and manage supplier information and transactions
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {supplier.name}
+              </h1>
+              <Badge variant={supplier.status === "active" ? "default" : "secondary"}>
+                {supplier.status === "active" ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+            <p className="text-gray-500 text-sm mt-1">
+              ID: {supplier.id}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleExportReport}>
-              <Download className="h-4 w-4 mr-2" />
-              Export Report
-            </Button>
-            <Button
-              onClick={handleEditSupplier}
-              className="flex items-center gap-2"
-            >
-              <Pencil className="h-4 w-4" />
-              Edit Supplier
-            </Button>
+          
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={() => setShowPaymentModal(true)}
+                    size="icon"
+                    className="bg-green-600 hover:bg-green-700 text-white rounded-full h-10 w-10 shadow-sm"
+                  >
+                    <DollarSign className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Record Payment</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleEditSupplier}
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full h-10 w-10"
+                  >
+                    <Pencil className="h-4 w-4 text-gray-600" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Edit Supplier</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
+                  <MoreVertical className="h-4 w-4 text-gray-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handleExportReport} disabled>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Report
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Supplier
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
+
+        {showPaymentModal && (
+            <SupplierPaymentModal
+                supplierId={supplierId}
+                supplierName={supplier.name}
+                currentBalance={supplier.outstandingBalance || 0}
+                onClose={() => setShowPaymentModal(false)}
+            />
+        )}
 
         {/* Supplier Overview Card */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -246,36 +231,46 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  {supplier.name}
+                  Contact Information
                 </h2>
                 <div className="mt-2 space-y-2">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-400" />
                     <span className="text-gray-600">
-                      {supplier.contactName}
+                      {supplier.contactName || "No contact name"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-gray-400" />
-                    <a
-                      href={`mailto:${supplier.email}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {supplier.email}
-                    </a>
+                    {supplier.email ? (
+                      <a
+                        href={`mailto:${supplier.email}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {supplier.email}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">No email</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-gray-400" />
-                    <a
-                      href={`tel:${supplier.phone}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {supplier.phone}
-                    </a>
+                    {supplier.phone ? (
+                      <a
+                        href={`tel:${supplier.phone}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {supplier.phone}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">No phone</span>
+                    )}
                   </div>
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
-                    <span className="text-gray-600">{supplier.address}</span>
+                    <span className="text-gray-600">
+                      {supplier.address || "No address provided"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -306,7 +301,7 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                   <span className="text-gray-600">Preferred Payment</span>
                   <Badge variant="secondary">
                     <CreditCard className="h-3 w-3 mr-1" />
-                    {supplier.preferredPaymentMethod}
+                    {supplier.preferredPaymentMethod || "Not set"}
                   </Badge>
                 </div>
 
@@ -314,7 +309,7 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                   <span className="text-gray-600">Outstanding Balance</span>
                   <span
                     className={`font-bold ${
-                      supplier.outstandingBalance > 0
+                      (supplier.outstandingBalance || 0) > 0
                         ? "text-orange-600"
                         : "text-green-600"
                     }`}
@@ -344,7 +339,7 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
         {/* Tabs */}
         <Tabs defaultValue="payment-history" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="payment-history">Payment History</TabsTrigger>
+            <TabsTrigger value="payment-history">History & Logs</TabsTrigger>
             <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -376,16 +371,6 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                       <option value="purchase">Purchase Orders</option>
                       <option value="adjustment">Adjustments</option>
                     </select>
-
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="completed">Completed</option>
-                      <option value="pending">Pending</option>
-                    </select>
                   </div>
                 </div>
               </div>
@@ -399,66 +384,44 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                       <TableHead>Type</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPaymentHistory.length > 0 ? (
-                      filteredPaymentHistory.map((transaction) => (
-                        <TableRow key={transaction.id}>
+                    {filteredHistory.length > 0 ? (
+                      filteredHistory.map((event) => (
+                        <TableRow key={event.id}>
                           <TableCell className="font-medium">
-                            {formatDate(transaction.date)}
+                            {formatDate(event.date)}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={getStatusBadgeVariant(transaction.type)}
-                            >
-                              {transaction.type}
+                            <Badge variant={getStatusBadgeVariant(event.type)}>
+                              {event.type}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="text-sm text-gray-900">
-                              {transaction.notes}
+                              {event.notes}
                             </div>
-                            {transaction.relatedId && (
+                            {event.relatedId && (
                               <div className="text-xs text-gray-500">
-                                ID: {transaction.relatedId}
+                                ID: {event.relatedId}
                               </div>
                             )}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {transaction.amount
-                              ? formatCurrency(transaction.amount)
+                            {event.amount !== undefined && event.amount !== 0
+                              ? formatCurrency(event.amount)
                               : "-"}
-                          </TableCell>
-                          <TableCell>
-                            {transaction.type === "Payment Made" ? (
-                              <Badge variant="default">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Completed
-                              </Badge>
-                            ) : transaction.type ===
-                              "Purchase Order Created" ? (
-                              <Badge variant="secondary">
-                                <Clock className="h-3 w-3 mr-1" />
-                                Pending
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                Processed
-                              </Badge>
-                            )}
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={5}
+                          colSpan={4}
                           className="text-center py-8 text-gray-500"
                         >
-                          No transactions found matching your criteria
+                          No history found matching your criteria
                         </TableCell>
                       </TableRow>
                     )}
@@ -470,27 +433,8 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
               <div className="border-t border-gray-200 p-4 bg-gray-50">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
                   <span className="text-gray-600">
-                    Showing {filteredPaymentHistory.length} of{" "}
-                    {paymentHistory.length} transactions
+                    Showing {filteredHistory.length} of {history.length} events
                   </span>
-                  <div className="flex items-center gap-4">
-                    <span className="text-gray-600">
-                      Total Payments:{" "}
-                      {formatCurrency(
-                        paymentHistory
-                          .filter((t) => t.type === "Payment Made")
-                          .reduce((sum, t) => sum + (t.amount || 0), 0)
-                      )}
-                    </span>
-                    <span className="text-gray-600">
-                      Total Purchases:{" "}
-                      {formatCurrency(
-                        paymentHistory
-                          .filter((t) => t.type === "Purchase Order Created")
-                          .reduce((sum, t) => sum + (t.amount || 0), 0)
-                      )}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -551,7 +495,6 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                   supplier={supplier}
                   onSuccess={() => {
                     handleCloseEditModal();
-                    // In a real implementation, we would refresh the supplier data
                   }}
                 />
               </div>

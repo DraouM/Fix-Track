@@ -54,7 +54,7 @@ interface RepairActions {
   fetchRepairById: (id: string) => Promise<void>;
   createRepair: (
     data: Omit<RepairDb, "id" | "created_at" | "updated_at">
-  ) => Promise<void>;
+  ) => Promise<Repair | undefined>;
   updateRepair: (id: string, data: Partial<Repair>) => Promise<void>;
   deleteRepair: (id: string) => Promise<void>;
   updateRepairStatus: (id: string, status: RepairStatus) => Promise<void>;
@@ -307,6 +307,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       });
       setLoading(false);
+      return mapRepairFromDB(repairData as RepairDb);
     },
     [fetchRepairs, clearError]
   );

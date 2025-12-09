@@ -69,19 +69,19 @@ export const usePrintUtils = () => {
               }
               @media print {
                 @page {
-                  size: 2in 1in;
+                  size: 2in 1in landscape;
                   margin: 0;
                 }
                 html, body {
-                  width: 2in;
-                  height: 1in;
+                  width: 100%;
+                  height: 100%;
                   margin: 0;
                   padding: 0;
                   overflow: hidden;
                 }
                 body { 
                   font-family: 'Courier New', Courier, monospace;
-                  font-size: 12px; /* Increased from 4px to 12px */
+                  font-size: 12px;
                   line-height: 1.0;
                   color: #000;
                   background: white;
@@ -90,8 +90,8 @@ export const usePrintUtils = () => {
                   page-break-inside: avoid;
                 }
                 .phone-sticker {
-                  width: 2in;
-                  height: 1in;
+                  width: 100%;
+                  height: 100%;
                   padding: 0.3mm;
                   box-sizing: border-box;
                   display: flex;
@@ -105,21 +105,15 @@ export const usePrintUtils = () => {
           </head>
           <body>
             <div class="phone-sticker">
-              <!-- Header - Order # without dashed line and without repair ID -->
-              <div style="text-align: center; padding-bottom: 0.2mm; font-size: 12px; font-weight: bold;">
-                ${shopInfo.shopName}
-              </div>
-
-              <!-- Device Info - Compact but clear -->
-              <div style="font-size: 15px; text-align: center; font-weight: bold; margin: 0.2mm 0;">
+              <!-- Device Info - First -->
+              <div style="font-size: 11px; text-align: center; margin: 0.2mm 0;">
                 ${repair.deviceBrand} ${repair.deviceModel}
               </div>
 
-              <!-- Issue description and phone number -->
-              <div style="font-size: 12px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0.2mm 0;">
-                ${repair.issueDescription.substring(0, 25)}${
-          repair.issueDescription.length > 25 ? "..." : ""
-        }
+              <!-- Issue description - Primary Focus -->
+              <div style="font-size: 16px; text-align: center; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0.2mm 0;">
+                ${repair.issueDescription.substring(0, 25)}${repair.issueDescription.length > 25 ? "..." : ""
+          }
               </div>
               
               <div style="font-size: 12px; text-align: center; margin: 0.2mm 0;">
@@ -145,48 +139,64 @@ export const usePrintUtils = () => {
                   size: 80mm auto;
                   margin: 0;
                 }
+                * {
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                }
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  width: 80mm;
+                  height: auto;
+                  background-color: #fff;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
+                }
+                .thermal-receipt {
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                  page-break-after: avoid !important;
+                  page-break-before: avoid !important;
+                }
               }
             </style>
           </head>
           <body>
             <div id="receipt-print-template" class="print-active" data-print-type="receipt">
-              <div class="thermal-receipt" style="width: 80mm; padding: 3mm; font-family: 'Courier New', Courier, monospace; font-size: 9px; line-height: 1.2; color: #000; background-color: #fff;">
+              <div class="thermal-receipt" style="width: 80mm; padding: 4mm; font-family: 'Courier New', Courier, monospace; font-size: 12px; line-height: 1.3; color: #000; background-color: #fff; page-break-inside: avoid;">
                 <!-- Header - Shop Name -->
-                <div style="text-align: center; margin-bottom: 6px; border-bottom: 1px dashed #000; padding-bottom: 6px;">
-                  ${
-                    shopInfo.logoUrl
-                      ? `<div style="margin-bottom: 4px;"><img src="${shopInfo.logoUrl}" alt="Shop Logo" style="max-width: 50mm; max-height: 15mm; width: auto; height: auto; object-fit: contain;" /></div>`
-                      : ""
-                  }
-                  <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">${
-                    shopInfo.shopName
-                  }</div>
-                  <div style="font-size: 8px;">${shopInfo.address}</div>
-                  <div style="font-size: 8px;">Tel: ${
-                    shopInfo.phoneNumber
-                  }</div>
-                  ${
-                    shopInfo.email
-                      ? `<div style="font-size: 8px;">Email: ${shopInfo.email}</div>`
-                      : ""
-                  }
-                  ${
-                    shopInfo.website
-                      ? `<div style="font-size: 8px;">Web: ${shopInfo.website}</div>`
-                      : ""
-                  }
+                <div style="text-align: center; margin-bottom: 10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+                  ${shopInfo.logoUrl
+          ? `<div style="margin-bottom: 8px;"><img src="${shopInfo.logoUrl}" alt="Shop Logo" style="max-width: 60mm; max-height: 20mm; width: auto; height: auto; object-fit: contain;" /></div>`
+          : ""
+        }
+                  <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px; text-transform: uppercase;">${shopInfo.shopName
+        }</div>
+                  <div style="font-size: 11px;">${shopInfo.address}</div>
+                  <div style="font-size: 11px;">Tel: ${shopInfo.phoneNumber
+        }</div>
+                  <!--
+                  ${shopInfo.email
+          ? `<div style="font-size: 11px;">Email: ${shopInfo.email}</div>`
+          : ""
+        }
+                  ${shopInfo.website
+          ? `<div style="font-size: 11px;">Web: ${shopInfo.website}</div>`
+          : ""
+        }
+                  -->
                 </div>
 
                 <!-- Receipt Type -->
-                <div style="text-align: center; font-size: 10px; font-weight: bold; margin: 4px 0;">REPAIR RECEIPT</div>
+                <!-- <div style="text-align: center; font-size: 14px; font-weight: bold; margin: 8px 0; border: 1px solid #000; padding: 4px;">REPAIR RECEIPT</div> -->
 
                 <!-- Order Info -->
-                <div style="margin-bottom: 4px; font-size: 8px;">
-                  <div style="display: flex; justify-content: space-between;">
+                <div style="margin-bottom: 8px; font-size: 12px;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                     <span>Order #:</span>
-                    <span style="font-weight: bold;">${repair.id}</span>
+                    <span style="font-weight: bold; font-size: 10px;">${repair.id}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                     <span>Date:</span>
                     <span>${formatPrintDate(repair.createdAt)}</span>
                   </div>
@@ -196,128 +206,121 @@ export const usePrintUtils = () => {
                   </div>
                 </div>
 
-                <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
+                <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
 
                 <!-- Customer Info -->
-                <div style="margin-bottom: 4px; font-size: 8px;">
-                  <div style="font-weight: bold; margin-bottom: 2px;">CUSTOMER:</div>
-                  <div>${repair.customerName}</div>
-                  <div>${repair.customerPhone}</div>
-                </div>
-
-                <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-                <!-- Device Info -->
-                <div style="margin-bottom: 4px; font-size: 8px;">
-                  <div style="font-weight: bold; margin-bottom: 2px;">DEVICE:</div>
-                  <div>${repair.deviceBrand} ${repair.deviceModel}</div>
-                  <div style="margin-top: 2px;">
-                    <div style="font-weight: bold;">Issue:</div>
-                    <div style="white-space: pre-wrap; word-break: break-word;">${
-                      repair.issueDescription
-                    }</div>
-                  </div>
-                </div>
-
-                <div style="border-top: 1px dashed #000; margin: 6px 0;"></div>
-
-                <!-- Parts Used -->
-                ${
-                  includeParts &&
-                  repair.usedParts &&
-                  repair.usedParts.length > 0
-                    ? `
-                  <div style="margin-bottom: 4px; font-size: 8px;">
-                    <div style="font-weight: bold; margin-bottom: 2px;">PARTS USED:</div>
-                    ${repair.usedParts
-                      .map(
-                        (part, index) => `
-                      <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
-                        <span>${part.partName} x${part.quantity}</span>
-                        <span>$${part.cost.toFixed(2)}</span>
-                      </div>
-                    `
-                      )
-                      .join("")}
-                  </div>
-                  <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-                `
-                    : ""
-                }
-
-                <!-- Financial Summary -->
-                <div style="margin-bottom: 4px; font-size: 9px;">
-                  <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px;">
-                    <span>REPAIR COST:</span>
-                    <span>$${repair.estimatedCost.toFixed(2)}</span>
-                  </div>
-
-                  ${
-                    includePayments &&
-                    repair.payments &&
-                    repair.payments.length > 0
-                      ? `
-                    <div style="margin-top: 4px; font-size: 8px;">
-                      <div style="font-weight: bold; margin-bottom: 2px;">PAYMENTS:</div>
-                      ${repair.payments
-                        .map(
-                          (payment) => `
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
-                          <span>${formatPrintDate(payment.date)}</span>
-                          <span>$${payment.amount.toFixed(2)}</span>
-                        </div>
-                      `
-                        )
-                        .join("")}
-                      <div style="border-top: 1px solid #000; margin-top: 3px; padding-top: 3px;">
-                        <div style="display: flex; justify-content: space-between; font-weight: bold;">
-                          <span>TOTAL PAID:</span>
-                          <span>$${(
-                            repair.payments?.reduce(
-                              (sum, p) => sum + p.amount,
-                              0
-                            ) || 0
-                          ).toFixed(2)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  `
-                      : ""
-                  }
-
-                  <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; font-size: 10px; font-weight: bold;">
-                    <div style="display: flex; justify-content: space-between;">
-                      <span>BALANCE DUE:</span>
-                      <span>$${(
-                        repair.estimatedCost -
-                        (repair.payments?.reduce(
-                          (sum, p) => sum + p.amount,
-                          0
-                        ) || 0)
-                      ).toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  <div style="margin-top: 3px; font-size: 8px; text-align: center;">
-                    <div style="font-weight: bold;">Payment Status: ${
-                      repair.paymentStatus
-                    }</div>
+                <div style="margin-bottom: 8px; font-size: 12px;">
+                  <!-- <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px;">CUSTOMER</div> -->
+                  <div>
+                    <div style="font-weight: bold;">${repair.customerName}</div>
+                    <div>${repair.customerPhone}</div>
                   </div>
                 </div>
 
                 <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
 
-                <!-- Footer -->
-                <div style="text-align: center; font-size: 7px; margin-top: 4px;">
-                  <div style="margin-bottom: 2px;">Thank you for your business!</div>
-                  <div style="margin-top: 4px; font-weight: bold;">Keep this receipt for your records</div>
+                <!-- Device Info -->
+                <div style="margin-bottom: 8px; font-size: 12px;">
+                   <!-- <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px;">DEVICE DETAIL</div> -->
+                   <div>
+                      <div style="font-weight: bold;">${repair.deviceBrand} ${repair.deviceModel}</div>
+                      <div style="margin-top: 4px;">
+                        <span style="text-decoration: underline;">Issue:</span>
+                        <div style="white-space: pre-wrap; word-break: break-word; margin-top: 2px;">${repair.issueDescription
+        }</div>
+                      </div>
+                   </div>
                 </div>
 
-                <!-- Barcode placeholder -->
-                <div style="text-align: center; margin-top: 6px; font-size: 7px;">
-                  <div style="border: 1px solid #000; padding: 4px; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;">*${
-                    repair.id
-                  }*</div>
+                <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
+
+                <!-- Parts Used -->
+                ${includeParts &&
+          repair.usedParts &&
+          repair.usedParts.length > 0
+          ? `
+                  <div style="margin-bottom: 8px; font-size: 12px;">
+                    <!-- <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px;">PARTS INSTALLED</div> -->
+                    ${repair.usedParts
+            .map(
+              (part, index) => `
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding-left: 4px;">
+                        <span>${part.partName} <span style="font-size: 11px;">(x${part.quantity})</span></span>
+                        <span>$${part.cost.toFixed(2)}</span>
+                      </div>
+                    `
+            )
+            .join("")}
+                  </div>
+                  <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
+                `
+          : ""
+        }
+
+                <!-- Financial Summary -->
+                <div style="margin-bottom: 8px; font-size: 12px;">
+                  <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 6px;">
+                    <span>REPAIR COST:</span>
+                    <span>$${repair.estimatedCost.toFixed(2)}</span>
+                  </div>
+
+                  ${includePayments &&
+          repair.payments &&
+          repair.payments.length > 0
+          ? `
+                    <div style="margin-top: 8px; font-size: 11px;">
+                      <div style="font-weight: bold; margin-bottom: 2px;">PAYMENT HISTORY:</div>
+                      ${repair.payments
+            .map(
+              (payment) => `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding-left: 4px;">
+                          <span>${formatPrintDate(payment.date)}</span>
+                          <span>$${payment.amount.toFixed(2)}</span>
+                        </div>
+                      `
+            )
+            .join("")}
+                      <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                          <span>TOTAL PAID:</span>
+                          <span>$${(
+            repair.payments?.reduce(
+              (sum, p) => sum + p.amount,
+              0
+            ) || 0
+          ).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  `
+          : ""
+        }
+
+                  <div style="border: 2px solid #000; padding: 6px; margin-top: 10px; font-size: 14px; font-weight: bold; background-color: #f0f0f0;">
+                    <div style="display: flex; justify-content: space-between;">
+                      <span>BALANCE DUE:</span>
+                      <span>$${(
+          repair.estimatedCost -
+          (repair.payments?.reduce(
+            (sum, p) => sum + p.amount,
+            0
+          ) || 0)
+        ).toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div style="margin-top: 6px; font-size: 11px; text-align: center;">
+                    <div style="font-weight: bold;">Payment Status: <span style="text-transform: uppercase;">${repair.paymentStatus
+        }</span></div>
+                  </div>
+                </div>
+
+                <div style="border-top: 1px dashed #000; margin: 12px 0;"></div>
+
+                <!-- Footer -->
+                <div style="text-align: center; font-size: 10px; margin-top: 8px;">
+                  <div style="margin-bottom: 4px; font-size: 11px; font-style: italic;">Thank you for your business!</div>
+                  <div style="font-weight: bold;">Please keep this receipt for warranty.</div>
                 </div>
               </div>
             </div>
@@ -641,10 +644,10 @@ export const usePrintUtils = () => {
     showPrintTroubleshoot: () => {
       toast.info(
         "🛠️ Print Troubleshooting:\n" +
-          "1. Ensure popups are allowed\n" +
-          "2. Check if printer is connected\n" +
-          "3. Try refreshing the page\n" +
-          "4. Use 'Download' as backup",
+        "1. Ensure popups are allowed\n" +
+        "2. Check if printer is connected\n" +
+        "3. Try refreshing the page\n" +
+        "4. Use 'Download' as backup",
         { duration: 8000 }
       );
     },

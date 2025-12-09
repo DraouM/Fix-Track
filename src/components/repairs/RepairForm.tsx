@@ -54,7 +54,7 @@ import {
 
 interface RepairFormProps {
   repairToEdit?: Repair | null;
-  onSuccess: () => void;
+  onSuccess: (repair?: Repair) => void;
 }
 
 // Simplified form data structure to avoid type conflicts
@@ -169,6 +169,7 @@ export default function RepairForm({
           // paymentStatus is omitted - it will be calculated by the backend
         };
         await updateRepair(repairToEdit.id, updateData);
+        onSuccess();
       } else {
         // Convert form values to RepairDb format for creation
         // For new repairs, payment status starts as "Unpaid" since no payments exist yet
@@ -185,9 +186,9 @@ export default function RepairForm({
           payments: [],
           history: [],
         };
-        await createRepair(createData);
+        const newRepair = await createRepair(createData);
+        onSuccess(newRepair);
       }
-      onSuccess();
     } catch (err) {
       console.error("Failed to save repair:", err);
     } finally {

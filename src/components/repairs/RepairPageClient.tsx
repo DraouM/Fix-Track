@@ -24,6 +24,7 @@ import {
 
 import RepairForm from "@/components/repairs/RepairForm";
 import { RepairTable } from "@/components/repairs/RepairTable";
+import { RepairDetail } from "@/components/repairs/RepairDetail";
 import type { Repair } from "@/types/repair";
 import { useRepairContext } from "@/context/RepairContext";
 
@@ -33,6 +34,7 @@ export function RepairsPageInner() {
   const { repairs } = useRepairContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [repairToEdit, setRepairToEdit] = useState<Repair | null>(null);
+  const [createdRepair, setCreatedRepair] = useState<Repair | null>(null);
   const [formInstanceKey, setFormInstanceKey] = useState(0);
 
   // Calculate statistics
@@ -70,9 +72,12 @@ export function RepairsPageInner() {
   }, [repairs]);
 
   // ✅ Called when form succeeds
-  const handleFormSuccess = useCallback(() => {
+  const handleFormSuccess = useCallback((repair?: Repair) => {
     setIsFormOpen(false);
     setRepairToEdit(null);
+    if (repair) {
+      setCreatedRepair(repair);
+    }
   }, []);
 
   // ✅ Open Add New form
@@ -233,6 +238,17 @@ export function RepairsPageInner() {
 
         {/* Repairs Table */}
         <RepairTable onEditRepair={openEditForm} />
+
+        {/* Created Repair Detail View */}
+        {createdRepair && (
+          <RepairDetail
+            repair={createdRepair}
+            open={!!createdRepair}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) setCreatedRepair(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );

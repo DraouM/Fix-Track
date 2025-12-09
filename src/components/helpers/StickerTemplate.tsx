@@ -19,9 +19,6 @@ interface StickerTemplateProps {
 }
 
 export function StickerTemplate({ repair }: StickerTemplateProps) {
-  // Get shop information
-  const shopInfo = getShopInfo();
-
   return (
     <div
       className="phone-sticker"
@@ -37,66 +34,43 @@ export function StickerTemplate({ repair }: StickerTemplateProps) {
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
+        justifyContent: "center",
       }}
     >
-      {/* Header - Shop Name or Logo */}
+      {/* Device Info - First */}
       <div
         style={{
+          fontSize: "13px",
           textAlign: "center",
-          paddingBottom: "0.2mm",
-          fontSize: "12px",
-          fontWeight: "bold",
-        }}
-      >
-        {shopInfo.logoUrl ? (
-          <img
-            src={shopInfo.logoUrl}
-            alt="Shop Logo"
-            style={{
-              maxWidth: "30mm",
-              maxHeight: "8mm",
-              width: "auto",
-              height: "auto",
-              objectFit: "contain",
-            }}
-          />
-        ) : (
-          shopInfo.shopName
-        )}
-      </div>
-
-      {/* Device Info - Compact but clear */}
-      <div
-        style={{
-          fontSize: "15px",
-          textAlign: "center",
-          fontWeight: "bold",
-          margin: "0.2mm 0",
+          margin: "0.5mm 0",
         }}
       >
         {repair.deviceBrand} {repair.deviceModel}
       </div>
 
-      {/* Issue description and phone number */}
+      {/* Issue description - Primary Focus */}
       <div
         style={{
-          fontSize: "12px",
+          fontSize: "18px",
           textAlign: "center",
+          fontWeight: "bold",
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
-          margin: "0.2mm 0",
+          margin: "0.5mm 0",
         }}
       >
-        {repair.issueDescription.substring(0, 25)}
-        {repair.issueDescription.length > 25 ? "..." : ""}
+        {repair.issueDescription.length > 20
+          ? `${repair.issueDescription.substring(0, 20)}...`
+          : repair.issueDescription}
       </div>
 
+      {/* Phone Number */}
       <div
         style={{
           fontSize: "12px",
           textAlign: "center",
-          margin: "0.2mm 0",
+          margin: "0.5mm 0",
         }}
       >
         {repair.customerPhone}

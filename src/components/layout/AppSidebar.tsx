@@ -95,6 +95,11 @@ export function AppSidebar() {
     //   href: "/print-settings",
     // },
     {
+      title: "Orders",
+      icon: FileText,
+      href: "/orders",
+    },
+    {
       title: "Reports",
       icon: BarChart3,
       href: "/reports",

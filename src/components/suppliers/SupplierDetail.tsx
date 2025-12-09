@@ -136,38 +136,57 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-0">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50/50 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+          <div className="flex items-start gap-5">
+             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg transform transition-transform hover:scale-105">
+                <span className="text-3xl font-bold text-white">
+                  {supplier.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
                 {supplier.name}
               </h1>
-              <Badge variant={supplier.status === "active" ? "default" : "secondary"}>
-                {supplier.status === "active" ? "Active" : "Inactive"}
-              </Badge>
+              <div className="flex items-center gap-3 text-sm">
+                <Badge 
+                  variant={supplier.status === "active" ? "default" : "secondary"}
+                  className={`px-3 py-1 ${
+                    supplier.status === "active" 
+                      ? "bg-green-100 text-green-700 hover:bg-green-200 border-green-200" 
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200"
+                  }`}
+                >
+                  {supplier.status === "active" ? (
+                    <span className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse" />
+                      Active
+                    </span>
+                  ) : (
+                    "Inactive"
+                  )}
+                </Badge>
+                <span className="text-gray-400 font-medium">#{supplier.id.slice(0, 8)}</span>
+              </div>
             </div>
-            <p className="text-gray-500 text-sm mt-1">
-              ID: {supplier.id}
-            </p>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
                     onClick={() => setShowPaymentModal(true)}
-                    size="icon"
-                    className="bg-green-600 hover:bg-green-700 text-white rounded-full h-10 w-10 shadow-sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all hover:shadow-lg gap-2"
                   >
-                    <DollarSign className="h-5 w-5" />
+                    <DollarSign className="h-4 w-4" />
+                    Record Payment
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Record Payment</p>
+                  <p>Record a new payment</p>
                 </TooltipContent>
               </Tooltip>
 
@@ -176,32 +195,32 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                   <Button
                     onClick={handleEditSupplier}
                     variant="outline"
-                    size="icon"
-                    className="rounded-full h-10 w-10"
+                    className="bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 shadow-sm"
                   >
-                    <Pencil className="h-4 w-4 text-gray-600" />
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Edit Supplier</p>
+                  <p>Edit Supplier Details</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
+                <Button variant="outline" size="icon" className="bg-white border-gray-200 hover:bg-gray-50 shadow-sm">
                   <MoreVertical className="h-4 w-4 text-gray-500" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem onClick={handleExportReport} disabled>
                   <Download className="mr-2 h-4 w-4" />
                   Export Report
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Supplier
                 </DropdownMenuItem>
@@ -219,124 +238,116 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
             />
         )}
 
-        {/* Supplier Overview Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-shrink-0">
-              <div className="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center">
-                <Building2 className="w-8 h-8 text-blue-600" />
-              </div>
-            </div>
-
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Contact Information
-                </h2>
-                <div className="mt-2 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-gray-600">
-                      {supplier.contactName || "No contact name"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    {supplier.email ? (
-                      <a
-                        href={`mailto:${supplier.email}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {supplier.email}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">No email</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                    {supplier.phone ? (
-                      <a
-                        href={`tel:${supplier.phone}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {supplier.phone}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">No phone</span>
-                    )}
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
-                    <span className="text-gray-600">
-                      {supplier.address || "No address provided"}
-                    </span>
-                  </div>
+        {/* Info Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Contact Information Card */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow duration-200">
+             <div className="flex items-center gap-3 mb-6">
+                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+                  <User className="h-5 w-5" />
                 </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Status</span>
-                  <Badge
-                    variant={
-                      supplier.status === "active" ? "default" : "secondary"
-                    }
-                  >
-                    {supplier.status === "active" ? (
-                      <>
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Active
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-3 w-3 mr-1" />
-                        Inactive
-                      </>
-                    )}
-                  </Badge>
+                <h2 className="text-lg font-bold text-gray-900">Contact Information</h2>
+             </div>
+             
+             <div className="space-y-5">
+                <div className="flex items-center gap-3 group">
+                   <div className="w-40 text-sm font-medium text-gray-500">Contact Person</div>
+                   <div className="text-sm font-medium text-gray-900">{supplier.contactName || "—"}</div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Preferred Payment</span>
-                  <Badge variant="secondary">
-                    <CreditCard className="h-3 w-3 mr-1" />
-                    {supplier.preferredPaymentMethod || "Not set"}
-                  </Badge>
+                <div className="flex items-center gap-3">
+                   <div className="w-40 text-sm font-medium text-gray-500">Email Address</div>
+                   <div className="text-sm text-gray-900">
+                      {supplier.email ? (
+                        <a href={`mailto:${supplier.email}`} className="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1.5 transition-colors">
+                          <Mail className="h-3.5 w-3.5" />
+                          {supplier.email}
+                        </a>
+                      ) : "—"}
+                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Outstanding Balance</span>
-                  <span
-                    className={`font-bold ${
-                      (supplier.outstandingBalance || 0) > 0
-                        ? "text-orange-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    {formatCurrency(supplier.outstandingBalance || 0)}
-                  </span>
+                <div className="flex items-center gap-3">
+                   <div className="w-40 text-sm font-medium text-gray-500">Phone Number</div>
+                   <div className="text-sm text-gray-900">
+                      {supplier.phone ? (
+                        <a href={`tel:${supplier.phone}`} className="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1.5 transition-colors">
+                          <Phone className="h-3.5 w-3.5" />
+                          {supplier.phone}
+                        </a>
+                      ) : "—"}
+                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Last Updated</span>
-                  <span className="text-gray-900">
-                    {formatDate(supplier.updatedAt)}
-                  </span>
+                <div className="flex items-start gap-3">
+                   <div className="w-40 text-sm font-medium text-gray-500 pt-0.5">Address</div>
+                   <div className="text-sm text-gray-900 flex items-start gap-1.5">
+                      {supplier.address ? (
+                        <>
+                          <MapPin className="h-3.5 w-3.5 mt-0.5 text-gray-400" />
+                          <span className="max-w-[200px] leading-relaxed">{supplier.address}</span>
+                        </>
+                      ) : "—"}
+                   </div>
                 </div>
-              </div>
-            </div>
+             </div>
           </div>
 
-          {supplier.notes && (
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <h3 className="font-medium text-gray-900 mb-2">Notes</h3>
-              <p className="text-gray-600">{supplier.notes}</p>
-            </div>
-          )}
+          {/* Financial Overview Card */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow duration-200">
+             <div className="flex items-center gap-3 mb-6">
+                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-900">Financial Overview</h2>
+             </div>
+
+             <div className="space-y-6">
+                <div>
+                   <div className="text-sm font-medium text-gray-500 mb-2">Outstanding Balance</div>
+                   <div className="flex items-baseline gap-2">
+                      <span className={`text-4xl font-bold tracking-tight ${
+                        (supplier.outstandingBalance || 0) > 0 ? "text-orange-600" : "text-emerald-600"
+                      }`}>
+                        {formatCurrency(supplier.outstandingBalance || 0)}
+                      </span>
+                      <span className="text-sm font-medium text-gray-500">current due</span>
+                   </div>
+                </div>
+
+                <div className="h-px bg-gray-100" />
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                     <span className="text-sm text-gray-500">Preferred Payment</span>
+                     <Badge variant="outline" className="font-medium">
+                        {supplier.preferredPaymentMethod || "Not set"}
+                     </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                     <span className="text-sm text-gray-500">Last Updated</span>
+                     <span className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-gray-400" />
+                        {formatDate(supplier.updatedAt)}
+                     </span>
+                  </div>
+                </div>
+             </div>
+          </div>
         </div>
 
-        {/* Tabs */}
+        {supplier.notes && (
+          <div className="bg-amber-50 rounded-xl border border-amber-100 p-4">
+            <h3 className="font-medium text-amber-900 mb-2 flex items-center gap-2">
+              <Pencil className="h-4 w-4" />
+              Notes
+            </h3>
+            <p className="text-amber-800 text-sm leading-relaxed">{supplier.notes}</p>
+          </div>
+        )}
+
+        {/* Tabs - Search Bar Container */}
         <Tabs defaultValue="payment-history" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="payment-history">History & Logs</TabsTrigger>

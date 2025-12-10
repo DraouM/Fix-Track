@@ -18,6 +18,11 @@ use db::supplier::{
     add_supplier_payment, adjust_supplier_credit, delete_supplier, get_supplier_by_id,
     get_supplier_history, get_suppliers, insert_supplier, insert_supplier_history, update_supplier,
 };
+use db::order::{
+    create_order, get_orders, get_order_by_id, update_order,
+    add_order_item, update_order_item, remove_order_item,
+    add_order_payment, get_order_payments, complete_order,
+};
 use printer::{get_available_printers, get_printer_status, print_escpos_commands}; // Add this line
 use std::panic;
 
@@ -70,6 +75,17 @@ fn main() {
             adjust_supplier_credit,
             get_supplier_history,
             insert_supplier_history,
+            // ORDERS
+            create_order,
+            get_orders,
+            get_order_by_id,
+            update_order,
+            add_order_item,
+            update_order_item,
+            remove_order_item,
+            add_order_payment,
+            get_order_payments,
+            complete_order,
             // PRINTER - Add these lines
             print_escpos_commands,
             get_available_printers,

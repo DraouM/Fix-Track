@@ -3,6 +3,7 @@ pub mod models;
 pub mod repair;
 pub mod schema;
 pub mod supplier;
+pub mod order;
 
 use rusqlite::{Connection, Result};
 use std::path::PathBuf;

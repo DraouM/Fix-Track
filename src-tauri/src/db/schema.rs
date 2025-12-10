@@ -140,6 +140,98 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
         [],
     )?;
 
+    // Orders tables
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS orders (
+            id TEXT PRIMARY KEY,
+            order_number TEXT NOT NULL UNIQUE,
+            supplier_id TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('draft','completed')),
+            payment_status TEXT NOT NULL CHECK(payment_status IN ('unpaid','partial','paid')),
+            total_amount REAL NOT NULL DEFAULT 0,
+            paid_amount REAL NOT NULL DEFAULT 0,
+            notes TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            created_by TEXT,
+            FOREIGN KEY(supplier_id) REFERENCES suppliers(id)
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS order_items (
+            id TEXT PRIMARY KEY,
+            order_id TEXT NOT NULL,
+            item_id TEXT,
+            item_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            unit_price REAL NOT NULL,
+            total_price REAL NOT NULL,
+            notes TEXT,
+            FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE,
+            FOREIGN KEY(item_id) REFERENCES inventory_items(id)
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS order_payments (
+            id TEXT PRIMARY KEY,
+            order_id TEXT NOT NULL,
+            amount REAL NOT NULL,
+            method TEXT NOT NULL,
+            date TEXT NOT NULL,
+            received_by TEXT,
+            notes TEXT,
+            FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS order_history (
+            id TEXT PRIMARY KEY,
+            order_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            event_type TEXT NOT NULL CHECK(event_type IN ('created','completed','payment_added','item_added','item_removed','updated')),
+            details TEXT NOT NULL,
+            changed_by TEXT,
+            FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    // Indexes for orders
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_orders_supplier ON orders(supplier_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_order_items_item ON order_items(item_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_order_payments_order ON order_payments(order_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_order_history_order ON order_history(order_id)",
+        [],
+    )?;
+
     // Sales table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sales (

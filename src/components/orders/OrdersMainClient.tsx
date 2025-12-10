@@ -1,25 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CreateShoppingListClient from "@/components/shopping/CreateShoppingListClient";
 import OrdersListClient from "@/components/orders/OrdersListClient";
 import { LayoutDashboard, History } from "lucide-react";
-import { v4 as uuidv4 } from 'uuid';
+import { getOrders } from "@/lib/api/orders";
+import type { Order as DBOrder } from "@/types/order";
+import { toast } from "sonner";
 
-// Types shared between components
-export interface ShoppingItem {
-  id: string;
-  name: string;
-  quantity: number;
-  estimatedPrice?: number;
-}
-
-export interface Order {
+// Legacy interface for display in history list
+export interface OrderDisplay {
     id: string;
-    // For created orders, we might not have all these fields initially tailored for the history view, 
-    // but we will map them.
-    name?: string; 
-    supplier: string; // Updated from supplierId for display simplicity in history, or we resolve it.
+    order_number: string;
+    supplier: string;
     date: string;
     status: 'paid' | 'pending' | 'partial';
     itemsCount: number;
@@ -27,100 +20,74 @@ export interface Order {
     paidAmount: number;
 }
 
-// Mock Data moved here
-const MOCK_HISTORY_ORDERS: Order[] = [
-    {
-        id: "ORD-2025-001",
-        supplier: "TechParts Supply",
-        date: "2025-10-15",
-        status: "paid",
-        itemsCount: 12,
-        totalAmount: 1450.00,
-        paidAmount: 1450.00
-    },
-    {
-        id: "ORD-2025-002",
-        supplier: "Global Electronics Hub",
-        date: "2025-10-18",
-        status: "pending",
-        itemsCount: 5,
-        totalAmount: 320.50,
-        paidAmount: 0
-    },
-    {
-        id: "ORD-2025-003",
-        supplier: "Construction Materials Co.",
-        date: "2025-10-20",
-        status: "partial",
-        itemsCount: 8,
-        totalAmount: 2100.00,
-        paidAmount: 1000.00
-    },
-    {
-        id: "ORD-2025-004",
-        supplier: "Office Depot",
-        date: "2025-10-21",
-        status: "pending",
-        itemsCount: 3,
-        totalAmount: 85.00,
-        paidAmount: 0
-    },
-    {
-        id: "ORD-2025-005",
-        supplier: "TechParts Supply",
-        date: "2025-10-22",
-        status: "paid",
-        itemsCount: 2,
-        totalAmount: 120.00,
-        paidAmount: 120.00
-    }
-];
-
 export default function OrdersMainClient() {
   const [activeTab, setActiveTab] = useState<"workspace" | "history">("workspace");
-  const [historyOrders, setHistoryOrders] = useState<Order[]>(MOCK_HISTORY_ORDERS);
-  const [orderToEdit, setOrderToEdit] = useState<Order | null>(null);
+  const [historyOrders, setHistoryOrders] = useState<OrderDisplay[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [orderToEdit, setOrderToEdit] = useState<DBOrder | null>(null);
 
-  const handleSaveOrder = (newOrderData: any) => {
-      // Check if this is an update to an existing finalized order
-      const existingOrderIndex = historyOrders.findIndex(o => o.id === newOrderData.id);
+  // Load orders from database
+  useEffect(() => {
+    loadOrders();
+  }, []);
 
-      if (existingOrderIndex >= 0) {
-          // UPDATE existing order
-          const updatedOrders = [...historyOrders];
-          updatedOrders[existingOrderIndex] = {
-              ...updatedOrders[existingOrderIndex], // Keep existing fields like date if we don't want to change them, or overwrite
-              supplier: newOrderData.supplierName || updatedOrders[existingOrderIndex].supplier,
-              status: newOrderData.status,
-              itemsCount: newOrderData.items.length,
-              totalAmount: newOrderData.totalEstimatedCost,
-              paidAmount: newOrderData.paidAmount,
-              // Update other fields as needed
-          };
-          setHistoryOrders(updatedOrders);
-      } else {
-          // CREATE new order
-          // Map the creation data format to the history format
-          const newHistoryOrder: Order = {
-              id: `ORD-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-              supplier: newOrderData.supplierName || "Unknown Supplier",
-              date: new Date().toISOString().split('T')[0],
-              status: newOrderData.status,
-              itemsCount: newOrderData.items.length,
-              totalAmount: newOrderData.totalEstimatedCost,
-              paidAmount: newOrderData.paidAmount
-          };
-          setHistoryOrders([newHistoryOrder, ...historyOrders]);
-      }
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const orders = await getOrders(); // Get all orders
+      
+      // Transform DB orders to display format
+      const displayOrders: OrderDisplay[] = orders.map(order => ({
+        id: order.id,
+        order_number: order.order_number,
+        supplier: order.supplier_id, // Will be resolved to name in OrdersListClient
+        date: order.created_at.split('T')[0], // Extract date part
+        status: order.payment_status as 'paid' | 'pending' | 'partial',
+        itemsCount: 0, // Will be populated from items
+        totalAmount: order.total_amount,
+        paidAmount: order.paid_amount,
+      }));
+      
+      setHistoryOrders(displayOrders);
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+      toast.error('Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+
+  const handleSaveOrder = async (orderId: string) => {
+      // Reload orders after save
+      await loadOrders();
       setActiveTab("history");
-      setOrderToEdit(null); // Clear edit state on save
+      setOrderToEdit(null);
+      toast.success("Order saved successfully!");
   };
 
-  const handleEditOrder = (order: Order) => {
-      setOrderToEdit(order);
-      setActiveTab("workspace");
+  const handleEditOrder = async (orderDisplay: OrderDisplay) => {
+      try {
+        // For now, we'll pass the order ID to the workspace
+        // The workspace component will load the full order details
+        setOrderToEdit({ 
+          id: orderDisplay.id,
+          order_number: orderDisplay.order_number,
+          supplier_id: orderDisplay.supplier,
+          status: 'draft', // Will be loaded properly in workspace
+          payment_status: orderDisplay.status,
+          total_amount: orderDisplay.totalAmount,
+          paid_amount: orderDisplay.paidAmount,
+          created_at: orderDisplay.date,
+          updated_at: orderDisplay.date,
+        } as DBOrder);
+        setActiveTab("workspace");
+      } catch (error) {
+        console.error('Failed to edit order:', error);
+        toast.error('Failed to load order for editing');
+      }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

@@ -8,21 +8,42 @@ fn generate_order_number() -> Result<String, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     let year = chrono::Utc::now().format("%Y").to_string();
     
-    // Get the count of orders for this year
+    // Get the highest order number for this year
     let mut stmt = conn
-        .prepare("SELECT COUNT(*) FROM orders WHERE order_number LIKE ?1")
+        .prepare("SELECT order_number FROM orders WHERE order_number LIKE ?1 ORDER BY order_number DESC LIMIT 1")
         .map_err(|e| e.to_string())?;
-    let count: i64 = stmt
-        .query_row(params![format!("ORD-{}-%", year)], |row| row.get(0))
-        .unwrap_or(0);
     
-    Ok(format!("ORD-{}-{:03}", year, count + 1))
+    let next_number = match stmt.query_row(params![format!("ORD-{}-%", year)], |row| {
+        let order_num: String = row.get(0)?;
+        Ok(order_num)
+    }) {
+        Ok(last_order) => {
+            // Extract the number part and increment
+            if let Some(num_str) = last_order.split('-').last() {
+                if let Ok(num) = num_str.parse::<i32>() {
+                    num + 1
+                } else {
+                    1
+                }
+            } else {
+                1
+            }
+        }
+        Err(_) => 1, // No orders for this year yet
+    };
+    
+    Ok(format!("ORD-{}-{:03}", year, next_number))
 }
 
 /// Create a new order
 #[tauri::command]
-pub fn create_order(order: Order) -> Result<Order, String> {
+pub fn create_order(mut order: Order) -> Result<Order, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
+    
+    // Generate order number if not provided or empty
+    if order.order_number.is_empty() {
+        order.order_number = generate_order_number()?;
+    }
     
     conn.execute(
         "INSERT INTO orders (id, order_number, supplier_id, status, payment_status, total_amount, paid_amount, notes, created_at, updated_at, created_by)

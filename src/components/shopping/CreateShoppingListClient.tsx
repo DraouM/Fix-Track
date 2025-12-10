@@ -15,6 +15,18 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { invoke } from '@tauri-apps/api/core';
+import { 
+  createOrder, 
+  addOrderItem, 
+  addOrderPayment,
+  completeOrder,
+  createNewOrder,
+  createNewOrderItem,
+  createNewPayment,
+  calculateItemTotal,
+} from "@/lib/api/orders";
+import type { Order as DBOrder, OrderItem as DBOrderItem } from "@/types/order";
 
 interface ShoppingItem {
   id: string;
@@ -40,17 +52,40 @@ interface CreateShoppingListProps {
 export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: CreateShoppingListProps) {
   const { suppliers, loading } = useSupplierState();
   
-  // Mock Data for Product Search
-  const MOCK_PRODUCTS = [
-    { id: "p1", name: "Portland Cement (50kg)", defaultPrice: 12.50 },
-    { id: "p2", name: "Sand (per ton)", defaultPrice: 45.00 },
-    { id: "p3", name: "Gravel (per ton)", defaultPrice: 40.00 },
-    { id: "p4", name: "Steel Rebar (12mm)", defaultPrice: 8.75 },
-    { id: "p5", name: "Red Bricks (1000 pcs)", defaultPrice: 350.00 },
-    { id: "p6", name: "PVC Pipe (4 inch, 6m)", defaultPrice: 22.00 },
-    { id: "p7", name: "Electrical Wire (2.5mm roll)", defaultPrice: 65.00 },
-    { id: "p8", name: "White Paint (20L)", defaultPrice: 85.00 },
-  ];
+  // Inventory item type from database
+  interface InventoryItem {
+    id: string;
+    item_name: string;
+    phone_brand: string;
+    item_type: string;
+    buying_price: number;
+    selling_price: number;
+    quantity_in_stock?: number;
+  }
+
+  // State for inventory search
+  const [inventorySearchQuery, setInventorySearchQuery] = useState<string>("");
+  const [inventoryResults, setInventoryResults] = useState<InventoryItem[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  // Search inventory items from database
+  const searchInventory = async (query: string) => {
+    if (query.length < 2) {
+      setInventoryResults([]);
+      return;
+    }
+    
+    try {
+      setSearching(true);
+      const results = await invoke<InventoryItem[]>('search_items', { query });
+      setInventoryResults(results);
+    } catch (error) {
+      console.error('Inventory search failed:', error);
+      toast.error('Failed to search inventory');
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const MOCK_INITIAL_ORDERS: Order[] = [
       {
@@ -82,56 +117,55 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
 
   // Load order to edit when prop changes
   React.useEffect(() => {
-    if (orderToEdit) {
-        setOrders(prevOrders => {
-            // Check if already exists in workspace
-            const exists = prevOrders.find(o => o.id === orderToEdit.id);
-            
-            // Try to find the supplier ID based on name if possible
-            const matchedSupplier = suppliers.find(s => s.name === orderToEdit.supplier);
-
-            if (exists) {
-                // If it exists but has no supplier ID, and we found a match now (e.g. suppliers loaded late), update it
-                if (!exists.supplierId && matchedSupplier) {
-                    return prevOrders.map(o => o.id === orderToEdit.id ? { ...o, supplierId: matchedSupplier.id } : o);
-                }
-                
-                // Otherwise just switch to it
-                if (activeOrderId !== exists.id) {
-                     setActiveOrderId(exists.id);
-                }
-                return prevOrders;
-            }
-            
-            // Reconstruct the full order object from the history format (which might be partial)
-            // For this mock, we'll try to use what we have or default
-
-            const restoredOrder: Order = {
-                id: orderToEdit.id,
-                name: orderToEdit.name || `Order ${orderToEdit.id}`, // Fallback name
-                items: orderToEdit.items || [{ id: uuidv4(), name: "Restored Item", quantity: 1, estimatedPrice: 0 }], // We'd need to store items in history in reality
-                supplierId: matchedSupplier ? matchedSupplier.id : "", // Map back to ID
-                paidAmount: orderToEdit.paidAmount || 0,
-                status: orderToEdit.status
+    const loadOrderForEdit = async () => {
+      if (orderToEdit) {
+        try {
+          // Fetch full order details from database
+          const orderDetails = await invoke<any>('get_order_by_id', { orderId: orderToEdit.id });
+          
+          if (orderDetails) {
+            // Convert database order to local Order format
+            const localOrder: Order = {
+              id: orderDetails.order.id,
+              name: `Order ${orderDetails.order.order_number}`,
+              items: orderDetails.items.map((item: any) => ({
+                id: item.id,
+                name: item.item_name,
+                quantity: item.quantity,
+                estimatedPrice: item.unit_price
+              })),
+              supplierId: orderDetails.order.supplier_id,
+              paidAmount: orderDetails.order.paid_amount,
+              status: orderDetails.order.payment_status === 'paid' ? 'paid' : 'pending'
             };
             
-            // Since our history mock doesn't store "items" array, let's just create a dummy one for demonstration
-            // In a real app, 'orderToEdit' would fetch the full order details including items.
-            if (!restoredOrder.items || restoredOrder.items.length === 0 || (orderToEdit.itemsCount && !orderToEdit.items)) {
-                 restoredOrder.items = Array(orderToEdit.itemsCount || 1).fill(null).map((_, i) => ({
-                     id: uuidv4(), 
-                     name: `Restored Item ${i+1}`, 
-                     quantity: 1, 
-                     estimatedPrice: (orderToEdit.totalAmount / (orderToEdit.itemsCount || 1)) 
-                 }));
-            }
-
-            // Append and select
-            setActiveOrderId(restoredOrder.id);
-            return [...prevOrders, restoredOrder];
-        });
-    }
-  }, [orderToEdit, suppliers]);
+            // Check if already exists in workspace and update or add
+            setOrders(prevOrders => {
+              const existsIndex = prevOrders.findIndex(o => o.id === localOrder.id);
+              
+              if (existsIndex >= 0) {
+                // Update existing order
+                const updated = [...prevOrders];
+                updated[existsIndex] = localOrder;
+                return updated;
+              } else {
+                // Add new order to workspace
+                return [...prevOrders, localOrder];
+              }
+            });
+            
+            // Set as active order
+            setActiveOrderId(localOrder.id);
+          }
+        } catch (error) {
+          console.error('Failed to load order details:', error);
+          toast.error('Failed to load order details');
+        }
+      }
+    };
+    
+    loadOrderForEdit();
+  }, [orderToEdit]);
 
   // Derived state for the active view
   const activeOrder = orders.find(o => o.id === activeOrderId) || orders[0];
@@ -180,12 +214,10 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
     const updatedItems = activeOrder.items.map((item) => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
-          // If name changes, check for exact match in mock db to auto-fill price
-          if (field === "name") {
-             const product = MOCK_PRODUCTS.find(p => p.name.toLowerCase() === (value as string).toLowerCase());
-             if (product && !item.estimatedPrice) {
-                 updatedItem.estimatedPrice = product.defaultPrice;
-             }
+          // If name changes, trigger inventory search
+          if (field === "name" && typeof value === "string") {
+             setInventorySearchQuery(value);
+             searchInventory(value);
           }
           return updatedItem;
         }
@@ -194,15 +226,21 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
       updateActiveOrder({ items: updatedItems });
   };
 
-  const handleSelectProduct = (itemId: string, product: typeof MOCK_PRODUCTS[0]) => {
+  const handleSelectInventoryItem = (itemId: string, inventoryItem: InventoryItem) => {
       const updatedItems = activeOrder.items.map(item => {
           if (item.id === itemId) {
-              return { ...item, name: product.name, estimatedPrice: product.defaultPrice };
+              return { 
+                ...item, 
+                name: inventoryItem.item_name, 
+                estimatedPrice: inventoryItem.buying_price 
+              };
           }
           return item;
       });
       updateActiveOrder({ items: updatedItems });
       setFocusedItemId(null);
+      setInventorySearchQuery("");
+      setInventoryResults([]);
   };
 
   const calculateTotalEstimated = () => {
@@ -214,7 +252,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
       return Math.max(0, total - activeOrder.paidAmount);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!activeOrder.supplierId) {
@@ -227,53 +265,74 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
       return;
     }
 
-    console.log("Saving Order:", activeOrder);
+    try {
+      console.log("Saving Order to Database:", activeOrder);
+      
+      // Calculate total
+      const totalAmount = calculateTotalEstimated();
+      
+      // Create database order
+      const dbOrder = createNewOrder(activeOrder.supplierId);
+      dbOrder.total_amount = totalAmount;
+      dbOrder.paid_amount = activeOrder.paidAmount;
+      dbOrder.payment_status = activeOrder.paidAmount >= totalAmount ? 'paid' as const : 
+                               activeOrder.paidAmount > 0 ? 'partial' as const : 'unpaid' as const;
+      
+      // Create order in database
+      const createdOrder = await createOrder(dbOrder);
+      console.log("Order created:", createdOrder);
+      
+      // Add all items to the order
+      for (const item of activeOrder.items) {
+        const dbItem = createNewOrderItem(createdOrder.id);
+        dbItem.item_name = item.name;
+        dbItem.quantity = item.quantity;
+        dbItem.unit_price = item.estimatedPrice || 0;
+        dbItem.total_price = item.quantity * (item.estimatedPrice || 0);
+        // Note: item_id would be set if we linked to inventory
+        
+        await addOrderItem(dbItem);
+      }
+      
+      // Add payment if any
+      if (activeOrder.paidAmount > 0) {
+        const payment = createNewPayment(createdOrder.id, activeOrder.paidAmount, 'Cash');
+        await addOrderPayment(payment);
+      }
+      
+      // Complete the order (this updates inventory for linked items)
+      await completeOrder(createdOrder.id);
+      
+      toast.success(`Order saved successfully! Order #${createdOrder.order_number}`);
+      
+      // Call parent handler with order ID
+      if (onSaveOrder) {
+          onSaveOrder(createdOrder.id);
+      }
     
-    // Find supplier name
-    const supplier = suppliers.find(s => s.id === activeOrder.supplierId);
-    
-    // Determine supplier name with fallback
-    let supplierName = "Unknown Supplier";
-    if (supplier) {
-        supplierName = supplier.name;
-    } else if (orderToEdit && orderToEdit.id === activeOrder.id) {
-        // Fallback: If we couldn't match an ID but we are editing this order, 
-        // preserve the original name (likely a mock name that doesn't exist in DB)
-        supplierName = orderToEdit.supplier || "Unknown Supplier";
-    }
-
-    // Call parent handler
-    if (onSaveOrder) {
-        onSaveOrder({
-            ...activeOrder,
-            supplierName: supplierName,
-            totalEstimatedCost: calculateTotalEstimated()
-        });
-    }
-
-    toast.success(`Order "${activeOrder.name}" saved successfully!`);
-    
-    // Optional: Reset or mark as paid/saved in a real app
-    
-    // Cleanup: Remove the saved order from the workspace
-    const remainingOrders = orders.filter(o => o.id !== activeOrderId);
-    
-    if (remainingOrders.length === 0) {
-        // If it was the last order, reset to a clean state with a new ID
-        const newId = uuidv4();
-        setOrders([{
-            id: newId,
-            name: "New Order #1",
-            items: [{ id: uuidv4(), name: "", quantity: 1 }],
-            supplierId: "",
-            paidAmount: 0,
-            status: 'pending'
-        }]);
-        setActiveOrderId(newId);
-    } else {
-        // Otherwise, switch to the first available order
-        setOrders(remainingOrders);
-        setActiveOrderId(remainingOrders[0].id);
+      // Cleanup: Remove the saved order from the workspace
+      const remainingOrders = orders.filter(o => o.id !== activeOrderId);
+      
+      if (remainingOrders.length === 0) {
+          // If it was the last order, reset to a clean state with a new ID
+          const newId = uuidv4();
+          setOrders([{
+              id: newId,
+              name: "New Order #1",
+              items: [{ id: uuidv4(), name: "", quantity: 1 }],
+              supplierId: "",
+              paidAmount: 0,
+              status: 'pending'
+          }]);
+          setActiveOrderId(newId);
+      } else {
+          // Otherwise, switch to the first available order
+          setOrders(remainingOrders);
+          setActiveOrderId(remainingOrders[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to save order:', error);
+      toast.error('Failed to save order to database');
     }
   };
 
@@ -370,25 +429,28 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                             className="w-full bg-transparent border-b border-gray-200 focus:border-blue-500 p-1 focus:ring-0 text-gray-900 placeholder-gray-400 font-medium text-sm transition-colors outline-none"
                             required
                             />
-                            {/* Suggestions Dropdown */}
-                            {focusedItemId === item.id && item.name.length > 0 && (
+                            {/* Inventory Search Results Dropdown */}
+                            {focusedItemId === item.id && inventoryResults.length > 0 && (
                                 <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20 mt-1 max-h-48 overflow-auto">
-                                    {MOCK_PRODUCTS.filter(p => p.name.toLowerCase().includes(item.name.toLowerCase())).map(product => (
+                                    {inventoryResults.map(inventoryItem => (
                                         <div 
-                                            key={product.id}
+                                            key={inventoryItem.id}
                                             className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm text-gray-700 flex justify-between"
                                             onMouseDown={(e) => {
                                                 e.preventDefault(); // Prevent input blur
-                                                handleSelectProduct(item.id, product);
+                                                handleSelectInventoryItem(item.id, inventoryItem);
                                             }}
                                         >
-                                            <span className="font-medium truncate">{product.name}</span>
-                                            <span className="text-gray-400 text-xs ml-2">${product.defaultPrice.toFixed(2)}</span>
+                                            <span className="font-medium truncate">{inventoryItem.item_name}</span>
+                                            <span className="text-gray-400 text-xs ml-2">${inventoryItem.buying_price.toFixed(2)}</span>
                                         </div>
                                     ))}
-                                    {MOCK_PRODUCTS.filter(p => p.name.toLowerCase().includes(item.name.toLowerCase())).length === 0 && (
-                                        <div className="px-3 py-2 text-xs text-gray-400 italic">No matches found</div>
-                                    )}
+                                </div>
+                            )}
+                            {/* Show searching indicator */}
+                            {focusedItemId === item.id && searching && (
+                                <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20 mt-1 px-3 py-2">
+                                    <div className="text-xs text-gray-400 italic">Searching inventory...</div>
                                 </div>
                             )}
                         </div>

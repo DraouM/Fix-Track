@@ -16,11 +16,11 @@ import {
     DollarSign
 } from "lucide-react";
 
-import { Order } from "./OrdersMainClient";
+import type { OrderDisplay } from "./OrdersMainClient";
 
 interface OrdersListClientProps {
-    orders: Order[];
-    onEdit?: (order: Order) => void;
+    orders: OrderDisplay[];
+    onEdit?: (order: OrderDisplay) => void;
 }
 
 export default function OrdersListClient({ orders, onEdit }: OrdersListClientProps) {
@@ -57,7 +57,7 @@ export default function OrdersListClient({ orders, onEdit }: OrdersListClientPro
 
     const filteredOrders = orders.filter(order => {
         const matchesSearch = 
-            order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) || 
             order.supplier.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === "all" || order.status === statusFilter;
         return matchesSearch && matchesStatus;
@@ -131,7 +131,7 @@ export default function OrdersListClient({ orders, onEdit }: OrdersListClientPro
                                 {filteredOrders.map((order) => (
                                     <tr key={order.id} className="hover:bg-gray-50 transition-colors group">
                                         <td className="px-6 py-4">
-                                            <span className="font-medium text-gray-900">{order.id}</span>
+                                            <span className="font-medium text-gray-900">{order.order_number}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">

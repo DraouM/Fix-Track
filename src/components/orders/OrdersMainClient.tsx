@@ -20,16 +20,20 @@ export interface OrderDisplay {
     paidAmount: number;
 }
 
+import { useSupplierState } from "@/context/SupplierContext";
+
 export default function OrdersMainClient() {
   const [activeTab, setActiveTab] = useState<"workspace" | "history">("workspace");
   const [historyOrders, setHistoryOrders] = useState<OrderDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const [orderToEdit, setOrderToEdit] = useState<DBOrder | null>(null);
 
+  const { suppliers } = useSupplierState();
+
   // Load orders from database
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [suppliers]); // Re-run when suppliers load to ensure names are resolved
 
   const loadOrders = async () => {
     try {
@@ -37,21 +41,24 @@ export default function OrdersMainClient() {
       const orders = await getOrders(); // Get all orders
       
       // Transform DB orders to display format
-      const displayOrders: OrderDisplay[] = orders.map(order => ({
-        id: order.id,
-        order_number: order.order_number,
-        supplier: order.supplier_id, // Will be resolved to name in OrdersListClient
-        date: order.created_at.split('T')[0], // Extract date part
-        status: order.payment_status as 'paid' | 'pending' | 'partial',
-        itemsCount: 0, // Will be populated from items
-        totalAmount: order.total_amount,
-        paidAmount: order.paid_amount,
-      }));
+      const displayOrders: OrderDisplay[] = orders.map(order => {
+        const supplierName = suppliers.find(s => s.id === order.supplier_id)?.name || 'Unknown Supplier';
+        return {
+            id: order.id,
+            order_number: order.order_number,
+            supplier: supplierName, 
+            date: order.created_at.split('T')[0], // Extract date part
+            status: order.payment_status as 'paid' | 'pending' | 'partial',
+            itemsCount: 0, // Still 0 for now as we don't have this data in list view
+            totalAmount: order.total_amount,
+            paidAmount: order.paid_amount,
+        };
+      });
       
       setHistoryOrders(displayOrders);
     } catch (error) {
       console.error('Failed to load orders:', error);
-      toast.error('Failed to load orders');
+      // toast.error('Failed to load orders'); // Suppress error on initial load race conditions
     } finally {
       setLoading(false);
     }

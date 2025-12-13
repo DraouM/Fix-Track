@@ -4,17 +4,23 @@ import React, { useState } from "react";
 import { 
     Search, 
     Filter, 
-    MoreVertical, 
     Eye, 
     Printer, 
-    CheckCircle2, 
-    Clock, 
-    CreditCard,
     FileText,
     Calendar,
-    Building2,
-    DollarSign
+    ArrowUpDown
 } from "lucide-react";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 import type { OrderDisplay } from "./OrdersMainClient";
 
@@ -30,28 +36,13 @@ export default function OrdersListClient({ orders, onEdit }: OrdersListClientPro
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "paid":
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Paid
-                    </span>
-                );
+                return <Badge className="bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800 border-green-200">Paid</Badge>;
             case "pending":
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                        <Clock className="w-3.5 h-3.5" />
-                        Pending
-                    </span>
-                );
+                return <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">Pending</Badge>;
             case "partial":
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                        <CreditCard className="w-3.5 h-3.5" />
-                        Partial
-                    </span>
-                );
+                return <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200">Partial</Badge>;
             default:
-                return null;
+                return <Badge variant="outline">{status}</Badge>;
         }
     };
 
@@ -64,134 +55,146 @@ export default function OrdersListClient({ orders, onEdit }: OrdersListClientPro
     });
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-50/50 p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                            <FileText className="w-8 h-8 text-blue-600" />
-                            Orders History
-                        </h1>
-                        <p className="text-gray-600 mt-1">
-                            View and manage your purchase orders
+                        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Orders History</h1>
+                        <p className="text-gray-500 mt-1">
+                            Manage and track your purchase orders
                         </p>
                     </div>
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        {/* Search */}
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search by Order ID or Supplier..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                            />
-                        </div>
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-xl border shadow-sm">
+                    <div className="relative w-full md:w-96">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search orders..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                        />
+                    </div>
 
-                        {/* Status Filter */}
-                        <div className="w-full md:w-48 relative">
-                           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                           <Filter className="w-4 h-4 text-gray-400" />
                            <select 
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none appearance-none bg-white"
+                                className="pl-2 pr-8 py-2 border border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none appearance-none bg-white cursor-pointer hover:bg-gray-50 transition-colors"
                            >
                                <option value="all">All Statuses</option>
                                <option value="paid">Paid</option>
                                <option value="pending">Pending</option>
                                <option value="partial">Partial</option>
                            </select>
-                        </div>
                     </div>
                 </div>
 
                 {/* Orders Table */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    <th className="px-6 py-4">Order ID</th>
-                                    <th className="px-6 py-4">Supplier</th>
-                                    <th className="px-6 py-4">Date</th>
-                                    <th className="px-6 py-4 text-center">Items</th>
-                                    <th className="px-6 py-4 text-right">Total</th>
-                                    <th className="px-6 py-4 text-center">Status</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {filteredOrders.map((order) => (
-                                    <tr key={order.id} className="hover:bg-gray-50 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <span className="font-medium text-gray-900">{order.order_number}</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">
-                                                    {order.supplier.substring(0, 2).toUpperCase()}
+                <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                    <Table>
+                        <TableHeader className="bg-gray-50/50">
+                            <TableRow>
+                                <TableHead className="w-[180px]">Order ID</TableHead>
+                                <TableHead>Supplier</TableHead>
+                                <TableHead className="w-[150px]">Date</TableHead>
+                                <TableHead className="w-[200px]">Payment Status</TableHead>
+                                <TableHead className="text-right">Total</TableHead>
+                                <TableHead className="text-center w-[120px]">Status</TableHead>
+                                <TableHead className="text-right w-[100px]">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredOrders.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="h-48 text-center">
+                                        <div className="flex flex-col items-center justify-center text-gray-500">
+                                            <FileText className="w-12 h-12 mb-2 text-gray-300" />
+                                            <p className="text-lg font-medium">No orders found</p>
+                                            <p className="text-sm">Try adjusting your filters</p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredOrders.map((order) => {
+                                    const percentPaid = order.totalAmount > 0 
+                                        ? Math.min(100, (order.paidAmount / order.totalAmount) * 100) 
+                                        : 0;
+                                    
+                                    return (
+                                        <TableRow key={order.id} className="group hover:bg-gray-50/50">
+                                            <TableCell className="font-medium text-gray-900">
+                                                {order.order_number || <span className="text-gray-400 italic"># Pending</span>}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">
+                                                        {order.supplier.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <span className="font-medium text-gray-700">{order.supplier}</span>
                                                 </div>
-                                                <span className="text-sm text-gray-700">{order.supplier}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                                                <Calendar className="w-3.5 h-3.5" />
-                                                {order.date}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                           <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-600">
-                                                {order.itemsCount}
-                                           </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="text-sm font-bold text-gray-900">
-                                                ${order.totalAmount.toFixed(2)}
-                                            </div>
-                                            {order.paidAmount < order.totalAmount && (
-                                                <div className="text-xs text-orange-600">
-                                                    Due: ${(order.totalAmount - order.paidAmount).toFixed(2)}
+                                            </TableCell>
+                                            <TableCell className="text-gray-500">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="w-3.5 h-3.5" />
+                                                    {order.date}
                                                 </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            {getStatusBadge(order.status)}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button 
-                                                    onClick={() => onEdit?.(order)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
-                                                    title="View Details"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
-                                                <button className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Print Order">
-                                                    <Printer className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    {filteredOrders.length === 0 && (
-                        <div className="p-12 text-center">
-                            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <h3 className="text-lg font-medium text-gray-900">No orders found</h3>
-                            <p className="text-gray-500 text-sm mt-1">Try adjusting your filters or search terms</p>
-                        </div>
-                    )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between text-xs">
+                                                        <span className="text-gray-500">
+                                                            ${order.paidAmount.toFixed(2)} paid
+                                                        </span>
+                                                        <span className="font-medium text-gray-900">
+                                                            {percentPaid.toFixed(0)}%
+                                                        </span>
+                                                    </div>
+                                                    <Progress value={percentPaid} className="h-1.5" />
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="font-bold text-gray-900">
+                                                    ${order.totalAmount.toFixed(2)}
+                                                </div>
+                                                {order.paidAmount < order.totalAmount && (
+                                                    <div className="text-xs text-red-500 font-medium">
+                                                        Due: ${(order.totalAmount - order.paidAmount).toFixed(2)}
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                {getStatusBadge(order.status)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                    <button 
+                                                        onClick={() => onEdit?.(order)}
+                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                                        title="View Details"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                    <button 
+                                                        className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                                                        title="Print"
+                                                    >
+                                                        <Printer className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
                 </div>
             </div>
         </div>

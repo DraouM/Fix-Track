@@ -25,8 +25,12 @@ import {
   createNewOrderItem,
   createNewPayment,
   calculateItemTotal,
+  updateOrder,
+  updateOrderItem,
+  removeOrderItem,
+  getOrderById
 } from "@/lib/api/orders";
-import type { Order as DBOrder, OrderItem as DBOrderItem } from "@/types/order";
+import type { Order as DBOrder, OrderItem as DBOrderItem, OrderWithDetails } from "@/types/order";
 
 interface ShoppingItem {
   id: string;
@@ -114,6 +118,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
   const [orders, setOrders] = useState<Order[]>(MOCK_INITIAL_ORDERS);
   const [activeOrderId, setActiveOrderId] = useState<string>(MOCK_INITIAL_ORDERS[0].id);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Load order to edit when prop changes
   React.useEffect(() => {
@@ -266,55 +271,113 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
     }
 
     try {
-      console.log("Saving Order to Database:", activeOrder);
+      setIsSaving(true);
+      console.log("Processing Order:", activeOrder);
       
-      // Calculate total
-      const totalAmount = calculateTotalEstimated();
-      
-      // Create database order
-      const dbOrder = createNewOrder(activeOrder.supplierId);
-      dbOrder.total_amount = totalAmount;
-      dbOrder.paid_amount = activeOrder.paidAmount;
-      dbOrder.payment_status = activeOrder.paidAmount >= totalAmount ? 'paid' as const : 
-                               activeOrder.paidAmount > 0 ? 'partial' as const : 'unpaid' as const;
-      
-      // Create order in database
-      const createdOrder = await createOrder(dbOrder);
-      console.log("Order created:", createdOrder);
-      
-      // Add all items to the order
-      for (const item of activeOrder.items) {
-        const dbItem = createNewOrderItem(createdOrder.id);
-        dbItem.item_name = item.name;
-        dbItem.quantity = item.quantity;
-        dbItem.unit_price = item.estimatedPrice || 0;
-        dbItem.total_price = item.quantity * (item.estimatedPrice || 0);
-        // Note: item_id would be set if we linked to inventory
-        
-        await addOrderItem(dbItem);
+      // Check if order exists in DB
+      let existingOrder: OrderWithDetails | null = null;
+      try {
+           existingOrder = await getOrderById(activeOrder.id);
+      } catch (err) {
+           existingOrder = null;
       }
-      
-      // Add payment if any
-      if (activeOrder.paidAmount > 0) {
-        const payment = createNewPayment(createdOrder.id, activeOrder.paidAmount, 'Cash');
-        await addOrderPayment(payment);
-      }
-      
-      // Complete the order (this updates inventory for linked items)
-      await completeOrder(createdOrder.id);
-      
-      toast.success(`Order saved successfully! Order #${createdOrder.order_number}`);
-      
-      // Call parent handler with order ID
-      if (onSaveOrder) {
-          onSaveOrder(createdOrder.id);
+
+      if (existingOrder) {
+          // UPDATE FLOW
+          console.log("Updating existing order:", existingOrder);
+          
+          const totalAmount = calculateTotalEstimated();
+          
+          // 1. Update Order Header
+          const dbOrderUpdate: DBOrder = {
+              ...existingOrder.order,
+              supplier_id: activeOrder.supplierId,
+              total_amount: totalAmount,
+              updated_at: new Date().toISOString()
+          };
+          await updateOrder(dbOrderUpdate);
+
+          // 2. Update Items (Diffing)
+          const dbItems = existingOrder.items;
+          const currentItems = activeOrder.items;
+
+          const itemsToDelete = dbItems.filter(dbItem => !currentItems.find(ci => ci.id === dbItem.id));
+          for (const item of itemsToDelete) {
+              await removeOrderItem(item.id, activeOrder.id);
+          }
+
+          for (const item of currentItems) {
+              const existingItem = dbItems.find(di => di.id === item.id);
+              if (existingItem) {
+                  const updateItem: DBOrderItem = {
+                      ...existingItem,
+                      item_name: item.name,
+                      quantity: item.quantity,
+                      unit_price: item.estimatedPrice || 0,
+                      total_price: item.quantity * (item.estimatedPrice || 0)
+                  };
+                  await updateOrderItem(updateItem);
+              } else {
+                  const newItem = createNewOrderItem(activeOrder.id, item.name);
+                  newItem.id = item.id;
+                  newItem.quantity = item.quantity;
+                  newItem.unit_price = item.estimatedPrice || 0;
+                  newItem.total_price = item.quantity * (item.estimatedPrice || 0);
+                  await addOrderItem(newItem);
+              }
+          }
+
+          // 3. Update Payments
+          const currentDbPaid = existingOrder.order.paid_amount;
+          if (activeOrder.paidAmount > currentDbPaid) {
+              const diff = activeOrder.paidAmount - currentDbPaid;
+              const payment = createNewPayment(activeOrder.id, diff, 'Cash');
+              await addOrderPayment(payment);
+          }
+
+          toast.success("Order updated successfully!");
+          if (onSaveOrder) onSaveOrder(activeOrder.id);
+
+      } else {
+          // CREATE FLOW
+          const totalAmount = calculateTotalEstimated();
+          
+          const dbOrder = createNewOrder(activeOrder.supplierId);
+          dbOrder.id = activeOrder.id; // Use workspace ID
+          dbOrder.total_amount = totalAmount;
+          dbOrder.paid_amount = activeOrder.paidAmount;
+          dbOrder.payment_status = activeOrder.paidAmount >= totalAmount ? 'paid' as const : 
+                                   activeOrder.paidAmount > 0 ? 'partial' as const : 'unpaid' as const;
+          
+          const createdOrder = await createOrder(dbOrder);
+          
+          for (const item of activeOrder.items) {
+            const dbItem = createNewOrderItem(createdOrder.id);
+            dbItem.id = item.id;
+            dbItem.item_name = item.name;
+            dbItem.quantity = item.quantity;
+            dbItem.unit_price = item.estimatedPrice || 0;
+            dbItem.total_price = item.quantity * (item.estimatedPrice || 0);
+            await addOrderItem(dbItem);
+          }
+          
+          if (activeOrder.paidAmount > 0) {
+            const payment = createNewPayment(createdOrder.id, activeOrder.paidAmount, 'Cash');
+            await addOrderPayment(payment);
+          }
+          
+          await completeOrder(createdOrder.id);
+          
+          toast.success(`Order saved successfully! Order #${createdOrder.order_number}`);
+          
+          if (onSaveOrder) {
+              onSaveOrder(createdOrder.id);
+          }
       }
     
-      // Cleanup: Remove the saved order from the workspace
+      // Cleanup
       const remainingOrders = orders.filter(o => o.id !== activeOrderId);
-      
       if (remainingOrders.length === 0) {
-          // If it was the last order, reset to a clean state with a new ID
           const newId = uuidv4();
           setOrders([{
               id: newId,
@@ -326,13 +389,14 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
           }]);
           setActiveOrderId(newId);
       } else {
-          // Otherwise, switch to the first available order
           setOrders(remainingOrders);
           setActiveOrderId(remainingOrders[0].id);
       }
     } catch (error) {
       console.error('Failed to save order:', error);
       toast.error('Failed to save order to database');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -611,10 +675,22 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                 <div className="pt-6 space-y-3">
                      <button
                         type="submit"
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-blue-200 shadow-lg hover:shadow-xl transition-all active:scale-[0.98]"
+                        disabled={isSaving}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-[0.98] ${
+                          isSaving ? "bg-gray-400 cursor-not-allowed shadow-none" : "bg-blue-600 hover:bg-blue-700 shadow-blue-200"
+                        }`}
                     >
-                        <Save className="w-5 h-5" />
-                        Save Order
+                        {isSaving ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                              Saving...
+                            </>
+                        ) : (
+                            <>
+                              <Save className="w-5 h-5" />
+                              Save Order
+                            </>
+                        )}
                     </button>
                     
                     <button

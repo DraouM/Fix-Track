@@ -282,7 +282,7 @@ export const useEscPosPrinter = () => {
       .newline()
       .newline()
       .align("left")
-      .text(`Order #: ${repair.id || "N/A"}`)
+      .text(`Order #: ${repair.code || repair.id || "N/A"}`)
       .newline()
       .text(
         `Date: ${repair.createdAt ? formatPrintDate(repair.createdAt) : "N/A"}`
@@ -357,9 +357,8 @@ export const useEscPosPrinter = () => {
 
       repair.payments.forEach((payment) => {
         encoder.text(
-          `${formatPrintDate(payment.date)} - ${payment.method}: $${
-            payment.amount || 0
-          }`.padEnd(32)
+          `${formatPrintDate(payment.date)} - ${payment.method}: $${payment.amount || 0
+            }`.padEnd(32)
         );
         encoder.newline();
       });
@@ -404,8 +403,8 @@ export const useEscPosPrinter = () => {
       .newline();
 
     // Add barcode if repair ID exists
-    if (repair.id) {
-      encoder.barcode(repair.id, "code128", { width: 2, height: 40 });
+    if (repair.code || repair.id) {
+      encoder.barcode(repair.code || repair.id, "code128", { width: 2, height: 40 });
     }
 
     // Add auto-cut if requested
@@ -439,7 +438,7 @@ export const useEscPosPrinter = () => {
         .align("center")
         .text(shopInfo.shopName)
         .newline()
-        .text(`#${repair.id || "N/A"}`)
+        .text(`${repair.code || repair.id || "N/A"}`)
         .newline()
         .size("double-width-double-height")
         .text(
@@ -455,10 +454,9 @@ export const useEscPosPrinter = () => {
         .text(`${repair.customerPhone || "No phone"}`)
         .newline()
         .text(
-          `${
-            repair.createdAt
-              ? formatPrintDate(repair.createdAt).split(",")[0]
-              : "N/A"
+          `${repair.createdAt
+            ? formatPrintDate(repair.createdAt).split(",")[0]
+            : "N/A"
           }`
         );
 
@@ -472,8 +470,7 @@ export const useEscPosPrinter = () => {
     } catch (error) {
       console.error("Error generating sticker commands:", error);
       throw new Error(
-        `Failed to generate sticker: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to generate sticker: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }

@@ -1,5 +1,5 @@
 use super::models::{Repair, RepairHistory, RepairPayment, RepairUsedPart};
-use rusqlite::{params, Result};
+use rusqlite::{params, OptionalExtension, Result};
 
 /// ======================
 /// CRUD FUNCTIONS
@@ -7,11 +7,35 @@ use rusqlite::{params, Result};
 
 /// Insert a new repair
 #[tauri::command]
-pub fn insert_repair(repair: Repair) -> Result<(), String> {
+pub fn insert_repair(mut repair: Repair) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
+
+    // Generate readable code
+    let last_code: Option<String> = conn
+        .query_row(
+            "SELECT code FROM repairs WHERE code IS NOT NULL ORDER BY created_at DESC LIMIT 1",
+            [],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+
+    let new_code = match last_code {
+        Some(code) => {
+            // Format: REP001
+            let clean_code = code.replace("#", "").replace("REP", "").replace(" ", "");
+            match clean_code.parse::<i32>() {
+                Ok(num) => format!("REP{:03}", num + 1),
+                Err(_) => "REP001".to_string(),
+            }
+        }
+        None => "REP001".to_string(),
+    };
+    repair.code = Some(new_code.clone());
+
     conn.execute(
-        "INSERT INTO repairs (id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, datetime('now'), datetime('now'))",
+        "INSERT INTO repairs (id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, datetime('now'), datetime('now'), ?10)",
         params![
             repair.id,
             repair.customer_name,
@@ -22,6 +46,7 @@ pub fn insert_repair(repair: Repair) -> Result<(), String> {
             repair.estimated_cost,
             repair.status,
             repair.payment_status,
+            new_code,
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -33,7 +58,7 @@ pub fn insert_repair(repair: Repair) -> Result<(), String> {
 pub fn get_repairs() -> Result<Vec<Repair>, String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     let mut stmt = conn
-        .prepare("SELECT id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at FROM repairs")
+        .prepare("SELECT id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code FROM repairs ORDER BY created_at DESC")
         .map_err(|e| e.to_string())?;
     let items = stmt
         .query_map([], |row| {
@@ -49,6 +74,7 @@ pub fn get_repairs() -> Result<Vec<Repair>, String> {
                 payment_status: row.get(8)?,
                 created_at: row.get(9)?,
                 updated_at: row.get(10)?,
+                code: row.get(11).ok(), // Optional
             })
         })
         .map_err(|e| e.to_string())?
@@ -62,7 +88,7 @@ pub fn get_repairs() -> Result<Vec<Repair>, String> {
 pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     let mut stmt = conn
-        .prepare("SELECT id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at FROM repairs WHERE id = ?1")
+        .prepare("SELECT id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code FROM repairs WHERE id = ?1")
         .map_err(|e| e.to_string())?;
     let mut rows = stmt.query(params![repair_id]).map_err(|e| e.to_string())?;
     if let Some(row) = rows.next().map_err(|e| e.to_string())? {
@@ -78,6 +104,7 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
             payment_status: row.get(8).map_err(|e| e.to_string())?,
             created_at: row.get(9).map_err(|e| e.to_string())?,
             updated_at: row.get(10).map_err(|e| e.to_string())?,
+            code: row.get(11).ok(),
         }))
     } else {
         Ok(None)
@@ -100,6 +127,10 @@ pub fn update_repair(repair: Repair) -> Result<(), String> {
             repair.estimated_cost,
             repair.status,
             repair.payment_status,
+            // We usually don't update code, so I'll leave it as is or should I?
+            // If code is not updating, I don't need to add it to SET.
+            // But if the user edits the 'code' (not currently planned), it would be needed.
+            // For now, let's NOT update code to prevent accidental changes.
         ],
     )
     .map_err(|e| e.to_string())?;

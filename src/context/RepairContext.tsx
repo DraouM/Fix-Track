@@ -107,6 +107,7 @@ function mapRepairFromDB(dbRepair: RepairDb): Repair {
     history: dbRepair.history || [],
     createdAt: dbRepair.created_at,
     updatedAt: dbRepair.updated_at,
+    code: dbRepair.code,
   };
 }
 

@@ -45,10 +45,10 @@ export function ReceiptTemplate({
       className="thermal-receipt"
       style={{
         width: "80mm",
-        padding: "3mm",
+        padding: "2mm",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: "9px",
-        lineHeight: "1.2",
+        fontSize: "8px",
+        lineHeight: "1.15",
         color: "#000",
         backgroundColor: "#fff",
       }}
@@ -57,20 +57,20 @@ export function ReceiptTemplate({
       <div
         style={{
           textAlign: "center",
-          marginBottom: "6px",
+          marginBottom: "4px",
           borderBottom: "1px dashed #000",
-          paddingBottom: "6px",
+          paddingBottom: "4px",
         }}
       >
         {/* Logo */}
         {shopInfo.logoUrl && (
-          <div style={{ marginBottom: "4px" }}>
+          <div style={{ marginBottom: "2px" }}>
             <img
               src={shopInfo.logoUrl}
               alt="Shop Logo"
               style={{
-                maxWidth: "50mm",
-                maxHeight: "15mm",
+                maxWidth: "45mm",
+                maxHeight: "12mm",
                 width: "auto",
                 height: "auto",
                 objectFit: "contain",
@@ -81,39 +81,24 @@ export function ReceiptTemplate({
 
         {/* Shop Name */}
         <div
-          style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "2px" }}
+          style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "1px" }}
         >
           {shopInfo.shopName}
         </div>
 
         {/* Contact Information */}
-        <div style={{ fontSize: "8px" }}>{shopInfo.address}</div>
-        <div style={{ fontSize: "8px" }}>Tel: {shopInfo.phoneNumber}</div>
-        {shopInfo.email && (
-          <div style={{ fontSize: "8px" }}>Email: {shopInfo.email}</div>
-        )}
-        {shopInfo.website && (
-          <div style={{ fontSize: "8px" }}>Web: {shopInfo.website}</div>
-        )}
+        <div style={{ fontSize: "7px" }}>{shopInfo.address}</div>
+        <div style={{ fontSize: "7px" }}>Tel: {shopInfo.phoneNumber}</div>
+        {/* Email and website hidden to save space */}
       </div>
 
-      {/* Receipt Type */}
-      <div
-        style={{
-          textAlign: "center",
-          fontSize: "10px",
-          fontWeight: "bold",
-          margin: "4px 0",
-        }}
-      >
-        REPAIR RECEIPT
-      </div>
+      {/* Receipt Type - Hidden to save space */}
 
       {/* Order Info */}
-      <div style={{ marginBottom: "4px", fontSize: "8px" }}>
+      <div style={{ marginBottom: "3px", fontSize: "7px" }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>Order #:</span>
-          <span style={{ fontWeight: "bold" }}>{repair.id}</span>
+          <span style={{ fontWeight: "bold", fontSize: "8px" }}>{repair.code || repair.id}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>Date:</span>
@@ -125,7 +110,7 @@ export function ReceiptTemplate({
         </div>
       </div>
 
-      <div style={{ borderTop: "1px dashed #000", margin: "6px 0" }}></div>
+      <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Customer Info */}
       <div style={{ marginBottom: "4px", fontSize: "8px" }}>
@@ -134,7 +119,7 @@ export function ReceiptTemplate({
         <div>{repair.customerPhone}</div>
       </div>
 
-      <div style={{ borderTop: "1px dashed #000", margin: "6px 0" }}></div>
+      <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Device Info */}
       <div style={{ marginBottom: "4px", fontSize: "8px" }}>
@@ -150,7 +135,7 @@ export function ReceiptTemplate({
         </div>
       </div>
 
-      <div style={{ borderTop: "1px dashed #000", margin: "6px 0" }}></div>
+      <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Parts Used */}
       {includeParts && repair.usedParts && repair.usedParts.length > 0 && (
@@ -198,6 +183,7 @@ export function ReceiptTemplate({
             <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
               PAYMENTS:
             </div>
+            {/* 
             {repair.payments.map((payment) => (
               <div
                 key={payment.id}
@@ -211,6 +197,7 @@ export function ReceiptTemplate({
                 <span>${payment.amount.toFixed(2)}</span>
               </div>
             ))}
+            */}
             <div
               style={{
                 borderTop: "1px solid #000",
@@ -254,15 +241,12 @@ export function ReceiptTemplate({
         </div>
       </div>
 
-      <div style={{ borderTop: "1px dashed #000", margin: "8px 0" }}></div>
+      <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Footer */}
-      <div style={{ textAlign: "center", fontSize: "7px", marginTop: "4px" }}>
-        <div style={{ marginBottom: "2px" }}>Thank you for your business!</div>
-        <div>30-day warranty on parts & labor</div>
-        <div style={{ marginTop: "4px", fontWeight: "bold" }}>
-          Keep this receipt for your records
-        </div>
+      <div style={{ textAlign: "center", fontSize: "6px", marginTop: "2px" }}>
+        <div style={{ marginBottom: "1px" }}>Thank you for your business!</div>
+        <div style={{ fontWeight: "bold" }}>Keep this receipt for warranty</div>
       </div>
 
       {/* Barcode placeholder - you can add actual barcode library */}
@@ -275,7 +259,7 @@ export function ReceiptTemplate({
             letterSpacing: "1px",
           }}
         >
-          *{repair.id}*
+          *{repair.code || repair.id}*
         </div>
       </div>
     </div>

@@ -134,8 +134,9 @@
     break-inside: avoid !important;
   }
 
-  /* Prevent any content from spilling to next page */
-  html, body {
+  /* Prevent sticker content from spilling to next page - ONLY for stickers */
+  [data-print-type="sticker"] html,
+  [data-print-type="sticker"] body {
     width: 2in !important;
     height: 1in !important;
     overflow: hidden !important;

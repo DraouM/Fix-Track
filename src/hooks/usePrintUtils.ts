@@ -60,7 +60,7 @@ export const usePrintUtils = () => {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Repair Sticker - ${repair.id}</title>
+            <title>Repair Sticker - ${repair.code || repair.id}</title>
             <style>
               * { 
                 margin: 0; 
@@ -131,17 +131,13 @@ export const usePrintUtils = () => {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Repair Receipt - ${repair.id}</title>
+            <title>Repair Receipt - ${repair.code || repair.id}</title>
             <style>
               ${document.querySelector("#print-styles")?.textContent || ""}
               @media print {
                 @page {
                   size: 80mm auto;
                   margin: 0;
-                }
-                * {
-                  page-break-inside: avoid !important;
-                  break-inside: avoid !important;
                 }
                 html, body {
                   margin: 0;
@@ -155,8 +151,6 @@ export const usePrintUtils = () => {
                 .thermal-receipt {
                   page-break-inside: avoid !important;
                   break-inside: avoid !important;
-                  page-break-after: avoid !important;
-                  page-break-before: avoid !important;
                 }
               }
             </style>
@@ -194,7 +188,7 @@ export const usePrintUtils = () => {
                 <div style="margin-bottom: 8px; font-size: 12px;">
                   <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                     <span>Order #:</span>
-                    <span style="font-weight: bold; font-size: 10px;">${repair.id}</span>
+                    <span style="font-weight: bold; font-size: 10px;">${repair.code || repair.id}</span>
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                     <span>Date:</span>
@@ -269,6 +263,7 @@ export const usePrintUtils = () => {
           repair.payments.length > 0
           ? `
                     <div style="margin-top: 8px; font-size: 11px;">
+                      <!--
                       <div style="font-weight: bold; margin-bottom: 2px;">PAYMENT HISTORY:</div>
                       ${repair.payments
             .map(
@@ -280,6 +275,7 @@ export const usePrintUtils = () => {
                       `
             )
             .join("")}
+                      -->
                       <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px;">
                         <div style="display: flex; justify-content: space-between; font-weight: bold;">
                           <span>TOTAL PAID:</span>
@@ -607,7 +603,7 @@ export const usePrintUtils = () => {
 
         const link = document.createElement("a");
         link.href = blobUrl;
-        link.download = `${format}-${repair.id}.html`;
+        link.download = `${format}-${repair.code || repair.id}.html`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

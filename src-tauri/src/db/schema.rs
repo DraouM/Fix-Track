@@ -51,6 +51,10 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
         [],
     )?;
 
+    // Migration: Add code column if it doesn't exist
+    // We try to add it, ignoring error if it exists (simplest migration for SQLite without dedicated migration tool)
+    let _ = conn.execute("ALTER TABLE repairs ADD COLUMN code TEXT", []);
+
     // Repair payments (supports multiple/partial payments)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS repair_payments (

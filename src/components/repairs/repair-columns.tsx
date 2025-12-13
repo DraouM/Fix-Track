@@ -85,6 +85,18 @@ export const createRepairColumns = (
   actions: RepairColumnActions
 ): ColumnDef<Repair>[] => [
   {
+    accessorKey: "code",
+    header: "Order #",
+    cell: ({ row }) => {
+      const repair = row.original;
+      return (
+        <div className="font-mono text-xs text-gray-500">
+          {repair.code || repair.id.substring(0, 8)}
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "customerName",
     header: "Customer",
     cell: ({ row }) => {

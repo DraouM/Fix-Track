@@ -15,6 +15,7 @@ pub struct Repair {
     pub payment_status: String,
     pub created_at: String,
     pub updated_at: String,
+    pub code: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

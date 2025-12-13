@@ -116,8 +116,11 @@ export default function RepairForm({
     name: "usedParts",
   });
 
-  // Auto-save functionality
+  // Auto-save functionality (only for new repairs)
   useEffect(() => {
+    // Don't auto-save if we're editing an existing repair
+    if (repairToEdit) return;
+
     const subscription = form.watch((value, { name, type }) => {
       if (type === "change" && name) {
         setIsAutoSaving(true);
@@ -132,7 +135,7 @@ export default function RepairForm({
       }
     });
     return () => subscription.unsubscribe();
-  }, [form]);
+  }, [form, repairToEdit]);
 
   // Load draft on mount
   useEffect(() => {

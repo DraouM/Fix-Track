@@ -37,6 +37,7 @@ export interface Repair {
 
   createdAt: string;
   updatedAt: string;
+  code?: string;
 }
 
 export interface RepairDb {
@@ -59,6 +60,7 @@ export interface RepairDb {
 
   created_at: string;
   updated_at: string;
+  code?: string;
 }
 
 // --- PAYMENTS ---

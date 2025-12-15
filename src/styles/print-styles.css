@@ -40,6 +40,8 @@
   @page sticker {
     size: 2in 1in; /* Small label size */
     margin: 0; /* No margins for precise label printing */
+    /* Added: Force single page */
+    page-break-after: avoid;
   }
 
   /* Alternative sticker sizes (uncomment as needed) */
@@ -109,6 +111,11 @@
     background: white !important;
     color: black !important;
     box-sizing: border-box !important;
+    /* Added: Additional page break controls */
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* Prevent page breaks inside elements */
@@ -164,6 +171,12 @@
   /* Remove any flex gaps that might cause spacing issues */
   .phone-sticker * {
     flex-shrink: 0;
+  }
+  
+  /* Added: Explicitly prevent any content from spanning multiple pages */
+  @page {
+    page-break-after: avoid;
+    page-break-inside: avoid;
   }
 }
 

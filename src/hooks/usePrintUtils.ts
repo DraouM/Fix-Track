@@ -112,8 +112,9 @@ export const usePrintUtils = () => {
 
               <!-- Issue description - Primary Focus -->
               <div style="font-size: 16px; text-align: center; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0.2mm 0;">
-                ${repair.issueDescription.substring(0, 25)}${repair.issueDescription.length > 25 ? "..." : ""
-          }
+                ${repair.issueDescription.substring(0, 25)}${
+          repair.issueDescription.length > 25 ? "..." : ""
+        }
               </div>
               
               <div style="font-size: 12px; text-align: center; margin: 0.2mm 0;">
@@ -160,24 +161,29 @@ export const usePrintUtils = () => {
               <div class="thermal-receipt" style="width: 80mm; padding: 4mm; font-family: 'Courier New', Courier, monospace; font-size: 12px; line-height: 1.3; color: #000; background-color: #fff; page-break-inside: avoid;">
                 <!-- Header - Shop Name -->
                 <div style="text-align: center; margin-bottom: 10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
-                  ${shopInfo.logoUrl
-          ? `<div style="margin-bottom: 8px;"><img src="${shopInfo.logoUrl}" alt="Shop Logo" style="max-width: 60mm; max-height: 20mm; width: auto; height: auto; object-fit: contain;" /></div>`
-          : ""
-        }
-                  <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px; text-transform: uppercase;">${shopInfo.shopName
-        }</div>
+                  ${
+                    shopInfo.logoUrl
+                      ? `<div style="margin-bottom: 8px;"><img src="${shopInfo.logoUrl}" alt="Shop Logo" style="max-width: 60mm; max-height: 20mm; width: auto; height: auto; object-fit: contain;" /></div>`
+                      : ""
+                  }
+                  <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px; text-transform: uppercase;">${
+                    shopInfo.shopName
+                  }</div>
                   <div style="font-size: 11px;">${shopInfo.address}</div>
-                  <div style="font-size: 11px;">Tel: ${shopInfo.phoneNumber
-        }</div>
+                  <div style="font-size: 11px;">Tel: ${
+                    shopInfo.phoneNumber
+                  }</div>
                   <!--
-                  ${shopInfo.email
-          ? `<div style="font-size: 11px;">Email: ${shopInfo.email}</div>`
-          : ""
-        }
-                  ${shopInfo.website
-          ? `<div style="font-size: 11px;">Web: ${shopInfo.website}</div>`
-          : ""
-        }
+                  ${
+                    shopInfo.email
+                      ? `<div style="font-size: 11px;">Email: ${shopInfo.email}</div>`
+                      : ""
+                  }
+                  ${
+                    shopInfo.website
+                      ? `<div style="font-size: 11px;">Web: ${shopInfo.website}</div>`
+                      : ""
+                  }
                   -->
                 </div>
 
@@ -188,7 +194,9 @@ export const usePrintUtils = () => {
                 <div style="margin-bottom: 8px; font-size: 12px;">
                   <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                     <span>Order #:</span>
-                    <span style="font-weight: bold; font-size: 10px;">${repair.code || repair.id}</span>
+                    <span style="font-weight: bold; font-size: 10px;">${
+                      repair.code || repair.id
+                    }</span>
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                     <span>Date:</span>
@@ -217,11 +225,14 @@ export const usePrintUtils = () => {
                 <div style="margin-bottom: 8px; font-size: 12px;">
                    <!-- <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px;">DEVICE DETAIL</div> -->
                    <div>
-                      <div style="font-weight: bold;">${repair.deviceBrand} ${repair.deviceModel}</div>
+                      <div style="font-weight: bold;">${repair.deviceBrand} ${
+        repair.deviceModel
+      }</div>
                       <div style="margin-top: 4px;">
                         <span style="text-decoration: underline;">Issue:</span>
-                        <div style="white-space: pre-wrap; word-break: break-word; margin-top: 2px;">${repair.issueDescription
-        }</div>
+                        <div style="white-space: pre-wrap; word-break: break-word; margin-top: 2px;">${
+                          repair.issueDescription
+                        }</div>
                       </div>
                    </div>
                 </div>
@@ -229,27 +240,32 @@ export const usePrintUtils = () => {
                 <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
 
                 <!-- Parts Used -->
-                ${includeParts &&
-          repair.usedParts &&
-          repair.usedParts.length > 0
-          ? `
+                ${
+                  includeParts &&
+                  repair.usedParts &&
+                  repair.usedParts.length > 0
+                    ? `
                   <div style="margin-bottom: 8px; font-size: 12px;">
                     <!-- <div style="font-weight: bold; margin-bottom: 4px; font-size: 13px;">PARTS INSTALLED</div> -->
                     ${repair.usedParts
-            .map(
-              (part, index) => `
+                      .map(
+                        (part, index) => `
                       <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding-left: 4px;">
-                        <span>${part.partName} <span style="font-size: 11px;">(x${part.quantity})</span></span>
+                        <span>${
+                          part.partName
+                        } <span style="font-size: 11px;">(x${
+                          part.quantity
+                        })</span></span>
                         <span>$${part.cost.toFixed(2)}</span>
                       </div>
                     `
-            )
-            .join("")}
+                      )
+                      .join("")}
                   </div>
                   <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
                 `
-          : ""
-        }
+                    : ""
+                }
 
                 <!-- Financial Summary -->
                 <div style="margin-bottom: 8px; font-size: 12px;">
@@ -258,56 +274,58 @@ export const usePrintUtils = () => {
                     <span>$${repair.estimatedCost.toFixed(2)}</span>
                   </div>
 
-                  ${includePayments &&
-          repair.payments &&
-          repair.payments.length > 0
-          ? `
+                  ${
+                    includePayments &&
+                    repair.payments &&
+                    repair.payments.length > 0
+                      ? `
                     <div style="margin-top: 8px; font-size: 11px;">
                       <!--
                       <div style="font-weight: bold; margin-bottom: 2px;">PAYMENT HISTORY:</div>
                       ${repair.payments
-            .map(
-              (payment) => `
+                        .map(
+                          (payment) => `
                         <div style="display: flex; justify-content: space-between; margin-bottom: 2px; padding-left: 4px;">
                           <span>${formatPrintDate(payment.date)}</span>
                           <span>$${payment.amount.toFixed(2)}</span>
                         </div>
                       `
-            )
-            .join("")}
+                        )
+                        .join("")}
                       -->
                       <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px;">
                         <div style="display: flex; justify-content: space-between; font-weight: bold;">
                           <span>TOTAL PAID:</span>
                           <span>$${(
-            repair.payments?.reduce(
-              (sum, p) => sum + p.amount,
-              0
-            ) || 0
-          ).toFixed(2)}</span>
+                            repair.payments?.reduce(
+                              (sum, p) => sum + p.amount,
+                              0
+                            ) || 0
+                          ).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
                   `
-          : ""
-        }
+                      : ""
+                  }
 
                   <div style="border: 2px solid #000; padding: 6px; margin-top: 10px; font-size: 14px; font-weight: bold; background-color: #f0f0f0;">
                     <div style="display: flex; justify-content: space-between;">
                       <span>BALANCE DUE:</span>
                       <span>$${(
-          repair.estimatedCost -
-          (repair.payments?.reduce(
-            (sum, p) => sum + p.amount,
-            0
-          ) || 0)
-        ).toFixed(2)}</span>
+                        repair.estimatedCost -
+                        (repair.payments?.reduce(
+                          (sum, p) => sum + p.amount,
+                          0
+                        ) || 0)
+                      ).toFixed(2)}</span>
                     </div>
                   </div>
 
                   <div style="margin-top: 6px; font-size: 11px; text-align: center;">
-                    <div style="font-weight: bold;">Payment Status: <span style="text-transform: uppercase;">${repair.paymentStatus
-        }</span></div>
+                    <div style="font-weight: bold;">Payment Status: <span style="text-transform: uppercase;">${
+                      repair.paymentStatus
+                    }</span></div>
                   </div>
                 </div>
 
@@ -338,8 +356,9 @@ export const usePrintUtils = () => {
         iframe.style.position = "absolute";
         iframe.style.top = "-10000px";
         iframe.style.left = "-10000px";
-        iframe.style.width = "2in";
-        iframe.style.height = "1in";
+        // Fixed: Use correct dimensions for iframe (80mm width, auto height)
+        iframe.style.width = "80mm";
+        iframe.style.height = "auto";
         iframe.style.border = "none";
         iframe.style.visibility = "hidden";
         iframe.style.overflow = "hidden";
@@ -396,7 +415,8 @@ export const usePrintUtils = () => {
 
       try {
         // Create popup with sticker-appropriate dimensions
-        printWindow = window.open("", "_blank", "width=300,height=150");
+        // Fixed: Use correct popup dimensions per memory guidelines
+        printWindow = window.open("", "_blank", "width=400,height=600");
         if (!printWindow) {
           toast.error("❌ Popup blocked! Please allow popups and try again.");
           return false;
@@ -640,10 +660,10 @@ export const usePrintUtils = () => {
     showPrintTroubleshoot: () => {
       toast.info(
         "🛠️ Print Troubleshooting:\n" +
-        "1. Ensure popups are allowed\n" +
-        "2. Check if printer is connected\n" +
-        "3. Try refreshing the page\n" +
-        "4. Use 'Download' as backup",
+          "1. Ensure popups are allowed\n" +
+          "2. Check if printer is connected\n" +
+          "3. Try refreshing the page\n" +
+          "4. Use 'Download' as backup",
         { duration: 8000 }
       );
     },

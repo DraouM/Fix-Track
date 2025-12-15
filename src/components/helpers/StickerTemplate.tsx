@@ -35,6 +35,9 @@ export function StickerTemplate({ repair }: StickerTemplateProps) {
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
+        // Added: Explicitly prevent page breaks
+        pageBreakAfter: "avoid",
+        pageBreakInside: "avoid",
       }}
     >
       {/* Device Info - First */}

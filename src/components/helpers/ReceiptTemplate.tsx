@@ -42,7 +42,7 @@ export function ReceiptTemplate({
   // Get shop information
   const shopInfo = getShopInfo();
   // Prefer explicit prop, then shop settings, then test logo fallback for previewing
-  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/test-logo.svg";
+  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/logo_shop.svg";
 
   const totalPaid = repair.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const balance = repair.estimatedCost - totalPaid;
@@ -71,13 +71,13 @@ export function ReceiptTemplate({
       >
         {/* Logo */}
         {logoSrc && (
-          <div style={{ marginBottom: "2px" }}>
+          <div style={{ marginBottom: "2px", textAlign: "center" }}>
             <img
               src={logoSrc}
               alt="Shop Logo"
               style={{
-                maxWidth: "45mm",
-                maxHeight: "12mm",
+                maxWidth: "60mm",
+                maxHeight: "50mm",
                 width: "auto",
                 height: "auto",
                 objectFit: "contain",

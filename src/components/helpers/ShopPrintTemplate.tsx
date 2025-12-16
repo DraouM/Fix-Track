@@ -21,7 +21,7 @@ export function ShopPrintTemplate({
   logoUrl,
 }: ShopPrintTemplateProps) {
   const shopInfo = getShopInfo();
-  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/test-logo.svg";
+  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/logo_shop.svg";
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
@@ -61,13 +61,13 @@ export function ShopPrintTemplate({
         }}
       >
         {logoSrc && (
-          <div style={{ marginBottom: "6px" }}>
+          <div style={{ marginBottom: "6px", textAlign: "center" }}>
             <img
               src={logoSrc}
               alt="Shop Logo"
               style={{
                 maxWidth: "60mm",
-                maxHeight: "20mm",
+                maxHeight: "50mm",
                 width: "auto",
                 height: "auto",
                 objectFit: "contain",

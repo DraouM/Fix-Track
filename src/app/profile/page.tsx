@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // Add imports for receipt preview
+import { ShopPrintTemplate } from "@/components/helpers/ShopPrintTemplate";
 import { Repair } from "@/types/repair";
 import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
 
@@ -518,6 +519,30 @@ export default function ProfilePage() {
                   <FileText className="mr-2 h-4 w-4" />
                   Preview Receipt
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Inline Receipt Preview */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">
+                  Receipt Preview
+                </CardTitle>
+                <CardDescription>
+                  Shows current shop logo, contact info, and a sample repair.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-md p-3 bg-muted/30 max-h-[420px] overflow-auto">
+                  <div className="flex justify-center">
+                    <ShopPrintTemplate
+                      repair={sampleRepair}
+                      includePayments
+                      includeParts
+                      logoUrl={shopInfo.logoUrl}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

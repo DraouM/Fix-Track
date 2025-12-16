@@ -154,6 +154,20 @@ const ShopIdentityCard = ({
                 <p className="text-sm text-red-500 mt-1">{errors.shopName}</p>
               )}
             </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                Owner Name
+              </label>
+              <Input
+                value={shopInfo.ownerName || ""}
+                onChange={(e) =>
+                  onShopInfoChange({ ...shopInfo, ownerName: e.target.value })
+                }
+                className="mt-1"
+                placeholder="Enter the shop owner's name"
+              />
+            </div>
           </div>
         </div>
 

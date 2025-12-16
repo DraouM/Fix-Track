@@ -80,6 +80,11 @@ export function ShopPrintTemplate({
         >
           {shopInfo.shopName}
         </div>
+        {shopInfo.ownerName && (
+          <div style={{ fontSize: "12px", marginBottom: "2px" }}>
+            Owner: {shopInfo.ownerName}
+          </div>
+        )}
         <div style={{ fontSize: "11px" }}>{shopInfo.address}</div>
         <div style={{ fontSize: "11px" }}>Tel: {shopInfo.phoneNumber}</div>
         {shopInfo.email && (

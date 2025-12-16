@@ -17,12 +17,17 @@ interface ReceiptTemplateProps {
   repair: Repair;
   includePayments?: boolean;
   includeParts?: boolean;
+  /**
+   * Optional logo URL override. Falls back to shopInfo.logoUrl if omitted.
+   */
+  logoUrl?: string;
 }
 
 export function ReceiptTemplate({
   repair,
   includePayments = true,
   includeParts = true,
+  logoUrl,
 }: ReceiptTemplateProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -36,6 +41,8 @@ export function ReceiptTemplate({
 
   // Get shop information
   const shopInfo = getShopInfo();
+  // Prefer explicit prop, then shop settings, then test logo fallback for previewing
+  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/test-logo.svg";
 
   const totalPaid = repair.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const balance = repair.estimatedCost - totalPaid;
@@ -63,10 +70,10 @@ export function ReceiptTemplate({
         }}
       >
         {/* Logo */}
-        {shopInfo.logoUrl && (
+        {logoSrc && (
           <div style={{ marginBottom: "2px" }}>
             <img
-              src={shopInfo.logoUrl}
+              src={logoSrc}
               alt="Shop Logo"
               style={{
                 maxWidth: "45mm",
@@ -98,7 +105,9 @@ export function ReceiptTemplate({
       <div style={{ marginBottom: "3px", fontSize: "7px" }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>Order #:</span>
-          <span style={{ fontWeight: "bold", fontSize: "8px" }}>{repair.code || repair.id}</span>
+          <span style={{ fontWeight: "bold", fontSize: "8px" }}>
+            {repair.code || repair.id}
+          </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>Date:</span>

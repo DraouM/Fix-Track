@@ -54,6 +54,9 @@ export const usePrintUtils = () => {
         includeParts = true,
       } = options;
 
+      // Logo fallback for print HTML (prefers shop settings, then test asset)
+      const logoSrc = shopInfo.logoUrl || "/test-logo.svg";
+
       if (format === "sticker") {
         // We'll use innerHTML approach for sticker since it's simpler
         const stickerHTML = `
@@ -161,11 +164,9 @@ export const usePrintUtils = () => {
               <div class="thermal-receipt" style="width: 80mm; padding: 4mm; font-family: 'Courier New', Courier, monospace; font-size: 12px; line-height: 1.3; color: #000; background-color: #fff; page-break-inside: avoid;">
                 <!-- Header - Shop Name -->
                 <div style="text-align: center; margin-bottom: 10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
-                  ${
-                    shopInfo.logoUrl
-                      ? `<div style="margin-bottom: 8px;"><img src="${shopInfo.logoUrl}" alt="Shop Logo" style="max-width: 60mm; max-height: 20mm; width: auto; height: auto; object-fit: contain;" /></div>`
-                      : ""
-                  }
+                  <div style="margin-bottom: 8px;">
+                    <img src="${logoSrc}" alt="Shop Logo" style="max-width: 60mm; max-height: 20mm; width: auto; height: auto; object-fit: contain;" />
+                  </div>
                   <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px; text-transform: uppercase;">${
                     shopInfo.shopName
                   }</div>

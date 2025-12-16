@@ -10,6 +10,7 @@ export interface ShopInfo {
   website?: string;
   businessHours?: string;
   logoUrl?: string; // Add logo URL field
+  ownerName?: string; // Add owner name field
 }
 
 // Default shop information (same as in profile page)
@@ -23,6 +24,7 @@ export const DEFAULT_SHOP_INFO: ShopInfo = {
   website: "www.techfixpro.com",
   businessHours: "Mon-Fri: 9AM-6PM, Sat: 10AM-4PM",
   logoUrl: "", // Default to empty string
+  ownerName: "John Smith", // Default owner name
 };
 
 // Function to get shop info from localStorage or return defaults

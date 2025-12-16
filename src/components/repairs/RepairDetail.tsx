@@ -136,11 +136,11 @@ export function RepairDetail({
   const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
   const [isGeneratingSticker, setIsGeneratingSticker] = useState(false);
   const [isGeneratingEscPosReceipt, setIsGeneratingEscPosReceipt] =
-     useState(false);
+    useState(false);
   const [isGeneratingEscPosSticker, setIsGeneratingEscPosSticker] =
     useState(false);
   const [hasError, setHasError] = useState(false);
-  
+
   const currentRepair = repair ? getItemById(repair.id) || repair : null;
 
   // Error boundary effect
@@ -221,7 +221,6 @@ export function RepairDetail({
     }
   };
 
-
   const handlePrintReceiptEscPos = async () => {
     if (isGeneratingEscPosReceipt) return;
 
@@ -249,7 +248,6 @@ export function RepairDetail({
       setIsGeneratingEscPosReceipt(false);
     }
   };
-   
 
   const handlePrintSticker = async () => {
     if (isGeneratingSticker) return;
@@ -277,7 +275,6 @@ export function RepairDetail({
     }
   };
 
-
   const handlePrintStickerEscPos = async () => {
     if (isGeneratingEscPosSticker) return;
 
@@ -303,7 +300,6 @@ export function RepairDetail({
       setIsGeneratingEscPosSticker(false);
     }
   };
-   
 
   const handlePopupBlocked = () => {
     toast.info(
@@ -792,7 +788,7 @@ export function RepairDetail({
           </div>
         </DialogContent>
       </Dialog>
-      
+
       {/* Printer Selection Dialog */}
       <PrinterSelectionDialog
         open={isPrinterSelectionOpen}

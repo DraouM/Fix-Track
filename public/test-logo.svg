@@ -1,0 +1,21 @@
+<svg width="240" height="80" viewBox="0 0 240 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background pill -->
+  <rect x="5" y="15" width="230" height="50" rx="12" fill="#0EA5E9" opacity="0.12"/>
+
+  <!-- Icon -->
+  <g transform="translate(20 20)">
+    <rect x="0" y="0" width="40" height="40" rx="8" fill="#0EA5E9"/>
+    <rect x="8" y="8" width="24" height="5" rx="2" fill="white" opacity="0.9"/>
+    <rect x="8" y="17" width="24" height="5" rx="2" fill="white" opacity="0.9"/>
+    <rect x="8" y="26" width="16" height="5" rx="2" fill="white" opacity="0.9"/>
+  </g>
+
+  <!-- Text -->
+  <text x="80" y="46" fill="#0F172A" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">
+    Fixary Repair Shop
+  </text>
+  <text x="80" y="62" fill="#334155" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500">
+    Fast • Reliable • Guaranteed
+  </text>
+</svg>
+

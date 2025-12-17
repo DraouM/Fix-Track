@@ -54,6 +54,9 @@ export const usePrintUtils = () => {
         includeParts = true,
       } = options;
 
+      // Logo fallback for print HTML (prefers shop settings, then test asset)
+      const logoSrc = shopInfo.logoUrl || "/logo_shop.svg";
+
       if (format === "sticker") {
         // We'll use innerHTML approach for sticker since it's simpler
         const stickerHTML = `
@@ -137,13 +140,13 @@ export const usePrintUtils = () => {
               ${document.querySelector("#print-styles")?.textContent || ""}
               @media print {
                 @page {
-                  size: 80mm auto;
+                  size: 72mm auto;
                   margin: 0;
                 }
                 html, body {
                   margin: 0;
                   padding: 0;
-                  width: 80mm;
+                  width: 72mm;
                   height: auto;
                   background-color: #fff;
                   -webkit-print-color-adjust: exact;
@@ -158,7 +161,7 @@ export const usePrintUtils = () => {
           </head>
           <body>
             <div id="receipt-print-template" class="print-active" data-print-type="receipt">
-              <div class="thermal-receipt" style="width: 80mm; padding: 4mm; font-family: 'Courier New', Courier, monospace; font-size: 12px; line-height: 1.3; color: #000; background-color: #fff; page-break-inside: avoid;">
+              <div class="thermal-receipt" style="width: 72mm; padding: 4mm; font-family: 'Courier New', Courier, monospace; font-size: 12px; line-height: 1.3; color: #000; background-color: #fff; page-break-inside: avoid;">
                 <!-- Header - Shop Name -->
                 <div style="text-align: center; margin-bottom: 10px; border-bottom: 2px dashed #000; padding-bottom: 10px;">
                   ${
@@ -344,8 +347,8 @@ export const usePrintUtils = () => {
         iframe.style.position = "absolute";
         iframe.style.top = "-10000px";
         iframe.style.left = "-10000px";
-        // Fixed: Use correct dimensions for iframe (80mm width, auto height)
-        iframe.style.width = "80mm";
+        // Fixed: Use correct dimensions for iframe (72mm width, auto height)
+        iframe.style.width = "72mm";
         iframe.style.height = "auto";
         iframe.style.border = "none";
         iframe.style.visibility = "hidden";

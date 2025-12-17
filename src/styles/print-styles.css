@@ -24,9 +24,9 @@
     display: none !important;
   }
 
-  /* Thermal Receipt Page Setup - 80mm width, continuous paper */
+  /* Thermal Receipt Page Setup - 76mm width, continuous paper */
   @page receipt {
-    size: 80mm auto; /* Width fixed, height auto for continuous paper */
+    size: 76mm auto; /* Width fixed, height auto for continuous paper */
     margin: 0; /* No margins for thermal printers */
   }
 
@@ -88,7 +88,7 @@
 
   /* Thermal receipt specific styles */
   .thermal-receipt {
-    width: 80mm !important;
+    width: 76mm !important;
     margin: 0 !important;
     padding: 5mm !important;
     background: white !important;
@@ -192,7 +192,7 @@
   }
 
   .print-preview #receipt-print-template {
-    width: 80mm;
+    width: 76mm;
     padding: 20px;
   }
 

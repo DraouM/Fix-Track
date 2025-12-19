@@ -12,6 +12,7 @@ import {
   CreditCard,
   Search,
   MoreVertical,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -37,6 +38,7 @@ interface ShoppingItem {
   name: string;
   quantity: number;
   estimatedPrice?: number;
+  inventory_item_id?: string;
 }
 
 interface Order {
@@ -91,37 +93,29 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
     }
   };
 
-  const MOCK_INITIAL_ORDERS: Order[] = [
-      {
-          id: "order-1",
-          name: "Site A Materials",
-          items: [
-              { id: "item-1", name: "Portland Cement (50kg)", quantity: 10, estimatedPrice: 12.50 },
-              { id: "item-2", name: "Sand (per ton)", quantity: 5, estimatedPrice: 45.00 },
-          ],
-          supplierId: "sup-1", // Assuming this might match a mock supplier ID or be empty if not found
-          paidAmount: 200,
-          status: 'pending'
-      },
-      {
-          id: "order-2",
-          name: "Office Supplies",
-          items: [
-              { id: "item-3", name: "White Paint (20L)", quantity: 2, estimatedPrice: 85.00 },
-          ],
-          supplierId: "",
-          paidAmount: 0,
-          status: 'pending'
-      }
-  ];
-
-  const [orders, setOrders] = useState<Order[]>(MOCK_INITIAL_ORDERS);
-  const [activeOrderId, setActiveOrderId] = useState<string>(MOCK_INITIAL_ORDERS[0].id);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [activeOrderId, setActiveOrderId] = useState<string>("");
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load order to edit when prop changes
+  // Load order to edit when prop changes or initialize setup
   React.useEffect(() => {
+    const setupInitialOrder = () => {
+      if (!orderToEdit && orders.length === 0) {
+        const newId = uuidv4();
+        const initialOrder: Order = {
+          id: newId,
+          name: "New Order #1",
+          items: [{ id: uuidv4(), name: "", quantity: 1 }],
+          supplierId: "",
+          paidAmount: 0,
+          status: 'pending'
+        };
+        setOrders([initialOrder]);
+        setActiveOrderId(newId);
+      }
+    };
+
     const loadOrderForEdit = async () => {
       if (orderToEdit) {
         try {
@@ -137,6 +131,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                 id: item.id,
                 name: item.item_name,
                 quantity: item.quantity,
+                inventory_item_id: item.item_id,
                 estimatedPrice: item.unit_price
               })),
               supplierId: orderDetails.order.supplier_id,
@@ -169,11 +164,19 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
       }
     };
     
+    setupInitialOrder();
     loadOrderForEdit();
   }, [orderToEdit]);
 
   // Derived state for the active view
-  const activeOrder = orders.find(o => o.id === activeOrderId) || orders[0];
+  const activeOrder = orders.find(o => o.id === activeOrderId) || orders[0] || {
+    id: "",
+    name: "Loading...",
+    items: [],
+    supplierId: "",
+    paidAmount: 0,
+    status: 'pending'
+  };
 
   // Helper to update the active order
   const updateActiveOrder = (updates: Partial<Order>) => {
@@ -193,6 +196,31 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
       };
       setOrders([...orders, newOrder]);
       setActiveOrderId(newOrder.id);
+  };
+
+  const handleCloseOrder = (e: React.MouseEvent, orderId: string) => {
+    e.stopPropagation();
+    
+    const remainingOrders = orders.filter(o => o.id !== orderId);
+    
+    if (remainingOrders.length === 0) {
+      const newId = uuidv4();
+      const newOrder: Order = {
+        id: newId,
+        name: "New Order #1",
+        items: [{ id: uuidv4(), name: "", quantity: 1 }],
+        supplierId: "",
+        paidAmount: 0,
+        status: 'pending'
+      };
+      setOrders([newOrder]);
+      setActiveOrderId(newId);
+    } else {
+      setOrders(remainingOrders);
+      if (activeOrderId === orderId) {
+        setActiveOrderId(remainingOrders[remainingOrders.length - 1].id);
+      }
+    }
   };
 
   const handleAddItem = () => {
@@ -219,10 +247,12 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
     const updatedItems = activeOrder.items.map((item) => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
-          // If name changes, trigger inventory search
+          // If name or item_id changes, we might want to clear the other, but usually name is driven by item_id selection
           if (field === "name" && typeof value === "string") {
              setInventorySearchQuery(value);
              searchInventory(value);
+             // Clear inventory_item_id if name is manually edited
+             updatedItem.inventory_item_id = undefined;
           }
           return updatedItem;
         }
@@ -237,7 +267,8 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
               return { 
                 ...item, 
                 name: inventoryItem.item_name, 
-                estimatedPrice: inventoryItem.buying_price 
+                estimatedPrice: inventoryItem.buying_price,
+                inventory_item_id: inventoryItem.id
               };
           }
           return item;
@@ -311,6 +342,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
               if (existingItem) {
                   const updateItem: DBOrderItem = {
                       ...existingItem,
+                      item_id: item.inventory_item_id,
                       item_name: item.name,
                       quantity: item.quantity,
                       unit_price: item.estimatedPrice || 0,
@@ -320,6 +352,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
               } else {
                   const newItem = createNewOrderItem(activeOrder.id, item.name);
                   newItem.id = item.id;
+                  newItem.item_id = item.inventory_item_id;
                   newItem.quantity = item.quantity;
                   newItem.unit_price = item.estimatedPrice || 0;
                   newItem.total_price = item.quantity * (item.estimatedPrice || 0);
@@ -354,6 +387,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
           for (const item of activeOrder.items) {
             const dbItem = createNewOrderItem(createdOrder.id);
             dbItem.id = item.id;
+            dbItem.item_id = item.inventory_item_id;
             dbItem.item_name = item.name;
             dbItem.quantity = item.quantity;
             dbItem.unit_price = item.estimatedPrice || 0;
@@ -421,14 +455,22 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                      <button 
                         key={order.id}
                         onClick={() => setActiveOrderId(order.id)}
-                        className={`px-4 py-2 border rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
-                            activeOrder.id === order.id 
+                        className={`px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-2 transition-colors group ${
+                            activeOrderId === order.id 
                                 ? "bg-white border-blue-200 text-blue-700 shadow-sm"
                                 : "bg-transparent border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                         }`}
                      >
-                        <div className={`w-2 h-2 rounded-full ${activeOrder.id === order.id ? "bg-blue-500" : "bg-gray-300"}`}></div>
-                        {order.name}
+                        <div className={`w-2 h-2 rounded-full ${activeOrderId === order.id ? "bg-blue-500" : "bg-gray-300"}`}></div>
+                        <span className="max-w-[120px] truncate">{order.name}</span>
+                        <div 
+                          onClick={(e) => handleCloseOrder(e, order.id)}
+                          className={`p-0.5 rounded-full hover:bg-gray-200 hover:text-gray-900 transition-colors ${
+                             activeOrderId === order.id ? "text-blue-400" : "text-gray-400 opacity-0 group-hover:opacity-100"
+                          }`}
+                        >
+                           <X className="w-3.5 h-3.5" />
+                        </div>
                      </button>
                  ))}
                  <button 

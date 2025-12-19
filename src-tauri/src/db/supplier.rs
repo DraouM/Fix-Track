@@ -216,6 +216,7 @@ pub fn adjust_supplier_credit(
     amount: f64,
     notes: Option<String>,
 ) -> Result<(), String> {
+    let _ = notes; // Keep parameter name for Tauri frontend matching
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
 
     // Get the current credit balance

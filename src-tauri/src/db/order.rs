@@ -1,7 +1,6 @@
 use crate::db;
-use crate::db::models::{Order, OrderItem, OrderPayment, OrderHistory, OrderWithDetails};
+use crate::db::models::{Order, OrderItem, OrderPayment, OrderWithDetails};
 use rusqlite::{params, Result};
-use serde::{Deserialize, Serialize};
 
 /// Generate a unique order number (e.g., ORD-2025-001)
 fn generate_order_number() -> Result<String, String> {
@@ -267,6 +266,45 @@ pub fn add_order_item(item: OrderItem) -> Result<(), String> {
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    // If order is completed, update inventory
+    let order_status: String = conn.query_row(
+        "SELECT status FROM orders WHERE id = ?1",
+        params![item.order_id],
+        |row| row.get(0)
+    ).unwrap_or_else(|_| "draft".to_string());
+
+    if order_status == "completed" {
+        if let Some(item_id) = &item.item_id {
+            // Update inventory
+            conn.execute(
+                "UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) + ?1 WHERE id = ?2",
+                params![item.quantity, item_id]
+            ).map_err(|e| e.to_string())?;
+
+            // Log inventory history
+            let order_num: String = conn.query_row(
+                "SELECT order_number FROM orders WHERE id = ?1",
+                params![item.order_id],
+                |row| row.get(0)
+            ).unwrap_or_default();
+
+            let history_id = uuid::Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO inventory_history (id, item_id, date, event_type, quantity_change, notes, related_id)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    history_id,
+                    item_id,
+                    chrono::Utc::now().to_rfc3339(),
+                    "Purchased",
+                    item.quantity,
+                    format!("Added item to completed order {}", order_num),
+                    item.order_id,
+                ],
+            ).map_err(|e| e.to_string())?;
+        }
+    }
     
     // Recalculate order total
     recalculate_order_total(&item.order_id)?;
@@ -295,6 +333,13 @@ pub fn add_order_item(item: OrderItem) -> Result<(), String> {
 pub fn update_order_item(item: OrderItem) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     
+    // Get old item details for inventory adjustment if completed
+    let old_item: Option<(Option<String>, i32)> = conn.query_row(
+        "SELECT i.item_id, i.quantity FROM order_items i JOIN orders o ON i.order_id = o.id WHERE i.id = ?1 AND o.status = 'completed'",
+        params![item.id],
+        |row| Ok((row.get(0).ok(), row.get(1)?))
+    ).ok();
+
     conn.execute(
         "UPDATE order_items SET item_id = ?2, item_name = ?3, quantity = ?4, unit_price = ?5, total_price = ?6, notes = ?7 WHERE id = ?1",
         params![
@@ -308,6 +353,47 @@ pub fn update_order_item(item: OrderItem) -> Result<(), String> {
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    // Handle inventory adjustment if completed
+    if let Some((old_item_id, old_qty)) = old_item {
+        let order_num: String = conn.query_row(
+            "SELECT order_number FROM orders WHERE id = ?1",
+            params![item.order_id],
+            |row| row.get(0)
+        ).unwrap_or_default();
+
+        // 1. Remove old quantity
+        if let Some(id) = old_item_id {
+            conn.execute(
+                "UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) - ?1 WHERE id = ?2",
+                params![old_qty, id]
+            ).ok();
+        }
+
+        // 2. Add new quantity
+        if let Some(new_id) = &item.item_id {
+            conn.execute(
+                "UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) + ?1 WHERE id = ?2",
+                params![item.quantity, new_id]
+            ).map_err(|e| e.to_string())?;
+
+            // Log history
+            let history_id = uuid::Uuid::new_v4().to_string();
+            conn.execute(
+                "INSERT INTO inventory_history (id, item_id, date, event_type, quantity_change, notes, related_id)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    history_id,
+                    new_id,
+                    chrono::Utc::now().to_rfc3339(),
+                    "Adjustment",
+                    item.quantity as i64 - old_qty as i64,
+                    format!("Updated item in completed order {}", order_num),
+                    item.order_id,
+                ],
+            ).map_err(|e| e.to_string())?;
+        }
+    }
     
     // Recalculate order total
     recalculate_order_total(&item.order_id)?;
@@ -320,20 +406,53 @@ pub fn update_order_item(item: OrderItem) -> Result<(), String> {
 pub fn remove_order_item(item_id: String, order_id: String) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     
-    // Get item name before deleting
-    let item_name: String = conn
-        .query_row(
-            "SELECT item_name FROM order_items WHERE id = ?1",
-            params![item_id],
-            |row| row.get(0),
-        )
-        .unwrap_or_else(|_| "Unknown Item".to_string());
-    
+    // Get item details for inventory reversal if completed
+    let item_info: Option<(String, Option<String>, i32, String)> = conn.query_row(
+        "SELECT i.item_name, i.item_id, i.quantity, o.status FROM order_items i JOIN orders o ON i.order_id = o.id WHERE i.id = ?1",
+        params![item_id],
+        |row| Ok((row.get(0)?, row.get(1).ok(), row.get(2)?, row.get(3)?))
+    ).ok();
+
+    let name_for_history = item_info.as_ref().map(|info| info.0.clone()).unwrap_or_else(|| "Unknown Item".to_string());
+
     conn.execute(
         "DELETE FROM order_items WHERE id = ?1",
         params![item_id],
     )
     .map_err(|e| e.to_string())?;
+
+    // Revert inventory if order was completed
+    if let Some((name, id_opt, qty, status)) = item_info {
+        if status == "completed" {
+            if let Some(id) = id_opt {
+                conn.execute(
+                    "UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) - ?1 WHERE id = ?2",
+                    params![qty, id]
+                ).map_err(|e| e.to_string())?;
+
+                let order_num: String = conn.query_row(
+                    "SELECT order_number FROM orders WHERE id = ?1",
+                    params![order_id],
+                    |row| row.get(0)
+                ).unwrap_or_default();
+
+                let history_id = uuid::Uuid::new_v4().to_string();
+                conn.execute(
+                    "INSERT INTO inventory_history (id, item_id, date, event_type, quantity_change, notes, related_id)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    params![
+                        history_id,
+                        id,
+                        chrono::Utc::now().to_rfc3339(),
+                        "Adjustment",
+                        -qty,
+                        format!("Removed item {} from completed order {}", name, order_num),
+                        order_id,
+                    ],
+                ).map_err(|e| e.to_string())?;
+            }
+        }
+    }
     
     // Recalculate order total
     recalculate_order_total(&order_id)?;
@@ -348,7 +467,7 @@ pub fn remove_order_item(item_id: String, order_id: String) -> Result<(), String
             order_id,
             chrono::Utc::now().to_rfc3339(),
             "item_removed",
-            format!("Removed item: {}", item_name),
+            format!("Removed item: {}", name_for_history),
             None::<String>,
         ],
     )
@@ -493,27 +612,31 @@ fn recalculate_payment_status(order_id: &str) -> Result<(), String> {
 pub fn complete_order(order_id: String) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     
-    // Get order details
-    let order_number: String = conn
+    // Get order details and check status
+    let (order_number, status): (String, String) = conn
         .query_row(
-            "SELECT order_number FROM orders WHERE id = ?1",
+            "SELECT order_number, status FROM orders WHERE id = ?1",
             params![order_id],
-            |row| row.get(0),
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .map_err(|e| e.to_string())?;
     
+    // Safety check: if already completed, don't update inventory twice
+    if status == "completed" {
+        return Ok(());
+    }
+    
     // Get all order items
     let mut stmt = conn
-        .prepare("SELECT id, item_id, item_name, quantity FROM order_items WHERE order_id = ?1")
+        .prepare("SELECT id, item_id, quantity FROM order_items WHERE order_id = ?1")
         .map_err(|e| e.to_string())?;
     
-    let items: Vec<(String, Option<String>, String, i32)> = stmt
+    let items: Vec<(String, Option<String>, i32)> = stmt
         .query_map(params![order_id], |row| {
             Ok((
                 row.get(0)?,  // id
                 row.get(1).ok(),  // item_id
-                row.get(2)?,  // item_name
-                row.get(3)?,  // quantity
+                row.get(2)?,  // quantity
             ))
         })
         .map_err(|e| e.to_string())?
@@ -521,7 +644,7 @@ pub fn complete_order(order_id: String) -> Result<(), String> {
         .collect();
     
     // Update inventory for each item
-    for (_, item_id_opt, item_name, quantity) in items {
+    for (_, item_id_opt, quantity) in items {
         if let Some(item_id) = item_id_opt {
             // Update inventory quantity
             conn.execute(

@@ -529,7 +529,7 @@ export function RepairDetail({
                             Estimated Cost
                           </p>
                           <p className="text-xl font-bold text-blue-900 mt-1">
-                            ${(repairData.estimatedCost || 0).toFixed(2)}
+                            {(repairData.estimatedCost || 0).toFixed(2)}
                           </p>
                         </div>
                         <div className="p-2 bg-blue-100 rounded-lg">
@@ -628,7 +628,7 @@ export function RepairDetail({
                                   </TableCell>
                                   <TableCell className="text-right py-3">
                                     <div className="text-sm font-medium text-gray-900">
-                                      ${(payment.amount || 0).toFixed(2)}
+                                      {(payment.amount || 0).toFixed(2)}
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -641,7 +641,6 @@ export function RepairDetail({
                                 Total Paid
                               </span>
                               <span className="text-lg font-bold text-green-700">
-                                $
                                 {repairData.payments
                                   .reduce((sum, p) => sum + (p.amount || 0), 0)
                                   .toFixed(2)}

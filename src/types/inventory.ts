@@ -23,6 +23,9 @@ export const PHONE_BRANDS = [
   "Oppo",
   "Vivo",
   "Realme",
+  "Condor",
+  "Nokia",
+  "Sony",
   "Other",
 ] as const;
 export type PhoneBrand = (typeof PHONE_BRANDS)[number];
@@ -31,6 +34,8 @@ export const ITEM_TYPES = [
   "All",
   "Battery",
   "Screen",
+  "Glass",
+  "Connector",
   "Charger",
   "Motherboard",
   "Cable",

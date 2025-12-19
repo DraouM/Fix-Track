@@ -85,7 +85,7 @@ export function RepairPaymentForm({
       >
         <div className="text-sm text-muted-foreground">
           Remaining Balance:{" "}
-          <span className="font-semibold">${remainingBalance.toFixed(2)}</span>
+          <span className="font-semibold">{remainingBalance.toFixed(2)}</span>
         </div>
 
         <FormField

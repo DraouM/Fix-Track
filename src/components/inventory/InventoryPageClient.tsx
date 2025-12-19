@@ -43,6 +43,7 @@ import {
   Upload,
   Plus,
   Search,
+  RotateCcw,
 } from "lucide-react";
 
 export function InventoryPageInner() {
@@ -134,8 +135,8 @@ export function InventoryPageInner() {
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(value);
 
   const StatCard = ({
@@ -310,6 +311,19 @@ export function InventoryPageInner() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Clear Filters */}
+            {(searchTerm !== "" ||
+              selectedBrand !== "All" ||
+              selectedType !== "All") && (
+              <Button
+                variant="ghost"
+                onClick={clearFilters}
+                className="self-end flex items-center gap-2 text-gray-500 hover:text-gray-700 h-10"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Clear
+              </Button>
+            )}
           </div>
         </div>
 

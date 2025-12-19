@@ -36,7 +36,11 @@ import type {
   PhoneBrand,
   ItemType,
 } from "@/types/inventory";
-import { inventoryItemSchema } from "@/types/inventory";
+import {
+  inventoryItemSchema,
+  PHONE_BRANDS,
+  ITEM_TYPES,
+} from "@/types/inventory";
 import { useInventoryActions } from "@/context/InventoryContext";
 
 // Utility: map InventoryItem → form defaults
@@ -116,120 +120,110 @@ export function InventoryForm({
           )}
         />
 
-        {/* Phone brand */}
-        <FormField
-          control={form.control}
-          name="phoneBrand"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone Brand</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full justify-between"
-                  >
-                    {field.value || "Select brand"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search brand..." />
-                    <CommandEmpty>No brand found.</CommandEmpty>
-                    <CommandGroup>
-                      {[
-                        "All",
-                        "Samsung",
-                        "Apple",
-                        "Huawei",
-                        "Xiaomi",
-                        "Other",
-                      ].map((brand) => (
-                        <CommandItem
-                          key={brand}
-                          value={brand}
-                          onSelect={() =>
-                            form.setValue("phoneBrand", brand as PhoneBrand)
-                          }
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              field.value === brand
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          {brand}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Brand and Type */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Phone brand */}
+          <FormField
+            control={form.control}
+            name="phoneBrand"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Brand</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {field.value || "Select brand"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search brand..." />
+                      <CommandEmpty>No brand found.</CommandEmpty>
+                      <CommandGroup>
+                        {PHONE_BRANDS.map((brand) => (
+                          <CommandItem
+                            key={brand}
+                            value={brand}
+                            onSelect={() =>
+                              form.setValue("phoneBrand", brand as PhoneBrand)
+                            }
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                field.value === brand
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            {brand}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        {/* Item type */}
-        <FormField
-          control={form.control}
-          name="itemType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Item Type</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full justify-between"
-                  >
-                    {field.value || "Select type"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search type..." />
-                    <CommandEmpty>No type found.</CommandEmpty>
-                    <CommandGroup>
-                      {[
-                        "All",
-                        "Screen",
-                        "Battery",
-                        "Charger",
-                        "Case",
-                        "Cable",
-                        "Other",
-                      ].map((type) => (
-                        <CommandItem
-                          key={type}
-                          value={type}
-                          onSelect={() =>
-                            form.setValue("itemType", type as ItemType)
-                          }
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              field.value === type ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {type}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          {/* Item type */}
+          <FormField
+            control={form.control}
+            name="itemType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Item Type</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {field.value || "Select type"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search type..." />
+                      <CommandEmpty>No type found.</CommandEmpty>
+                      <CommandGroup>
+                        {ITEM_TYPES.map((type) => (
+                          <CommandItem
+                            key={type}
+                            value={type}
+                            onSelect={() =>
+                              form.setValue("itemType", type as ItemType)
+                            }
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                field.value === type
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            {type}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* Prices */}
         <div className="grid grid-cols-2 gap-4">

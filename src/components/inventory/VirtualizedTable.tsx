@@ -156,12 +156,12 @@ const InventoryRow = memo(function InventoryRow({
 
       {/* Cost */}
       <div className="flex-1 text-right pr-4 font-mono text-sm text-muted-foreground">
-        ${(item.buyingPrice ?? 0).toFixed(2)}
+        {(item.buyingPrice ?? 0).toFixed(2)}
       </div>
 
       {/* Price */}
       <div className="flex-1 text-right pr-4 font-mono text-sm text-foreground">
-        ${(item.sellingPrice ?? 0).toFixed(2)}
+        {(item.sellingPrice ?? 0).toFixed(2)}
       </div>
 
       {/* Profit */}
@@ -177,7 +177,7 @@ const InventoryRow = memo(function InventoryRow({
               !isPositive && !isNegative && "text-muted-foreground"
             )}
           >
-            ${Math.abs(profit).toFixed(2)}
+            {Math.abs(profit).toFixed(2)}
           </span>
         </div>
       </div>

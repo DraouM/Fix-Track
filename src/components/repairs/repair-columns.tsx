@@ -300,7 +300,7 @@ export const createRepairColumns = (
         <div className="text-right space-y-1">
           <div className="flex items-center justify-end gap-2">
             <div className="text-sm font-medium text-green-600">
-              ${totalPaid.toFixed(2)}
+              {totalPaid.toFixed(2)}
             </div>
             <div className="text-xs text-gray-500">paid</div>
           </div>
@@ -312,7 +312,7 @@ export const createRepairColumns = (
                 remaining > 0 ? "text-orange-600" : "text-gray-500"
               )}
             >
-              ${remaining.toFixed(2)}
+              {remaining.toFixed(2)}
             </div>
             <div className="text-xs text-gray-500">remaining</div>
           </div>

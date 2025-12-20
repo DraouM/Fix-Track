@@ -13,6 +13,7 @@ export interface OrderDisplay {
     id: string;
     order_number: string;
     supplier: string;
+    supplierId: string;
     date: string;
     status: 'paid' | 'pending' | 'partial';
     itemsCount: number;
@@ -47,6 +48,7 @@ export default function OrdersMainClient() {
             id: order.id,
             order_number: order.order_number,
             supplier: supplierName, 
+            supplierId: order.supplier_id,
             date: order.created_at.split('T')[0], // Extract date part
             status: order.payment_status as 'paid' | 'pending' | 'partial',
             itemsCount: 0, // Still 0 for now as we don't have this data in list view
@@ -80,7 +82,7 @@ export default function OrdersMainClient() {
         setOrderToEdit({ 
           id: orderDisplay.id,
           order_number: orderDisplay.order_number,
-          supplier_id: orderDisplay.supplier,
+          supplier_id: orderDisplay.supplierId,
           status: 'draft', // Will be loaded properly in workspace
           payment_status: orderDisplay.status,
           total_amount: orderDisplay.totalAmount,
@@ -134,7 +136,11 @@ export default function OrdersMainClient() {
           {activeTab === "workspace" ? (
              <CreateShoppingListClient onSaveOrder={handleSaveOrder} orderToEdit={orderToEdit} />
           ) : (
-             <OrdersListClient orders={historyOrders} onEdit={handleEditOrder} />
+             <OrdersListClient 
+                orders={historyOrders} 
+                onEdit={handleEditOrder} 
+                onPaymentSuccess={loadOrders}
+             />
           )}
       </div>
     </div>

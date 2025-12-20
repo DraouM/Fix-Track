@@ -64,7 +64,6 @@ export function SupplierForm({
       notes: supplier?.notes || "",
       preferredPaymentMethod: supplier?.preferredPaymentMethod || undefined,
       status: supplier?.status || "active",
-      outstandingBalance: supplier?.outstandingBalance || 0,
     },
   });
 

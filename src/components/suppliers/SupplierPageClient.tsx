@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import {
   Plus,
   Search,
@@ -60,6 +61,19 @@ const SupplierPageClient = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
     null
   );
+  
+  const searchParams = useSearchParams();
+  const supplierId = searchParams.get('id');
+
+  useEffect(() => {
+    if (supplierId && suppliers.length > 0) {
+      const supplier = suppliers.find(s => s.id === supplierId);
+      if (supplier) {
+        setSelectedSupplier(supplier);
+        setShowDetailModal(true);
+      }
+    }
+  }, [supplierId, suppliers]);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentSupplier, setPaymentSupplier] = useState<Supplier | null>(null);

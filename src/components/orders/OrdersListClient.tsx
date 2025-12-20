@@ -8,8 +8,11 @@ import {
     Printer, 
     FileText,
     Calendar,
-    ArrowUpDown
+    ArrowUpDown,
+    DollarSign
 } from "lucide-react";
+import Link from "next/link";
+import { OrderPaymentModal } from "./OrderPaymentModal";
 
 import {
   Table,
@@ -27,11 +30,13 @@ import type { OrderDisplay } from "./OrdersMainClient";
 interface OrdersListClientProps {
     orders: OrderDisplay[];
     onEdit?: (order: OrderDisplay) => void;
+    onPaymentSuccess?: () => void;
 }
 
-export default function OrdersListClient({ orders, onEdit }: OrdersListClientProps) {
+export default function OrdersListClient({ orders, onEdit, onPaymentSuccess }: OrdersListClientProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [paymentOrder, setPaymentOrder] = useState<OrderDisplay | null>(null);
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -137,7 +142,12 @@ export default function OrdersListClient({ orders, onEdit }: OrdersListClientPro
                                                     <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">
                                                         {order.supplier.substring(0, 2).toUpperCase()}
                                                     </div>
-                                                    <span className="font-medium text-gray-700">{order.supplier}</span>
+                                                    <Link 
+                                                        href={`/suppliers?id=${order.supplierId}`}
+                                                        className="font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                                                    >
+                                                        {order.supplier}
+                                                    </Link>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-gray-500">
@@ -176,13 +186,22 @@ export default function OrdersListClient({ orders, onEdit }: OrdersListClientPro
                                                 <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                     <button 
                                                         onClick={() => onEdit?.(order)}
-                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all active:scale-95"
                                                         title="View Details"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
+                                                    {order.status !== 'paid' && (
+                                                        <button 
+                                                            onClick={() => setPaymentOrder(order)}
+                                                            className="p-2 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-md transition-all active:scale-95"
+                                                            title="Record Payment"
+                                                        >
+                                                            <DollarSign className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                     <button 
-                                                        className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                                                        className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-all active:scale-95"
                                                         title="Print"
                                                     >
                                                         <Printer className="w-4 h-4" />
@@ -196,6 +215,22 @@ export default function OrdersListClient({ orders, onEdit }: OrdersListClientPro
                         </TableBody>
                     </Table>
                 </div>
+
+                {/* Payment Modal */}
+                {paymentOrder && (
+                    <OrderPaymentModal
+                        orderId={paymentOrder.id}
+                        orderNumber={paymentOrder.order_number}
+                        supplierName={paymentOrder.supplier}
+                        totalAmount={paymentOrder.totalAmount}
+                        paidAmount={paymentOrder.paidAmount}
+                        onClose={() => setPaymentOrder(null)}
+                        onSuccess={() => {
+                            setPaymentOrder(null);
+                            onPaymentSuccess?.();
+                        }}
+                    />
+                )}
             </div>
         </div>
     );

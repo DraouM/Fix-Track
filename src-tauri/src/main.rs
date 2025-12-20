@@ -21,7 +21,7 @@ use db::supplier::{
 use db::order::{
     create_order, get_orders, get_order_by_id, update_order,
     add_order_item, update_order_item, remove_order_item,
-    add_order_payment, get_order_payments, complete_order,
+    add_order_payment, get_order_payments, complete_order, get_orders_by_supplier,
 };
 use printer::{get_available_printers, get_printer_status, print_escpos_commands}; // Add this line
 use std::panic;
@@ -86,6 +86,7 @@ fn main() {
             add_order_payment,
             get_order_payments,
             complete_order,
+            get_orders_by_supplier,
             // PRINTER - Add these lines
             print_escpos_commands,
             get_available_printers,

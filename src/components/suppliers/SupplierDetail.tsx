@@ -57,6 +57,10 @@ interface SupplierDetailProps {
   supplierId: string;
 }
 
+import { getOrdersBySupplier } from "@/lib/api/orders";
+import type { Order as DBOrder } from "@/types/order";
+import Link from "next/link";
+
 export function SupplierDetail({ supplierId }: SupplierDetailProps) {
   const { suppliers } = useSupplierState();
   const { getSupplierHistory, getSupplierById } = useSupplierActions();
@@ -70,12 +74,28 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  // Fetch history when supplierId changes
+  const [orders, setOrders] = useState<DBOrder[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+
+  // Fetch history and orders when supplierId changes
   useEffect(() => {
     if (supplierId) {
       getSupplierHistory(supplierId);
+      loadOrders();
     }
   }, [supplierId, getSupplierHistory]);
+
+  const loadOrders = async () => {
+    try {
+      setLoadingOrders(true);
+      const data = await getOrdersBySupplier(supplierId);
+      setOrders(data);
+    } catch (error) {
+      console.error("Failed to load supplier orders:", error);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
 
   if (!supplier) {
     return (
@@ -459,13 +479,46 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Purchase Orders
               </h3>
-              <p className="text-gray-500 mb-4">
-                Purchase order management functionality will be implemented in a
-                future update.
-              </p>
-              <Button variant="outline" disabled>
-                View Purchase Orders
-              </Button>
+              <div className="mt-4 overflow-x-auto">
+                {loadingOrders ? (
+                  <div className="py-8 text-center text-gray-500">Loading orders...</div>
+                ) : orders.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Order #</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Paid</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium">{order.order_number}</TableCell>
+                          <TableCell>{order.created_at.split('T')[0]}</TableCell>
+                          <TableCell>{formatCurrency(order.total_amount)}</TableCell>
+                          <TableCell>{formatCurrency(order.paid_amount)}</TableCell>
+                          <TableCell>
+                            <Badge variant={order.payment_status === 'paid' ? 'default' : 'secondary'}>
+                              {order.payment_status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link href={`/orders`}>View</Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="py-8 text-center text-gray-500">No orders found for this supplier.</div>
+                )}
+              </div>
             </div>
           </TabsContent>
 

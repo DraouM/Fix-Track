@@ -212,20 +212,47 @@ pub fn get_order_by_id(order_id: String) -> Result<Option<OrderWithDetails>, Str
 pub fn update_order(order: Order) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     
+    // Get old order state to handle balance changes
+    let (old_supplier_id, old_total_amount, old_status): (String, f64, String) = conn.query_row(
+        "SELECT supplier_id, total_amount, status FROM orders WHERE id = ?1",
+        params![order.id],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+    ).map_err(|e| e.to_string())?;
+
+    // Update order header (excluding totals which are managed by recalculate functions)
     conn.execute(
-        "UPDATE orders SET supplier_id = ?2, status = ?3, payment_status = ?4, total_amount = ?5, paid_amount = ?6, notes = ?7, updated_at = ?8 WHERE id = ?1",
+        "UPDATE orders SET supplier_id = ?2, status = ?3, notes = ?4, updated_at = ?5 WHERE id = ?1",
         params![
             order.id,
             order.supplier_id,
             order.status,
-            order.payment_status,
-            order.total_amount,
-            order.paid_amount,
             order.notes,
             order.updated_at,
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    // Handle Balance Ownership/Lifecycle Changes
+    // (Actual volume changes are handled by recalculate_order_total at the end)
+    
+    if old_status == "completed" && order.status != "completed" {
+        // Transition: Completed -> Draft (Reverse entire old balance from old supplier)
+        adjust_supplier_balance_internal(&conn, &old_supplier_id, -old_total_amount, "Order Reverted to Draft", &order.order_number)?;
+    } else if old_status != "completed" && order.status == "completed" {
+        // Transition: Draft -> Completed (Apply current balance to new supplier)
+        adjust_supplier_balance_internal(&conn, &order.supplier_id, old_total_amount, "Order Completed", &order.order_number)?;
+    } else if old_status == "completed" && order.status == "completed" {
+        // Transition: Remained Completed (Check if supplier changed)
+        if old_supplier_id != order.supplier_id {
+            // Move balance from old to new supplier
+            adjust_supplier_balance_internal(&conn, &old_supplier_id, -old_total_amount, "Order Moved to Another Supplier", &order.order_number)?;
+            adjust_supplier_balance_internal(&conn, &order.supplier_id, old_total_amount, "Order Moved from Another Supplier", &order.order_number)?;
+        }
+    }
+
+    // Sync everything
+    recalculate_order_total(&order.id)?;
+    recalculate_payment_status(&order.id)?;
     
     // Log update in history
     let history_id = uuid::Uuid::new_v4().to_string();
@@ -243,6 +270,35 @@ pub fn update_order(order: Order) -> Result<(), String> {
     )
     .map_err(|e| e.to_string())?;
     
+    Ok(())
+}
+
+/// Helper function to adjust supplier balance with history logging (Internal use)
+fn adjust_supplier_balance_internal(conn: &rusqlite::Connection, supplier_id: &str, amount: f64, note_prefix: &str, order_num: &str) -> Result<(), String> {
+    if amount.abs() < 0.001 {
+        return Ok(());
+    }
+
+    conn.execute(
+        "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+        params![amount, supplier_id],
+    ).map_err(|e| e.to_string())?;
+
+    let history_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![
+            history_id,
+            supplier_id,
+            chrono::Utc::now().to_rfc3339(),
+            if amount > 0.0 { "Purchase Order Created" } else { "Credit Balance Adjusted" },
+            format!("{}: Order {}", note_prefix, order_num),
+            amount,
+            None::<String>,
+        ],
+    ).map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
@@ -480,8 +536,15 @@ pub fn remove_order_item(item_id: String, order_id: String) -> Result<(), String
 fn recalculate_order_total(order_id: &str) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     
+    // Get current state to check if we need to adjust supplier balance
+    let (old_total, status, supplier_id, order_num): (f64, String, String, String) = conn.query_row(
+        "SELECT total_amount, status, supplier_id, order_number FROM orders WHERE id = ?1",
+        params![order_id],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+    ).map_err(|e| e.to_string())?;
+
     // Sum all item totals
-    let total: f64 = conn
+    let new_total: f64 = conn
         .query_row(
             "SELECT COALESCE(SUM(total_price), 0) FROM order_items WHERE order_id = ?1",
             params![order_id],
@@ -492,9 +555,39 @@ fn recalculate_order_total(order_id: &str) -> Result<(), String> {
     // Update order total
     conn.execute(
         "UPDATE orders SET total_amount = ?1, updated_at = ?2 WHERE id = ?3",
-        params![total, chrono::Utc::now().to_rfc3339(), order_id],
+        params![new_total, chrono::Utc::now().to_rfc3339(), order_id],
     )
     .map_err(|e| e.to_string())?;
+
+    // If the order is completed, we must adjust the supplier's credit balance
+    if status == "completed" && (new_total - old_total).abs() > 0.001 {
+        let diff = new_total - old_total;
+        
+        // Update supplier balance
+        conn.execute(
+            "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+            params![diff, supplier_id],
+        ).map_err(|e| e.to_string())?;
+
+        // Log in supplier history
+        let history_id = uuid::Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                history_id,
+                supplier_id,
+                chrono::Utc::now().to_rfc3339(),
+                "Credit Balance Adjusted",
+                format!("Order {} total recalculated (items changed)", order_num),
+                diff,
+                None::<String>,
+            ],
+        ).map_err(|e| e.to_string())?;
+    }
+    
+    // Recalculate payment status as total has changed
+    recalculate_payment_status(order_id)?;
     
     Ok(())
 }
@@ -522,6 +615,35 @@ pub fn add_order_payment(payment: OrderPayment) -> Result<(), String> {
     // Recalculate payment status
     recalculate_payment_status(&payment.order_id)?;
     
+    // Update supplier balance and history
+    let (supplier_id, order_number): (String, String) = conn.query_row(
+        "SELECT supplier_id, order_number FROM orders WHERE id = ?1",
+        params![payment.order_id],
+        |row| Ok((row.get(0)?, row.get(1)?))
+    ).map_err(|e| e.to_string())?;
+
+    // Subtract amount from supplier credit balance
+    conn.execute(
+        "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2",
+        params![payment.amount, supplier_id],
+    ).map_err(|e| e.to_string())?;
+
+    // Log in supplier history
+    let supplier_history_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![
+            supplier_history_id,
+            supplier_id,
+            chrono::Utc::now().to_rfc3339(),
+            "Payment Made",
+            format!("Payment for Order {}", order_number),
+            -payment.amount,
+            payment.received_by,
+        ],
+    ).map_err(|e| e.to_string())?;
+
     // Log in history
     let history_id = uuid::Uuid::new_v4().to_string();
     conn.execute(
@@ -696,6 +818,70 @@ pub fn complete_order(order_id: String) -> Result<(), String> {
         ],
     )
     .map_err(|e| e.to_string())?;
+
+    // Update supplier balance and history
+    let (supplier_id, total_amount): (String, f64) = conn.query_row(
+        "SELECT supplier_id, total_amount FROM orders WHERE id = ?1",
+        params![order_id],
+        |row| Ok((row.get(0)?, row.get(1)?))
+    ).map_err(|e| e.to_string())?;
+
+    // Add total amount to supplier credit balance
+    conn.execute(
+        "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+        params![total_amount, supplier_id],
+    ).map_err(|e| e.to_string())?;
+
+    // Log in supplier history
+    let supplier_history_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![
+            supplier_history_id,
+            supplier_id,
+            chrono::Utc::now().to_rfc3339(),
+            "Purchase Order Created",
+            format!("Purchased via Order {}", order_number),
+            total_amount,
+            None::<String>,
+        ],
+    ).map_err(|e| e.to_string())?;
     
     Ok(())
+}
+
+/// Get orders for a specific supplier
+#[tauri::command]
+pub fn get_orders_by_supplier(supplier_id: String) -> Result<Vec<Order>, String> {
+    let conn = db::get_connection().map_err(|e| e.to_string())?;
+    
+    let mut stmt = conn
+        .prepare("SELECT id, order_number, supplier_id, status, payment_status, total_amount, paid_amount, notes, created_at, updated_at, created_by 
+                  FROM orders 
+                  WHERE supplier_id = ?1 
+                  ORDER BY created_at DESC")
+        .map_err(|e| e.to_string())?;
+    
+    let orders = stmt
+        .query_map(params![supplier_id], |row| {
+            Ok(Order {
+                id: row.get(0)?,
+                order_number: row.get(1)?,
+                supplier_id: row.get(2)?,
+                status: row.get(3)?,
+                payment_status: row.get(4)?,
+                total_amount: row.get(5)?,
+                paid_amount: row.get(6)?,
+                notes: row.get(7).ok(),
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+                created_by: row.get(10).ok(),
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(|res| res.ok())
+        .collect();
+    
+    Ok(orders)
 }

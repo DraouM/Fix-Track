@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useSupplierState } from "@/context/SupplierContext";
+import Link from "next/link";
+import { useSupplierState, useSupplierActions } from "@/context/SupplierContext";
 import {
   Plus,
   Trash2,
@@ -57,6 +58,7 @@ interface CreateShoppingListProps {
 
 export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: CreateShoppingListProps) {
   const { suppliers, loading } = useSupplierState();
+  const { fetchSuppliers } = useSupplierActions();
   
   // Inventory item type from database
   interface InventoryItem {
@@ -368,6 +370,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
               await addOrderPayment(payment);
           }
 
+          await fetchSuppliers();
           toast.success("Order updated successfully!");
           if (onSaveOrder) onSaveOrder(activeOrder.id);
 
@@ -402,6 +405,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
           
           await completeOrder(createdOrder.id);
           
+          await fetchSuppliers();
           toast.success(`Order saved successfully! Order #${createdOrder.order_number}`);
           
           if (onSaveOrder) {
@@ -639,7 +643,17 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                 <div className="space-y-4">
 
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-gray-500">Select Supplier</label>
+                        <div className="flex justify-between items-center">
+                            <label className="text-xs font-semibold text-gray-500">Select Supplier</label>
+                            {activeOrder.supplierId && (
+                                <Link 
+                                    href={`/suppliers?id=${activeOrder.supplierId}`}
+                                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-tighter"
+                                >
+                                    View Profile
+                                </Link>
+                            )}
+                        </div>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <select

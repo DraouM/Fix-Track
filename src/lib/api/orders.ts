@@ -33,6 +33,13 @@ export async function getOrderById(orderId: string): Promise<OrderWithDetails | 
 }
 
 /**
+ * Get all orders for a specific supplier
+ */
+export async function getOrdersBySupplier(supplierId: string): Promise<Order[]> {
+    return await invoke<Order[]>('get_orders_by_supplier', { supplierId });
+}
+
+/**
  * Update an existing order
  */
 export async function updateOrder(order: Order): Promise<void> {

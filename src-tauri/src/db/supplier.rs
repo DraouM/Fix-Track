@@ -166,7 +166,7 @@ pub fn insert_supplier(supplier: SupplierFrontend) -> Result<(), String> {
 pub fn update_supplier(supplier: SupplierFrontend) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     conn.execute(
-        "UPDATE suppliers SET name = ?2, contact_name = ?3, email = ?4, phone = ?5, address = ?6, notes = ?7, preferred_payment_method = ?8, credit_balance = ?9, active = ?10, created_at = ?11, updated_at = ?12 WHERE id = ?1",
+        "UPDATE suppliers SET name = ?2, contact_name = ?3, email = ?4, phone = ?5, address = ?6, notes = ?7, preferred_payment_method = ?8, active = ?9, updated_at = ?10 WHERE id = ?1",
         params![
             supplier.id,
             supplier.name,
@@ -176,10 +176,8 @@ pub fn update_supplier(supplier: SupplierFrontend) -> Result<(), String> {
             supplier.address,
             supplier.notes,
             supplier.preferred_payment_method,
-            supplier.outstanding_balance, // Map outstanding_balance to credit_balance
             supplier.status == "active", // Map status string to active boolean
-            supplier.created_at,
-            supplier.updated_at
+            chrono::Utc::now().to_rfc3339() // Use server time for update
         ],
     ).map_err(|e| e.to_string())?;
     Ok(())
@@ -216,31 +214,32 @@ pub fn adjust_supplier_credit(
     amount: f64,
     notes: Option<String>,
 ) -> Result<(), String> {
-    let _ = notes; // Keep parameter name for Tauri frontend matching
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
 
-    // Get the current credit balance
-    let mut stmt = conn
-        .prepare("SELECT credit_balance FROM suppliers WHERE id = ?1")
-        .map_err(|e| e.to_string())?;
-    let mut rows = stmt
-        .query(params![supplier_id])
-        .map_err(|e| e.to_string())?;
-    let current_credit_balance: f64 = if let Some(row) = rows.next().map_err(|e| e.to_string())? {
-        row.get(0).map_err(|e| e.to_string())?
-    } else {
-        return Err("Supplier not found".to_string());
-    };
-
-    // Calculate the new credit balance
-    let new_credit_balance = current_credit_balance + amount;
-
-    // Update the credit balance in the database
+    // Update the credit balance in the database atomically
     conn.execute(
-        "UPDATE suppliers SET credit_balance = ?1 WHERE id = ?2",
-        params![new_credit_balance, supplier_id],
+        "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+        params![amount, supplier_id],
     )
     .map_err(|e| e.to_string())?;
+
+    // Log the manual adjustment in history if notes are provided or amount is significant
+    if amount.abs() > 0.001 {
+        let history_id = uuid::Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                history_id,
+                supplier_id,
+                chrono::Utc::now().to_rfc3339(),
+                "Credit Balance Adjusted",
+                notes.unwrap_or_else(|| "Manual entry".to_string()),
+                amount,
+                None::<String>,
+            ],
+        ).map_err(|e| e.to_string())?;
+    }
 
     Ok(())
 }

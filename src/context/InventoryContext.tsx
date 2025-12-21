@@ -57,6 +57,7 @@ interface InventoryActions {
     notes?: string,
     relatedId?: string
   ) => Promise<void>;
+  searchItems: (query: string) => Promise<InventoryItem[]>;
 }
 
 // ✅ Combined type
@@ -312,6 +313,17 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
     [fetchItems, inventoryItems]
   );
 
+  const searchItems = useCallback(async (query: string) => {
+    try {
+      const dbItems = await invoke<InventoryItemDB[]>("search_items", { query });
+      return dbItems.map(mapItemFromDB);
+    } catch (err) {
+      console.error("Failed to search items:", err);
+      toast.error(`Search failed: ${err}`);
+      return [];
+    }
+  }, []);
+
   // ✅ Memoized value
   const value = useMemo<InventoryContextType>(
     () => ({
@@ -338,6 +350,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
       deleteInventoryItem,
       getItemById,
       updateItemQuantity,
+      searchItems,
     }),
     [
       inventoryItems,
@@ -360,6 +373,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
       deleteInventoryItem,
       getItemById,
       updateItemQuantity,
+      searchItems,
     ]
   );
 
@@ -379,6 +393,11 @@ export function useInventoryContext() {
     );
   }
   return context;
+}
+
+// ✅ Convenience hook for all-in-one usage
+export function useInventory() {
+  return useInventoryContext();
 }
 
 // ✅ Only returns state (no actions)
@@ -411,17 +430,9 @@ export function useInventoryState(): InventoryState {
 // ✅ Only returns actions (no state)
 export function useInventoryActions(): InventoryActions {
   const {
-    initialize,
-    setSearchTerm,
-    setSelectedBrand,
-    setSelectedType,
-    handleSort,
-    clearFilters,
-    addInventoryItem,
-    updateInventoryItem,
-    deleteInventoryItem,
     getItemById,
     updateItemQuantity,
+    searchItems,
   } = useInventoryContext();
 
   return {
@@ -436,5 +447,6 @@ export function useInventoryActions(): InventoryActions {
     deleteInventoryItem,
     getItemById,
     updateItemQuantity,
+    searchItems,
   };
 }

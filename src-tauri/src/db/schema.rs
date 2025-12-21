@@ -236,7 +236,125 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
         [],
     )?;
 
-    // Sales table
+    // Sales table (Simplified version existed, upgrading it or keeping for legacy if needed)
+    // conn.execute("CREATE TABLE IF NOT EXISTS sales ...", [])?;
+
+    // Clients table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS clients (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            contact_name TEXT,
+            email TEXT,
+            phone TEXT,
+            address TEXT,
+            notes TEXT,
+            credit_balance REAL,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
+
+    // Client payments table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS client_payments (
+            id TEXT PRIMARY KEY,
+            client_id TEXT NOT NULL,
+            amount REAL NOT NULL,
+            method TEXT NOT NULL,
+            date TEXT NOT NULL,
+            notes TEXT,
+            FOREIGN KEY(client_id) REFERENCES clients(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    // Client history table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS client_history (
+            id TEXT PRIMARY KEY,
+            client_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            type TEXT NOT NULL,
+            notes TEXT,
+            amount REAL,
+            changed_by TEXT,
+            FOREIGN KEY(client_id) REFERENCES clients(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    // Full Sales tables (replacing/upgrading the simple 'sales' table)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS customer_sales (
+            id TEXT PRIMARY KEY,
+            sale_number TEXT NOT NULL UNIQUE,
+            client_id TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('draft','completed')),
+            payment_status TEXT NOT NULL CHECK(payment_status IN ('unpaid','partial','paid')),
+            total_amount REAL NOT NULL DEFAULT 0,
+            paid_amount REAL NOT NULL DEFAULT 0,
+            notes TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            created_by TEXT,
+            FOREIGN KEY(client_id) REFERENCES clients(id)
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sale_items (
+            id TEXT PRIMARY KEY,
+            sale_id TEXT NOT NULL,
+            item_id TEXT,
+            item_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            unit_price REAL NOT NULL,
+            total_price REAL NOT NULL,
+            notes TEXT,
+            FOREIGN KEY(sale_id) REFERENCES customer_sales(id) ON DELETE CASCADE,
+            FOREIGN KEY(item_id) REFERENCES inventory_items(id)
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sale_payments (
+            id TEXT PRIMARY KEY,
+            sale_id TEXT NOT NULL,
+            amount REAL NOT NULL,
+            method TEXT NOT NULL,
+            date TEXT NOT NULL,
+            received_by TEXT,
+            notes TEXT,
+            FOREIGN KEY(sale_id) REFERENCES customer_sales(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS sale_history (
+            id TEXT PRIMARY KEY,
+            sale_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            event_type TEXT NOT NULL CHECK(event_type IN ('created','completed','payment_added','item_added','item_removed','updated')),
+            details TEXT NOT NULL,
+            changed_by TEXT,
+            FOREIGN KEY(sale_id) REFERENCES customer_sales(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    // Indexes for sales
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_client ON customer_sales(client_id)", [])?;
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_status ON customer_sales(status)", [])?;
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id)", [])?;
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sale_payments_sale ON sale_payments(sale_id)", [])?;
+
+    // Keep legacy sales table for now to avoid breaking existing data if any
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sales (
             id TEXT PRIMARY KEY,

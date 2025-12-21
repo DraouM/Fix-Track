@@ -4,6 +4,8 @@ pub mod repair;
 pub mod schema;
 pub mod supplier;
 pub mod order;
+pub mod client;
+pub mod sale;
 
 use rusqlite::{Connection, Result};
 use std::path::PathBuf;

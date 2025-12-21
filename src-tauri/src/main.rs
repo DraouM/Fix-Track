@@ -19,9 +19,18 @@ use db::supplier::{
     get_supplier_history, get_suppliers, insert_supplier, insert_supplier_history, update_supplier,
 };
 use db::order::{
-    create_order, get_orders, get_order_by_id, update_order,
-    add_order_item, update_order_item, remove_order_item,
-    add_order_payment, get_order_payments, complete_order, get_orders_by_supplier,
+    add_order_item, add_order_payment, complete_order, create_order, get_order_by_id,
+    get_order_payments, get_orders, get_orders_by_supplier, remove_order_item, update_order,
+    update_order_item,
+};
+use db::client::{
+    get_clients, get_client_by_id, insert_client, update_client, delete_client,
+    add_client_payment, adjust_client_balance, get_client_history, insert_client_history,
+};
+use db::sale::{
+    create_sale, get_sales, get_sale_by_id, update_sale,
+    add_sale_item, update_sale_item, remove_sale_item,
+    add_sale_payment, complete_sale,
 };
 use printer::{get_available_printers, get_printer_status, print_escpos_commands}; // Add this line
 use std::panic;
@@ -87,6 +96,26 @@ fn main() {
             get_order_payments,
             complete_order,
             get_orders_by_supplier,
+            // CLIENTS
+            get_clients,
+            get_client_by_id,
+            insert_client,
+            update_client,
+            delete_client,
+            add_client_payment,
+            adjust_client_balance,
+            get_client_history,
+            insert_client_history,
+            // SALES
+            create_sale,
+            get_sales,
+            get_sale_by_id,
+            update_sale,
+            add_sale_item,
+            update_sale_item,
+            remove_sale_item,
+            add_sale_payment,
+            complete_sale,
             // PRINTER - Add these lines
             print_escpos_commands,
             get_available_printers,

@@ -85,9 +85,9 @@ export function AppSidebar() {
       href: "/shopping-list",
     },
     {
-      title: "Customers",
+      title: "Clients",
       icon: Users,
-      href: "/customers",
+      href: "/clients",
     },
     // {
     //   title: "Print",
@@ -98,6 +98,11 @@ export function AppSidebar() {
       title: "Orders",
       icon: FileText,
       href: "/orders",
+    },
+    {
+      title: "Sales",
+      icon: ShoppingCart,
+      href: "/sales",
     },
     {
       title: "Reports",

@@ -244,37 +244,25 @@ pub fn adjust_supplier_credit(
     Ok(())
 }
 
+use crate::db::models::SupplierHistoryEvent;
+
 #[tauri::command]
-pub fn get_supplier_history(supplier_id: String) -> Result<Vec<InventoryHistoryEvent>, String> {
+pub fn get_supplier_history(supplier_id: String) -> Result<Vec<SupplierHistoryEvent>, String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT id, supplier_id, date, type, notes, amount, changed_by FROM supplier_history WHERE supplier_id = ?1 ORDER BY date DESC")
         .map_err(|e| e.to_string())?;
     let history = stmt
         .query_map(params![supplier_id], |row| {
-            // Handle errors properly within the closure
-            let id_result: Result<String, rusqlite::Error> = row.get(0);
-            let item_id_result: Result<String, rusqlite::Error> = row.get(1); // supplier_id maps to item_id
-            let event_type_result: Result<String, rusqlite::Error> = row.get(3); // type maps to event_type
-            let date_result: Result<String, rusqlite::Error> = row.get(2);
-
-            // Check if all required fields were retrieved successfully
-            if let (Ok(id), Ok(item_id), Ok(event_type), Ok(date)) =
-                (id_result, item_id_result, event_type_result, date_result)
-            {
-                Ok(InventoryHistoryEvent {
-                    id,
-                    item_id,                                  // supplier_id maps to item_id
-                    event_type,                               // type maps to event_type
-                    quantity_change: row.get(5).unwrap_or(0), // amount maps to quantity_change
-                    related_id: row.get(6).ok(), // changed_by maps to related_id (this might need adjustment based on actual schema)
-                    date,
-                    notes: row.get(4).ok(),
-                })
-            } else {
-                // Return an error if we couldn't get required fields
-                Err(rusqlite::Error::InvalidQuery)
-            }
+            Ok(SupplierHistoryEvent {
+                id: row.get(0)?,
+                supplier_id: row.get(1)?,
+                date: row.get(2)?,
+                event_type: row.get(3)?,
+                notes: row.get(4).ok(),
+                amount: row.get::<_, f64>(5).unwrap_or(0.0),
+                changed_by: row.get(6).ok(),
+            })
         })
         .map_err(|e| e.to_string())?
         .filter_map(|res| res.ok())
@@ -284,18 +272,18 @@ pub fn get_supplier_history(supplier_id: String) -> Result<Vec<InventoryHistoryE
 
 // Add the insert_supplier_history function
 #[tauri::command]
-pub fn insert_supplier_history(event: InventoryHistoryEvent) -> Result<(), String> {
+pub fn insert_supplier_history(event: SupplierHistoryEvent) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     conn.execute(
         "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         params![
             event.id,
-            event.item_id,      // supplier_id is stored in item_id field
+            event.supplier_id,
             event.date,
-            event.event_type,   // type is stored in event_type field
+            event.event_type,
             event.notes,
-            event.quantity_change, // amount is stored in quantity_change field
-            event.related_id,   // changed_by is stored in related_id field
+            event.amount,
+            event.changed_by,
         ],
     ).map_err(|e| e.to_string())?;
     Ok(())

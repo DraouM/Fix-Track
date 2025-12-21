@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { invoke } from '@tauri-apps/api/core';
+import { formatCurrency } from "@/lib/clientUtils";
 import { 
   createOrder, 
   addOrderItem, 
@@ -515,8 +516,8 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                   <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">
                     <div className="col-span-4">Product / Description</div>
                     <div className="col-span-2 text-center">Qty</div>
-                    <div className="col-span-3">Unit Price ($)</div>
-                    <div className="col-span-2 text-right">Total ($)</div>
+                    <div className="col-span-3">Unit Price</div>
+                    <div className="col-span-2 text-right">Total</div>
                     <div className="col-span-1"></div>
                   </div>
 
@@ -552,7 +553,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                                             }}
                                         >
                                             <span className="font-medium truncate">{inventoryItem.item_name}</span>
-                                            <span className="text-gray-400 text-xs ml-2">${inventoryItem.buying_price.toFixed(2)}</span>
+                                            <span className="text-gray-400 text-xs ml-2">{formatCurrency(inventoryItem.buying_price)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -581,7 +582,6 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                         </div>
                         <div className="col-span-3">
                              <div className="relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
                                 <input
                                 type="number"
                                 min="0"
@@ -601,7 +601,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                         </div>
                         <div className="col-span-2 flex items-center justify-end h-full">
                             <span className="font-semibold text-gray-700 text-sm">
-                                ${((item.estimatedPrice || 0) * item.quantity).toFixed(2)}
+                                {formatCurrency((item.estimatedPrice || 0) * item.quantity)}
                             </span>
                         </div>
                         <div className="col-span-1 flex justify-center h-full items-center">
@@ -703,12 +703,11 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                 <div className="space-y-3 pb-6 border-b border-gray-100">
                     <div className="flex justify-between text-sm text-gray-600">
                         <span>Subtotal</span>
-                        <span>${calculateTotalEstimated().toFixed(2)}</span>
+                        <span>{formatCurrency(calculateTotalEstimated())}</span>
                     </div>
                      <div className="flex justify-between items-center text-sm text-gray-600">
                         <span>Payment</span>
                         <div className="w-24 relative">
-                             <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">$</span>
                              <input 
                                 type="number" 
                                 min="0" 
@@ -723,7 +722,7 @@ export default function CreateShoppingListClient({ onSaveOrder, orderToEdit }: C
                     <div className="flex justify-between text-lg font-bold text-gray-900 pt-2">
                         <span>Total (Balance)</span>
                         <span className={calculateRemaining() > 0 ? "text-orange-600" : "text-green-600"}>
-                            ${calculateRemaining().toFixed(2)}
+                            {formatCurrency(calculateRemaining())}
                         </span>
                     </div>
                 </div>

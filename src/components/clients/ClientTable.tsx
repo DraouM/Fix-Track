@@ -113,7 +113,6 @@ export function ClientTable({ clients, loading, onRecordPayment }: ClientTablePr
                     className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
                     onClick={() => onRecordPayment(client.id)}
                   >
-                    <DollarSign className="h-4 w-4 mr-1" />
                     Payment
                   </Button>
                   

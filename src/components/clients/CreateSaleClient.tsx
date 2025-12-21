@@ -92,6 +92,19 @@ export function CreateSaleClient() {
       return item;
     }));
   };
+  
+  const updatePrice = (id: string, newPrice: number) => {
+    setItems(items.map(item => {
+      if (item.id === id) {
+        return {
+          ...item,
+          unit_price: newPrice,
+          total_price: item.quantity * newPrice
+        };
+      }
+      return item;
+    }));
+  };
 
   const handleSaveSale = async (complete: boolean) => {
     if (!selectedClientId) {
@@ -242,8 +255,17 @@ export function CreateSaleClient() {
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right text-sm">
-                          {formatCurrency(item.unit_price)}
+                        <TableCell className="text-right">
+                          <div className="flex justify-end">
+                            <div className="relative w-24">
+                              <Input 
+                                type="number"
+                                className="h-8 text-right text-xs font-bold"
+                                value={item.unit_price}
+                                onChange={(e) => updatePrice(item.id, parseFloat(e.target.value) || 0)}
+                              />
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-bold text-sm">
                           {formatCurrency(item.total_price)}
@@ -331,16 +353,15 @@ export function CreateSaleClient() {
                </div>
 
                <div className="space-y-2 pt-4">
-                 <label className="text-sm font-medium">Payment Received ($)</label>
-                 <div className="relative">
-                   <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                   <Input 
-                      type="number" 
-                      className="pl-9 h-10 font-bold text-lg text-green-600"
-                      value={paidAmount}
-                      onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
-                   />
-                 </div>
+                 <label className="text-sm font-medium">Payment Received</label>
+                  <div className="relative">
+                    <Input 
+                       type="number" 
+                       className="h-10 font-bold text-lg text-green-600"
+                       value={paidAmount}
+                       onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
                </div>
 
                <div className="space-y-2">

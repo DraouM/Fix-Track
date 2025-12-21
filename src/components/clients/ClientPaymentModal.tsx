@@ -74,7 +74,6 @@ export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentM
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-green-600" />
             Record Client Payment
           </DialogTitle>
           <DialogDescription>
@@ -97,7 +96,7 @@ export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentM
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Payment Amount ($)</FormLabel>
+                  <FormLabel>Payment Amount</FormLabel>
                   <FormControl>
                     <Input
                       type="number"

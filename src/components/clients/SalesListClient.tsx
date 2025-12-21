@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  Search, Filter, RefreshCcw, ShoppingCart, 
-  Eye, FileText, CheckCircle2, AlertCircle, Clock, Plus
+  Search, Eye, FileText, CheckCircle2, AlertCircle, Clock, Plus,
+  TrendingUp, RefreshCcw, ShoppingCart as SalesIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,58 +69,103 @@ export function SalesListClient() {
     }
   };
 
+  const StatCard = ({
+    icon: Icon,
+    title,
+    value,
+    subtitle,
+    color = "blue",
+  }: {
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    value: string | number;
+    subtitle?: string;
+    color?: "blue" | "green" | "orange" | "red" | "purple";
+  }) => {
+    const colorClasses = {
+      blue: "bg-blue-100 text-blue-600",
+      green: "bg-green-100 text-green-600",
+      orange: "bg-orange-100 text-orange-600",
+      red: "bg-red-100 text-red-600",
+      purple: "bg-purple-100 text-purple-600",
+    };
+
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-1">
+          <div className={`p-1.5 rounded-lg ${colorClasses[color]}`}>
+            <Icon className="w-4 h-4" />
+          </div>
+          <span className="text-sm font-medium text-gray-600">{title}</span>
+        </div>
+        <div className="mt-2">
+          <div className="text-xl font-bold text-gray-900">{value}</div>
+          {subtitle && (
+            <div className="text-xs text-gray-500 mt-1">{subtitle}</div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="flex flex-col gap-6 p-6 pb-20 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Sales History</h1>
-          <p className="text-muted-foreground">View and manage all customer sales and transactions.</p>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <SalesIcon className="w-8 h-8 text-blue-600" />
+              Sales History
+            </h1>
+            <p className="text-gray-600 mt-1">
+              View and manage all customer sales and transactions
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="icon" className="h-10 w-10" onClick={fetchSales} disabled={loading}>
+              <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button onClick={() => router.push("/sales/new")} className="bg-blue-600 hover:bg-blue-700 text-white font-medium">
+              <Plus className="mr-2 h-4 w-4" /> New Sale
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={fetchSales} disabled={loading}>
-            <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button onClick={() => router.push("/sales/new")} className="bg-primary hover:bg-primary/90">
-            <Plus className="mr-2 h-4 w-4" /> New Sale
-          </Button>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            icon={SalesIcon}
+            title="Total Sales"
+            value={sales.length}
+            subtitle={`${sales.filter(s => s.status === "completed").length} completed`}
+            color="blue"
+          />
+          <StatCard
+            icon={CheckCircle2}
+            title="Completed"
+            value={sales.filter(s => s.status === "completed").length}
+            subtitle="Successfully closed"
+            color="green"
+          />
+          <StatCard
+            icon={TrendingUp}
+            title="Total Revenue"
+            value={formatCurrency(sales.reduce((sum, s) => sum + s.total_amount, 0))}
+            subtitle="Gross income"
+            color="purple"
+          />
+          <StatCard
+            icon={AlertCircle}
+            title="Unpaid Amount"
+            value={formatCurrency(sales.reduce((sum, s) => sum + (s.total_amount - s.paid_amount), 0))}
+            subtitle="Pending collection"
+            color="red"
+          />
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Sales</CardDescription>
-            <CardTitle className="text-2xl">{sales.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Completed</CardDescription>
-            <CardTitle className="text-2xl text-green-600">
-              {sales.filter(s => s.status === "completed").length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Revenue</CardDescription>
-            <CardTitle className="text-2xl">
-              {formatCurrency(sales.reduce((sum, s) => sum + s.total_amount, 0))}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Unpaid Amount</CardDescription>
-            <CardTitle className="text-2xl text-destructive">
-              {formatCurrency(sales.reduce((sum, s) => sum + (s.total_amount - s.paid_amount), 0))}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-0">
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="pb-0 border-b border-gray-100 mb-6 py-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="relative max-w-sm w-full">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -140,7 +185,7 @@ export function SalesListClient() {
             </Tabs>
           </div>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="pt-0">
           <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader className="bg-muted/50">
@@ -195,7 +240,7 @@ export function SalesListClient() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={7} className="h-40 text-center text-muted-foreground">
-                      <ShoppingCart className="h-10 w-10 mx-auto mb-2 opacity-10" />
+                      <SalesIcon className="h-10 w-10 mx-auto mb-2 opacity-10" />
                       <p>No sales records found.</p>
                     </TableCell>
                   </TableRow>
@@ -205,6 +250,7 @@ export function SalesListClient() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

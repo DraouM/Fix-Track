@@ -13,8 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useClientContext } from "@/context/ClientContext";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate, getClientStatusBadgeVariant, getClientStatusDisplayText, getClientHistoryEventBadgeVariant } from "@/lib/clientUtils";
-import { ClientForm } from "../ClientForm";
-import { ClientPaymentModal } from "../ClientPaymentModal";
+import { ClientForm } from "./ClientForm";
+import { ClientPaymentModal } from "./ClientPaymentModal";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ClientDetailProps {
@@ -139,7 +139,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
           </CardContent>
           <div className="p-6 pt-0">
             <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => setIsPaymentModalOpen(true)}>
-              <DollarSign className="mr-2 h-4 w-4" /> Record Payment
+              Record Payment
             </Button>
           </div>
         </Card>
@@ -174,8 +174,8 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
                     <TableRow key={event.id}>
                       <TableCell className="text-xs font-medium">{formatDate(event.date)}</TableCell>
                       <TableCell>
-                        <Badge variant={getClientHistoryEventBadgeVariant(event.type as any) as any} className="text-[10px] px-1.5 py-0">
-                          {event.type}
+                        <Badge variant={getClientHistoryEventBadgeVariant(event.event_type as any) as any} className="text-[10px] px-1.5 py-0">
+                          {event.event_type}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">{event.notes}</TableCell>

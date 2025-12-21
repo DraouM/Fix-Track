@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  ArrowLeft, ShoppingCart, User, Clock, 
-  CheckCircle2, AlertCircle, DollarSign, 
-  FileText, History, Printer
-} from "lucide-react";
+import { ArrowLeft, ShoppingCart as SalesIcon, User, Clock, CheckCircle2, AlertCircle, FileText, History, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -77,39 +73,41 @@ export function SaleDetailClient({ saleId }: SaleDetailClientProps) {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 pb-20 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/sales")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">Sale {sale.sale_number}</h1>
-              <Badge variant={getStatusBadgeVariant(sale.status) as any} className="capitalize py-1 px-3">
-                {sale.status}
-              </Badge>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-5xl mx-auto space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" className="h-10 w-10 border-gray-200 bg-white" onClick={() => router.push("/sales")}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Sale {sale.sale_number}</h1>
+                <Badge variant={getStatusBadgeVariant(sale.status) as any} className="capitalize py-1 px-3">
+                  {sale.status}
+                </Badge>
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">Created on {formatDate(sale.created_at)}</p>
             </div>
-            <p className="text-sm text-muted-foreground">Created on {formatDate(sale.created_at)}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-2 border-gray-200 bg-white text-gray-700 font-medium">
+              <Printer className="h-4 w-4" /> Print Receipt
+            </Button>
+            {sale.status === "draft" && (
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium">
+                Complete Sale
+              </Button>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2">
-            <Printer className="h-4 w-4" /> Print Receipt
-          </Button>
-          {sale.status === "draft" && (
-            <Button className="bg-primary hover:bg-primary/90">
-              Complete Sale
-            </Button>
-          )}
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-2">
-          <CardHeader className="pb-3 border-b">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
+        <Card className="md:col-span-2 border-gray-200 shadow-sm">
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <CardTitle className="text-lg font-bold flex items-center gap-2 text-gray-900">
+              <FileText className="h-5 w-5 text-blue-600" />
               Sale Items
             </CardTitle>
           </CardHeader>
@@ -148,25 +146,24 @@ export function SaleDetailClient({ saleId }: SaleDetailClientProps) {
         </Card>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-3 border-b">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
+          <Card className="border-gray-200 shadow-sm">
+            <CardHeader className="pb-3 border-b border-gray-100">
+              <CardTitle className="text-lg font-bold flex items-center gap-2 text-gray-900">
+                <User className="h-5 w-5 text-blue-600" />
                 Customer
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="flex flex-col gap-1 cursor-pointer hover:bg-muted/50 p-2 rounded-md transition-colors" onClick={() => router.push(`/clients/${sale.client_id}`)}>
-                <span className="font-bold text-base">{client_name}</span>
-                <span className="text-[10px] text-muted-foreground uppercase font-bold">Customer Profile</span>
+              <div className="flex flex-col gap-1 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors border border-transparent hover:border-gray-100" onClick={() => router.push(`/clients/${sale.client_id}`)}>
+                <span className="font-bold text-base text-gray-900">{client_name}</span>
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Customer Profile</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader className="pb-3 border-b border-primary/10">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
+          <Card className="border-blue-100 bg-blue-50/50 shadow-sm">
+            <CardHeader className="pb-3 border-b border-blue-100">
+              <CardTitle className="text-lg font-bold flex items-center gap-2 text-blue-900">
                 Payment Summary
               </CardTitle>
             </CardHeader>
@@ -220,6 +217,7 @@ export function SaleDetailClient({ saleId }: SaleDetailClientProps) {
             </Card>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

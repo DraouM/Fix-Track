@@ -43,6 +43,7 @@ import {
   Building2,
   ShoppingCart,
   PrinterIcon,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -103,6 +104,16 @@ export function AppSidebar() {
       title: "Sales",
       icon: ShoppingCart,
       href: "/sales",
+    },
+    {
+      title: "Till",
+      icon: ShoppingCart,
+      href: "/till",
+    },
+    {
+      title: "Cashier",
+      icon: Wallet,
+      href: "/cashier",
     },
     {
       title: "Reports",

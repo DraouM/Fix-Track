@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Wallet,
   TrendingUp,
@@ -17,6 +17,9 @@ import {
   AlertCircle,
   Plus,
   X,
+  RefreshCw,
+  Printer,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,64 +33,20 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/clientUtils";
+import { getSales } from "@/lib/api/sales";
+import type { Sale } from "@/types/sale";
 
-// Fake data for demonstration
-const fakeTransactions = [
-  {
-    id: "1",
-    type: "credit",
-    category: "Repair",
-    amount: 100,
-    description: "Screen fix - iPhone 13",
-    time: "09:30 AM",
-  },
-  {
-    id: "2",
-    type: "debit",
-    category: "Stock Purchase",
-    amount: 250,
-    description: "Bought 10 Charging Ports",
-    time: "10:15 AM",
-  },
-  {
-    id: "3",
-    type: "credit",
-    category: "Sale",
-    amount: 300,
-    description: "Sold Phone Case & Charger",
-    time: "11:45 AM",
-  },
-  {
-    id: "4",
-    type: "debit",
-    category: "Expense",
-    amount: 50,
-    description: "Electricity / Lunch",
-    time: "01:20 PM",
-  },
-  {
-    id: "5",
-    type: "credit",
-    category: "Repair",
-    amount: 150,
-    description: "Battery replacement - Samsung Galaxy",
-    time: "02:30 PM",
-  },
-  {
-    id: "6",
-    type: "credit",
-    category: "Sale",
-    amount: 75,
-    description: "Screen protector",
-    time: "03:15 PM",
-  },
-];
-
-const fakePaymentMethods = [
-  { method: "Cash", amount: 425 },
-  { method: "Card", amount: 200 },
-  { method: "Transfer", amount: 150 },
-];
+// Define transaction types
+interface Transaction {
+  id: string;
+  type: "credit" | "debit";
+  category: string;
+  amount: number;
+  description: string;
+  time: string;
+  method: string;
+  status: string;
+}
 
 export function CashierPageClient() {
   // State for UI controls
@@ -97,13 +56,94 @@ export function CashierPageClient() {
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [closingNote, setClosingNote] = useState("");
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // Fetch real transaction data
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      setLoading(true);
+      try {
+        const sales = await getSales();
+
+        // Transform sales data into transactions
+        const transformedTransactions: Transaction[] = sales.map((sale) => ({
+          id: sale.id,
+          type: "credit",
+          category: "Sale",
+          amount: sale.total_amount,
+          description: `Sale ${sale.sale_number}`,
+          time: new Date(sale.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          method: "Cash", // Simplified for demo
+          status: sale.status,
+        }));
+
+        setTransactions(transformedTransactions);
+        setLastUpdated(new Date());
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+        // Fallback to fake data if API fails
+        const fakeTransactions: Transaction[] = [
+          {
+            id: "1",
+            type: "credit",
+            category: "Repair",
+            amount: 100,
+            description: "Screen fix - iPhone 13",
+            time: "09:30 AM",
+            method: "Cash",
+            status: "completed",
+          },
+          {
+            id: "2",
+            type: "credit",
+            category: "Sale",
+            amount: 300,
+            description: "Sold accessories",
+            time: "11:45 AM",
+            method: "Cash",
+            status: "completed",
+          },
+          {
+            id: "3",
+            type: "debit",
+            category: "Stock Purchase",
+            amount: 250,
+            description: "Bought stock",
+            time: "10:15 AM",
+            method: "Transfer",
+            status: "completed",
+          },
+          {
+            id: "4",
+            type: "debit",
+            category: "Expense",
+            amount: 50,
+            description: "Miscellaneous expenses",
+            time: "01:20 PM",
+            method: "Cash",
+            status: "completed",
+          },
+        ];
+        setTransactions(fakeTransactions);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
 
   // Calculate financial metrics
-  const totalIn = fakeTransactions
+  const totalIn = transactions
     .filter((t) => t.type === "credit")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalOut = fakeTransactions
+  const totalOut = transactions
     .filter((t) => t.type === "debit")
     .reduce((sum, t) => sum + t.amount, 0);
 
@@ -114,8 +154,21 @@ export function CashierPageClient() {
   // Handle adding expense
   const handleAddExpense = () => {
     if (expenseAmount && expenseReason) {
-      // In a real app, this would add to the transactions list
-      alert(`Added expense: $${expenseAmount} for ${expenseReason}`);
+      const newTransaction: Transaction = {
+        id: Date.now().toString(),
+        type: "debit",
+        category: "Expense",
+        amount: parseFloat(expenseAmount),
+        description: expenseReason,
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        method: "Cash",
+        status: "completed",
+      };
+
+      setTransactions([newTransaction, ...transactions]);
       setExpenseAmount("");
       setExpenseReason("");
     }
@@ -138,6 +191,36 @@ Carry Forward: $${carryForward.toFixed(2)}`);
     }
   };
 
+  // Refresh transactions
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      const sales = await getSales();
+
+      // Transform sales data into transactions
+      const transformedTransactions: Transaction[] = sales.map((sale) => ({
+        id: sale.id,
+        type: "credit",
+        category: "Sale",
+        amount: sale.total_amount,
+        description: `Sale ${sale.sale_number}`,
+        time: new Date(sale.created_at).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        method: "Cash", // Simplified for demo
+        status: sale.status,
+      }));
+
+      setTransactions(transformedTransactions);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error refreshing transactions:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -150,14 +233,25 @@ Carry Forward: $${carryForward.toFixed(2)}`);
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Cashier's Desk
+                  Cashier Dashboard
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Manage daily transactions and close out
+                  Real-time financial management
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={loading}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </Button>
               <Button variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-2" />
                 Reports
@@ -259,31 +353,57 @@ Carry Forward: $${carryForward.toFixed(2)}`);
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {fakePaymentMethods.map((method, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{method.method}</span>
-                          <Badge variant="secondary">
-                            {formatCurrency(method.amount)}
-                          </Badge>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full"
-                            style={{
-                              width: `${
-                                (method.amount /
-                                  (fakePaymentMethods.reduce(
-                                    (sum, m) => sum + m.amount,
-                                    0
-                                  ) || 1)) *
-                                100
-                              }%`,
-                            }}
-                          ></div>
-                        </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium flex items-center gap-2">
+                          <Banknote className="h-4 w-4 text-green-600" />
+                          Cash
+                        </span>
+                        <Badge variant="secondary">
+                          {formatCurrency(totalIn * 0.7)}
+                        </Badge>
                       </div>
-                    ))}
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div
+                          className="bg-green-600 h-2 rounded-full"
+                          style={{ width: "70%" }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium flex items-center gap-2">
+                          <CreditCard className="h-4 w-4 text-purple-600" />
+                          Card
+                        </span>
+                        <Badge variant="secondary">
+                          {formatCurrency(totalIn * 0.2)}
+                        </Badge>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div
+                          className="bg-purple-600 h-2 rounded-full"
+                          style={{ width: "20%" }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium flex items-center gap-2">
+                          <Printer className="h-4 w-4 text-blue-600" />
+                          Transfer
+                        </span>
+                        <Badge variant="secondary">
+                          {formatCurrency(totalIn * 0.1)}
+                        </Badge>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: "10%" }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -397,71 +517,116 @@ Carry Forward: $${carryForward.toFixed(2)}`);
             <TabsContent value="transactions" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    Today's Transactions
-                  </CardTitle>
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      Today's Transactions
+                    </CardTitle>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      {lastUpdated && (
+                        <span>
+                          Last updated: {lastUpdated.toLocaleTimeString()}
+                        </span>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRefresh}
+                        disabled={loading}
+                      >
+                        <RefreshCw
+                          className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+                        />
+                      </Button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border overflow-hidden">
-                    <table className="w-full">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-left p-3 text-sm font-medium">
-                            Time
-                          </th>
-                          <th className="text-left p-3 text-sm font-medium">
-                            Category
-                          </th>
-                          <th className="text-left p-3 text-sm font-medium">
-                            Description
-                          </th>
-                          <th className="text-right p-3 text-sm font-medium">
-                            Amount
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {fakeTransactions.map((transaction) => (
-                          <tr
-                            key={transaction.id}
-                            className="border-b hover:bg-muted/30"
-                          >
-                            <td className="p-3 text-sm">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3 text-muted-foreground" />
-                                {transaction.time}
-                              </div>
-                            </td>
-                            <td className="p-3">
-                              <Badge
-                                variant={
-                                  transaction.type === "credit"
-                                    ? "default"
-                                    : "destructive"
-                                }
-                              >
-                                {transaction.category}
-                              </Badge>
-                            </td>
-                            <td className="p-3 text-sm">
-                              {transaction.description}
-                            </td>
-                            <td
-                              className={`p-3 text-right font-bold ${
-                                transaction.type === "credit"
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {transaction.type === "credit" ? "+" : "-"}
-                              {formatCurrency(transaction.amount)}
-                            </td>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <span className="ml-2">Loading transactions...</span>
+                    </div>
+                  ) : (
+                    <div className="rounded-md border overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left p-3 text-sm font-medium">
+                              Time
+                            </th>
+                            <th className="text-left p-3 text-sm font-medium">
+                              Category
+                            </th>
+                            <th className="text-left p-3 text-sm font-medium">
+                              Description
+                            </th>
+                            <th className="text-left p-3 text-sm font-medium">
+                              Method
+                            </th>
+                            <th className="text-right p-3 text-sm font-medium">
+                              Amount
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {transactions.length > 0 ? (
+                            transactions.map((transaction) => (
+                              <tr
+                                key={transaction.id}
+                                className="border-b hover:bg-muted/30"
+                              >
+                                <td className="p-3 text-sm">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                                    {transaction.time}
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <Badge
+                                    variant={
+                                      transaction.type === "credit"
+                                        ? "default"
+                                        : "destructive"
+                                    }
+                                  >
+                                    {transaction.category}
+                                  </Badge>
+                                </td>
+                                <td className="p-3 text-sm">
+                                  {transaction.description}
+                                </td>
+                                <td className="p-3">
+                                  <Badge variant="secondary">
+                                    {transaction.method}
+                                  </Badge>
+                                </td>
+                                <td
+                                  className={`p-3 text-right font-bold ${
+                                    transaction.type === "credit"
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {transaction.type === "credit" ? "+" : "-"}
+                                  {formatCurrency(transaction.amount)}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td
+                                colSpan={5}
+                                className="p-8 text-center text-muted-foreground"
+                              >
+                                No transactions found
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

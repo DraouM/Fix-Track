@@ -68,6 +68,8 @@ export function useClientFilters(clients: Client[]) {
 
     return {
         filteredAndSortedClients,
+        searchTerm,
+        activeFilter,
         filters: { searchTerm, active: activeFilter },
         sortConfig,
         setSearchTerm,

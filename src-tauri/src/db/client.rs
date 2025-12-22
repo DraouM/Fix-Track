@@ -191,7 +191,7 @@ pub fn get_client_history(client_id: String) -> Result<Vec<ClientHistoryEvent>, 
                 date: row.get(2)?,
                 event_type: row.get(3)?,
                 notes: row.get(4).ok(),
-                amount: row.get(5).unwrap_or(0.0),
+                amount: row.get::<_, f64>(5).unwrap_or(0.0),
                 changed_by: None,
             })
         })

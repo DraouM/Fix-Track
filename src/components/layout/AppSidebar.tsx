@@ -115,11 +115,6 @@ export function AppSidebar() {
       icon: Wallet,
       href: "/cashier",
     },
-    {
-      title: "Reports",
-      icon: BarChart3,
-      href: "/reports",
-    },
   ];
 
   const secondaryItems: NavItem[] = [

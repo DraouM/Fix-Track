@@ -112,12 +112,12 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const updated = {
         ...existing,
         name: data.name || existing.name,
-        contact_name: data.contactName || existing.contactName,
+        contactName: data.contactName || existing.contactName,
         email: data.email || existing.email,
         phone: data.phone || existing.phone,
         address: data.address || existing.address,
         notes: data.notes || existing.notes,
-        status: data.status || existing.status,
+        status: data.status || (existing.status as any),
         updatedAt: new Date().toISOString(),
       };
 
@@ -245,7 +245,7 @@ function mapClientToDB(c: Client): any {
     notes: c.notes,
     outstanding_balance: c.outstandingBalance,
     status: c.status,
-    createdAt: c.createdAt,
-    updatedAt: c.updatedAt,
+    created_at: c.createdAt,
+    updated_at: c.updatedAt,
   };
 }

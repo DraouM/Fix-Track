@@ -22,6 +22,8 @@ import {
   CheckCircle,
   AlertCircle,
   X,
+  ArrowUpRight,
+  Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,8 +153,8 @@ export function TillPageClient() {
   // State for UI controls
   const [itemSearch, setItemSearch] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("1");
-  const [paidAmount, setPaidAmount] = useState(100);
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [paidAmount, setPaidAmount] = useState(200); // Default to exact amount for cash focus
+  const [paymentMethod, setPaymentMethod] = useState("Cash"); // Default to cash
   const [activeTab, setActiveTab] = useState("till");
 
   // Calculate totals
@@ -513,26 +515,38 @@ export function TillPageClient() {
                         <label className="text-sm font-medium">
                           Payment Method
                         </label>
-                        <div className="grid grid-cols-2 gap-2 mt-1">
+                        <div className="grid grid-cols-3 gap-2 mt-1">
                           <Button
                             variant={
                               paymentMethod === "Cash" ? "default" : "outline"
                             }
-                            className="h-12"
+                            className="h-12 flex flex-col gap-1"
                             onClick={() => setPaymentMethod("Cash")}
                           >
-                            <DollarSign className="h-4 w-4 mr-2" />
-                            Cash
+                            <Banknote className="h-5 w-5" />
+                            <span className="text-xs">Cash</span>
                           </Button>
                           <Button
                             variant={
                               paymentMethod === "Card" ? "default" : "outline"
                             }
-                            className="h-12"
+                            className="h-12 flex flex-col gap-1"
                             onClick={() => setPaymentMethod("Card")}
                           >
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Card
+                            <CreditCard className="h-5 w-5" />
+                            <span className="text-xs">Card</span>
+                          </Button>
+                          <Button
+                            variant={
+                              paymentMethod === "Transfer"
+                                ? "default"
+                                : "outline"
+                            }
+                            className="h-12 flex flex-col gap-1"
+                            onClick={() => setPaymentMethod("Transfer")}
+                          >
+                            <ArrowUpRight className="h-5 w-5" />
+                            <span className="text-xs">Transfer</span>
                           </Button>
                         </div>
                       </div>

@@ -46,11 +46,10 @@ export type ClientHistoryEventType =
 
 export interface ClientHistoryEvent {
     id: string;
-    clientId: string;
+    client_id: string;
     date: string;
-    type: ClientHistoryEventType;
+    event_type: string;
     notes?: string;
-    amount?: number;
-    relatedId?: string;
-    userId?: string;
+    amount: number;
+    changed_by?: string;
 }

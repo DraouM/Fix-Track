@@ -37,7 +37,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
   
   const existingClient = clientId ? clients.find(c => c.id === clientId) : null;
 
-  const form = useForm<ClientFormValues>({
+  const form = useForm({
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: "",

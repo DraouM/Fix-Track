@@ -315,7 +315,9 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const searchItems = useCallback(async (query: string) => {
     try {
-      const dbItems = await invoke<InventoryItemDB[]>("search_items", { query });
+      const dbItems = await invoke<InventoryItemDB[]>("search_items", {
+        query,
+      });
       return dbItems.map(mapItemFromDB);
     } catch (err) {
       console.error("Failed to search items:", err);
@@ -430,6 +432,15 @@ export function useInventoryState(): InventoryState {
 // ✅ Only returns actions (no state)
 export function useInventoryActions(): InventoryActions {
   const {
+    initialize,
+    setSearchTerm,
+    setSelectedBrand,
+    setSelectedType,
+    handleSort,
+    clearFilters,
+    addInventoryItem,
+    updateInventoryItem,
+    deleteInventoryItem,
     getItemById,
     updateItemQuantity,
     searchItems,

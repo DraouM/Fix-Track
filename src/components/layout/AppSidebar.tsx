@@ -66,6 +66,36 @@ export function AppSidebar() {
       href: "/",
     },
     {
+      title: "Sales",
+      icon: ShoppingCart,
+      href: "/sales",
+    },
+    {
+      title: "Clients",
+      icon: Users,
+      href: "/clients",
+    },
+    {
+      title: "Cashier",
+      icon: Wallet,
+      href: "/cashier",
+    },
+    {
+      title: "Till",
+      icon: ShoppingCart,
+      href: "/till",
+    },
+    {
+      title: "Orders",
+      icon: FileText,
+      href: "/orders",
+    },
+    {
+      title: "Suppliers",
+      icon: Building2,
+      href: "/suppliers",
+    },
+    {
       title: "Inventory",
       icon: Package,
       href: "/inventory",
@@ -76,44 +106,9 @@ export function AppSidebar() {
       href: "/repairs",
     },
     {
-      title: "Suppliers",
-      icon: Building2,
-      href: "/suppliers",
-    },
-    {
       title: "Shopping List",
       icon: ShoppingCart,
       href: "/shopping-list",
-    },
-    {
-      title: "Clients",
-      icon: Users,
-      href: "/clients",
-    },
-    // {
-    //   title: "Print",
-    //   icon: PrinterIcon,
-    //   href: "/print-settings",
-    // },
-    {
-      title: "Orders",
-      icon: FileText,
-      href: "/orders",
-    },
-    {
-      title: "Sales",
-      icon: ShoppingCart,
-      href: "/sales",
-    },
-    {
-      title: "Till",
-      icon: ShoppingCart,
-      href: "/till",
-    },
-    {
-      title: "Cashier",
-      icon: Wallet,
-      href: "/cashier",
     },
   ];
 
@@ -173,28 +168,95 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Main Navigation */}
+        {/* Operations Group */}
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Operations</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    onClick={() => router.push(item.href)}
-                    tooltip={item.title}
-                    isActive={isActive(item.href)}
-                    className={
-                      isActive(item.href)
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                        : ""
-                    }
-                  >
-                    <item.icon className="size-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navigationItems
+                .filter((item) =>
+                  [
+                    "Dashboard",
+                    "Inventory",
+                    "Repairs",
+                    "Shopping List",
+                  ].includes(item.title)
+                )
+                .map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      onClick={() => router.push(item.href)}
+                      tooltip={item.title}
+                      isActive={isActive(item.href)}
+                      className={
+                        isActive(item.href)
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : ""
+                      }
+                    >
+                      <item.icon className="size-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Sales Group */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Sales</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navigationItems
+                .filter((item) =>
+                  ["Sales", "Clients", "Cashier", "Till"].includes(item.title)
+                )
+                .map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      onClick={() => router.push(item.href)}
+                      tooltip={item.title}
+                      isActive={isActive(item.href)}
+                      className={
+                        isActive(item.href)
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : ""
+                      }
+                    >
+                      <item.icon className="size-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Orders Group */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Orders</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navigationItems
+                .filter((item) => ["Orders", "Suppliers"].includes(item.title))
+                .map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      onClick={() => router.push(item.href)}
+                      tooltip={item.title}
+                      isActive={isActive(item.href)}
+                      className={
+                        isActive(item.href)
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : ""
+                      }
+                    >
+                      <item.icon className="size-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

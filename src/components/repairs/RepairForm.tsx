@@ -32,6 +32,13 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
   CalendarIcon,
   Plus,
   Trash,
@@ -41,6 +48,8 @@ import {
   DollarSign,
   AlertCircle,
   Save,
+  ChevronsUpDown,
+  Check,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -51,6 +60,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { PHONE_BRANDS } from "@/types/inventory";
 
 interface RepairFormProps {
   repairToEdit?: Repair | null;
@@ -279,13 +289,45 @@ export default function RepairForm({
                     <FormLabel className="text-sm font-medium">
                       Device Brand *
                     </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., Apple, Samsung, Google"
-                        className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                        {...field}
-                      />
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className="w-full justify-between h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+                        >
+                          {field.value || "Select brand"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search brand..." />
+                          <CommandEmpty>No brand found.</CommandEmpty>
+                          <CommandGroup>
+                            {PHONE_BRANDS.map((brand) => (
+                              <CommandItem
+                                key={brand}
+                                value={brand}
+                                onSelect={() =>
+                                  form.setValue("deviceBrand", brand)
+                                }
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === brand
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {brand}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}

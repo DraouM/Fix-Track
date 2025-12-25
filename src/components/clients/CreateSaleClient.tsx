@@ -14,6 +14,9 @@ import {
   DollarSign,
   X,
   ArrowLeft,
+  CreditCard,
+  Banknote,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -355,66 +358,108 @@ export function CreateSaleClient() {
           />
 
           <Card className="border-primary/20 bg-primary/5">
-            <CardHeader className="pb-3 border-b border-primary/10">
-              <CardTitle className="text-lg">Checkout Details</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle>Payment Summary</CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">SubtotalItems:</span>
-                <span className="font-bold">{formatCurrency(totalAmount)}</span>
-              </div>
-              <div className="h-px bg-primary/20" />
-              <div className="flex justify-between items-center">
-                <span className="text-base font-bold">Total Amount:</span>
-                <span className="text-2xl font-bold text-primary">
+            <CardContent className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span>Subtotal:</span>
+                <span className="font-medium">
                   {formatCurrency(totalAmount)}
                 </span>
               </div>
+              <div className="border-t pt-2 flex justify-between font-bold">
+                <span>Total:</span>
+                <span className="text-lg">{formatCurrency(totalAmount)}</span>
+              </div>
 
-              <div className="space-y-2 pt-4">
-                <label className="text-sm font-medium">Payment Received</label>
-                <div className="relative">
+              <div className="pt-3">
+                <label className="text-sm font-medium">
+                  Payment Method
+                </label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  <Button
+                    variant={
+                      paymentMethod === "Cash" ? "default" : "outline"
+                    }
+                    className="h-12 flex flex-col gap-1"
+                    onClick={() => setPaymentMethod("Cash")}
+                  >
+                    <Banknote className="h-5 w-5" />
+                    <span className="text-xs">Cash</span>
+                  </Button>
+                  <Button
+                    variant={
+                      paymentMethod === "Credit Card" ? "default" : "outline"
+                    }
+                    className="h-12 flex flex-col gap-1"
+                    onClick={() => setPaymentMethod("Credit Card")}
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    <span className="text-xs">Card</span>
+                  </Button>
+                  <Button
+                    variant={
+                      paymentMethod === "Bank Transfer"
+                        ? "default"
+                        : "outline"
+                    }
+                    className="h-12 flex flex-col gap-1"
+                    onClick={() => setPaymentMethod("Bank Transfer")}
+                  >
+                    <ArrowUpRight className="h-5 w-5" />
+                    <span className="text-xs">Transfer</span>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <label className="text-sm font-medium">
+                  Amount Paid
+                </label>
+                <div className="relative mt-1">
+                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="number"
-                    className="h-10 font-bold text-lg text-green-600"
                     value={paidAmount}
                     onChange={(e) =>
                       setPaidAmount(parseFloat(e.target.value) || 0)
                     }
+                    className="pl-10 h-10"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Payment Method</label>
-                <select
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Check">Check</option>
-                  <option value="Credit Card">Credit Card</option>
-                </select>
-              </div>
-
-              {remainingBalance > 0 && (
-                <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                  <p className="text-xs text-destructive font-medium">
-                    Remaining balance of {formatCurrency(remainingBalance)} will
-                    be added to customer credit.
-                  </p>
+              <div
+                className={`p-3 rounded-md ${
+                  remainingBalance <= 0
+                    ? "bg-green-100 text-green-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {remainingBalance <= 0 ? "Change:" : "Balance Due:"}
+                  </span>
+                  <span className="font-bold text-lg">
+                    {formatCurrency(Math.abs(remainingBalance))}
+                  </span>
                 </div>
-              )}
+                {remainingBalance > 0 && (
+                  <p className="text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Will be added to customer credit
+                  </p>
+                )}
+              </div>
             </CardContent>
-            <CardFooter className="flex flex-col gap-2 pt-0">
+            <CardFooter className="flex flex-col gap-2">
               <Button
                 className="w-full h-12 text-lg font-bold"
                 disabled={isSaving || items.length === 0}
                 onClick={() => handleSaveSale(true)}
               >
+                <CheckCircle2 className="h-5 w-5 mr-2" />
                 {isSaving ? "Processing..." : "Complete Sale"}
               </Button>
               <Button

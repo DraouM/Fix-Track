@@ -217,10 +217,10 @@ export function RepairDataTable<TData, TValue>({
                   Unpaid
                 </div>
               </SelectItem>
-              <SelectItem value="Partially Paid">
+              <SelectItem value="Partially">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  Partially Paid
+                  Partially
                 </div>
               </SelectItem>
               <SelectItem value="Paid">
@@ -356,6 +356,7 @@ export function RepairDataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

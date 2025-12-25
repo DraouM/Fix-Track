@@ -10,7 +10,7 @@ export type RepairStatus =
   | "Completed" // Repair done, still in shop
   | "Delivered"; // Customer picked up
 
-export type PaymentStatus = "Unpaid" | "Partially Paid" | "Paid" | "Refunded";
+export type PaymentStatus = "Unpaid" | "Partially" | "Paid" | "Refunded";
 
 // repair.ts
 export interface Repair {
@@ -150,7 +150,7 @@ export const repairSchema = z.object({
     "Cancelled",
     "Delivered",
   ]),
-  paymentStatus: z.enum(["Unpaid", "Paid", "Partially Paid", "Refunded"]),
+  paymentStatus: z.enum(["Unpaid", "Paid", "Partially", "Refunded"]),
   usedParts: z.array(usedPartFormSchema).optional().default([]),
 });
 

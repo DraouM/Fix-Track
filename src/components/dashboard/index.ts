@@ -1,2 +1,1 @@
-export * from "./DashboardContent";
-export * from "./UnifiedDashboard";
+export * from "./UnifiedCashierDashboard";

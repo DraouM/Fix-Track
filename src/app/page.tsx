@@ -1,7 +1,7 @@
 "use client";
 
-import { UnifiedDashboard } from "@/components/dashboard/UnifiedDashboard";
+import { UnifiedCashierDashboard } from "@/components/dashboard/UnifiedCashierDashboard";
 
-export default function DashboardPage() {
-  return <UnifiedDashboard />;
+export default function HomePage() {
+  return <UnifiedCashierDashboard />;
 }

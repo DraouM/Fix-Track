@@ -44,12 +44,15 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
             issue_description TEXT NOT NULL,
             estimated_cost REAL NOT NULL,
             status TEXT NOT NULL CHECK(status IN ('Pending','In Progress','Completed','Delivered')),
-            payment_status TEXT NOT NULL CHECK(payment_status IN ('Unpaid','Partially Paid','Paid','Refunded')),
+            payment_status TEXT NOT NULL CHECK(payment_status IN ('Unpaid','Partially','Paid','Refunded')),
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )",
         [],
     )?;
+
+    // Migration: Update status from 'Partially Paid' to 'Partially' for consistency
+    let _ = conn.execute("UPDATE repairs SET payment_status = 'Partially' WHERE payment_status = 'Partially Paid'", []);
 
     // Migration: Add code column if it doesn't exist
     // We try to add it, ignoring error if it exists (simplest migration for SQLite without dedicated migration tool)

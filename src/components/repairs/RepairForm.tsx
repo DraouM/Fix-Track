@@ -535,7 +535,7 @@ export default function RepairForm({
                               ? "bg-green-500"
                               : calculatePaymentStatusFromRepair(
                                   repairToEdit
-                                ) === "Partially Paid"
+                                ) === "Partially"
                               ? "bg-orange-500"
                               : calculatePaymentStatusFromRepair(
                                   repairToEdit

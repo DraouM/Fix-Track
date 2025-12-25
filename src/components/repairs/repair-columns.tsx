@@ -17,11 +17,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Icons } from "@/components/icons";
-import { MoreHorizontal, Edit, Trash2, Printer, FileText } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Printer, FileText, Phone, CheckCircle2, Clock, XCircle, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import type { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 
 // Status color configuration
 const getStatusConfig = (status: RepairStatus) => {
@@ -85,18 +85,6 @@ export const createRepairColumns = (
   actions: RepairColumnActions
 ): ColumnDef<Repair>[] => [
   {
-    accessorKey: "code",
-    header: "Order #",
-    cell: ({ row }) => {
-      const repair = row.original;
-      return (
-        <div className="font-mono text-xs text-gray-500">
-          {repair.code || repair.id.substring(0, 8)}
-        </div>
-      );
-    },
-  },
-  {
     accessorKey: "customerName",
     header: "Customer",
     cell: ({ row }) => {
@@ -119,6 +107,20 @@ export const createRepairColumns = (
         {row.original.deviceBrand} {row.getValue("deviceModel")}
       </div>
     ),
+  },
+  {
+    accessorKey: "issueDescription",
+    header: "Issue",
+    cell: ({ row }) => {
+      const issue = row.getValue("issueDescription") as string;
+      return (
+        <div className="max-w-[150px]">
+          <div className="text-sm text-gray-700 line-clamp-2" title={issue}>
+            {issue}
+          </div>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "status",
@@ -182,13 +184,78 @@ export const createRepairColumns = (
     },
   },
   {
-    accessorKey: "estimatedCost",
-    header: "Cost",
-    cell: ({ row }) => (
-      <div className="text-right">
-        {actions.formatCurrency(row.getValue("estimatedCost"))}
-      </div>
-    ),
+    id: "paymentInfo",
+    header: "Payment",
+    filterFn: (row, id, value) => {
+      return row.original.paymentStatus === value;
+    },
+    cell: ({ row }) => {
+      const repair = row.original;
+      const badgeProps = actions.getPaymentBadgeProps(repair.paymentStatus);
+      const totalPaid = repair.totalPaid || 0;
+      const remaining =
+        repair.remainingBalance !== undefined
+          ? repair.remainingBalance
+          : repair.estimatedCost - totalPaid;
+
+      // Payment status icon
+      const getPaymentIcon = (status: PaymentStatus) => {
+        switch (status) {
+          case "Paid":
+            return <CheckCircle2 className="h-3 w-3" />;
+          case "Partially":
+            return <Clock className="h-3 w-3" />;
+          case "Unpaid":
+            return <XCircle className="h-3 w-3" />;
+          case "Refunded":
+            return <DollarSign className="h-3 w-3" />;
+          default:
+            return null;
+        }
+      };
+
+      return (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={badgeProps.variant}
+              className={cn("text-xs px-1.5 py-0 flex items-center gap-1", badgeProps.className)}
+            >
+              {getPaymentIcon(repair.paymentStatus)}
+              {repair.paymentStatus}
+            </Badge>
+            <span className="text-xs font-medium">{actions.formatCurrency(repair.estimatedCost)}</span>
+          </div>
+          
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-gray-500">Paid:</span>
+              <span className="font-medium text-green-600">{totalPaid.toFixed(2)}</span>
+            </div>
+            {remaining > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">Due:</span>
+                <span className="font-medium text-orange-600">{remaining.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+          
+          {remaining > 0 && (
+            <div className="w-full bg-gray-200 rounded-full h-1">
+              <div
+                className="bg-green-500 h-1 rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (totalPaid / repair.estimatedCost) * 100
+                  )}%`,
+                }}
+              />
+            </div>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "createdAt",
@@ -204,8 +271,19 @@ export const createRepairColumns = (
       }
       return true;
     },
-    cell: ({ row }) =>
-      format(new Date(row.getValue("createdAt")), "MMM dd, yyyy"),
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("createdAt"));
+      return (
+        <div className="space-y-0.5">
+          <div className="text-sm font-medium">
+            {format(date, "MMM dd, yyyy")}
+          </div>
+          <div className="text-xs text-gray-500">
+            {formatDistanceToNow(date, { addSuffix: true })}
+          </div>
+        </div>
+      );
+    },
   },
   {
     id: "actions",
@@ -264,124 +342,6 @@ export const createRepairColumns = (
           </DropdownMenu>
         </div>
       );
-    },
-  },
-  {
-    accessorKey: "paymentStatus",
-    header: "Payment",
-    filterFn: (row, id, value) => {
-      return row.getValue(id) === value;
-    },
-    cell: ({ row }) => {
-      const repair = row.original;
-      const badgeProps = actions.getPaymentBadgeProps(repair.paymentStatus);
-      return (
-        <Badge
-          variant={badgeProps.variant}
-          className={cn("text-xs", badgeProps.className)}
-        >
-          {repair.paymentStatus}
-        </Badge>
-      );
-    },
-  },
-  {
-    id: "payment",
-    header: "Amounts",
-    cell: ({ row }) => {
-      const repair = row.original;
-      const totalPaid = repair.totalPaid || 0;
-      const remaining =
-        repair.remainingBalance !== undefined
-          ? repair.remainingBalance
-          : repair.estimatedCost - totalPaid;
-
-      return (
-        <div className="text-right space-y-1">
-          <div className="flex items-center justify-end gap-2">
-            <div className="text-sm font-medium text-green-600">
-              {totalPaid.toFixed(2)}
-            </div>
-            <div className="text-xs text-gray-500">paid</div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2">
-            <div
-              className={cn(
-                "text-sm font-medium",
-                remaining > 0 ? "text-orange-600" : "text-gray-500"
-              )}
-            >
-              {remaining.toFixed(2)}
-            </div>
-            <div className="text-xs text-gray-500">remaining</div>
-          </div>
-
-          {remaining > 0 && (
-            <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-              <div
-                className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    (totalPaid / repair.estimatedCost) * 100
-                  )}%`,
-                }}
-              />
-            </div>
-          )}
-        </div>
-      );
-
-      /* 
-      // ALTERNATIVE IMPLEMENTATION - Status Badge + Amounts Combined
-      // Uncomment this block and comment out the above to switch to the enhanced version
-      
-      const badgeProps = actions.getPaymentBadgeProps(repair.paymentStatus);
-      
-      return (
-        <div className="text-right">
-          <div className="flex items-center justify-end gap-2 mb-1">
-            <Badge
-              variant={badgeProps.variant}
-              className={cn("text-xs px-2 py-0.5", badgeProps.className)}
-            >
-              {repair.paymentStatus}
-            </Badge>
-            <div className="text-sm font-medium text-green-600">
-              ${totalPaid.toFixed(2)}
-            </div>
-            <div className="text-xs text-gray-500">paid</div>
-          </div>
-          
-          <div className="flex items-center justify-end gap-2">
-            <div
-              className={cn(
-                "text-sm font-medium",
-                remaining > 0 ? "text-orange-600" : "text-gray-500"
-              )}
-            >
-              ${remaining.toFixed(2)}
-            </div>
-            <div className="text-xs text-gray-500">remaining</div>
-          </div>
-          
-          {remaining > 0 && (
-            <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
-              <div
-                className="bg-green-500 h-1 rounded-full transition-all duration-300"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    (totalPaid / repair.estimatedCost) * 100
-                  )}%`,
-                }}
-              />
-            </div>
-          )}
-        </div>
-      );
-      */
     },
   },
 ];

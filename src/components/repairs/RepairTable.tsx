@@ -62,7 +62,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
           variant: "destructive" as const,
           className: "bg-red-500 text-white",
         };
-      case "Partially Paid":
+      case "Partially":
         return {
           variant: "secondary" as const,
           className: "bg-yellow-500 text-black",

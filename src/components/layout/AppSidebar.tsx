@@ -62,8 +62,8 @@ export function AppSidebar() {
   const navigationItems: NavItem[] = [
     {
       title: "Dashboard",
-      icon: Home,
-      href: "/",
+      icon: BarChart3,
+      href: "/dashboard",
     },
     {
       title: "Sales",
@@ -74,16 +74,6 @@ export function AppSidebar() {
       title: "Clients",
       icon: Users,
       href: "/clients",
-    },
-    {
-      title: "Cashier",
-      icon: Wallet,
-      href: "/cashier",
-    },
-    {
-      title: "Till",
-      icon: ShoppingCart,
-      href: "/till",
     },
     {
       title: "Orders",
@@ -134,7 +124,7 @@ export function AppSidebar() {
   ];
 
   const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
+    if (href === "/dashboard") return pathname === "/" || pathname === "/dashboard";
     return pathname.startsWith(href);
   };
 
@@ -210,7 +200,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navigationItems
                 .filter((item) =>
-                  ["Sales", "Clients", "Cashier", "Till"].includes(item.title)
+                  ["Sales", "Clients"].includes(item.title)
                 )
                 .map((item) => (
                   <SidebarMenuItem key={item.href}>

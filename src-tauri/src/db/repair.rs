@@ -205,7 +205,7 @@ pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
     } else if total_paid >= estimated_cost {
         "Paid"
     } else {
-        "Partially Paid"
+        "Partially"
     };
 
     // Update payment status

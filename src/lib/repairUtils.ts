@@ -13,7 +13,7 @@ const REPAIR_STATUS_VARIANTS: Record<RepairStatus, string> = {
 
 const PAYMENT_STATUS_VARIANTS: Record<PaymentStatus, string> = {
   Paid: "success",
-  "Partially Paid": "secondary",
+  "Partially": "secondary",
   Unpaid: "destructive",
   Refunded: "refunded",
 };
@@ -76,7 +76,7 @@ export const getPaymentStatusFromAmounts = (
   paid: number
 ): PaymentStatus => {
   if (paid >= total) return "Paid";
-  if (paid > 0) return "Partially Paid";
+  if (paid > 0) return "Partially";
   return "Unpaid";
 };
 

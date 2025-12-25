@@ -163,8 +163,10 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
                       type="number" 
                       step="0.01" 
                       placeholder="0.00" 
-                      {...field} 
+                      value={field.value === null || field.value === undefined ? '' : String(field.value)}
                       onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                      onBlur={field.onBlur}
+                      name={field.name}
                     />
                   </FormControl>
                   <FormDescription>Current debt if importing existing client.</FormDescription>

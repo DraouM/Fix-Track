@@ -6,6 +6,9 @@ pub mod supplier;
 pub mod order;
 pub mod client;
 pub mod sale;
+pub mod expense;
+pub mod session;
+pub mod transaction;
 
 use rusqlite::{Connection, Result};
 use std::path::PathBuf;

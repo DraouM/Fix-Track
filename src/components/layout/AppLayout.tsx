@@ -18,6 +18,7 @@ import { InventoryProvider } from "@/context/InventoryContext";
 import { RepairProvider } from "@/context/RepairContext";
 import { SupplierProvider } from "@/context/SupplierContext";
 import { ClientProvider } from "@/context/ClientContext";
+import { TransactionProvider } from "@/context/TransactionContext";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -42,7 +43,9 @@ function LayoutContent({ children }: AppLayoutProps) {
               <RepairProvider>
                 <SupplierProvider>
                   <ClientProvider>
-                    <ContextInitializer>{children}</ContextInitializer>
+                    <TransactionProvider>
+                      <ContextInitializer>{children}</ContextInitializer>
+                    </TransactionProvider>
                   </ClientProvider>
                 </SupplierProvider>
               </RepairProvider>

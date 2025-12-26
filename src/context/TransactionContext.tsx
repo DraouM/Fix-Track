@@ -1,0 +1,134 @@
+"use client";
+
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
+import type { Transaction, TransactionItem, TransactionType } from "@/types/transaction";
+
+interface TransactionWorkspace {
+  id: string;
+  name: string;
+  type: TransactionType;
+  party_id: string;
+  party_type: "Client" | "Supplier";
+  items: TransactionItem[];
+  paid_amount: number;
+  payment_method: string;
+  notes: string;
+  status: "Draft" | "Completed";
+}
+
+interface TransactionContextType {
+  workspaces: TransactionWorkspace[];
+  activeWorkspaceId: string;
+  activeWorkspace: TransactionWorkspace | undefined;
+  addWorkspace: (type?: TransactionType) => void;
+  removeWorkspace: (id: string) => void;
+  setActiveWorkspaceId: (id: string) => void;
+  updateActiveWorkspace: (updates: Partial<TransactionWorkspace>) => void;
+  clearWorkspaces: () => void;
+}
+
+const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
+
+export function TransactionProvider({ children }: { children: React.ReactNode }) {
+  const [workspaces, setWorkspaces] = useState<TransactionWorkspace[]>([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
+
+  // Initialize first workspace if empty
+  useEffect(() => {
+    if (workspaces.length === 0) {
+      addWorkspace("Sale");
+    }
+  }, []);
+
+  const addWorkspace = (type: TransactionType = "Sale") => {
+    const id = uuidv4();
+    // We cannot reliably use workspaces.length inside the functional update for naming,
+    // so we just use a safe fallback or calculate it differently.
+    // Ideally we should use the ref or just keep it simple.
+    // For now, let's just append.
+    
+    setWorkspaces(prev => {
+        const newWorkspace: TransactionWorkspace = {
+          id,
+          name: `New ${type} #${prev.length + 1}`,
+          type,
+          party_id: "",
+          party_type: type === "Sale" ? "Client" : "Supplier",
+          items: [],
+          paid_amount: 0,
+          payment_method: "Cash",
+          notes: "",
+          status: "Draft",
+        };
+        return [...prev, newWorkspace];
+    });
+    setActiveWorkspaceId(id);
+  };
+
+  const removeWorkspace = (id: string) => {
+    const newWorkspaces = workspaces.filter((w) => w.id !== id);
+    if (newWorkspaces.length === 0) {
+      // Logic from addWorkspace but ensuring it's the *only* workspace
+      const newId = uuidv4();
+      const type = "Sale";
+      const newWorkspace: TransactionWorkspace = {
+        id: newId,
+        name: `New ${type} #1`,
+        type,
+        party_id: "",
+        party_type: "Client",
+        items: [],
+        paid_amount: 0,
+        payment_method: "Cash",
+        notes: "",
+        status: "Draft",
+      };
+      setWorkspaces([newWorkspace]);
+      setActiveWorkspaceId(newId);
+    } else {
+      setWorkspaces(newWorkspaces);
+      if (activeWorkspaceId === id) {
+        setActiveWorkspaceId(newWorkspaces[newWorkspaces.length - 1].id);
+      }
+    }
+  };
+
+  const updateActiveWorkspace = (updates: Partial<TransactionWorkspace>) => {
+    setWorkspaces((prev) =>
+      prev.map((w) => (w.id === activeWorkspaceId ? { ...w, ...updates } : w))
+    );
+  };
+
+  const clearWorkspaces = () => {
+    setWorkspaces([]);
+    addWorkspace("Sale");
+  };
+
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
+
+  return (
+    <TransactionContext.Provider
+      value={{
+        workspaces,
+        activeWorkspaceId,
+        activeWorkspace,
+        addWorkspace,
+        removeWorkspace,
+        setActiveWorkspaceId,
+        updateActiveWorkspace,
+        clearWorkspaces,
+      }}
+    >
+      {children}
+    </TransactionContext.Provider>
+  );
+}
+
+export function useTransactions() {
+  const context = useContext(TransactionContext);
+  if (context === undefined) {
+    throw new Error("useTransactions must be used within a TransactionProvider");
+  }
+  return context;
+}

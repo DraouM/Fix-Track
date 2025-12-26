@@ -28,9 +28,14 @@ use db::client::{
     add_client_payment, adjust_client_balance, get_client_history, insert_client_history,
 };
 use db::sale::{
-    create_sale, get_sales, get_sale_by_id, update_sale,
-    add_sale_item, update_sale_item, remove_sale_item,
-    add_sale_payment, complete_sale,
+    add_sale_item, add_sale_payment, complete_sale, create_sale, get_sale_by_id, get_sales,
+    update_sale, update_sale_item, remove_sale_item,
+};
+use db::expense::{add_expense, get_today_expenses, get_expenses_by_session};
+use db::session::{start_session, get_current_session, close_session, get_last_session_closing_balance};
+use db::transaction::{
+    create_transaction, get_transactions, get_transaction_by_id, add_transaction_item,
+    remove_transaction_item, add_transaction_payment, complete_transaction, submit_transaction,
 };
 use printer::{get_available_printers, get_printer_status, print_escpos_commands}; // Add this line
 use std::panic;
@@ -116,10 +121,28 @@ fn main() {
             remove_sale_item,
             add_sale_payment,
             complete_sale,
+            // EXPENSES
+            add_expense,
+            get_today_expenses,
+            get_expenses_by_session,
+            // SESSIONS
+            start_session,
+            get_current_session,
+            close_session,
+            get_last_session_closing_balance,
             // PRINTER - Add these lines
             print_escpos_commands,
             get_available_printers,
             get_printer_status,
+            // TRANSACTIONS
+            create_transaction,
+            get_transactions,
+            get_transaction_by_id,
+            add_transaction_item,
+            remove_transaction_item,
+            add_transaction_payment,
+            complete_transaction,
+            submit_transaction,
         ])
         .build(tauri::generate_context!())
     {

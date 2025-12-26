@@ -372,6 +372,114 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
         [],
     )?;
 
+    // Daily Sessions table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS daily_sessions (
+            id TEXT PRIMARY KEY,
+            start_time TEXT NOT NULL,
+            end_time TEXT,
+            opening_balance REAL NOT NULL,
+            closing_balance REAL,
+            counted_amount REAL,
+            withdrawal_amount REAL,
+            status TEXT NOT NULL CHECK(status IN ('open','closed')),
+            notes TEXT,
+            created_by TEXT
+        )",
+        [],
+    )?;
+
+    // Expenses table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS expenses (
+            id TEXT PRIMARY KEY,
+            amount REAL NOT NULL,
+            reason TEXT NOT NULL,
+            date TEXT NOT NULL,
+            session_id TEXT,
+            category TEXT,
+            created_by TEXT,
+            FOREIGN KEY(session_id) REFERENCES daily_sessions(id)
+        )",
+        [],
+    )?;
+
+    // Unified Transactions tables
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS transactions (
+            id TEXT PRIMARY KEY,
+            transaction_number TEXT NOT NULL UNIQUE,
+            transaction_type TEXT NOT NULL CHECK(transaction_type IN ('Sale','Purchase')),
+            party_id TEXT NOT NULL,
+            party_type TEXT NOT NULL CHECK(party_type IN ('Client','Supplier')),
+            status TEXT NOT NULL CHECK(status IN ('Draft','Completed','Cancelled')),
+            payment_status TEXT NOT NULL CHECK(payment_status IN ('Unpaid','Partially','Paid')),
+            total_amount REAL NOT NULL DEFAULT 0,
+            paid_amount REAL NOT NULL DEFAULT 0,
+            notes TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            created_by TEXT
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS transaction_items (
+            id TEXT PRIMARY KEY,
+            transaction_id TEXT NOT NULL,
+            item_id TEXT,
+            item_name TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            unit_price REAL NOT NULL,
+            total_price REAL NOT NULL,
+            notes TEXT,
+            FOREIGN KEY(transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
+            FOREIGN KEY(item_id) REFERENCES inventory_items(id)
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS transaction_payments (
+            id TEXT PRIMARY KEY,
+            transaction_id TEXT NOT NULL,
+            amount REAL NOT NULL,
+            method TEXT NOT NULL,
+            date TEXT NOT NULL,
+            received_by TEXT,
+            notes TEXT,
+            session_id TEXT,
+            FOREIGN KEY(transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
+            FOREIGN KEY(session_id) REFERENCES daily_sessions(id)
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS transaction_history (
+            id TEXT PRIMARY KEY,
+            transaction_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            details TEXT NOT NULL,
+            changed_by TEXT,
+            FOREIGN KEY(transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    // Indexes for transactions
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_transactions_party ON transactions(party_id)", [])?;
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(transaction_type)", [])?;
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_transaction_items_tx ON transaction_items(transaction_id)", [])?;
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_transaction_payments_tx ON transaction_payments(transaction_id)", [])?;
+
+    // Migrations to add session_id to payment tables (ignore errors if column exists)
+    let _ = conn.execute("ALTER TABLE sale_payments ADD COLUMN session_id TEXT", []);
+    let _ = conn.execute("ALTER TABLE repair_payments ADD COLUMN session_id TEXT", []);
+    let _ = conn.execute("ALTER TABLE order_payments ADD COLUMN session_id TEXT", []);
+
     Ok(())
 }
 

@@ -1,4 +1,4 @@
-use crate::db::inventory::InventoryHistoryEvent;
+// use crate::db::inventory::InventoryHistoryEvent;
 use rusqlite::{params, Result};
 use serde::{Deserialize, Serialize};
 
@@ -238,7 +238,8 @@ pub fn adjust_supplier_credit(
                 amount,
                 None::<String>,
             ],
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
     }
 
     Ok(())

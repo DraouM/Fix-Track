@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   Wallet,
   TrendingUp,
@@ -46,6 +47,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { addExpense, getTodayExpenses, Expense } from "@/lib/api/expense";
+import { 
+  startSession, 
+  getCurrentSession, 
+  closeSession, 
+  getLastSessionClosingBalance,
+  DailySession 
+} from "@/lib/api/session";
 
 // Define transaction types
 interface Transaction {
@@ -58,63 +67,21 @@ interface Transaction {
   status: string;
 }
 
-// Sample data for charts
-const monthlyData = [
-  { month: "Jan", revenue: 4500, profit: 1800 },
-  { month: "Feb", revenue: 5200, profit: 2100 },
-  { month: "Mar", revenue: 4800, profit: 1950 },
-  { month: "Apr", revenue: 6100, profit: 2450 },
-  { month: "May", revenue: 7200, profit: 2900 },
-  { month: "Jun", revenue: 6800, profit: 2700 },
-];
+interface DashboardInventoryItem {
+  id: string;
+  name: string;
+  stock: number;
+  threshold: number;
+}
 
-const inventoryData = [
-  {
-    id: 1,
-    name: "iPhone 13 Pro Screen",
-    stock: 5,
-    threshold: 10,
-  },
-  {
-    id: 2,
-    name: "Samsung S21 Battery",
-    stock: 2,
-    threshold: 5,
-  },
-  {
-    id: 3,
-    name: "Xiaomi Mi 11 Screen",
-    stock: 0,
-    threshold: 5,
-  },
-];
-
-const repairData = [
-  {
-    id: 1,
-    customer: "John Doe",
-    device: "iPhone 13",
-    issue: "Screen Replacement",
-    status: "In Progress",
-    profit: 60,
-  },
-  {
-    id: 2,
-    customer: "Jane Smith",
-    device: "Samsung S21",
-    issue: "Battery",
-    status: "Completed",
-    profit: 30,
-  },
-  {
-    id: 3,
-    customer: "Bob Wilson",
-    device: "iPhone 12",
-    issue: "Back Glass",
-    status: "Pending",
-    profit: 25,
-  },
-];
+interface DashboardRepair {
+  id: string;
+  customer: string;
+  device: string;
+  status: string;
+  issue: string;
+  profit?: number;
+}
 
 export function UnifiedCashierDashboard() {
   // State for UI controls
@@ -125,22 +92,63 @@ export function UnifiedCashierDashboard() {
   const [closingNote, setClosingNote] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<DashboardInventoryItem[]>([]);
+  const [repairs, setRepairs] = useState<DashboardRepair[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [currentSession, setCurrentSession] = useState<DailySession | null>(null);
+  const [isStartingDay, setIsStartingDay] = useState(false);
+  const [openingBalanceInput, setOpeningBalanceInput] = useState("");
 
-  // Fetch real transaction data
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setLoading(true);
-      try {
-        const sales = await getSales();
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      // 1. Get current session
+      const session = await getCurrentSession();
+      setCurrentSession(session);
 
-        // Transform sales data into transactions
-        const transformedTransactions: Transaction[] = sales.map((sale) => ({
+      if (!session) {
+        // If no session, try to get last closing balance for convenience
+        const lastBalance = await getLastSessionClosingBalance();
+        setOpeningBalanceInput(lastBalance.toString());
+      }
+
+      // 2. Get sales
+      const sales = await getSales();
+      
+      // 3. Get expenses
+      const expenses = await getTodayExpenses();
+
+      // 4. Get inventory (low stock alerts)
+      const dbItems = await invoke<any[]>("get_items");
+      const mappedItems: DashboardInventoryItem[] = dbItems.map(item => ({
+        id: item.id,
+        name: item.item_name,
+        stock: item.quantity_in_stock || 0,
+        threshold: item.low_stock_threshold || 0
+      }));
+      setInventoryItems(mappedItems);
+
+      // 5. Get repairs (active repairs)
+      const dbRepairs = await invoke<any[]>("get_repairs");
+      const mappedRepairs: DashboardRepair[] = dbRepairs.map(r => ({
+        id: r.id,
+        customer: r.customer_name,
+        device: `${r.device_brand} ${r.device_model}`,
+        status: r.status,
+        issue: r.issue_description
+      }));
+      setRepairs(mappedRepairs);
+
+      // Transform data into transactions
+      const saleTransactions: Transaction[] = sales
+        .filter(sale => sale.status === "completed") // Only completed sales for cash flow
+        .map((sale) => ({
           id: sale.id,
           type: "credit",
           category: "Sale",
-          amount: sale.total_amount,
+          amount: sale.paid_amount, // Use paid amount for cash logic
           description: `Sale ${sale.sale_number}`,
           time: new Date(sale.created_at).toLocaleTimeString([], {
             hour: "2-digit",
@@ -149,48 +157,41 @@ export function UnifiedCashierDashboard() {
           status: sale.status,
         }));
 
-        setTransactions(transformedTransactions);
-        setLastUpdated(new Date());
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-        // Fallback to fake data if API fails
-        const fakeTransactions: Transaction[] = [
-          {
-            id: "1",
-            type: "credit",
-            category: "Repair",
-            amount: 100,
-            description: "Screen fix - iPhone 13",
-            time: "09:30 AM",
-            status: "completed",
-          },
-          {
-            id: "2",
-            type: "credit",
-            category: "Sale",
-            amount: 300,
-            description: "Sold accessories",
-            time: "11:45 AM",
-            status: "completed",
-          },
-          {
-            id: "3",
-            type: "debit",
-            category: "Expense",
-            amount: 50,
-            description: "Miscellaneous expenses",
-            time: "01:20 PM",
-            status: "completed",
-          },
-        ];
-        setTransactions(fakeTransactions);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const expenseTransactions: Transaction[] = expenses.map((exp) => ({
+        id: exp.id,
+        type: "debit",
+        category: "Expense",
+        amount: exp.amount,
+        description: exp.reason,
+        time: new Date(exp.date).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: "completed",
+      }));
 
-    fetchTransactions();
+      setTransactions([...saleTransactions, ...expenseTransactions].sort((a, b) => b.id.localeCompare(a.id)));
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
   }, []);
+
+  // Placeholder monthly data for the trend chart
+  const monthlyData = [
+    { month: "Jul", revenue: 4200, profit: 1200 },
+    { month: "Aug", revenue: 3800, profit: 1100 },
+    { month: "Sep", revenue: 5100, profit: 1600 },
+    { month: "Oct", revenue: 4800, profit: 1400 },
+    { month: "Nov", revenue: 6200, profit: 2100 },
+    { month: "Dec", revenue: 7500, profit: 2800 },
+  ];
 
   // Calculate financial metrics
   const totalIn = transactions
@@ -202,91 +203,114 @@ export function UnifiedCashierDashboard() {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const netCash = totalIn - totalOut;
-  const openingBalance = 5;
+  const openingBalance = currentSession?.opening_balance || 0;
   const expectedCash = openingBalance + netCash;
 
   // Calculate inventory metrics
-  const lowStockItems = inventoryData.filter(
+  const lowStockItems = inventoryItems.filter(
     (item) => item.stock <= item.threshold && item.stock > 0
   );
-  const outOfStockItems = inventoryData.filter((item) => item.stock === 0);
+  const outOfStockItems = inventoryItems.filter((item) => item.stock === 0);
 
   // Calculate repair metrics
-  const activeRepairs = repairData.filter((r) => r.status !== "Completed").length;
-  const completedRepairs = repairData.filter((r) => r.status === "Completed").length;
+  const activeRepairs = repairs.filter((r) => r.status === "Pending" || r.status === "In Progress" || r.status === "Waiting for Parts").length;
+  const completedRepairs = repairs.filter((r) => r.status === "Completed" || r.status === "Delivered").length;
 
   // Revenue trend
-  const currentMonthRevenue = monthlyData[monthlyData.length - 1].revenue;
-  const previousMonthRevenue = monthlyData[monthlyData.length - 2].revenue;
+  const currentMonthRevenue = monthlyData.length > 0 ? monthlyData[monthlyData.length - 1].revenue : 0;
+  const previousMonthRevenue = monthlyData.length > 1 ? monthlyData[monthlyData.length - 2].revenue : (currentMonthRevenue || 1);
   const revenueChange = (
     ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) *
     100
   ).toFixed(1);
 
   // Handle adding expense
-  const handleAddExpense = () => {
-    if (expenseAmount && expenseReason) {
-      const newTransaction: Transaction = {
-        id: Date.now().toString(),
-        type: "debit",
-        category: "Expense",
-        amount: parseFloat(expenseAmount),
-        description: expenseReason,
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: "completed",
-      };
+  const handleAddExpense = async () => {
+    if (expenseAmount && expenseReason && currentSession) {
+      try {
+        const amount = parseFloat(expenseAmount);
+        await addExpense({
+          id: "",
+          amount,
+          reason: expenseReason,
+          date: new Date().toISOString(),
+          session_id: currentSession.id,
+        });
 
-      setTransactions([newTransaction, ...transactions]);
-      setExpenseAmount("");
-      setExpenseReason("");
+        // Add to local state for immediate feedback
+        const newTransaction: Transaction = {
+          id: Date.now().toString(),
+          type: "debit",
+          category: "Expense",
+          amount,
+          description: expenseReason,
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          status: "completed",
+        };
+
+        setTransactions([newTransaction, ...transactions]);
+        setExpenseAmount("");
+        setExpenseReason("");
+        // Optionally refetch for full sync
+        // fetchDashboardData();
+      } catch (error) {
+        console.error("Failed to add expense:", error);
+      }
+    }
+  };
+
+  // Handle start day
+  const handleStartDay = async () => {
+    try {
+      const balance = parseFloat(openingBalanceInput) || 0;
+      const session = await startSession(balance);
+      setCurrentSession(session);
+      fetchDashboardData();
+    } catch (error) {
+      alert(`Failed to start session: ${error}`);
     }
   };
 
   // Handle closing day
-  const handleCloseDay = () => {
-    if (countedAmount && withdrawalAmount) {
-      const actualCash = parseFloat(countedAmount);
-      const payout = parseFloat(withdrawalAmount);
-      const discrepancy = actualCash - expectedCash;
-      const carryForward = actualCash - payout;
+  const handleCloseDay = async () => {
+    if (countedAmount && withdrawalAmount && currentSession) {
+      try {
+        const actualCash = parseFloat(countedAmount);
+        const payout = parseFloat(withdrawalAmount);
+        const discrepancy = actualCash - expectedCash;
+        const carryForward = actualCash - payout;
 
-      alert(`Day closed!
+        await closeSession(
+          currentSession.id,
+          actualCash,
+          payout,
+          closingNote || `Closure discrepancy: ${formatCurrency(discrepancy)}`
+        );
+
+        alert(`Day closed!
 Expected: ${formatCurrency(expectedCash)}
 Actual: ${formatCurrency(actualCash)}
 Discrepancy: ${formatCurrency(discrepancy)}
 Payout: ${formatCurrency(payout)}
 Carry Forward: ${formatCurrency(carryForward)}`);
+
+        setCurrentSession(null);
+        setCountedAmount("");
+        setWithdrawalAmount("");
+        setClosingNote("");
+        fetchDashboardData();
+      } catch (error) {
+        alert(`Failed to close session: ${error}`);
+      }
     }
   };
 
   // Refresh transactions
   const handleRefresh = async () => {
-    setLoading(true);
-    try {
-      const sales = await getSales();
-      const transformedTransactions: Transaction[] = sales.map((sale) => ({
-        id: sale.id,
-        type: "credit",
-        category: "Sale",
-        amount: sale.total_amount,
-        description: `Sale ${sale.sale_number}`,
-        time: new Date(sale.created_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        status: sale.status,
-      }));
-
-      setTransactions(transformedTransactions);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error("Error refreshing transactions:", error);
-    } finally {
-      setLoading(false);
-    }
+    fetchDashboardData();
   };
 
   const StatCard = ({
@@ -404,7 +428,43 @@ Carry Forward: ${formatCurrency(carryForward)}`);
         </div>
       </header>
 
-      <main className="flex-1 py-6">
+      <main className="flex-1 py-6 relative">
+        {!currentSession && !loading ? (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-900/10 backdrop-blur-sm px-4">
+            <Card className="w-full max-w-md shadow-2xl border-2 border-blue-500">
+              <CardHeader className="text-center">
+                <div className="mx-auto bg-blue-100 p-3 rounded-full w-fit mb-4">
+                  <Wallet className="h-8 w-8 text-blue-600" />
+                </div>
+                <CardTitle className="text-2xl font-bold">Start Your Day</CardTitle>
+                <p className="text-gray-500">Initialize the cash drawer to begin</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Opening Cash Balance</label>
+                  <div className="relative mt-1">
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      type="number"
+                      value={openingBalanceInput}
+                      onChange={(e) => setOpeningBalanceInput(e.target.value)}
+                      placeholder="0.00"
+                      className="pl-10 text-lg h-12"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleStartDay} 
+                  className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="mr-2 h-5 w-5" />
+                  Start Session
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Tabs
             value={activeTab}
@@ -514,17 +574,20 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                         Recent Repairs
                       </CardTitle>
                       <span className="text-sm text-gray-500">
-                        {repairData.length} active
+                        {activeRepairs} active
                       </span>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3 max-h-80 overflow-y-auto">
-                      {repairData.map((repair) => (
-                        <div
-                          key={repair.id}
-                          className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-                        >
+                      {repairs
+                        .filter((r) => r.status !== "Completed" && r.status !== "Delivered")
+                        .slice(0, 5)
+                        .map((repair) => (
+                          <div
+                            key={repair.id}
+                            className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                          >
                           <div
                             className={`p-2 rounded-lg ${
                               repair.status === "Completed"
@@ -551,9 +614,6 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm font-medium text-green-600">
-                              {formatCurrency(repair.profit)}
-                            </div>
                             <Badge
                               variant={
                                 repair.status === "Completed"

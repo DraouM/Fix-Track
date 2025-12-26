@@ -66,24 +66,9 @@ export function AppSidebar() {
       href: "/dashboard",
     },
     {
-      title: "Sales",
-      icon: ShoppingCart,
-      href: "/sales",
-    },
-    {
-      title: "Clients",
-      icon: Users,
-      href: "/clients",
-    },
-    {
-      title: "Orders",
-      icon: FileText,
-      href: "/orders",
-    },
-    {
-      title: "Suppliers",
-      icon: Building2,
-      href: "/suppliers",
+      title: "Transactions",
+      icon: Wallet,
+      href: "/transactions",
     },
     {
       title: "Inventory",
@@ -96,9 +81,14 @@ export function AppSidebar() {
       href: "/repairs",
     },
     {
-      title: "Shopping List",
-      icon: ShoppingCart,
-      href: "/shopping-list",
+      title: "Clients",
+      icon: Users,
+      href: "/clients",
+    },
+    {
+      title: "Suppliers",
+      icon: Building2,
+      href: "/suppliers",
     },
   ];
 
@@ -167,9 +157,9 @@ export function AppSidebar() {
                 .filter((item) =>
                   [
                     "Dashboard",
+                    "Transactions",
                     "Inventory",
                     "Repairs",
-                    "Shopping List",
                   ].includes(item.title)
                 )
                 .map((item) => (
@@ -193,43 +183,13 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Sales Group */}
+        {/* Management Group */}
         <SidebarGroup>
-          <SidebarGroupLabel>Sales</SidebarGroupLabel>
+          <SidebarGroupLabel>Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems
-                .filter((item) =>
-                  ["Sales", "Clients"].includes(item.title)
-                )
-                .map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      onClick={() => router.push(item.href)}
-                      tooltip={item.title}
-                      isActive={isActive(item.href)}
-                      className={
-                        isActive(item.href)
-                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                          : ""
-                      }
-                    >
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Orders Group */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Orders</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems
-                .filter((item) => ["Orders", "Suppliers"].includes(item.title))
+                .filter((item) => ["Clients", "Suppliers"].includes(item.title))
                 .map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton

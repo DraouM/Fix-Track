@@ -182,3 +182,90 @@ pub struct SaleWithDetails {
     pub payments: Vec<SalePayment>,
     pub client_name: String,
 }
+
+/// EXPENSES
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Expense {
+    pub id: String,
+    pub amount: f64,
+    pub reason: String,
+    pub date: String,
+    pub session_id: Option<String>,
+    pub category: Option<String>,
+    pub created_by: Option<String>,
+}
+
+/// DAILY SESSIONS
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DailySession {
+    pub id: String,
+    pub start_time: String,
+    pub end_time: Option<String>,
+    pub opening_balance: f64,
+    pub closing_balance: Option<f64>,
+    pub counted_amount: Option<f64>,
+    pub withdrawal_amount: Option<f64>,
+    pub status: String,
+    pub notes: Option<String>,
+    pub created_by: Option<String>,
+}
+
+/// TRANSACTIONS (Unified)
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Transaction {
+    pub id: String,
+    pub transaction_number: String,
+    pub transaction_type: String, // "Sale" or "Purchase"
+    pub party_id: String,
+    pub party_type: String, // "Client" or "Supplier"
+    pub status: String,
+    pub payment_status: String,
+    pub total_amount: f64,
+    pub paid_amount: f64,
+    pub notes: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub created_by: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TransactionItem {
+    pub id: String,
+    pub transaction_id: String,
+    pub item_id: Option<String>,
+    pub item_name: String,
+    pub quantity: i32,
+    pub unit_price: f64,
+    pub total_price: f64,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TransactionPayment {
+    pub id: String,
+    pub transaction_id: String,
+    pub amount: f64,
+    pub method: String,
+    pub date: String,
+    pub received_by: Option<String>,
+    pub notes: Option<String>,
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TransactionHistory {
+    pub id: String,
+    pub transaction_id: String,
+    pub date: String,
+    pub event_type: String,
+    pub details: String,
+    pub changed_by: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TransactionWithDetails {
+    pub transaction: Transaction,
+    pub items: Vec<TransactionItem>,
+    pub payments: Vec<TransactionPayment>,
+    pub party_name: String,
+}

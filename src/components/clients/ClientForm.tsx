@@ -3,27 +3,31 @@
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
   FormMessage,
-  FormDescription
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { useClientContext } from "@/context/ClientContext";
-import { clientSchema, ClientFormValues, CLIENT_STATUSES } from "@/types/client";
+import {
+  clientSchema,
+  ClientFormValues,
+  CLIENT_STATUSES,
+} from "@/types/client";
 import { Loader2, Save, X } from "lucide-react";
 
 interface ClientFormProps {
@@ -34,8 +38,10 @@ interface ClientFormProps {
 
 export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
   const { clients, createClient, updateClient, loading } = useClientContext();
-  
-  const existingClient = clientId ? clients.find(c => c.id === clientId) : null;
+
+  const existingClient = clientId
+    ? clients.find((c) => c.id === clientId)
+    : null;
 
   const form = useForm({
     resolver: zodResolver(clientSchema),
@@ -77,8 +83,8 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <FormField
             control={form.control}
             name="name"
@@ -107,7 +113,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <FormField
             control={form.control}
             name="email"
@@ -115,7 +121,11 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
               <FormItem>
                 <FormLabel>Email Address</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="client@example.com" {...field} />
+                  <Input
+                    type="email"
+                    placeholder="client@example.com"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -143,14 +153,18 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             <FormItem>
               <FormLabel>Address</FormLabel>
               <FormControl>
-                <Textarea placeholder="Full billing or shipping address" className="min-h-[80px]" {...field} />
+                <Textarea
+                  placeholder="Full billing or shipping address"
+                  className="min-h-[60px]"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {!clientId && (
             <FormField
               control={form.control}
@@ -159,17 +173,25 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
                 <FormItem>
                   <FormLabel>Opening Balance ($)</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="0.00" 
-                      value={field.value === null || field.value === undefined ? '' : String(field.value)}
-                      onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={
+                        field.value === null || field.value === undefined
+                          ? ""
+                          : String(field.value)
+                      }
+                      onChange={(e) =>
+                        field.onChange(parseFloat(e.target.value) || 0)
+                      }
                       onBlur={field.onBlur}
                       name={field.name}
                     />
                   </FormControl>
-                  <FormDescription>Current debt if importing existing client.</FormDescription>
+                  <FormDescription>
+                    Current debt if importing existing client.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -181,15 +203,22 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Account Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {CLIENT_STATUSES.map(status => (
-                      <SelectItem key={status} value={status} className="capitalize">
+                    {CLIENT_STATUSES.map((status) => (
+                      <SelectItem
+                        key={status}
+                        value={status}
+                        className="capitalize"
+                      >
                         {status}
                       </SelectItem>
                     ))}
@@ -208,25 +237,39 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             <FormItem>
               <FormLabel>Administrative Notes</FormLabel>
               <FormControl>
-                <Textarea placeholder="Internal notes about this client..." className="min-h-[100px]" {...field} />
+                <Textarea
+                  placeholder="Internal notes about this client..."
+                  className="min-h-[80px]"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
+        <div className="flex justify-end gap-2 pt-2 border-t">
           {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={loading}
+            >
               <X className="mr-2 h-4 w-4" />
               Cancel
             </Button>
           )}
           <Button type="submit" disabled={loading} className="min-w-[120px]">
             {loading ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+              </>
             ) : (
-              <><Save className="mr-2 h-4 w-4" /> {clientId ? 'Update Client' : 'Create Client'}</>
+              <>
+                <Save className="mr-2 h-4 w-4" />{" "}
+                {clientId ? "Update Client" : "Create Client"}
+              </>
             )}
           </Button>
         </div>

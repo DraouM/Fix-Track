@@ -4,38 +4,41 @@
 mod db;
 mod printer; // Add this line
 
+use db::client::{
+    add_client_payment, adjust_client_balance, delete_client, get_client_by_id, get_client_history,
+    get_clients, insert_client, insert_client_history, update_client,
+};
+use db::expense::{add_expense, get_expenses_by_session, get_today_expenses};
 use db::inventory::{
     delete_item, get_history_for_item, get_item_by_id, get_items, get_low_stock_items,
     insert_history_event, insert_item, search_items, update_item, update_item_quantity,
-};
-use db::repair::{
-    add_payment, add_used_part, delete_repair, get_history_for_repair, get_payments_for_repair,
-    get_repair_by_id, get_repairs, get_used_parts_for_repair, insert_repair, insert_repair_history,
-    update_repair, update_repair_status,
-};
-use db::schema;
-use db::supplier::{
-    add_supplier_payment, adjust_supplier_credit, delete_supplier, get_supplier_by_id,
-    get_supplier_history, get_suppliers, insert_supplier, insert_supplier_history, update_supplier,
 };
 use db::order::{
     add_order_item, add_order_payment, complete_order, create_order, get_order_by_id,
     get_order_payments, get_orders, get_orders_by_supplier, remove_order_item, update_order,
     update_order_item,
 };
-use db::client::{
-    get_clients, get_client_by_id, insert_client, update_client, delete_client,
-    add_client_payment, adjust_client_balance, get_client_history, insert_client_history,
+use db::repair::{
+    add_payment, add_used_part, delete_repair, get_history_for_repair, get_payments_for_repair,
+    get_repair_by_id, get_repairs, get_used_parts_for_repair, insert_repair, insert_repair_history,
+    update_repair, update_repair_status,
 };
 use db::sale::{
     add_sale_item, add_sale_payment, complete_sale, create_sale, get_sale_by_id, get_sales,
-    update_sale, update_sale_item, remove_sale_item,
+    remove_sale_item, update_sale, update_sale_item,
 };
-use db::expense::{add_expense, get_today_expenses, get_expenses_by_session};
-use db::session::{start_session, get_current_session, close_session, get_last_session_closing_balance};
+use db::schema;
+use db::session::{
+    close_session, get_current_session, get_last_session_closing_balance, start_session,
+};
+use db::supplier::{
+    add_supplier_payment, adjust_supplier_credit, delete_supplier, get_supplier_by_id,
+    get_supplier_history, get_suppliers, insert_supplier, insert_supplier_history, update_supplier,
+};
 use db::transaction::{
-    create_transaction, get_transactions, get_transaction_by_id, add_transaction_item,
-    remove_transaction_item, add_transaction_payment, complete_transaction, submit_transaction,
+    add_transaction_item, add_transaction_payment, complete_transaction, create_transaction,
+    get_transaction_by_id, get_transactions, remove_transaction_item, submit_transaction,
+    update_transaction,
 };
 use printer::{get_available_printers, get_printer_status, print_escpos_commands}; // Add this line
 use std::panic;
@@ -143,6 +146,7 @@ fn main() {
             add_transaction_payment,
             complete_transaction,
             submit_transaction,
+            update_transaction,
         ])
         .build(tauri::generate_context!())
     {

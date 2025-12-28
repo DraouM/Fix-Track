@@ -1,8 +1,8 @@
 use crate::db;
 use crate::db::models::{Transaction, TransactionItem, TransactionPayment, TransactionWithDetails};
+use chrono::Utc;
 use rusqlite::{params, Connection, Result};
 use uuid::Uuid;
-use chrono::Utc;
 
 /// Generate a unique transaction number (e.g., TX-2025-001)
 fn generate_transaction_number(tx_type: &str) -> Result<String, String> {
@@ -10,7 +10,10 @@ fn generate_transaction_number(tx_type: &str) -> Result<String, String> {
     generate_transaction_number_internal(&conn, tx_type)
 }
 
-fn generate_transaction_number_internal(conn: &Connection, tx_type: &str) -> Result<String, String> {
+fn generate_transaction_number_internal(
+    conn: &Connection,
+    tx_type: &str,
+) -> Result<String, String> {
     let year = Utc::now().format("%Y").to_string();
     let prefix = if tx_type == "Sale" { "SALE" } else { "PUR" };
 
@@ -44,7 +47,8 @@ pub fn create_transaction(mut transaction: Transaction) -> Result<Transaction, S
     let conn = db::get_connection().map_err(|e| e.to_string())?;
 
     if transaction.transaction_number.is_empty() {
-        transaction.transaction_number = generate_transaction_number(&transaction.transaction_type)?;
+        transaction.transaction_number =
+            generate_transaction_number(&transaction.transaction_type)?;
     }
 
     conn.execute(
@@ -88,18 +92,21 @@ pub fn create_transaction(mut transaction: Transaction) -> Result<Transaction, S
 }
 
 #[tauri::command]
-pub fn get_transactions(type_filter: Option<String>, status_filter: Option<String>) -> Result<Vec<Transaction>, String> {
+pub fn get_transactions(
+    type_filter: Option<String>,
+    status_filter: Option<String>,
+) -> Result<Vec<Transaction>, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
 
     let mut query = "SELECT id, transaction_number, transaction_type, party_id, party_type, status, payment_status, total_amount, paid_amount, notes, created_at, updated_at, created_by FROM transactions WHERE 1=1".to_string();
-    
+
     if let Some(t) = type_filter {
         query.push_str(&format!(" AND transaction_type = '{}'", t));
     }
     if let Some(s) = status_filter {
         query.push_str(&format!(" AND status = '{}'", s));
     }
-    
+
     query.push_str(" ORDER BY created_at DESC");
 
     let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
@@ -129,10 +136,10 @@ pub fn get_transactions(type_filter: Option<String>, status_filter: Option<Strin
     Ok(transactions)
 }
 
-#[tauri::command]
-pub fn get_transaction_by_id(tx_id: String) -> Result<Option<TransactionWithDetails>, String> {
-    let conn = db::get_connection().map_err(|e| e.to_string())?;
-
+fn get_transaction_by_id_internal(
+    conn: &Connection,
+    tx_id: String,
+) -> Result<Option<TransactionWithDetails>, String> {
     let mut stmt = conn
         .prepare("SELECT id, transaction_number, transaction_type, party_id, party_type, status, payment_status, total_amount, paid_amount, notes, created_at, updated_at, created_by FROM transactions WHERE id = ?1")
         .map_err(|e| e.to_string())?;
@@ -159,11 +166,19 @@ pub fn get_transaction_by_id(tx_id: String) -> Result<Option<TransactionWithDeta
     };
 
     let party_name: String = if transaction.party_type == "Client" {
-        conn.query_row("SELECT name FROM clients WHERE id = ?1", params![transaction.party_id], |row| row.get(0))
-            .unwrap_or_else(|_| "Unknown Client".to_string())
+        conn.query_row(
+            "SELECT name FROM clients WHERE id = ?1",
+            params![transaction.party_id],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "Unknown Client".to_string())
     } else {
-        conn.query_row("SELECT name FROM suppliers WHERE id = ?1", params![transaction.party_id], |row| row.get(0))
-            .unwrap_or_else(|_| "Unknown Supplier".to_string())
+        conn.query_row(
+            "SELECT name FROM suppliers WHERE id = ?1",
+            params![transaction.party_id],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "Unknown Supplier".to_string())
     };
 
     let mut items_stmt = conn
@@ -217,6 +232,12 @@ pub fn get_transaction_by_id(tx_id: String) -> Result<Option<TransactionWithDeta
 }
 
 #[tauri::command]
+pub fn get_transaction_by_id(tx_id: String) -> Result<Option<TransactionWithDetails>, String> {
+    let conn = db::get_connection().map_err(|e| e.to_string())?;
+    get_transaction_by_id_internal(&conn, tx_id)
+}
+
+#[tauri::command]
 pub fn add_transaction_item(item: TransactionItem) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
 
@@ -236,16 +257,28 @@ pub fn add_transaction_item(item: TransactionItem) -> Result<(), String> {
     ).map_err(|e| e.to_string())?;
 
     // If transaction is already completed, update inventory immediately
-    let (status, tx_type, tx_num) = conn.query_row(
-        "SELECT status, transaction_type, transaction_number FROM transactions WHERE id = ?1",
-        params![item.transaction_id],
-        |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?, row.get::<_, String>(2)?))
-    ).map_err(|e| e.to_string())?;
+    let (status, tx_type, tx_num) = conn
+        .query_row(
+            "SELECT status, transaction_type, transaction_number FROM transactions WHERE id = ?1",
+            params![item.transaction_id],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            },
+        )
+        .map_err(|e| e.to_string())?;
 
     if status == "Completed" {
         if let Some(item_id) = &item.item_id {
-            let qty_change = if tx_type == "Sale" { -(item.quantity as i64) } else { item.quantity as i64 };
-            
+            let qty_change = if tx_type == "Sale" {
+                -(item.quantity as i64)
+            } else {
+                item.quantity as i64
+            };
+
             conn.execute(
                 "UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) + ?1 WHERE id = ?2",
                 params![qty_change, item_id]
@@ -284,15 +317,22 @@ pub fn remove_transaction_item(item_id: String, transaction_id: String) -> Resul
         |row| Ok((row.get(0)?, row.get(1).ok(), row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?))
     ).ok();
 
-    conn.execute("DELETE FROM transaction_items WHERE id = ?1", params![item_id])
-        .map_err(|e| e.to_string())?;
+    conn.execute(
+        "DELETE FROM transaction_items WHERE id = ?1",
+        params![item_id],
+    )
+    .map_err(|e| e.to_string())?;
 
     if let Some((name, id_opt, qty, status, tx_type, tx_num)) = item_info {
         if status == "Completed" {
             if let Some(id) = id_opt {
                 // Reverse inventory
-                let qty_change = if tx_type == "Sale" { qty as i64 } else { -(qty as i64) };
-                
+                let qty_change = if tx_type == "Sale" {
+                    qty as i64
+                } else {
+                    -(qty as i64)
+                };
+
                 conn.execute(
                     "UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) + ?1 WHERE id = ?2",
                     params![qty_change, id]
@@ -355,8 +395,9 @@ pub fn add_transaction_payment(payment: TransactionPayment) -> Result<(), String
         conn.execute(
             "UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2",
             params![payment.amount, party_id],
-        ).ok();
-        
+        )
+        .ok();
+
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
             "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
@@ -366,7 +407,8 @@ pub fn add_transaction_payment(payment: TransactionPayment) -> Result<(), String
         conn.execute(
             "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2",
             params![payment.amount, party_id],
-        ).ok();
+        )
+        .ok();
 
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
@@ -408,14 +450,24 @@ pub fn complete_transaction(tx_id: String) -> Result<(), String> {
     }
 
     // 1. Update Inventory
-    let mut stmt = conn.prepare("SELECT item_id, quantity FROM transaction_items WHERE transaction_id = ?1").map_err(|e| e.to_string())?;
-    let items: Vec<(Option<String>, i32)> = stmt.query_map(params![tx_id], |row| Ok((row.get(0).ok(), row.get(1)?))).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+    let mut stmt = conn
+        .prepare("SELECT item_id, quantity FROM transaction_items WHERE transaction_id = ?1")
+        .map_err(|e| e.to_string())?;
+    let items: Vec<(Option<String>, i32)> = stmt
+        .query_map(params![tx_id], |row| Ok((row.get(0).ok(), row.get(1)?)))
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
 
     for (item_id_opt, qty) in items {
         if let Some(item_id) = item_id_opt {
-            let qty_change = if tx.transaction_type == "Sale" { -(qty as i64) } else { qty as i64 };
+            let qty_change = if tx.transaction_type == "Sale" {
+                -(qty as i64)
+            } else {
+                qty as i64
+            };
             conn.execute("UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) + ?1 WHERE id = ?2", params![qty_change, item_id]).ok();
-            
+
             let h_id = Uuid::new_v4().to_string();
             conn.execute(
                 "INSERT INTO inventory_history (id, item_id, date, event_type, quantity_change, notes, related_id) 
@@ -427,19 +479,31 @@ pub fn complete_transaction(tx_id: String) -> Result<(), String> {
 
     // 2. Update Party Balance
     if tx.party_type == "Client" {
-        conn.execute("UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![tx.total_amount, tx.party_id]).ok();
+        conn.execute(
+            "UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+            params![tx.total_amount, tx.party_id],
+        )
+        .ok();
         let h_id = Uuid::new_v4().to_string();
         conn.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![h_id, tx.party_id, Utc::now().to_rfc3339(), "Sale Completed", format!("Sale {}", tx.transaction_number), tx.total_amount, None::<String>]).ok();
     } else {
-        conn.execute("UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![tx.total_amount, tx.party_id]).ok();
+        conn.execute(
+            "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+            params![tx.total_amount, tx.party_id],
+        )
+        .ok();
         let h_id = Uuid::new_v4().to_string();
         conn.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![h_id, tx.party_id, Utc::now().to_rfc3339(), "Purchase Order Completed", format!("Order {}", tx.transaction_number), tx.total_amount, None::<String>]).ok();
     }
 
     // 3. Update Status
-    conn.execute("UPDATE transactions SET status = 'Completed', updated_at = ?2 WHERE id = ?1", params![tx_id, Utc::now().to_rfc3339()]).map_err(|e| e.to_string())?;
+    conn.execute(
+        "UPDATE transactions SET status = 'Completed', updated_at = ?2 WHERE id = ?1",
+        params![tx_id, Utc::now().to_rfc3339()],
+    )
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -447,17 +511,21 @@ pub fn complete_transaction(tx_id: String) -> Result<(), String> {
 fn recalculate_transaction_totals(tx_id: &str) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
 
-    let total_amount: f64 = conn.query_row(
-        "SELECT COALESCE(SUM(total_price), 0) FROM transaction_items WHERE transaction_id = ?1",
-        params![tx_id],
-        |row| row.get(0)
-    ).unwrap_or(0.0);
+    let total_amount: f64 = conn
+        .query_row(
+            "SELECT COALESCE(SUM(total_price), 0) FROM transaction_items WHERE transaction_id = ?1",
+            params![tx_id],
+            |row| row.get(0),
+        )
+        .unwrap_or(0.0);
 
-    let paid_amount: f64 = conn.query_row(
-        "SELECT COALESCE(SUM(amount), 0) FROM transaction_payments WHERE transaction_id = ?1",
-        params![tx_id],
-        |row| row.get(0)
-    ).unwrap_or(0.0);
+    let paid_amount: f64 = conn
+        .query_row(
+            "SELECT COALESCE(SUM(amount), 0) FROM transaction_payments WHERE transaction_id = ?1",
+            params![tx_id],
+            |row| row.get(0),
+        )
+        .unwrap_or(0.0);
 
     let payment_status = if paid_amount >= total_amount {
         "Paid"
@@ -475,16 +543,194 @@ fn recalculate_transaction_totals(tx_id: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn apply_transaction_impact_internal(
+    tx: &rusqlite::Transaction,
+    transaction: &Transaction,
+    items: &Vec<TransactionItem>,
+    payments: &Vec<TransactionPayment>,
+) -> Result<(), String> {
+    if transaction.status == "Completed" {
+        // Inventory
+        for item in items {
+            if let Some(item_id) = &item.item_id {
+                let qty_change = if transaction.transaction_type == "Sale" {
+                    -(item.quantity as i64)
+                } else {
+                    item.quantity as i64
+                };
+                tx.execute("UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) + ?1 WHERE id = ?2", params![qty_change, item_id]).map_err(|e| e.to_string())?;
+
+                let h_id = Uuid::new_v4().to_string();
+                tx.execute(
+                    "INSERT INTO inventory_history (id, item_id, date, event_type, quantity_change, notes, related_id) 
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    params![h_id, item_id, Utc::now().to_rfc3339(), if transaction.transaction_type == "Sale" { "Sold" } else { "Purchased" }, qty_change, format!("{} {}", transaction.transaction_type, transaction.transaction_number), transaction.id],
+                ).map_err(|e| e.to_string())?;
+            }
+        }
+
+        // Party Balance
+        if transaction.party_type == "Client" {
+            // Increase client balance by total
+            tx.execute("UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![transaction.total_amount, transaction.party_id]).map_err(|e| e.to_string())?;
+            let h_id = Uuid::new_v4().to_string();
+            tx.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Sale Completed", format!("Sale {}", transaction.transaction_number), transaction.total_amount, None::<String>]).map_err(|e| e.to_string())?;
+
+            // Subtract payments from balance
+            for payment in payments {
+                tx.execute("UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2", params![payment.amount, transaction.party_id]).map_err(|e| e.to_string())?;
+                let p_h_id = Uuid::new_v4().to_string();
+                tx.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    params![p_h_id, transaction.party_id, Utc::now().to_rfc3339(), "Payment Received", format!("Payment for Sale {}", transaction.transaction_number), -payment.amount, payment.received_by]).map_err(|e| e.to_string())?;
+            }
+        } else {
+            // Supplier
+            tx.execute("UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![transaction.total_amount, transaction.party_id]).map_err(|e| e.to_string())?;
+            let h_id = Uuid::new_v4().to_string();
+            tx.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Purchase Order Completed", format!("Order {}", transaction.transaction_number), transaction.total_amount, None::<String>],
+            ).map_err(|e| e.to_string())?;
+
+            // Subtract payments
+            for payment in payments {
+                tx.execute("UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2", params![payment.amount, transaction.party_id]).map_err(|e| e.to_string())?;
+                let p_h_id = Uuid::new_v4().to_string();
+                tx.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                    params![p_h_id, transaction.party_id, Utc::now().to_rfc3339(), "Payment Made", format!("Payment for Purchase {}", transaction.transaction_number), -payment.amount, payment.received_by]).map_err(|e| e.to_string())?;
+            }
+        }
+    }
+    Ok(())
+}
+
 #[tauri::command]
-pub fn submit_transaction(mut transaction: Transaction, items: Vec<TransactionItem>, payments: Vec<TransactionPayment>) -> Result<(), String> {
+pub fn update_transaction(
+    transaction: Transaction,
+    items: Vec<TransactionItem>,
+    payments: Vec<TransactionPayment>,
+) -> Result<(), String> {
     let mut conn = db::get_connection().map_err(|e| e.to_string())?;
-    
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
+
+    // 1. Get old transaction and items for reversal
+    let old_tx_details = get_transaction_by_id_internal(&tx, transaction.id.clone())?;
+
+    if let Some(details) = old_tx_details {
+        if details.transaction.status == "Completed" {
+            // Reverse Inventory
+            for item in &details.items {
+                if let Some(item_id) = &item.item_id {
+                    let qty_change = if details.transaction.transaction_type == "Sale" {
+                        item.quantity as i64
+                    } else {
+                        -(item.quantity as i64)
+                    };
+                    tx.execute("UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) + ?1 WHERE id = ?2", params![qty_change, item_id]).map_err(|e| e.to_string())?;
+
+                    let h_id = Uuid::new_v4().to_string();
+                    tx.execute(
+                        "INSERT INTO inventory_history (id, item_id, date, event_type, quantity_change, notes, related_id) 
+                         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                        params![h_id, item_id, Utc::now().to_rfc3339(), "Adjustment", qty_change, format!("Reversing {} for edit", details.transaction.transaction_number), details.transaction.id],
+                    ).map_err(|e| e.to_string())?;
+                }
+            }
+
+            // Reverse Party Balance
+            if details.transaction.party_type == "Client" {
+                tx.execute("UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2", params![details.transaction.total_amount, details.transaction.party_id]).map_err(|e| e.to_string())?;
+                for payment in &details.payments {
+                    tx.execute("UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![payment.amount, details.transaction.party_id]).map_err(|e| e.to_string())?;
+                }
+            } else {
+                tx.execute("UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2", params![details.transaction.total_amount, details.transaction.party_id]).map_err(|e| e.to_string())?;
+                for payment in &details.payments {
+                    tx.execute("UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![payment.amount, details.transaction.party_id]).map_err(|e| e.to_string())?;
+                }
+            }
+        }
+    } else {
+        return Err("Transaction not found".to_string());
+    }
+
+    // 2. Clear old items and payments
+    tx.execute(
+        "DELETE FROM transaction_items WHERE transaction_id = ?1",
+        params![transaction.id],
+    )
+    .map_err(|e| e.to_string())?;
+    tx.execute(
+        "DELETE FROM transaction_payments WHERE transaction_id = ?1",
+        params![transaction.id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // 3. Update Header
+    tx.execute(
+        "UPDATE transactions SET transaction_type = ?1, party_id = ?2, party_type = ?3, status = ?4, payment_status = ?5, total_amount = ?6, paid_amount = ?7, notes = ?8, updated_at = ?9 WHERE id = ?10",
+        params![
+            transaction.transaction_type,
+            transaction.party_id,
+            transaction.party_type,
+            transaction.status,
+            transaction.payment_status,
+            transaction.total_amount,
+            transaction.paid_amount,
+            transaction.notes,
+            Utc::now().to_rfc3339(),
+            transaction.id,
+        ],
+    ).map_err(|e| e.to_string())?;
+
+    // 4. Insert New Items
+    for item in &items {
+        tx.execute(
+            "INSERT INTO transaction_items (id, transaction_id, item_id, item_name, quantity, unit_price, total_price, notes) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![item.id, item.transaction_id, item.item_id, item.item_name, item.quantity, item.unit_price, item.total_price, item.notes],
+        ).map_err(|e| e.to_string())?;
+    }
+
+    // 5. Insert New Payments
+    for payment in &payments {
+        tx.execute(
+            "INSERT INTO transaction_payments (id, transaction_id, amount, method, date, received_by, notes, session_id) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![payment.id, payment.transaction_id, payment.amount, payment.method, payment.date, payment.received_by, payment.notes, payment.session_id],
+        ).map_err(|e| e.to_string())?;
+    }
+
+    // 6. Apply Impact if Completed
+    apply_transaction_impact_internal(&tx, &transaction, &items, &payments)?;
+
+    // 7. Log History
+    let h_id = Uuid::new_v4().to_string();
+    tx.execute(
+        "INSERT INTO transaction_history (id, transaction_id, date, event_type, details, changed_by)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![h_id, transaction.id, Utc::now().to_rfc3339(), "updated", format!("Updated {} {}", transaction.transaction_type, transaction.transaction_number), transaction.created_by],
+    ).map_err(|e| e.to_string())?;
+
+    tx.commit().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn submit_transaction(
+    mut transaction: Transaction,
+    items: Vec<TransactionItem>,
+    payments: Vec<TransactionPayment>,
+) -> Result<(), String> {
+    let mut conn = db::get_connection().map_err(|e| e.to_string())?;
+
     // Start a manual SQL transaction
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
     // 1. Generate number if needed
     if transaction.transaction_number.is_empty() {
-        transaction.transaction_number = generate_transaction_number_internal(&tx, &transaction.transaction_type)?;
+        transaction.transaction_number =
+            generate_transaction_number_internal(&tx, &transaction.transaction_type)?;
     }
 
     // 2. Insert Header
@@ -527,54 +773,7 @@ pub fn submit_transaction(mut transaction: Transaction, items: Vec<TransactionIt
     }
 
     // 5. If status is Completed, handle inventory and balance
-    if transaction.status == "Completed" {
-        // Inventory
-        for item in &items {
-            if let Some(item_id) = &item.item_id {
-                let qty_change = if transaction.transaction_type == "Sale" { -(item.quantity as i64) } else { item.quantity as i64 };
-                tx.execute("UPDATE inventory_items SET quantity_in_stock = COALESCE(quantity_in_stock, 0) + ?1 WHERE id = ?2", params![qty_change, item_id]).map_err(|e| e.to_string())?;
-                
-                let h_id = Uuid::new_v4().to_string();
-                tx.execute(
-                    "INSERT INTO inventory_history (id, item_id, date, event_type, quantity_change, notes, related_id) 
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                    params![h_id, item_id, Utc::now().to_rfc3339(), if transaction.transaction_type == "Sale" { "Sold" } else { "Purchased" }, qty_change, format!("{} {}", transaction.transaction_type, transaction.transaction_number), transaction.id],
-                ).map_err(|e| e.to_string())?;
-            }
-        }
-
-        // Party Balance
-        if transaction.party_type == "Client" {
-            // Increase client balance by total
-            tx.execute("UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![transaction.total_amount, transaction.party_id]).map_err(|e| e.to_string())?;
-            let h_id = Uuid::new_v4().to_string();
-            tx.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Sale Completed", format!("Sale {}", transaction.transaction_number), transaction.total_amount, None::<String>]).map_err(|e| e.to_string())?;
-            
-            // Subtract payments from balance
-            for payment in &payments {
-                tx.execute("UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2", params![payment.amount, transaction.party_id]).map_err(|e| e.to_string())?;
-                let p_h_id = Uuid::new_v4().to_string();
-                tx.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                    params![p_h_id, transaction.party_id, Utc::now().to_rfc3339(), "Payment Received", format!("Payment for Sale {}", transaction.transaction_number), -payment.amount, payment.received_by]).map_err(|e| e.to_string())?;
-            }
-        } else {
-            // Supplier
-            tx.execute("UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![transaction.total_amount, transaction.party_id]).map_err(|e| e.to_string())?;
-            let h_id = Uuid::new_v4().to_string();
-            tx.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Purchase Order Completed", format!("Order {}", transaction.transaction_number), transaction.total_amount, None::<String>],
-            ).map_err(|e| e.to_string())?;
-
-            // Subtract payments
-            for payment in &payments {
-                tx.execute("UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2", params![payment.amount, transaction.party_id]).map_err(|e| e.to_string())?;
-                let p_h_id = Uuid::new_v4().to_string();
-                tx.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                    params![p_h_id, transaction.party_id, Utc::now().to_rfc3339(), "Payment Made", format!("Payment for Purchase {}", transaction.transaction_number), -payment.amount, payment.received_by]).map_err(|e| e.to_string())?;
-            }
-        }
-    }
+    apply_transaction_impact_internal(&tx, &transaction, &items, &payments)?;
 
     // 6. Log History
     let h_id = Uuid::new_v4().to_string();

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { Transaction, TransactionItem, TransactionType } from "@/types/transaction";
+import type { Transaction, TransactionItem, TransactionType, TransactionWithDetails } from "@/types/transaction";
 
 interface TransactionWorkspace {
   id: string;
@@ -15,6 +15,7 @@ interface TransactionWorkspace {
   payment_method: string;
   notes: string;
   status: "Draft" | "Completed";
+  is_existing?: boolean;
 }
 
 interface TransactionContextType {
@@ -25,6 +26,7 @@ interface TransactionContextType {
   removeWorkspace: (id: string) => void;
   setActiveWorkspaceId: (id: string) => void;
   updateActiveWorkspace: (updates: Partial<TransactionWorkspace>) => void;
+  editTransaction: (txDetails: TransactionWithDetails) => void;
   clearWorkspaces: () => void;
 }
 
@@ -100,6 +102,33 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
     );
   };
 
+  const editTransaction = (txDetails: TransactionWithDetails) => {
+    const existing = workspaces.find((w) => w.id === txDetails.transaction.id);
+    if (existing) {
+      setActiveWorkspaceId(existing.id);
+      return;
+    }
+
+    const { transaction, items, payments } = txDetails;
+    const newWorkspace: TransactionWorkspace = {
+      id: transaction.id,
+      name:
+        transaction.transaction_number || `Edit ${transaction.transaction_type}`,
+      type: transaction.transaction_type as TransactionType,
+      party_id: transaction.party_id,
+      party_type: transaction.party_type as "Client" | "Supplier",
+      items,
+      paid_amount: transaction.paid_amount,
+      payment_method: payments.length > 0 ? payments[0].method : "Cash",
+      notes: transaction.notes || "",
+      status: transaction.status as "Draft" | "Completed",
+      is_existing: true,
+    };
+
+    setWorkspaces((prev) => [...prev, newWorkspace]);
+    setActiveWorkspaceId(newWorkspace.id);
+  };
+
   const clearWorkspaces = () => {
     setWorkspaces([]);
     addWorkspace("Sale");
@@ -117,6 +146,7 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
         removeWorkspace,
         setActiveWorkspaceId,
         updateActiveWorkspace,
+        editTransaction,
         clearWorkspaces,
       }}
     >

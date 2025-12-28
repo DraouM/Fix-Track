@@ -23,7 +23,7 @@ import { TransactionSummary } from "./TransactionSummary";
 import { TransactionScanner } from "./TransactionScanner";
 import { InventoryItem } from "@/types/inventory";
 import { cn } from "@/lib/utils";
-import { submitTransaction } from "@/lib/api/transactions";
+import { submitTransaction, updateTransaction } from "@/lib/api/transactions";
 import { getCurrentSession } from "@/lib/api/session";
 import {
   Transaction as TxModel,
@@ -135,7 +135,7 @@ export function TransactionForm() {
 
       const transactionModel: TxModel = {
         id,
-        transaction_number: "", // Backend will generate
+        transaction_number: activeWorkspace.is_existing ? activeWorkspace.name : "", 
         transaction_type: type,
         party_id: party_id || "",
         party_type: party_type,
@@ -170,13 +170,17 @@ export function TransactionForm() {
                 method: payment_method,
                 date: now,
                 received_by: "System",
-                notes: `Initial payment for ${type}`,
+                notes: `Payment for ${type}`,
                 session_id: session?.id || null,
               },
             ]
           : [];
 
-      await submitTransaction(transactionModel, itemModels, paymentModels);
+      if (activeWorkspace.is_existing) {
+        await updateTransaction(transactionModel, itemModels, paymentModels);
+      } else {
+        await submitTransaction(transactionModel, itemModels, paymentModels);
+      }
 
       toast.success(
         `${type} ${complete ? "completed" : "saved as draft"} successfully!`
@@ -184,10 +188,6 @@ export function TransactionForm() {
 
       setTimeout(() => {
         removeWorkspace(id);
-        if (complete) {
-          // Navigate to a history page or similar if needed
-          // router.push("/transactions/history");
-        }
       }, 500);
     } catch (err) {
       console.error("Save error:", err);

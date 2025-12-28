@@ -18,19 +18,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/clientUtils";
-import { getTransactions } from "@/lib/api/transactions";
+import { getTransactions, getTransactionById } from "@/lib/api/transactions";
 import { Transaction, TransactionType } from "@/types/transaction";
 import { cn } from "@/lib/utils";
+import { useTransactions } from "@/context/TransactionContext";
+import { toast } from "sonner";
 
 import { useInventory } from "@/context/InventoryContext";
 
 export function TransactionHistory() {
+  const { editTransaction } = useTransactions();
   const { initialized } = useInventory();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("All");
+  const [viewLoading, setViewLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialized) {
@@ -49,6 +53,23 @@ export function TransactionHistory() {
       setError(String(err));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleView = async (txId: string) => {
+    setViewLoading(txId);
+    try {
+      const details = await getTransactionById(txId);
+      if (details) {
+        editTransaction(details);
+      } else {
+        toast.error("Transaction not found");
+      }
+    } catch (err) {
+      console.error("Failed to fetch transaction:", err);
+      toast.error("Failed to load transaction details");
+    } finally {
+      setViewLoading(null);
     }
   };
 
@@ -176,8 +197,18 @@ export function TransactionHistory() {
                     <span className="font-black text-sm">{formatCurrency(tx.total_amount)}</span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Button variant="ghost" size="icon" className="rounded-xl group-hover:bg-background shadow-sm border opacity-0 group-hover:opacity-100 transition-all">
-                      <Eye className="h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      disabled={viewLoading === tx.id}
+                      onClick={() => handleView(tx.id)}
+                      className="rounded-xl group-hover:bg-background shadow-sm border opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      {viewLoading === tx.id ? (
+                        <Clock className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </Button>
                   </td>
                 </tr>

@@ -36,3 +36,11 @@ export async function submitTransaction(
 ): Promise<void> {
     await invoke("submit_transaction", { transaction, items, payments });
 }
+
+export async function updateTransaction(
+    transaction: Transaction,
+    items: TransactionItem[],
+    payments: TransactionPayment[]
+): Promise<void> {
+    await invoke("update_transaction", { transaction, items, payments });
+}

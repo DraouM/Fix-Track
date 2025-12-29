@@ -11,14 +11,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
 import { AppLoader } from "@/components/helpers/AppLoader";
 import { ErrorBoundary } from "@/components/helpers/ErrorBoundary";
-import { ContextInitializer } from "@/components/helpers/ContextInitializer";
-
-// Import context providers directly instead of dynamically
-import { InventoryProvider } from "@/context/InventoryContext";
-import { RepairProvider } from "@/context/RepairContext";
-import { SupplierProvider } from "@/context/SupplierContext";
-import { ClientProvider } from "@/context/ClientContext";
-import { TransactionProvider } from "@/context/TransactionContext";
+import { LazyContextProvider } from "@/components/helpers/LazyContextProvider";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -39,17 +32,7 @@ function LayoutContent({ children }: AppLayoutProps) {
           <Suspense
             fallback={<AppLoader message="Initializing application..." />}
           >
-            <InventoryProvider>
-              <RepairProvider>
-                <SupplierProvider>
-                  <ClientProvider>
-                    <TransactionProvider>
-                      <ContextInitializer>{children}</ContextInitializer>
-                    </TransactionProvider>
-                  </ClientProvider>
-                </SupplierProvider>
-              </RepairProvider>
-            </InventoryProvider>
+            <LazyContextProvider>{children}</LazyContextProvider>
           </Suspense>
         </ErrorBoundary>
       </main>

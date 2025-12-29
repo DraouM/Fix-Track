@@ -1,44 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { InventoryProvider } from "@/context/InventoryContext";
+import { RepairProvider } from "@/context/RepairContext";
+import { SupplierProvider } from "@/context/SupplierContext";
+import { ClientProvider } from "@/context/ClientContext";
+import { TransactionProvider } from "@/context/TransactionContext";
+import { ContextInitializer } from "./ContextInitializer";
 
 interface LazyContextProviderProps {
   children: React.ReactNode;
-  loadingFallback?: React.ReactNode;
-  errorFallback?: React.ReactNode;
 }
 
-export function LazyContextProvider({
-  children,
-  loadingFallback = (
-    <div className="h-screen flex items-center justify-center">Loading...</div>
-  ),
-  errorFallback = (
-    <div className="h-screen flex items-center justify-center">
-      Error loading context
-    </div>
-  ),
-}: LazyContextProviderProps) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Simulate async initialization
-  useEffect(() => {
-    // In a real implementation, this would be replaced with actual initialization logic
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (loading) {
-    return <>{loadingFallback}</>;
-  }
-
-  if (error) {
-    return <>{errorFallback}</>;
-  }
-
-  return <>{children}</>;
+export function LazyContextProvider({ children }: LazyContextProviderProps) {
+  return (
+    <InventoryProvider>
+      <RepairProvider>
+        <SupplierProvider>
+          <ClientProvider>
+            <TransactionProvider>
+              <ContextInitializer>{children}</ContextInitializer>
+            </TransactionProvider>
+          </ClientProvider>
+        </SupplierProvider>
+      </RepairProvider>
+    </InventoryProvider>
+  );
 }

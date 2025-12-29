@@ -19,9 +19,9 @@ use db::order::{
     update_order_item,
 };
 use db::repair::{
-    add_payment, add_used_part, delete_repair, get_history_for_repair, get_payments_for_repair,
-    get_repair_by_id, get_repairs, get_used_parts_for_repair, insert_repair, insert_repair_history,
-    update_repair, update_repair_status,
+    add_payment, add_used_part, delete_repair, delete_used_part, get_history_for_repair,
+    get_payments_for_repair, get_repair_by_id, get_repairs, get_used_parts_for_repair,
+    insert_repair, insert_repair_history, update_repair, update_repair_status,
 };
 use db::sale::{
     add_sale_item, add_sale_payment, complete_sale, create_sale, get_sale_by_id, get_sales,
@@ -79,6 +79,7 @@ fn main() {
             add_payment,
             get_payments_for_repair,
             add_used_part,
+            delete_used_part,
             get_used_parts_for_repair,
             insert_repair_history,
             get_history_for_repair,

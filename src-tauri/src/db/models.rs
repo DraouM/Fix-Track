@@ -16,6 +16,14 @@ pub struct Repair {
     pub created_at: String,
     pub updated_at: String,
     pub code: Option<String>,
+    
+    // Virtual fields for full details
+    #[serde(default)]
+    pub used_parts: Vec<RepairUsedPart>,
+    #[serde(default)]
+    pub payments: Vec<RepairPayment>,
+    #[serde(default)]
+    pub history: Vec<RepairHistory>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -35,6 +43,7 @@ pub struct RepairUsedPart {
     pub part_id: String,
     pub part_name: String,
     pub quantity: i32,
+    #[serde(rename = "cost")]
     pub unit_price: f64,
 }
 

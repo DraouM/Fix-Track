@@ -1,6 +1,8 @@
 "use client";
 
+import { invoke } from "@tauri-apps/api/core";
 import { useState, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -88,9 +90,74 @@ export function RepairsPageInner() {
   }, []);
 
   // ✅ Open Edit form
-  const openEditForm = useCallback((repair: Repair) => {
+  const openEditForm = useCallback(async (repair: Repair) => {
+    // Set partial data first to show form immediately
     setRepairToEdit(repair);
     setIsFormOpen(true);
+
+    try {
+      // Fetch full details including parts and payments
+      // We use the direct invoke here to get the data without affecting global selection state necessarily
+      // although updating the context would also be fine.
+      const fullRepair = await invoke<Repair | null>("get_repair_by_id", {
+        repairId: repair.id,
+      });
+
+      if (fullRepair) {
+        console.log("Fetched full repair details (raw):", fullRepair);
+        
+        // Manual mapping because backend returns snake_case keys (RepairDb) 
+        // but frontend expects camelCase (Repair)
+        // casting to any to avoid TS shouting about snake_case properties accessing
+        const raw = fullRepair as any;
+
+        const mappedParts = (raw.used_parts || []).map((p: any) => ({
+          id: p.id,
+          repairId: p.repair_id,
+          partName: p.part_name, // Map part_name -> partName
+          cost: p.cost,          // mapped via serde rename "cost" in backend
+          quantity: p.quantity,
+          part_id: p.part_id,
+        }));
+
+        const mappedPayments = (raw.payments || []).map((p: any) => ({
+          id: p.id,
+          repair_id: p.repair_id, // interface uses snake_case for repair_id in some places, keeping as is
+          amount: p.amount,
+          date: p.date,
+          method: p.method,
+          received_by: p.received_by
+        }));
+
+        const mappedRepair: Repair = {
+           id: raw.id,
+           customerName: raw.customer_name,
+           customerPhone: raw.customer_phone,
+           deviceBrand: raw.device_brand,
+           deviceModel: raw.device_model,
+           issueDescription: raw.issue_description,
+           estimatedCost: raw.estimated_cost,
+           status: raw.status,
+           paymentStatus: raw.payment_status,
+           usedParts: mappedParts,
+           payments: mappedPayments,
+           history: raw.history || [], // History might also need mapping if used, but critical path is parts
+           createdAt: raw.created_at,
+           updatedAt: raw.updated_at,
+           code: raw.code,
+           // Recalculate totals if needed
+           totalPaid: mappedPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0),
+           remainingBalance: raw.estimated_cost - mappedPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
+        };
+
+        console.log("Mapped full repair details:", mappedRepair);
+        setRepairToEdit(mappedRepair);
+      }
+    } catch (error) {
+      console.error("Failed to fetch full repair details:", error);
+      // We already set the partial repair, so it will just show that if fetch fails
+      toast.error("Failed to load full repair details. Some information might be missing.");
+    }
   }, []);
 
   // ✅ Close dialog cleanup

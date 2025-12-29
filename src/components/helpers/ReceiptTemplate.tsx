@@ -165,7 +165,7 @@ export function ReceiptTemplate({
                 <span>
                   {part.partName} x{part.quantity}
                 </span>
-                <span>${part.cost.toFixed(2)}</span>
+                <span>${(part.cost || 0).toFixed(2)}</span>
               </div>
             ))}
           </div>

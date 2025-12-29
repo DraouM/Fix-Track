@@ -85,18 +85,20 @@ export interface PaymentInput {
 // --- USED PARTS ---
 // Frontend
 export interface UsedPart {
-  id: number;
-  repairId: number;
+  id: string;
+  repairId: string;
   partName: string;
   cost: number;
   quantity: number;
+  part_id?: string;
 }
 // Input for DB / API
 export interface UsedPartInput {
-  repair_id: number;
+  repair_id: string;
   part_name: string;
   cost: number;
   quantity: number;
+  part_id?: string;
 }
 
 // --- REPAIR HISTORY ---
@@ -158,6 +160,7 @@ export type RepairFormValues = z.infer<typeof repairSchema>;
 
 // Type for used parts in the form (matches the structure used in RepairForm)
 export interface UsedPartForm {
+  recordId?: string; // Database ID of the used_part record (for existing parts)
   partId: string;
   name: string;
   quantity: number;

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { InventoryItem } from "@/types/inventory";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
   Repair,
@@ -61,6 +62,8 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { PHONE_BRANDS } from "@/types/inventory";
+import { InventoryPartSelector } from "./InventoryPartSelector";
+import { toast } from "sonner";
 
 interface RepairFormProps {
   repairToEdit?: Repair | null;
@@ -85,7 +88,8 @@ export default function RepairForm({
   repairToEdit,
   onSuccess,
 }: RepairFormProps) {
-  const { createRepair, updateRepair } = useRepairContext();
+  const { createRepair, updateRepair, addUsedPart, deleteUsedPart } =
+    useRepairContext();
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -102,10 +106,11 @@ export default function RepairForm({
           repairStatus: repairToEdit.status,
           usedParts:
             repairToEdit.usedParts?.map((part) => ({
-              partId: part.id.toString(),
-              name: part.partName,
+              recordId: part.id, // Capture the DB ID for diffing
+              partId: part.part_id || part.id,
+              name: part.partName || "",
               quantity: part.quantity,
-              unitCost: part.cost,
+              unitCost: part.cost || 0,
             })) || [],
         }
       : {
@@ -125,6 +130,43 @@ export default function RepairForm({
     control: form.control,
     name: "usedParts",
   });
+
+  // Reset form when repairToEdit changes to ensure parts are properly loaded
+  useEffect(() => {
+    if (repairToEdit) {
+      form.reset({
+        customerName: repairToEdit.customerName,
+        phoneNumber: repairToEdit.customerPhone,
+        deviceBrand: repairToEdit.deviceBrand,
+        deviceModel: repairToEdit.deviceModel,
+        issueDescription: repairToEdit.issueDescription,
+        estimatedCost: repairToEdit.estimatedCost,
+        dateReceived: new Date(repairToEdit.createdAt),
+        repairStatus: repairToEdit.status,
+        usedParts:
+          repairToEdit.usedParts?.map((part) => ({
+            recordId: part.id, // Capture the DB ID for diffing
+            partId: part.part_id || part.id,
+            name: part.partName || "",
+            quantity: part.quantity,
+            unitCost: part.cost || 0,
+          })) || [],
+      });
+    } else {
+      // Reset to empty form for new repair
+      form.reset({
+        customerName: "",
+        phoneNumber: "",
+        deviceBrand: "",
+        deviceModel: "",
+        issueDescription: "",
+        estimatedCost: 0,
+        dateReceived: new Date(),
+        repairStatus: "Pending" as const,
+        usedParts: [],
+      });
+    }
+  }, [repairToEdit, form]);
 
   // Auto-save functionality (only for new repairs)
   useEffect(() => {
@@ -182,6 +224,50 @@ export default function RepairForm({
           // paymentStatus is omitted - it will be calculated by the backend
         };
         await updateRepair(repairToEdit.id, updateData);
+
+        // Calculate diffs for parts
+        const existingParts = repairToEdit.usedParts || [];
+        const currentParts = values.usedParts;
+
+        // Parts to delete: present in existing but not in current (matched by recordId)
+        const partsToDelete = existingParts.filter(
+          (existing) =>
+            !currentParts.some((current) => current.recordId === existing.id)
+        );
+
+        // Parts to add: in current but have no recordId (newly added)
+        const partsToAdd = currentParts.filter((part) => !part.recordId);
+
+        console.log("🛠️ Parts Diff Logic:", {
+          existingCount: existingParts.length,
+          toDelete: partsToDelete.length,
+          toAdd: partsToAdd.length,
+          toKeep: currentParts.length - partsToAdd.length,
+        });
+
+        // Execute Deletions
+        for (const part of partsToDelete) {
+          console.log("Deleting part:", part.id);
+          // We use repairToEdit.id as repairId context
+          await deleteUsedPart(repairToEdit.id, part.id);
+        }
+
+        // Execute Additions
+        for (const part of partsToAdd) {
+          console.log("Adding new part:", part.name);
+          await addUsedPart(repairToEdit.id, {
+            repair_id: repairToEdit.id,
+            part_name: part.name,
+            cost: part.unitCost,
+            quantity: part.quantity,
+            part_id: part.partId,
+          });
+        }
+
+        // Note: We currently don't support updating existing part qty/cost via this form
+        // (would need update_used_part backend command).
+        // They appear as "kept" but changes are ignored unless implemented.
+
         onSuccess();
       } else {
         // Convert form values to RepairDb format for creation
@@ -200,6 +286,20 @@ export default function RepairForm({
           history: [],
         };
         const newRepair = await createRepair(createData);
+
+        // Add used parts after repair is created
+        if (newRepair) {
+          for (const part of values.usedParts) {
+            await addUsedPart(newRepair.id, {
+              repair_id: newRepair.id,
+              part_name: part.name,
+              cost: part.unitCost,
+              quantity: part.quantity,
+              part_id: part.partId, // This will be used for inventory deduction if it matches an inventory item
+            });
+          }
+        }
+
         onSuccess(newRepair);
       }
     } catch (err) {
@@ -452,223 +552,293 @@ export default function RepairForm({
           </div>
         </div>
 
-        {/* Status & Parts Section */}
+        {/* Status Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
           <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Wrench className="h-4 w-4 text-orange-600" />
-            Status & Parts
+            <Check className="h-4 w-4 text-green-600" />
+            Repair Status
           </h3>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="repairStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">
-                      Repair Status
-                    </FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={
-                        field.onChange as (val: RepairStatus) => void
-                      }
-                    >
-                      <FormControl>
-                        <SelectTrigger className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500">
-                          <SelectValue placeholder="Select repair status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Pending">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                            Pending
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="In Progress">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            In Progress
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Completed">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            Completed
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Delivered">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                            Delivered
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div>
-                <FormLabel className="text-sm font-medium">
-                  Payment Status
-                </FormLabel>
-                <div className="mt-2">
-                  <Badge
-                    variant={
-                      getPaymentStatusBadgeVariant(
-                        repairToEdit
-                          ? calculatePaymentStatusFromRepair(repairToEdit)
-                          : "Unpaid"
-                      ) as any
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="repairStatus"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">
+                    Current Status
+                  </FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={
+                      field.onChange as (val: RepairStatus) => void
                     }
-                    className="text-sm px-3 py-1"
                   >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          repairToEdit
-                            ? calculatePaymentStatusFromRepair(repairToEdit) ===
-                              "Paid"
-                              ? "bg-green-500"
-                              : calculatePaymentStatusFromRepair(
-                                  repairToEdit
-                                ) === "Partially"
-                              ? "bg-orange-500"
-                              : calculatePaymentStatusFromRepair(
-                                  repairToEdit
-                                ) === "Refunded"
-                              ? "bg-gray-500"
-                              : "bg-red-500"
-                            : "bg-red-500"
-                        }`}
-                      ></div>
-                      {repairToEdit
+                    <FormControl>
+                      <SelectTrigger className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500">
+                        <SelectValue placeholder="Select repair status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Pending">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                          Pending
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="In Progress">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          In Progress
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Completed">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          Completed
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="Delivered">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          Delivered
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div>
+              <FormLabel className="text-sm font-medium">
+                Payment Status
+              </FormLabel>
+              <div className="mt-2">
+                <Badge
+                  variant={
+                    getPaymentStatusBadgeVariant(
+                      repairToEdit
                         ? calculatePaymentStatusFromRepair(repairToEdit)
-                        : "Unpaid"}
-                    </div>
-                  </Badge>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Payment status is automatically calculated based on payments
-                    received
-                  </p>
-                </div>
+                        : "Unpaid"
+                    ) as any
+                  }
+                  className="text-sm px-3 py-1"
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        repairToEdit
+                          ? calculatePaymentStatusFromRepair(repairToEdit) ===
+                            "Paid"
+                            ? "bg-green-500"
+                            : calculatePaymentStatusFromRepair(repairToEdit) ===
+                              "Partially"
+                            ? "bg-orange-500"
+                            : calculatePaymentStatusFromRepair(repairToEdit) ===
+                              "Refunded"
+                            ? "bg-gray-500"
+                            : "bg-red-500"
+                          : "bg-red-500"
+                      }`}
+                    ></div>
+                    {repairToEdit
+                      ? calculatePaymentStatusFromRepair(repairToEdit)
+                      : "Unpaid"}
+                  </div>
+                </Badge>
+                <p className="text-xs text-gray-500 mt-1">
+                  Calculated automatically based on payments
+                </p>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Wrench className="h-4 w-4 text-gray-600" />
-                  <h4 className="font-medium text-gray-900 text-sm">
-                    Parts Used
-                  </h4>
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
-                  onClick={() =>
-                    append({
-                      partId: Date.now().toString(),
-                      name: "",
-                      quantity: 1,
-                      unitCost: 0,
-                    })
-                  }
-                >
-                  <Plus className="mr-1 h-4 w-4" /> Add Part
-                </Button>
+        {/* Parts & Materials Section (Unified) */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Wrench className="h-5 w-5 text-orange-600" />
               </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Parts & Materials
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Manage parts and materials used in this repair
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-medium text-gray-900">
+                Total Parts: {fields.length}
+              </div>
+              <div className="text-sm text-gray-500">
+                Cost: $
+                {fields
+                  .reduce(
+                    (sum, item) =>
+                      sum + (item.quantity || 0) * (item.unitCost || 0),
+                    0
+                  )
+                  .toFixed(2)}
+              </div>
+            </div>
+          </div>
 
-              {fields.length === 0 ? (
-                <div className="bg-gray-50 rounded-lg p-4 text-center border border-dashed border-gray-300">
-                  <Wrench className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">No parts added yet</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Click "Add Part" to include replacement parts
-                  </p>
+          <div className="space-y-6">
+            {/* 1. List of Added Parts */}
+            {fields.length > 0 ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-12 gap-3 px-4 py-2 bg-gray-50 rounded-t-lg border-b border-gray-200 text-xs font-medium text-gray-600 uppercase tracking-wide">
+                  <div className="col-span-5">Part Name</div>
+                  <div className="col-span-3 text-center">Quantity</div>
+                  <div className="col-span-3 text-center">Unit Cost</div>
+                  <div className="col-span-1 text-center">Actions</div>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {fields.map((fieldItem, index) => (
-                    <div
-                      key={fieldItem.id}
-                      className="bg-gray-50 rounded-md p-2 border border-gray-200"
-                    >
-                      <div className="flex gap-3 items-start">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div className="md:col-span-1">
-                            <Input
-                              placeholder="Part name"
-                              className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              {...form.register(
-                                `usedParts.${index}.name` as const
-                              )}
-                            />
-                          </div>
-                          <div className="md:col-span-1">
-                            <Input
-                              type="number"
-                              placeholder="Quantity"
-                              className="h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                              {...form.register(
-                                `usedParts.${index}.quantity` as const,
-                                {
-                                  valueAsNumber: true,
-                                }
-                              )}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-                                form.setValue(
-                                  `usedParts.${index}.quantity` as any,
-                                  value
-                                );
-                              }}
-                            />
-                          </div>
-                          <div className="md:col-span-1">
-                            <div className="relative">
-                              <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="Unit cost"
-                                className="pl-8 h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
-                                {...form.register(
-                                  `usedParts.${index}.unitCost` as const,
-                                  {
-                                    valueAsNumber: true,
-                                  }
-                                )}
-                                onChange={(e) => {
-                                  const value = parseFloat(e.target.value) || 0;
-                                  form.setValue(
-                                    `usedParts.${index}.unitCost` as any,
-                                    value
-                                  );
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="hover:bg-red-50 hover:text-red-600 h-10 w-10"
-                          onClick={() => remove(index)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
+                {fields.map((fieldItem, index) => (
+                  <div
+                    key={fieldItem.id}
+                    className="grid grid-cols-12 gap-3 items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+                  >
+                    <div className="col-span-5">
+                      <Input
+                        placeholder="Part name"
+                        className="h-10"
+                        {...form.register(`usedParts.${index}.name` as const)}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <Input
+                        type="number"
+                        placeholder="Qty"
+                        className="h-10 text-center"
+                        {...form.register(
+                          `usedParts.${index}.quantity` as const,
+                          { valueAsNumber: true }
+                        )}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0;
+                          form.setValue(
+                            `usedParts.${index}.quantity` as any,
+                            value
+                          );
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Cost"
+                          className="pl-10 h-10"
+                          {...form.register(
+                            `usedParts.${index}.unitCost` as const,
+                            { valueAsNumber: true }
+                          )}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value) || 0;
+                            form.setValue(
+                              `usedParts.${index}.unitCost` as any,
+                              value
+                            );
+                          }}
+                        />
                       </div>
                     </div>
-                  ))}
+                    <div className="col-span-1 flex justify-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 text-gray-500 hover:text-red-500 hover:bg-red-50 border-gray-300"
+                        onClick={() => remove(index)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-xl p-12 text-center border-2 border-dashed border-gray-200">
+                <div className="mx-auto mb-4 p-3 bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center">
+                  <Wrench className="h-6 w-6 text-orange-600" />
                 </div>
-              )}
+                <h4 className="text-lg font-medium text-gray-900 mb-2">
+                  No parts added yet
+                </h4>
+                <p className="text-sm text-gray-500 max-w-md mx-auto">
+                  Add parts manually or select from inventory to track materials
+                  used in this repair
+                </p>
+              </div>
+            )}
+
+            <div className="border-t pt-6 mt-2">
+              <h4 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Parts
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Option A: From Inventory */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700 block">
+                    From Inventory
+                  </label>
+                  <InventoryPartSelector
+                    onSelect={useCallback(
+                      (selectedPart: InventoryItem | null) => {
+                        if (selectedPart) {
+                          append({
+                            partId: selectedPart.id,
+                            name: selectedPart.itemName,
+                            quantity: 1,
+                            unitCost: selectedPart.sellingPrice,
+                          });
+                          toast.success(`Added ${selectedPart.itemName}`);
+                        }
+                      },
+                      [append]
+                    )}
+                  />
+                  <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Stock will be deducted automatically
+                  </div>
+                </div>
+
+                {/* Option B: Manual Entry */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700 block">
+                    Manual Entry
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-center h-12 border-2 border-dashed border-gray-300 hover:border-solid hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200"
+                    onClick={() =>
+                      append({
+                        partId: Date.now().toString(),
+                        name: "",
+                        quantity: 1,
+                        unitCost: 0,
+                      })
+                    }
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Custom Part
+                  </Button>
+                  <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    For parts not tracked in inventory
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

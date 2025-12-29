@@ -60,6 +60,7 @@ interface RepairActions {
   updateRepairStatus: (id: string, status: RepairStatus) => Promise<void>;
   addPayment: (repairId: string, payment: PaymentInput) => Promise<void>;
   addUsedPart: (repairId: string, part: UsedPartInput) => Promise<void>;
+  deleteUsedPart: (repairId: string, recordId: string) => Promise<void>;
   getRepairHistory: (repairId: string) => Promise<void>;
   getItemById: (id: string) => Repair | undefined;
 }
@@ -353,6 +354,8 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
                 : r
             )
           );
+          // Refresh the selected repair to ensure all data is up-to-date
+          fetchRepairById(id);
         },
         onError: (msg) => setError(msg),
       });
@@ -483,6 +486,23 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     [fetchRepairById, clearError]
   );
 
+  // ✅ Delete used part
+  const deleteUsedPart = useCallback(
+    async (repairId: string, recordId: string) => {
+      setLoading(true);
+      clearError();
+      await withAsync(() => invoke("delete_used_part", { id: recordId }), {
+        onSuccess: () => {
+          toast.success("Part removed successfully");
+          fetchRepairById(repairId);
+        },
+        onError: (msg) => setError(msg),
+      });
+      setLoading(false);
+    },
+    [fetchRepairById, clearError]
+  );
+
   // ✅ Get repair history
   const getRepairHistory = useCallback(
     async (repairId: string) => {
@@ -572,6 +592,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       addUsedPart,
       getRepairHistory,
       getItemById,
+      deleteUsedPart,
     }),
     [
       initialize,
@@ -663,6 +684,7 @@ export function useRepairActions(): RepairActions {
     addUsedPart,
     getRepairHistory,
     getItemById,
+    deleteUsedPart,
   } = useRepairContext();
   return {
     initialize,
@@ -681,5 +703,6 @@ export function useRepairActions(): RepairActions {
     addUsedPart,
     getRepairHistory,
     getItemById,
+    deleteUsedPart,
   };
 }

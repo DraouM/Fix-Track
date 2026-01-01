@@ -6,7 +6,6 @@ import { Repair } from "@/types/repair";
 import { toast } from "sonner";
 import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
 import { StickerTemplate } from "@/components/helpers/StickerTemplate";
-import { useEscPosPrinter } from "./useEscPosPrinter";
 import { getShopInfo } from "@/lib/shopInfo";
 
 interface PrintOptions {
@@ -14,23 +13,9 @@ interface PrintOptions {
   includeParts?: boolean;
   includeHistory?: boolean;
   format?: "receipt" | "sticker" | "invoice";
-  useEscPos?: boolean;
-  printerName?: string;
-  printerAddress?: string; // Printer address (IP:PORT, USB:path, or Bluetooth address)
 }
 
 export const usePrintUtils = () => {
-  const { generateReceiptCommands, generateStickerCommands, sendToPrinter } =
-    useEscPosPrinter();
-
-  // State for printer selection dialog
-  const [isPrinterSelectionOpen, setIsPrinterSelectionOpen] = useState(false);
-  const [pendingPrintJob, setPendingPrintJob] = useState<{
-    repair: Repair;
-    options?: PrintOptions;
-    type: "receipt" | "sticker";
-  } | null>(null);
-
   // Format date for printing
   const formatPrintDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString("ar-EG", {
@@ -332,8 +317,8 @@ export const usePrintUtils = () => {
                   <div style="margin-bottom: 4px; font-size: 11px; font-style: italic;">شكراً لتعاملكم معنا!</div>
                   <div style="font-weight: bold;">يرجى الاحتفاظ بهذا الإيصال للضمان.</div>
                   <div style="margin-top: 4px; font-size: 10px; font-weight: bold; line-height: 1.2;">
-                    <div>ملاحظة: لا تتحمل الدكانة مسؤولية محتويات الهاتف.</div>
-                    <div>الضمان 60 يوم فقط من تاريخ الإصلاح.</div>
+                    <div>ملاحظة: لا يتحمل المحل مسؤولية محتويات الهاتف.</div>
+
                   </div>
 
                 </div>
@@ -492,35 +477,6 @@ export const usePrintUtils = () => {
   const printReceipt = useCallback(
     async (repair: Repair, options?: PrintOptions): Promise<boolean> => {
       try {
-        // Check if we should use ESC/POS
-        if (options?.useEscPos) {
-          // If no printer is specified, open the printer selection dialog
-          if (!options.printerName) {
-            setPendingPrintJob({ repair, options, type: "receipt" });
-            setIsPrinterSelectionOpen(true);
-            return true; // We'll handle the actual printing after selection
-          }
-
-          // Generate ESC/POS commands
-          const commands = generateReceiptCommands(repair, {
-            includePayments: options.includePayments,
-            includeParts: options.includeParts,
-            autoCut: true,
-          });
-
-          // Send commands to printer with selected printer address
-          const printerAddress = options.printerName || options.printerAddress;
-          const result = await sendToPrinter(commands, printerAddress);
-          if (result.success) {
-            toast.success("✅ ESC/POS receipt printed successfully!");
-          } else {
-            toast.error(
-              `❌ Failed to print ESC/POS receipt: ${result.message}`
-            );
-          }
-          return result.success;
-        }
-
         // Use existing HTML-based printing
         const content = generatePrintContent(repair, {
           ...options,
@@ -534,44 +490,12 @@ export const usePrintUtils = () => {
         return false;
       }
     },
-    [
-      generatePrintContent,
-      printDocument,
-      generateReceiptCommands,
-      sendToPrinter,
-    ]
+    [generatePrintContent, printDocument]
   );
 
   const printSticker = useCallback(
     async (repair: Repair, options?: PrintOptions): Promise<boolean> => {
       try {
-        // Check if we should use ESC/POS
-        if (options?.useEscPos) {
-          // If no printer is specified, open the printer selection dialog
-          if (!options.printerName) {
-            setPendingPrintJob({ repair, options, type: "sticker" });
-            setIsPrinterSelectionOpen(true);
-            return true; // We'll handle the actual printing after selection
-          }
-
-          // Generate ESC/POS commands
-          const commands = generateStickerCommands(repair, {
-            autoCut: true,
-          });
-
-          // Send commands to printer with selected printer address
-          const printerAddress = options.printerName || options.printerAddress;
-          const result = await sendToPrinter(commands, printerAddress);
-          if (result.success) {
-            toast.success("✅ ESC/POS sticker printed successfully!");
-          } else {
-            toast.error(
-              `❌ Failed to print ESC/POS sticker: ${result.message}`
-            );
-          }
-          return result.success;
-        }
-
         // Use existing HTML-based printing
         const content = generatePrintContent(repair, { format: "sticker" });
         return printDocument(content, "Sticker");
@@ -581,35 +505,7 @@ export const usePrintUtils = () => {
         return false;
       }
     },
-    [
-      generatePrintContent,
-      printDocument,
-      generateStickerCommands,
-      sendToPrinter,
-    ]
-  );
-
-  // Handle printer selection from the dialog
-  const handlePrinterSelection = useCallback(
-    async (printerName: string) => {
-      if (!pendingPrintJob) return;
-
-      const { repair, options, type } = pendingPrintJob;
-
-      // Update options with selected printer
-      const updatedOptions = { ...options, printerName };
-
-      // Execute the pending print job
-      if (type === "receipt") {
-        await printReceipt(repair, updatedOptions);
-      } else {
-        await printSticker(repair, updatedOptions);
-      }
-
-      // Clear pending job
-      setPendingPrintJob(null);
-    },
-    [pendingPrintJob, printReceipt, printSticker]
+    [generatePrintContent, printDocument]
   );
 
   // Keep download as a separate utility function (for manual fallback only)
@@ -652,19 +548,13 @@ export const usePrintUtils = () => {
     printSticker,
     downloadAsHTML,
     generatePrintContent,
-    // Printer selection dialog state and handlers
-    isPrinterSelectionOpen,
-    setIsPrinterSelectionOpen,
-    handlePrinterSelection,
-    pendingPrintJob,
     // Helper function for troubleshooting
     showPrintTroubleshoot: () => {
       toast.info(
         "🛠️ Print Troubleshooting:\n" +
           "1. Ensure popups are allowed\n" +
-          "2. Check if printer is connected\n" +
-          "3. Try refreshing the page\n" +
-          "4. Use 'Download' as backup",
+          "2. Try refreshing the page\n" +
+          "3. Use 'Download' as backup",
         { duration: 8000 }
       );
     },

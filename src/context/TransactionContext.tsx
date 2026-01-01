@@ -2,7 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { Transaction, TransactionItem, TransactionType, TransactionWithDetails } from "@/types/transaction";
+import type {
+  Transaction,
+  TransactionItem,
+  TransactionType,
+  TransactionWithDetails,
+} from "@/types/transaction";
+import { useEvents } from "@/context/EventContext";
 
 interface TransactionWorkspace {
   id: string;
@@ -30,11 +36,18 @@ interface TransactionContextType {
   clearWorkspaces: () => void;
 }
 
-const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
+const TransactionContext = createContext<TransactionContextType | undefined>(
+  undefined
+);
 
-export function TransactionProvider({ children }: { children: React.ReactNode }) {
+export function TransactionProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [workspaces, setWorkspaces] = useState<TransactionWorkspace[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
+  const { emit } = useEvents();
 
   // Initialize first workspace if empty
   useEffect(() => {
@@ -49,21 +62,21 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
     // so we just use a safe fallback or calculate it differently.
     // Ideally we should use the ref or just keep it simple.
     // For now, let's just append.
-    
-    setWorkspaces(prev => {
-        const newWorkspace: TransactionWorkspace = {
-          id,
-          name: `New ${type} #${prev.length + 1}`,
-          type,
-          party_id: "",
-          party_type: type === "Sale" ? "Client" : "Supplier",
-          items: [],
-          paid_amount: 0,
-          payment_method: "Cash",
-          notes: "",
-          status: "Draft",
-        };
-        return [...prev, newWorkspace];
+
+    setWorkspaces((prev) => {
+      const newWorkspace: TransactionWorkspace = {
+        id,
+        name: `New ${type} #${prev.length + 1}`,
+        type,
+        party_id: "",
+        party_type: type === "Sale" ? "Client" : "Supplier",
+        items: [],
+        paid_amount: 0,
+        payment_method: "Cash",
+        notes: "",
+        status: "Draft",
+      };
+      return [...prev, newWorkspace];
     });
     setActiveWorkspaceId(id);
   };
@@ -100,6 +113,10 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
     setWorkspaces((prev) =>
       prev.map((w) => (w.id === activeWorkspaceId ? { ...w, ...updates } : w))
     );
+    // Emit event if financial data changed
+    if (updates.paid_amount !== undefined || updates.status !== undefined) {
+      emit("financial-data-change");
+    }
   };
 
   const editTransaction = (txDetails: TransactionWithDetails) => {
@@ -113,7 +130,8 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
     const newWorkspace: TransactionWorkspace = {
       id: transaction.id,
       name:
-        transaction.transaction_number || `Edit ${transaction.transaction_type}`,
+        transaction.transaction_number ||
+        `Edit ${transaction.transaction_type}`,
       type: transaction.transaction_type as TransactionType,
       party_id: transaction.party_id,
       party_type: transaction.party_type as "Client" | "Supplier",
@@ -127,11 +145,16 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
 
     setWorkspaces((prev) => [...prev, newWorkspace]);
     setActiveWorkspaceId(newWorkspace.id);
+
+    // Emit event when transaction is edited
+    emit("financial-data-change");
   };
 
   const clearWorkspaces = () => {
     setWorkspaces([]);
     addWorkspace("Sale");
+    // Emit event when workspaces are cleared
+    emit("financial-data-change");
   };
 
   const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
@@ -158,7 +181,9 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
 export function useTransactions() {
   const context = useContext(TransactionContext);
   if (context === undefined) {
-    throw new Error("useTransactions must be used within a TransactionProvider");
+    throw new Error(
+      "useTransactions must be used within a TransactionProvider"
+    );
   }
   return context;
 }

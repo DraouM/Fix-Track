@@ -38,6 +38,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useClientContext } from "@/context/ClientContext";
 import { useInventory } from "@/context/InventoryContext";
+import { useEvents } from "@/context/EventContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -57,6 +58,7 @@ export function CreateSaleClient() {
   const router = useRouter();
   const { clients } = useClientContext();
   const { searchItems } = useInventory();
+  const { emit } = useEvents();
 
   // Sale State
   const [selectedClientId, setSelectedClientId] = useState<string>("");
@@ -201,6 +203,9 @@ export function CreateSaleClient() {
       } else {
         toast.success(`Sale ${createdSale.sale_number} saved as draft`);
       }
+
+      // Emit event to notify dashboard of financial change
+      emit('financial-data-change');
 
       router.push("/sales");
     } catch (err: any) {

@@ -198,11 +198,12 @@ pub fn add_supplier_payment(
     amount: f64,
     method: String,
     notes: Option<String>,
+    session_id: Option<String>,
 ) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     conn.execute(
-        "INSERT INTO supplier_payments (id, supplier_id, amount, method, date, notes) VALUES (?1, ?2, ?3, ?4, datetime('now'), ?5)",
-        params![id, supplier_id, amount, method, notes],
+        "INSERT INTO supplier_payments (id, supplier_id, amount, method, date, notes, session_id) VALUES (?1, ?2, ?3, ?4, datetime('now'), ?5, ?6)",
+        params![id, supplier_id, amount, method, notes, session_id],
     )
     .map_err(|e| e.to_string())?;
     Ok(())

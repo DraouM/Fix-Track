@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { useEvents } from "@/context/EventContext";
 import type { Client, ClientFormValues, ClientHistoryEvent, ClientStatus } from "@/types/client";
 
 interface ClientState {
@@ -39,6 +40,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const { emit } = useEvents();
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -150,6 +152,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       await invoke("add_client_payment", { id: uuidv4(), clientId, amount, method, notes });
       await invoke("adjust_client_balance", { clientId, amount: -amount, notes: `Payment via ${method}` });
       toast.success("Payment recorded successfully");
+      emit('financial-data-change');
       await fetchClients();
       if (selectedClient?.id === clientId) await fetchClientById(clientId);
     } catch (err: any) {
@@ -164,6 +167,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       await invoke("adjust_client_balance", { clientId, amount, notes });
       toast.success("Balance adjusted successfully");
+      emit('financial-data-change');
       await fetchClients();
       if (selectedClient?.id === clientId) await fetchClientById(clientId);
     } catch (err: any) {

@@ -180,7 +180,7 @@ pub fn get_order_by_id(order_id: String) -> Result<Option<OrderWithDetails>, Str
     
     // Get payments
     let mut payments_stmt = conn
-        .prepare("SELECT id, order_id, amount, method, date, received_by, notes FROM order_payments WHERE order_id = ?1")
+        .prepare("SELECT id, order_id, amount, method, date, received_by, notes, session_id FROM order_payments WHERE order_id = ?1")
         .map_err(|e| e.to_string())?;
     
     let payments = payments_stmt
@@ -193,6 +193,7 @@ pub fn get_order_by_id(order_id: String) -> Result<Option<OrderWithDetails>, Str
                 date: row.get(4)?,
                 received_by: row.get(5).ok(),
                 notes: row.get(6).ok(),
+                session_id: row.get(7).ok(),
             })
         })
         .map_err(|e| e.to_string())?
@@ -598,8 +599,8 @@ pub fn add_order_payment(payment: OrderPayment) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     
     conn.execute(
-        "INSERT INTO order_payments (id, order_id, amount, method, date, received_by, notes)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        "INSERT INTO order_payments (id, order_id, amount, method, date, received_by, notes, session_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             payment.id,
             payment.order_id,
@@ -608,6 +609,7 @@ pub fn add_order_payment(payment: OrderPayment) -> Result<(), String> {
             payment.date,
             payment.received_by,
             payment.notes,
+            payment.session_id,
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -669,7 +671,7 @@ pub fn get_order_payments(order_id: String) -> Result<Vec<OrderPayment>, String>
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     
     let mut stmt = conn
-        .prepare("SELECT id, order_id, amount, method, date, received_by, notes FROM order_payments WHERE order_id = ?1 ORDER BY date DESC")
+        .prepare("SELECT id, order_id, amount, method, date, received_by, notes, session_id FROM order_payments WHERE order_id = ?1 ORDER BY date DESC")
         .map_err(|e| e.to_string())?;
     
     let payments = stmt
@@ -682,6 +684,7 @@ pub fn get_order_payments(order_id: String) -> Result<Vec<OrderPayment>, String>
                 date: row.get(4)?,
                 received_by: row.get(5).ok(),
                 notes: row.get(6).ok(),
+                session_id: row.get(7).ok(),
             })
         })
         .map_err(|e| e.to_string())?

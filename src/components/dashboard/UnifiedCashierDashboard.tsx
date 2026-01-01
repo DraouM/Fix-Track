@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useEvents } from "@/context/EventContext";
 import { invoke } from "@tauri-apps/api/core";
 import {
   Wallet,
@@ -33,7 +34,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/clientUtils";
-import { getSales } from "@/lib/api/sales";
+
 import {
   LineChart,
   Line,
@@ -47,13 +48,13 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { addExpense, getTodayExpenses, Expense } from "@/lib/api/expense";
-import { 
-  startSession, 
-  getCurrentSession, 
-  closeSession, 
+import { addExpense, Expense } from "@/lib/api/expense";
+import {
+  startSession,
+  getCurrentSession,
+  closeSession,
   getLastSessionClosingBalance,
-  DailySession 
+  DailySession,
 } from "@/lib/api/session";
 
 // Define transaction types
@@ -92,16 +93,20 @@ export function UnifiedCashierDashboard() {
   const [closingNote, setClosingNote] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [inventoryItems, setInventoryItems] = useState<DashboardInventoryItem[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<
+    DashboardInventoryItem[]
+  >([]);
   const [repairs, setRepairs] = useState<DashboardRepair[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [currentSession, setCurrentSession] = useState<DailySession | null>(null);
+  const [currentSession, setCurrentSession] = useState<DailySession | null>(
+    null
+  );
   const [isStartingDay, setIsStartingDay] = useState(false);
   const [openingBalanceInput, setOpeningBalanceInput] = useState("");
 
   // Fetch dashboard data
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
       // 1. Get current session
@@ -114,74 +119,71 @@ export function UnifiedCashierDashboard() {
         setOpeningBalanceInput(lastBalance.toString());
       }
 
-      // 2. Get sales
-      const sales = await getSales();
-      
-      // 3. Get expenses
-      const expenses = await getTodayExpenses();
-
-      // 4. Get inventory (low stock alerts)
+      // 2. Get Inventory (Low stock alerts)
       const dbItems = await invoke<any[]>("get_items");
-      const mappedItems: DashboardInventoryItem[] = dbItems.map(item => ({
+      const mappedItems: DashboardInventoryItem[] = dbItems.map((item) => ({
         id: item.id,
         name: item.item_name,
         stock: item.quantity_in_stock || 0,
-        threshold: item.low_stock_threshold || 0
+        threshold: item.low_stock_threshold || 0,
       }));
       setInventoryItems(mappedItems);
 
-      // 5. Get repairs (active repairs)
+      // 3. Get Repairs (Active repairs)
       const dbRepairs = await invoke<any[]>("get_repairs");
-      const mappedRepairs: DashboardRepair[] = dbRepairs.map(r => ({
+      const mappedRepairs: DashboardRepair[] = dbRepairs.map((r) => ({
         id: r.id,
         customer: r.customer_name,
         device: `${r.device_brand} ${r.device_model}`,
         status: r.status,
-        issue: r.issue_description
+        issue: r.issue_description,
       }));
       setRepairs(mappedRepairs);
 
-      // Transform data into transactions
-      const saleTransactions: Transaction[] = sales
-        .filter(sale => sale.status === "completed") // Only completed sales for cash flow
-        .map((sale) => ({
-          id: sale.id,
-          type: "credit",
-          category: "Sale",
-          amount: sale.paid_amount, // Use paid amount for cash logic
-          description: `Sale ${sale.sale_number}`,
-          time: new Date(sale.created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          status: sale.status,
-        }));
-
-      const expenseTransactions: Transaction[] = expenses.map((exp) => ({
-        id: exp.id,
-        type: "debit",
-        category: "Expense",
-        amount: exp.amount,
-        description: exp.reason,
-        time: new Date(exp.date).toLocaleTimeString([], {
+      // 4. Get All Session Transactions (Unified)
+      const dbTransactions = await invoke<any[]>("get_current_session_transactions");
+      const mappedTransactions: Transaction[] = dbTransactions.map((tx) => ({
+        id: tx.id,
+        type: tx.tx_type as "credit" | "debit",
+        category: tx.category,
+        amount: tx.amount,
+        description: tx.description,
+        time: new Date(tx.time).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        status: "completed",
+        status: tx.status,
       }));
 
-      setTransactions([...saleTransactions, ...expenseTransactions].sort((a, b) => b.id.localeCompare(a.id)));
+      setTransactions(mappedTransactions);
       setLastUpdated(new Date());
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const { subscribe, unsubscribe, emit } = useEvents();
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Memoize the handler to prevent recreation on each render
+  const handleFinancialUpdate = useCallback(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Subscribe to financial events to update dashboard automatically
+  useEffect(() => {
+    // Subscribe to financial data change events
+    subscribe("financial-data-change", handleFinancialUpdate);
+
+    return () => {
+      unsubscribe("financial-data-change", handleFinancialUpdate);
+    };
+  }, [subscribe, unsubscribe, handleFinancialUpdate]);
 
   // Placeholder monthly data for the trend chart
   const monthlyData = [
@@ -213,12 +215,23 @@ export function UnifiedCashierDashboard() {
   const outOfStockItems = inventoryItems.filter((item) => item.stock === 0);
 
   // Calculate repair metrics
-  const activeRepairs = repairs.filter((r) => r.status === "Pending" || r.status === "In Progress" || r.status === "Waiting for Parts").length;
-  const completedRepairs = repairs.filter((r) => r.status === "Completed" || r.status === "Delivered").length;
+  const activeRepairs = repairs.filter(
+    (r) =>
+      r.status === "Pending" ||
+      r.status === "In Progress" ||
+      r.status === "Waiting for Parts"
+  ).length;
+  const completedRepairs = repairs.filter(
+    (r) => r.status === "Completed" || r.status === "Delivered"
+  ).length;
 
   // Revenue trend
-  const currentMonthRevenue = monthlyData.length > 0 ? monthlyData[monthlyData.length - 1].revenue : 0;
-  const previousMonthRevenue = monthlyData.length > 1 ? monthlyData[monthlyData.length - 2].revenue : (currentMonthRevenue || 1);
+  const currentMonthRevenue =
+    monthlyData.length > 0 ? monthlyData[monthlyData.length - 1].revenue : 0;
+  const previousMonthRevenue =
+    monthlyData.length > 1
+      ? monthlyData[monthlyData.length - 2].revenue
+      : currentMonthRevenue || 1;
   const revenueChange = (
     ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) *
     100
@@ -254,8 +267,9 @@ export function UnifiedCashierDashboard() {
         setTransactions([newTransaction, ...transactions]);
         setExpenseAmount("");
         setExpenseReason("");
-        // Optionally refetch for full sync
-        // fetchDashboardData();
+
+        // Emit event to notify other components of financial change
+        emit("financial-data-change");
       } catch (error) {
         console.error("Failed to add expense:", error);
       }
@@ -269,6 +283,8 @@ export function UnifiedCashierDashboard() {
       const session = await startSession(balance);
       setCurrentSession(session);
       fetchDashboardData();
+      // Emit event to notify other components of financial change
+      emit("financial-data-change");
     } catch (error) {
       alert(`Failed to start session: ${error}`);
     }
@@ -302,6 +318,9 @@ Carry Forward: ${formatCurrency(carryForward)}`);
         setWithdrawalAmount("");
         setClosingNote("");
         fetchDashboardData();
+
+        // Emit event to notify other components of financial change
+        emit("financial-data-change");
       } catch (error) {
         alert(`Failed to close session: ${error}`);
       }
@@ -345,7 +364,11 @@ Carry Forward: ${formatCurrency(carryForward)}`);
     };
 
     return (
-      <Card className={`border-2 ${colorClasses[color].split(" ")[2]} ${bgClasses[color]}`}>
+      <Card
+        className={`border-2 ${colorClasses[color].split(" ")[2]} ${
+          bgClasses[color]
+        }`}
+      >
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -375,12 +398,14 @@ Carry Forward: ${formatCurrency(carryForward)}`);
           </div>
         </CardHeader>
         <CardContent>
-          <div className={`text-3xl font-bold ${colorClasses[color].split(" ")[1].replace("text-", "text-")}`}>
+          <div
+            className={`text-3xl font-bold ${colorClasses[color]
+              .split(" ")[1]
+              .replace("text-", "text-")}`}
+          >
             {value}
           </div>
-          {subtitle && (
-            <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
         </CardContent>
       </Card>
     );
@@ -436,12 +461,18 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 <div className="mx-auto bg-blue-100 p-3 rounded-full w-fit mb-4">
                   <Wallet className="h-8 w-8 text-blue-600" />
                 </div>
-                <CardTitle className="text-2xl font-bold">Start Your Day</CardTitle>
-                <p className="text-gray-500">Initialize the cash drawer to begin</p>
+                <CardTitle className="text-2xl font-bold">
+                  Start Your Day
+                </CardTitle>
+                <p className="text-gray-500">
+                  Initialize the cash drawer to begin
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Opening Cash Balance</label>
+                  <label className="text-sm font-medium text-gray-700">
+                    Opening Cash Balance
+                  </label>
                   <div className="relative mt-1">
                     <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
@@ -453,8 +484,8 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                     />
                   </div>
                 </div>
-                <Button 
-                  onClick={handleStartDay} 
+                <Button
+                  onClick={handleStartDay}
                   className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700"
                 >
                   <Plus className="mr-2 h-5 w-5" />
@@ -480,7 +511,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 <Wallet className="h-4 w-4" />
                 Cashier
               </TabsTrigger>
-              <TabsTrigger value="transactions" className="flex items-center gap-2">
+              <TabsTrigger
+                value="transactions"
+                className="flex items-center gap-2"
+              >
                 <FileText className="h-4 w-4" />
                 Transactions
               </TabsTrigger>
@@ -581,53 +615,56 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   <CardContent>
                     <div className="space-y-3 max-h-80 overflow-y-auto">
                       {repairs
-                        .filter((r) => r.status !== "Completed" && r.status !== "Delivered")
+                        .filter(
+                          (r) =>
+                            r.status !== "Completed" && r.status !== "Delivered"
+                        )
                         .slice(0, 5)
                         .map((repair) => (
                           <div
                             key={repair.id}
                             className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
                           >
-                          <div
-                            className={`p-2 rounded-lg ${
-                              repair.status === "Completed"
-                                ? "bg-green-100"
-                                : repair.status === "In Progress"
-                                ? "bg-blue-100"
-                                : "bg-gray-100"
-                            }`}
-                          >
-                            {repair.status === "Completed" ? (
-                              <CheckCircle2 className="w-4 h-4 text-green-600" />
-                            ) : repair.status === "In Progress" ? (
-                              <Clock className="w-4 h-4 text-blue-600" />
-                            ) : (
-                              <Clock className="w-4 h-4 text-gray-600" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">
-                              {repair.customer}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              {repair.device} - {repair.issue}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <Badge
-                              variant={
+                            <div
+                              className={`p-2 rounded-lg ${
                                 repair.status === "Completed"
-                                  ? "default"
+                                  ? "bg-green-100"
                                   : repair.status === "In Progress"
-                                  ? "secondary"
-                                  : "outline"
-                              }
+                                  ? "bg-blue-100"
+                                  : "bg-gray-100"
+                              }`}
                             >
-                              {repair.status}
-                            </Badge>
+                              {repair.status === "Completed" ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                              ) : repair.status === "In Progress" ? (
+                                <Clock className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <Clock className="w-4 h-4 text-gray-600" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 truncate">
+                                {repair.customer}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {repair.device} - {repair.issue}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <Badge
+                                variant={
+                                  repair.status === "Completed"
+                                    ? "default"
+                                    : repair.status === "In Progress"
+                                    ? "secondary"
+                                    : "outline"
+                                }
+                              >
+                                {repair.status}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </CardContent>
                 </Card>
@@ -658,7 +695,9 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           <div className="font-medium text-gray-900 truncate">
                             {item.name}
                           </div>
-                          <div className="text-sm text-red-600">Out of stock</div>
+                          <div className="text-sm text-red-600">
+                            Out of stock
+                          </div>
                         </div>
                         <button className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 whitespace-nowrap">
                           Reorder

@@ -26,7 +26,7 @@ pub struct Repair {
     pub history: Vec<RepairHistory>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RepairPayment {
     pub id: String,
     pub repair_id: String,
@@ -34,6 +34,7 @@ pub struct RepairPayment {
     pub date: String,
     pub method: String,
     pub received_by: Option<String>,
+    pub session_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -94,6 +95,7 @@ pub struct OrderPayment {
     pub date: String,
     pub received_by: Option<String>,
     pub notes: Option<String>,
+    pub session_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -135,6 +137,28 @@ pub struct SupplierHistoryEvent {
     pub changed_by: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ClientPayment {
+    pub id: String,
+    pub client_id: String,
+    pub amount: f64,
+    pub method: String,
+    pub date: String,
+    pub notes: Option<String>,
+    pub session_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SupplierPayment {
+    pub id: String,
+    pub supplier_id: String,
+    pub amount: f64,
+    pub method: String,
+    pub date: String,
+    pub notes: Option<String>,
+    pub session_id: Option<String>,
+}
+
 /// SALES
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Sale {
@@ -172,6 +196,7 @@ pub struct SalePayment {
     pub date: String,
     pub received_by: Option<String>,
     pub notes: Option<String>,
+    pub session_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -277,4 +302,15 @@ pub struct TransactionWithDetails {
     pub items: Vec<TransactionItem>,
     pub payments: Vec<TransactionPayment>,
     pub party_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DashboardTransaction {
+    pub id: String,
+    pub tx_type: String, // "credit" or "debit"
+    pub category: String,
+    pub amount: f64,
+    pub description: String,
+    pub time: String,
+    pub status: String,
 }

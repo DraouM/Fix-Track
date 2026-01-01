@@ -479,6 +479,8 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     let _ = conn.execute("ALTER TABLE sale_payments ADD COLUMN session_id TEXT", []);
     let _ = conn.execute("ALTER TABLE repair_payments ADD COLUMN session_id TEXT", []);
     let _ = conn.execute("ALTER TABLE order_payments ADD COLUMN session_id TEXT", []);
+    let _ = conn.execute("ALTER TABLE client_payments ADD COLUMN session_id TEXT", []);
+    let _ = conn.execute("ALTER TABLE supplier_payments ADD COLUMN session_id TEXT", []);
 
     Ok(())
 }

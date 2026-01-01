@@ -9,6 +9,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { useEvents } from "@/context/EventContext";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { useRepairFilters, RepairSortConfig } from "@/hooks/useRepairFilters";
@@ -140,6 +141,8 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { emit } = useEvents();
 
   // ✅ Use the filtering/sorting hook (you'll need to create useRepairFilters)
   const {
@@ -302,6 +305,8 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
           console.log("✅ Repair created successfully");
           toast.success("Repair created successfully");
           fetchRepairs();
+          // Emit event to notify dashboard of financial change
+          emit("financial-data-change");
         },
         onError: (msg) => {
           console.error("❌ Error creating repair:", msg);
@@ -356,6 +361,14 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
           );
           // Refresh the selected repair to ensure all data is up-to-date
           fetchRepairById(id);
+
+          // Emit event to notify dashboard if financial data changed
+          if (
+            data.estimatedCost !== undefined ||
+            data.paymentStatus !== undefined
+          ) {
+            emit("financial-data-change");
+          }
         },
         onError: (msg) => setError(msg),
       });
@@ -374,6 +387,8 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
           toast.success("Repair deleted successfully");
           setRepairs((prev) => prev.filter((r) => r.id !== id));
           if (selectedRepair?.id === id) setSelectedRepair(null);
+          // Emit event to notify dashboard of financial change
+          emit("financial-data-change");
         },
         onError: (msg) => setError(msg),
       });
@@ -401,6 +416,8 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
                   : r
               )
             );
+            // Emit event to notify dashboard of financial change
+            emit("financial-data-change");
           },
           onError: (msg) => {
             console.error("❌ Error updating repair status:", msg);
@@ -453,6 +470,9 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
           await fetchRepairById(repairId);
           // Also refresh all repairs to update payment totals in the list
           fetchRepairs();
+
+          // Emit event to notify dashboard of financial change
+          emit("financial-data-change");
         },
         onError: (msg) => setError(msg),
       });
@@ -477,6 +497,8 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
           onSuccess: () => {
             toast.success("Part added successfully");
             fetchRepairById(repairId);
+            // Emit event to notify dashboard of financial change
+            emit("financial-data-change");
           },
           onError: (msg) => setError(msg),
         }
@@ -495,6 +517,8 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         onSuccess: () => {
           toast.success("Part removed successfully");
           fetchRepairById(repairId);
+          // Emit event to notify dashboard of financial change
+          emit("financial-data-change");
         },
         onError: (msg) => setError(msg),
       });

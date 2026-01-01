@@ -182,6 +182,7 @@ pub fn get_sale_by_id(sale_id: String) -> Result<Option<SaleWithDetails>, String
                 date: row.get(4)?,
                 received_by: row.get(5).ok(),
                 notes: row.get(6).ok(),
+                session_id: None, // Initialize session_id as None for existing payments
             })
         })
         .map_err(|e| e.to_string())?
@@ -587,7 +588,7 @@ pub fn add_sale_payment(payment: SalePayment) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
 
     conn.execute(
-        "INSERT INTO sale_payments (id, sale_id, amount, method, date, received_by, notes) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        "INSERT INTO sale_payments (id, sale_id, amount, method, date, received_by, notes, session_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             payment.id,
             payment.sale_id,
@@ -596,6 +597,7 @@ pub fn add_sale_payment(payment: SalePayment) -> Result<(), String> {
             payment.date,
             payment.received_by,
             payment.notes,
+            payment.session_id,
         ],
     ).map_err(|e| e.to_string())?;
 

@@ -29,7 +29,8 @@ use db::sale::{
 };
 use db::schema;
 use db::session::{
-    close_session, get_current_session, get_last_session_closing_balance, start_session,
+    close_session, get_current_session, get_current_session_transactions,
+    get_last_session_closing_balance, start_session,
 };
 use db::supplier::{
     add_supplier_payment, adjust_supplier_credit, delete_supplier, get_supplier_by_id,
@@ -134,6 +135,7 @@ fn main() {
             get_current_session,
             close_session,
             get_last_session_closing_balance,
+            get_current_session_transactions,
             // PRINTER - Add these lines
             print_escpos_commands,
             get_available_printers,

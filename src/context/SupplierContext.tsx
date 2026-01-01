@@ -15,6 +15,7 @@ import {
   useSupplierFilters,
   SupplierSortConfig,
 } from "@/hooks/useSupplierFilters";
+import { useEvents } from "@/context/EventContext";
 
 import type {
   Supplier,
@@ -111,6 +112,8 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
     handleSort,
     clearFilters,
   } = useSupplierFilters(suppliers);
+
+  const { emit } = useEvents();
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -404,6 +407,9 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
 
             toast.success("Payment added successfully");
 
+            // Emit event to notify dashboard of financial change
+            emit("financial-data-change");
+
             // Fetch the updated supplier to get the new credit balance
             await fetchSupplierById(supplierId);
             // Also refresh all suppliers to update credit balances in the list
@@ -450,6 +456,9 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             }
 
             toast.success("Credit balance adjusted successfully");
+
+            // Emit event to notify dashboard of financial change
+            emit("financial-data-change");
 
             // Fetch the updated supplier
             await fetchSupplierById(supplierId);

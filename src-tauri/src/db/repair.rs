@@ -121,7 +121,7 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
 
         // 3. Get payments
         let mut payments_stmt = conn
-            .prepare("SELECT id, repair_id, amount, date, method, received_by FROM repair_payments WHERE repair_id = ?1 ORDER BY date DESC")
+            .prepare("SELECT id, repair_id, amount, date, method, received_by, session_id FROM repair_payments WHERE repair_id = ?1 ORDER BY date DESC")
             .map_err(|e| e.to_string())?;
             
         let payments: Vec<RepairPayment> = payments_stmt
@@ -133,6 +133,7 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
                     date: row.get(3)?,
                     method: row.get(4)?,
                     received_by: row.get(5).ok(),
+                    session_id: row.get(6).ok(),
                 })
             })
             .map_err(|e| e.to_string())?
@@ -292,14 +293,15 @@ pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
 
     // Insert payment
     conn.execute(
-        "INSERT INTO repair_payments (id, repair_id, amount, date, method, received_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        "INSERT INTO repair_payments (id, repair_id, amount, date, method, received_by, session_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         params![
             payment.id,
             payment.repair_id,
             payment.amount,
             payment.date,
             payment.method,
-            payment.received_by
+            payment.received_by,
+            payment.session_id
         ],
     ).map_err(|e| e.to_string())?;
 
@@ -344,7 +346,7 @@ pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
 pub fn get_payments_for_repair(repair_id: String) -> Result<Vec<RepairPayment>, String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     let mut stmt = conn
-        .prepare("SELECT id, repair_id, amount, date, method, received_by FROM repair_payments WHERE repair_id = ?1 ORDER BY date DESC")
+        .prepare("SELECT id, repair_id, amount, date, method, received_by, session_id FROM repair_payments WHERE repair_id = ?1 ORDER BY date DESC")
         .map_err(|e| e.to_string())?;
     let rows = stmt
         .query_map(params![repair_id], |row| {
@@ -355,6 +357,7 @@ pub fn get_payments_for_repair(repair_id: String) -> Result<Vec<RepairPayment>, 
                 date: row.get(3)?,
                 method: row.get(4)?,
                 received_by: row.get(5).ok(),
+                session_id: row.get(6).ok(),
             })
         })
         .map_err(|e| e.to_string())?

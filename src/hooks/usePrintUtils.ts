@@ -196,11 +196,16 @@ export const usePrintUtils = () => {
                   </div>
                   <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
                     <span>التاريخ:</span>
-                    <span>${formatPrintDate(repair.createdAt)}</span>
-                  </div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span>الحالة:</span>
-                    <span style="font-weight: bold;">${repair.status}</span>
+                     <span>${new Date(repair.createdAt).toLocaleDateString(
+                       "en-ER",
+                       {
+                         year: "numeric",
+                         month: "2-digit",
+                         day: "2-digit",
+                         hour: "2-digit",
+                         minute: "2-digit",
+                       }
+                     )}</span>
                   </div>
                 </div>
 
@@ -318,7 +323,6 @@ export const usePrintUtils = () => {
                     </div>
                   </div>
 
-
                 </div>
 
                 <div style="border-top: 1px dashed #000; margin: 12px 0;"></div>
@@ -327,6 +331,11 @@ export const usePrintUtils = () => {
                 <div style="text-align: center; font-size: 10px; margin-top: 8px;">
                   <div style="margin-bottom: 4px; font-size: 11px; font-style: italic;">شكراً لتعاملكم معنا!</div>
                   <div style="font-weight: bold;">يرجى الاحتفاظ بهذا الإيصال للضمان.</div>
+                  <div style="margin-top: 4px; font-size: 10px; font-weight: bold; line-height: 1.2;">
+                    <div>ملاحظة: لا تتحمل الدكانة مسؤولية محتويات الهاتف.</div>
+                    <div>الضمان 60 يوم فقط من تاريخ الإصلاح.</div>
+                  </div>
+
                 </div>
               </div>
             </div>

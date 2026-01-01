@@ -318,11 +318,7 @@ export const usePrintUtils = () => {
                     </div>
                   </div>
 
-                  <div style="margin-top: 6px; font-size: 11px; text-align: center;">
-                    <div style="font-weight: bold;">حالة الدفع: <span style="text-transform: uppercase;">${
-                      repair.paymentStatus
-                    }</span></div>
-                  </div>
+
                 </div>
 
                 <div style="border-top: 1px dashed #000; margin: 12px 0;"></div>

@@ -12,6 +12,7 @@ import React, {
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { useInventoryFilters, SortConfig } from "@/hooks/useInventoryFilters";
+import { useEvents } from "@/context/EventContext";
 
 import type {
   InventoryItem,
@@ -118,6 +119,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
     clearFilters,
   } = useInventoryFilters(inventoryItems);
 
+  const { emit } = useEvents();
+
   // ✅ Fetch items from DB
   const fetchItems = useCallback(async () => {
     try {
@@ -195,6 +198,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
         toast.success("Item added");
         fetchItems();
+        // Emit event to notify dashboard
+        emit("financial-data-change");
       } catch (err) {
         toast.error(`Failed to add item: ${err}`);
       }
@@ -243,6 +248,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
         toast.success("Item updated");
         fetchItems();
+        // Emit event to notify dashboard
+        emit("financial-data-change");
       } catch (err) {
         toast.error(`Failed to update item: ${err}`);
       }
@@ -256,6 +263,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
         await invoke("delete_item", { id });
         toast.success("Item deleted");
         fetchItems();
+        // Emit event to notify dashboard
+        emit("financial-data-change");
       } catch (err) {
         toast.error(`Failed to delete item: ${err}`);
       }
@@ -306,6 +315,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
         toast.success("Stock updated");
         fetchItems();
+        // Emit event to notify dashboard
+        emit("financial-data-change");
       } catch (err) {
         toast.error(`Failed to update quantity: ${err}`);
       }

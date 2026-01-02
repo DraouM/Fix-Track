@@ -216,7 +216,7 @@ pub fn get_current_session_transactions() -> Result<Vec<DashboardTransaction>, S
         all_tx.push(DashboardTransaction {
             id: row.get(0).map_err(|e: rusqlite::Error| e.to_string())?,
             tx_type: "credit".to_string(),
-            category: "Client payment".to_string(),
+            category: "Client Payment".to_string(),
             amount: row.get(1).map_err(|e: rusqlite::Error| e.to_string())?,
             description: format!(
                 "Direct payment from {}",
@@ -252,7 +252,7 @@ pub fn get_current_session_transactions() -> Result<Vec<DashboardTransaction>, S
         all_tx.push(DashboardTransaction {
             id: row.get(0).map_err(|e: rusqlite::Error| e.to_string())?,
             tx_type: "debit".to_string(),
-            category: "Supplier payment".to_string(),
+            category: "Supplier Payment".to_string(),
             amount: row.get(1).map_err(|e: rusqlite::Error| e.to_string())?,
             description: format!(
                 "Payment to {}",
@@ -277,7 +277,7 @@ pub fn get_current_session_transactions() -> Result<Vec<DashboardTransaction>, S
         all_tx.push(DashboardTransaction {
             id: row.get(0).map_err(|e: rusqlite::Error| e.to_string())?,
             tx_type: direction.to_string(),
-            category: format!("{} payment", tx_type_label),
+            category: format!("{} Payment", tx_type_label),
             amount: row.get(1).map_err(|e: rusqlite::Error| e.to_string())?,
             description: format!(
                 "Payment for {} {}",

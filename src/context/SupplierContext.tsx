@@ -247,6 +247,8 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
 
             toast.success("Supplier created successfully");
             fetchSuppliers();
+            // Emit event to notify dashboard
+            emit("financial-data-change");
           },
           onError: (msg) => {
             console.error("❌ Error creating supplier:", msg);
@@ -317,6 +319,8 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             }
 
             toast.success("Supplier updated successfully");
+            // Emit event to notify dashboard
+            emit("financial-data-change");
             // Map the updated supplier back to camelCase for frontend
             const mappedSupplier = mapSupplierFromDB(updatedSupplier);
             setSuppliers((prev) =>
@@ -379,7 +383,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             amount,
             method,
             notes: notes || null,
-            session_id: session?.id || null,
+            sessionId: session?.id || null,
           });
 
           // 2. Adjust credit balance (Negative amount because payment reduces debt)

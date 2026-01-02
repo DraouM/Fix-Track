@@ -99,6 +99,8 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       await invoke("insert_client", { client: clientData });
       toast.success("Client created successfully");
       await fetchClients();
+      // Emit event to notify dashboard
+      emit('financial-data-change');
     } catch (err: any) {
       toast.error(err.message || "Failed to create client");
     } finally {
@@ -127,6 +129,8 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       await invoke("update_client", { client: mapClientToDB(updated) });
       toast.success("Client updated successfully");
       await fetchClients();
+      // Emit event to notify dashboard
+      emit('financial-data-change');
     } catch (err: any) {
       toast.error(err.message || "Failed to update client");
     } finally {
@@ -151,7 +155,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setLoading(true);
     try {
       const session = await getCurrentSession();
-      await invoke("add_client_payment", { id: uuidv4(), clientId, amount, method, notes, session_id: session?.id || null });
+      await invoke("add_client_payment", { id: uuidv4(), clientId, amount, method, notes, sessionId: session?.id || null });
       await invoke("adjust_client_balance", { clientId, amount: -amount, notes: `Payment via ${method}` });
       toast.success("Payment recorded successfully");
       emit('financial-data-change');

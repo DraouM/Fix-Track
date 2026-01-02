@@ -107,6 +107,8 @@ export function TransactionProvider({
         setActiveWorkspaceId(newWorkspaces[newWorkspaces.length - 1].id);
       }
     }
+    // Emit event when workspace is removed
+    emit("financial-data-change");
   };
 
   const updateActiveWorkspace = (updates: Partial<TransactionWorkspace>) => {

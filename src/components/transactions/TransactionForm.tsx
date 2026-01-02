@@ -31,11 +31,13 @@ import {
   TransactionPayment as TxPaymentModel,
 } from "@/types/transaction";
 import { useInventory } from "@/context/InventoryContext";
+import { useEvents } from "@/context/EventContext";
 
 export function TransactionForm() {
   const router = useRouter();
   const { activeWorkspace, updateActiveWorkspace, removeWorkspace, setActiveWorkspaceId } =
     useTransactions();
+  const { emit } = useEvents();
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -181,6 +183,9 @@ export function TransactionForm() {
       } else {
         await submitTransaction(transactionModel, itemModels, paymentModels);
       }
+
+      // Emit event to notify dashboard of financial change
+      emit("financial-data-change");
 
       toast.success(
         `${type} ${complete ? "completed" : "saved as draft"} successfully!`

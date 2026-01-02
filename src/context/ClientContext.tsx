@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { useEvents } from "@/context/EventContext";
+import { getCurrentSession } from "@/lib/api/session";
 import type { Client, ClientFormValues, ClientHistoryEvent, ClientStatus } from "@/types/client";
 
 interface ClientState {
@@ -149,7 +150,8 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addPayment = useCallback(async (clientId: string, amount: number, method: string, notes?: string) => {
     setLoading(true);
     try {
-      await invoke("add_client_payment", { id: uuidv4(), clientId, amount, method, notes });
+      const session = await getCurrentSession();
+      await invoke("add_client_payment", { id: uuidv4(), clientId, amount, method, notes, session_id: session?.id || null });
       await invoke("adjust_client_balance", { clientId, amount: -amount, notes: `Payment via ${method}` });
       toast.success("Payment recorded successfully");
       emit('financial-data-change');

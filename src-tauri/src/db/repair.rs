@@ -161,9 +161,7 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
             .collect();
 
         // 5. Calculate computed fields
-        let total_paid: f64 = payments.iter().map(|p| p.amount).sum();
         let estimated_cost: f64 = row.get(6).unwrap_or(0.0);
-        let remaining_balance = estimated_cost - total_paid;
 
         // 6. Return full object
         Ok(Some(Repair {

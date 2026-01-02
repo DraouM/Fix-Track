@@ -2,7 +2,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod db;
-mod printer; // Add this line
 
 use db::client::{
     add_client_payment, adjust_client_balance, delete_client, get_client_by_id, get_client_history,
@@ -41,7 +40,6 @@ use db::transaction::{
     get_transaction_by_id, get_transactions, remove_transaction_item, submit_transaction,
     update_transaction,
 };
-use printer::{get_available_printers, get_printer_status, print_escpos_commands}; // Add this line
 use std::panic;
 
 fn main() {
@@ -136,10 +134,6 @@ fn main() {
             close_session,
             get_last_session_closing_balance,
             get_current_session_transactions,
-            // PRINTER - Add these lines
-            print_escpos_commands,
-            get_available_printers,
-            get_printer_status,
             // TRANSACTIONS
             create_transaction,
             get_transactions,

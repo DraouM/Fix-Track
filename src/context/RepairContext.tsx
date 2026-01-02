@@ -13,6 +13,7 @@ import { useEvents } from "@/context/EventContext";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { useRepairFilters, RepairSortConfig } from "@/hooks/useRepairFilters";
+import { getCurrentSession } from "@/lib/api/session";
 
 import type {
   Repair,
@@ -437,6 +438,9 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     async (repairId: string, payment: PaymentInput) => {
       setLoading(true);
       clearError();
+      
+      const session = await getCurrentSession();
+      
       const paymentData = {
         id: uuidv4(),
         repair_id: repairId, // Keep as string for backend compatibility
@@ -444,6 +448,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         date: new Date().toISOString(),
         method: payment.method,
         received_by: null, // Optional field
+        session_id: session?.id || null,
       };
 
       await withAsync(() => invoke("add_payment", { payment: paymentData }), {

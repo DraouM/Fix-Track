@@ -16,6 +16,7 @@ import {
   SupplierSortConfig,
 } from "@/hooks/useSupplierFilters";
 import { useEvents } from "@/context/EventContext";
+import { getCurrentSession } from "@/lib/api/session";
 
 import type {
   Supplier,
@@ -371,12 +372,14 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       await withAsync(
         async () => {
           // 1. Add payment record
+          const session = await getCurrentSession();
           await invoke("add_supplier_payment", {
             id: uuidv4(),
             supplierId,
             amount,
             method,
             notes: notes || null,
+            session_id: session?.id || null,
           });
 
           // 2. Adjust credit balance (Negative amount because payment reduces debt)

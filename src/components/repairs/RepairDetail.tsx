@@ -57,17 +57,13 @@ import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { toast } from "sonner";
 import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
 import { StickerTemplate } from "@/components/helpers/StickerTemplate";
-import { PrinterSelectionDialog } from "@/components/helpers/PrinterSelectionDialog";
+
 import { reportError } from "@/lib/crashReporter";
 
 interface RepairDetailProps {
   repair: Repair | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-interface PrintOptions {
-  useEscPos?: boolean;
 }
 
 const getStatusColor = (status: RepairStatus) => {
@@ -127,18 +123,12 @@ export function RepairDetail({
     printSticker,
     // downloadAsHTML,  // Commented out as it's not currently used
     showPrintTroubleshoot,
-    isPrinterSelectionOpen,
-    setIsPrinterSelectionOpen,
-    handlePrinterSelection,
   } = usePrintUtils();
 
   // Local state for loading indicators
   const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
   const [isGeneratingSticker, setIsGeneratingSticker] = useState(false);
-  const [isGeneratingEscPosReceipt, setIsGeneratingEscPosReceipt] =
-    useState(false);
-  const [isGeneratingEscPosSticker, setIsGeneratingEscPosSticker] =
-    useState(false);
+
   const [hasError, setHasError] = useState(false);
 
   const currentRepair = repair ? getItemById(repair.id) || repair : null;
@@ -221,34 +211,6 @@ export function RepairDetail({
     }
   };
 
-  const handlePrintReceiptEscPos = async () => {
-    if (isGeneratingEscPosReceipt) return;
-
-    setIsGeneratingEscPosReceipt(true);
-    try {
-      // Validate repair data before printing
-      if (!repairData.id) {
-        throw new Error("Invalid repair data for ESC/POS printing");
-      }
-
-      const success = await printReceipt(repairData, {
-        includePayments: true,
-        includeParts: true,
-        useEscPos: true,
-      });
-
-      // Don't show success toast here as it's handled in sendToPrinter or we show printer selector
-    } catch (error) {
-      console.error("Failed to print ESC/POS receipt:", error);
-      reportError(error as Error, "RepairDetail.handlePrintReceiptEscPos");
-      toast.error(
-        "❌ ESC/POS receipt printing failed. Please try again or check your printer."
-      );
-    } finally {
-      setIsGeneratingEscPosReceipt(false);
-    }
-  };
-
   const handlePrintSticker = async () => {
     if (isGeneratingSticker) return;
 
@@ -272,32 +234,6 @@ export function RepairDetail({
       );
     } finally {
       setIsGeneratingSticker(false);
-    }
-  };
-
-  const handlePrintStickerEscPos = async () => {
-    if (isGeneratingEscPosSticker) return;
-
-    setIsGeneratingEscPosSticker(true);
-    try {
-      // Validate repair data before printing
-      if (!repairData.id) {
-        throw new Error("Invalid repair data for ESC/POS sticker printing");
-      }
-
-      const success = await printSticker(repairData, {
-        useEscPos: true,
-      });
-
-      // Don't show success toast here as it's handled in sendToPrinter or we show printer selector
-    } catch (error) {
-      console.error("Failed to print ESC/POS sticker:", error);
-      reportError(error as Error, "RepairDetail.handlePrintStickerEscPos");
-      toast.error(
-        "❌ ESC/POS sticker printing failed. Please try again or check your printer."
-      );
-    } finally {
-      setIsGeneratingEscPosSticker(false);
     }
   };
 
@@ -757,23 +693,6 @@ export function RepairDetail({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
-                    onClick={handlePrintReceiptEscPos}
-                    disabled={isGeneratingEscPosReceipt}
-                    className="flex items-center gap-2"
-                  >
-                    <Printer className="h-4 w-4" />
-                    Print Thermal Receipt (ESC/POS)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handlePrintStickerEscPos}
-                    disabled={isGeneratingEscPosSticker}
-                    className="flex items-center gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Print Thermal Sticker (ESC/POS)
-                  </DropdownMenuItem>
-                  <Separator className="my-1" />
-                  <DropdownMenuItem
                     onClick={showPrintTroubleshoot}
                     className="flex items-center gap-2 text-blue-600"
                   >
@@ -787,15 +706,6 @@ export function RepairDetail({
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Printer Selection Dialog */}
-      <PrinterSelectionDialog
-        open={isPrinterSelectionOpen}
-        onOpenChange={setIsPrinterSelectionOpen}
-        onPrinterSelect={handlePrinterSelection}
-        title="Select Thermal Printer"
-        description="Choose your connected Xprinter or other ESC/POS printer"
-      />
 
       {/* Hidden Print Templates - These are rendered outside the dialog */}
       {repairData && (

@@ -180,92 +180,111 @@ export function RepairsPageInner() {
     value,
     subtitle,
     color = "blue",
+    trend,
   }: {
     icon: React.ComponentType<{ className?: string }>;
     title: string;
     value: string | number;
     subtitle?: string;
     color?: "blue" | "green" | "orange" | "red" | "purple";
+    trend?: number;
   }) => {
     const colorClasses = {
-      blue: "bg-blue-100 text-blue-600",
-      green: "bg-green-100 text-green-600",
-      orange: "bg-orange-100 text-orange-600",
-      red: "bg-red-100 text-red-600",
-      purple: "bg-purple-100 text-purple-600",
+      blue: "bg-blue-50 text-blue-600",
+      green: "bg-green-50 text-green-600",
+      orange: "bg-orange-50 text-orange-600",
+      red: "bg-red-50 text-red-600",
+      purple: "bg-purple-50 text-purple-600",
     };
 
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center gap-2 mb-1">
-          <div className={`p-1.5 rounded-lg ${colorClasses[color]}`}>
-            <Icon className="w-4 h-4" />
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
+              <Icon className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{title}</span>
           </div>
-          <span className="text-sm font-medium text-gray-600">{title}</span>
+          {typeof trend === 'number' && (
+            <div className={`flex items-center gap-1 text-[10px] font-black ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <TrendingUp className={`w-3 h-3 ${trend < 0 && 'rotate-180'}`} />
+              {Math.abs(trend)}%
+            </div>
+          )}
         </div>
-        <div className="mt-2">
-          <div className="text-xl font-bold text-gray-900">{value}</div>
+        <div className="flex items-baseline justify-between">
+          <div className="text-2xl font-black text-foreground">{value}</div>
           {subtitle && (
-            <div className="text-xs text-gray-500 mt-1">{subtitle}</div>
+            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
+              <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
+              {subtitle}
+            </div>
           )}
         </div>
       </div>
     );
   };
 
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-4">
+    <div className="min-h-screen bg-[#f8fafc] p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Wrench className="w-8 h-8 text-blue-600" />
-              Repairs
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Manage repair orders and track customer service
-            </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <Wrench className="h-6 w-6" />
+            </div>
+            <div className="flex items-baseline gap-3">
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
+                Repairs
+              </h1>
+              <p className="hidden md:block text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-60">
+                Management & tracking
+              </p>
+            </div>
           </div>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
-              <Download className="w-4 h-4" />
-              Export
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
-              <Upload className="w-4 h-4" />
-              Import
-            </button>
+             <Button
+                variant="outline"
+                className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
             <Dialog open={isFormOpen} onOpenChange={handleDialogOpenChange}>
               <DialogTrigger asChild>
                 <Button
                   onClick={openAddForm}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
                 >
-                  <Icons.plusCircle className="w-4 h-4" />
+                  <Icons.plusCircle className="mr-2 h-4 w-4" />
                   Add Repair
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
+              <DialogContent className="sm:max-w-[950px] max-h-[90vh] overflow-y-auto rounded-3xl border-none shadow-2xl">
+                <DialogHeader className="pb-6 border-b">
+                  <DialogTitle className="text-2xl font-black">
                     {repairToEdit ? "Edit Repair" : "New Repair"}
                   </DialogTitle>
-                  <DialogDescription>
+                  <DialogDescription className="font-medium text-muted-foreground">
                     {repairToEdit
                       ? "Update details for this repair order."
                       : "Fill in the details for a new repair order."}
                   </DialogDescription>
                 </DialogHeader>
-                <RepairForm
-                  key={
-                    repairToEdit
-                      ? `edit-${repairToEdit.id}`
-                      : `new-repair-${formInstanceKey}`
-                  }
-                  repairToEdit={repairToEdit}
-                  onSuccess={handleFormSuccess}
-                />
+                <div className="pt-6">
+                  <RepairForm
+                    key={
+                      repairToEdit
+                        ? `edit-${repairToEdit.id}`
+                        : `new-repair-${formInstanceKey}`
+                    }
+                    repairToEdit={repairToEdit}
+                    onSuccess={handleFormSuccess}
+                  />
+                </div>
               </DialogContent>
             </Dialog>
           </div>
@@ -291,20 +310,28 @@ export function RepairsPageInner() {
             icon={DollarSign}
             title="Total Revenue"
             value={formatCurrency(statistics.totalRevenue)}
-            subtitle="From completed repairs"
+            subtitle="Completed"
             color="green"
           />
           <StatCard
             icon={AlertCircle}
             title="Outstanding"
             value={formatCurrency(statistics.pendingRevenue)}
-            subtitle={`${statistics.unpaidCount} unpaid repairs`}
+            subtitle={`${statistics.unpaidCount} unpaid`}
             color="red"
           />
         </div>
 
         {/* Repairs Table */}
-        <RepairTable onEditRepair={openEditForm} />
+        <div className="space-y-4">
+             <div className="flex items-center gap-3">
+                 <div className="h-2 w-2 rounded-full bg-primary"></div>
+                 <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Repair History & Tasks</h2>
+             </div>
+             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                <RepairTable onEditRepair={openEditForm} />
+             </div>
+        </div>
 
         {/* Created Repair Detail View */}
         {createdRepair && (

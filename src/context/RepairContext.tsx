@@ -247,17 +247,14 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       clearError();
 
-      const repair = await withAsync(
+      let fetchedRepair: Repair | null = null;
+
+      await withAsync(
         () => invoke<RepairDb>("get_repair_by_id", { repairId: id }),
         {
           onSuccess: (data) => {
             console.log("✅ Successfully fetched repair by ID:", data);
-            const mappedRepair = mapRepairFromDB(data);
-            console.log("🔄 Mapped repair to frontend format:", mappedRepair);
-            setSelectedRepair(mappedRepair);
-            setRepairs((prev) =>
-              prev.map((r) => (r.id === mappedRepair.id ? mappedRepair : r))
-            );
+            fetchedRepair = mapRepairFromDB(data);
           },
           onError: (msg) => {
             console.error("❌ Error fetching repair by ID:", msg);
@@ -266,20 +263,41 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       );
 
-      if (repair && id) {
+      if (fetchedRepair && id) {
         console.log("🔄 Fetching related data for repair:", id);
         // fetch related data
-        const [paymentsData, partsData, historyData] = await Promise.all([
-          invoke<Payment[]>("get_payments_for_repair", { repairId: id }),
-          invoke<UsedPart[]>("get_used_parts_for_repair", { repairId: id }),
-          invoke<RepairHistory[]>("get_history_for_repair", { repairId: id }),
-        ]);
-        console.log("💰 Payments fetched:", paymentsData);
-        console.log("🔧 Used parts fetched:", partsData);
-        console.log("📜 History fetched:", historyData);
-        setPayments(paymentsData);
-        setUsedParts(partsData);
-        setHistory(historyData);
+        try {
+          const [paymentsData, partsData, historyData] = await Promise.all([
+            invoke<Payment[]>("get_payments_for_repair", { repairId: id }),
+            invoke<UsedPart[]>("get_used_parts_for_repair", { repairId: id }),
+            invoke<RepairHistory[]>("get_history_for_repair", { repairId: id }),
+          ]);
+
+          console.log("💰 Payments fetched:", paymentsData);
+          console.log("🔧 Used parts fetched:", partsData);
+          console.log("📜 History fetched:", historyData);
+
+          const repairWithTotals = calculatePaymentTotals(
+            fetchedRepair,
+            paymentsData
+          );
+
+          setSelectedRepair(repairWithTotals);
+          setRepairs((prev) =>
+            prev.map((r) =>
+              r.id === repairWithTotals.id ? repairWithTotals : r
+            )
+          );
+
+          setPayments(paymentsData);
+          setUsedParts(partsData);
+          setHistory(historyData);
+        } catch (error) {
+          console.error("❌ Error fetching related repair data:", error);
+          setError(
+            error instanceof Error ? error.message : "Failed to fetch related data"
+          );
+        }
       }
 
       setLoading(false);
@@ -438,9 +456,9 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     async (repairId: string, payment: PaymentInput) => {
       setLoading(true);
       clearError();
-      
+
       const session = await getCurrentSession();
-      
+
       const paymentData = {
         id: uuidv4(),
         repair_id: repairId, // Keep as string for backend compatibility

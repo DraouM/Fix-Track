@@ -1,20 +1,11 @@
 "use client";
 
-// Payment form for processing repair payments
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Form,
   FormControl,
@@ -25,9 +16,11 @@ import {
 } from "@/components/ui/form";
 import { useRepairContext } from "@/context/RepairContext";
 import type { Repair } from "@/types/repair";
+import { Wallet, CreditCard, ArrowRightLeft, DollarSign } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const paymentSchema = z.object({
-  amount: z.number().min(1, "Amount must be greater than 0"),
+  amount: z.number().min(0.01, "Amount must be greater than 0"),
   method: z.enum(["Cash", "Card", "Transfer"]),
 });
 
@@ -38,11 +31,14 @@ interface RepairPaymentFormProps {
   onSuccess?: () => void;
 }
 
-export function RepairPaymentForm({
-  repair,
-  onSuccess,
-}: RepairPaymentFormProps) {
-  const { addPayment } = useRepairContext(); // Removed updatePaymentStatus since it's now calculated automatically
+const methods = [
+  { id: "Cash", label: "Cash", icon: Wallet },
+  { id: "Card", label: "Card", icon: CreditCard },
+  { id: "Transfer", label: "Transfer", icon: ArrowRightLeft },
+];
+
+export function RepairPaymentForm({ repair, onSuccess }: RepairPaymentFormProps) {
+  const { addPayment, fetchRepairById } = useRepairContext();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<PaymentFormValues>({
@@ -53,22 +49,18 @@ export function RepairPaymentForm({
     },
   });
 
-  const totalPaid = repair.totalPaid ?? 0;
-  const remainingBalance = repair.remainingBalance ?? repair.estimatedCost;
-
   const handleSubmit = async (values: PaymentFormValues) => {
     setLoading(true);
-
     try {
-      // Add the payment to the repair's payments history
-      // The backend will automatically calculate and update the payment status
       await addPayment(repair.id, {
         repair_id: repair.id,
         amount: values.amount,
         method: values.method,
       });
-
-      form.reset();
+      
+      form.reset({ amount: 0, method: values.method });
+      // Refresh context data to reflect new payment/balance
+      await fetchRepairById(repair.id);
       onSuccess?.();
     } catch (err) {
       console.error("Failed to add payment:", err);
@@ -79,35 +71,28 @@ export function RepairPaymentForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-4 p-4 border rounded-lg shadow-sm bg-card"
-      >
-        <div className="text-sm text-muted-foreground">
-          Remaining Balance:{" "}
-          <span className="font-semibold">{remainingBalance.toFixed(2)}</span>
-        </div>
-
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        
         <FormField
           control={form.control}
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount</FormLabel>
+              <FormLabel className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-70">Payment Amount</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Enter payment amount"
-                  value={field.value === 0 ? "" : field.value}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    field.onChange(value === "" ? 0 : parseFloat(value));
-                  }}
-                />
+                <div className="relative">
+                   <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                   <Input
+                     type="number"
+                     step="0.01"
+                     placeholder="0.00"
+                     className="h-10 pl-9 rounded-xl bg-white border-gray-100 font-black text-sm shadow-sm focus:ring-primary/20 transition-all"
+                     value={field.value || ""}
+                     onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                   />
+                </div>
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-[10px] uppercase font-bold" />
             </FormItem>
           )}
         />
@@ -117,26 +102,36 @@ export function RepairPaymentForm({
           name="method"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Payment Method</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a method" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Cash">Cash</SelectItem>
-                  <SelectItem value="Card">Card</SelectItem>
-                  <SelectItem value="Transfer">Transfer</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
+              <FormLabel className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-70 border-t border-gray-50 pt-3 block mt-2">Method</FormLabel>
+              <div className="grid grid-cols-3 gap-2">
+                {methods.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => field.onChange(m.id)}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all gap-1.5",
+                      field.value === m.id 
+                        ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105" 
+                        : "bg-white border-gray-100 text-muted-foreground hover:border-primary/20 hover:bg-gray-50 opacity-80"
+                    )}
+                  >
+                    <m.icon className={cn("h-3.5 w-3.5", field.value === m.id ? "text-white" : "text-primary")} />
+                    <span className="text-[7px] font-black uppercase tracking-widest">{m.label}</span>
+                  </button>
+                ))}
+              </div>
+              <FormMessage className="text-[10px] uppercase font-bold" />
             </FormItem>
           )}
         />
 
-        <Button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Add Payment"}
+        <Button 
+          type="submit" 
+          disabled={loading || form.watch("amount") <= 0} 
+          className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black text-[9px] uppercase tracking-widest shadow-xl shadow-primary/10 transition-all active:scale-95"
+        >
+          {loading ? "Recording..." : "Add Transaction"}
         </Button>
       </form>
     </Form>

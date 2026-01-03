@@ -1,64 +1,51 @@
 "use client";
 
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useRepairActions, useRepairContext } from "@/context/RepairContext";
-import { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
-import {
-  Printer,
   User,
   Smartphone,
   AlertCircle,
   DollarSign,
   Clock,
-  CheckCircle,
-  XCircle,
-  Loader,
+  CheckCircle2,
+  Printer,
+  History,
+  MoreVertical,
+  ChevronRight,
+  Plus,
+  ArrowRight,
+  ShieldCheck,
+  CreditCard,
   FileText,
   Calendar,
-  Phone,
-  MoreHorizontal,
-  Truck, // Added back as it's still being used
-  // Download,  // Commented out as it's not currently used
+  SmartphoneNfc,
+  Wrench,
+  Loader2,
+  Check,
 } from "lucide-react";
-import { RepairPaymentForm } from "./RepairPaymentForm";
-import { useState, useEffect } from "react";
+import { useRepairActions, useRepairContext } from "@/context/RepairContext";
+import {
+  Repair,
+  RepairStatus,
+  PaymentStatus,
+  RepairHistory,
+} from "@/types/repair";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { RepairPaymentForm } from "./RepairPaymentForm";
 import { ReceiptTemplate } from "@/components/helpers/ReceiptTemplate";
 import { StickerTemplate } from "@/components/helpers/StickerTemplate";
-
-import { reportError } from "@/lib/crashReporter";
+import { invoke } from "@tauri-apps/api/core";
 
 interface RepairDetailProps {
   repair: Repair | null;
@@ -66,49 +53,22 @@ interface RepairDetailProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const getStatusColor = (status: RepairStatus) => {
-  switch (status) {
-    case "Pending":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "In Progress":
-      return "bg-blue-100 text-blue-800 border-blue-200";
-    case "Completed":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "Delivered":
-      return "bg-emerald-100 text-emerald-800 border-emerald-200";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
-
-const getPaymentStatusColor = (status: PaymentStatus) => {
-  switch (status) {
-    case "Paid":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "Partially":
-      return "bg-orange-100 text-orange-800 border-orange-200";
-    case "Unpaid":
-      return "bg-red-100 text-red-800 border-red-200";
-    case "Refunded":
-      return "bg-purple-100 text-purple-800 border-purple-200";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
-
-const getStatusIcon = (status: RepairStatus) => {
-  switch (status) {
-    case "Pending":
-      return <Clock className="h-4 w-4" />;
-    case "In Progress":
-      return <Loader className="h-4 w-4 animate-spin" />;
-    case "Completed":
-      return <CheckCircle className="h-4 w-4" />;
-    case "Delivered":
-      return <Truck className="h-4 w-4" />;
-    default:
-      return <XCircle className="h-4 w-4" />;
-  }
+const statusConfig: Record<
+  RepairStatus,
+  { color: string; bg: string; icon: any }
+> = {
+  Pending: { color: "text-amber-600", bg: "bg-amber-50", icon: Clock },
+  "In Progress": {
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    icon: SmartphoneNfc,
+  },
+  Completed: { color: "text-green-600", bg: "bg-green-50", icon: CheckCircle2 },
+  Delivered: {
+    color: "text-purple-600",
+    bg: "bg-purple-50",
+    icon: ShieldCheck,
+  },
 };
 
 export function RepairDetail({
@@ -116,612 +76,678 @@ export function RepairDetail({
   open,
   onOpenChange,
 }: RepairDetailProps) {
-  const { updateRepairStatus } = useRepairActions();
-  const { getItemById } = useRepairContext();
-  const {
-    printReceipt,
-    printSticker,
-    // downloadAsHTML,  // Commented out as it's not currently used
-    showPrintTroubleshoot,
-  } = usePrintUtils();
+  const { updateRepairStatus, fetchRepairById } = useRepairActions();
+  const { getItemById, repairs } = useRepairContext();
+  const { printReceipt, printSticker } = usePrintUtils();
 
-  // Local state for loading indicators
-  const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false);
-  const [isGeneratingSticker, setIsGeneratingSticker] = useState(false);
+  const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
+  const [isPrintingSticker, setIsPrintingSticker] = useState(false);
+  const [expandedHistory, setExpandedHistory] = useState(false);
 
-  const [hasError, setHasError] = useState(false);
+  // State to hold the repair history separately
+  const [repairHistory, setRepairHistory] = useState<RepairHistory[]>([]);
 
-  const currentRepair = repair ? getItemById(repair.id) || repair : null;
+  // Sync with context for real-time updates
+  const currentRepair = useMemo(() => {
+    if (!repair) return null;
+    return getItemById(repair.id) || repair;
+  }, [repair, getItemById, repairs]);
 
-  // Error boundary effect
-  useEffect(() => {
-    const handleError = (error: Error) => {
-      console.error("RepairDetail error:", error);
-      reportError(error, "RepairDetail");
-      setHasError(true);
-      toast.error("❌ An error occurred. Please try again.");
-    };
+  // Use the separately fetched history if available, otherwise use the repair's history
+  const currentRepairHistory =
+    repairHistory.length > 0 ? repairHistory : currentRepair?.history || [];
 
-    // Add error boundary
-    try {
-      // Validate repair data
-      if (repair && !repair.id) {
-        throw new Error("Invalid repair data: missing ID");
-      }
-    } catch (error) {
-      handleError(error as Error);
+  // Calculate financial values based on payments to ensure accuracy
+  const totalPaid = useMemo(() => {
+    if (currentRepair?.payments && currentRepair.payments.length > 0) {
+      return currentRepair.payments.reduce(
+        (sum, payment) => sum + payment.amount,
+        0
+      );
     }
-  }, [repair]);
+    return currentRepair?.totalPaid || 0;
+  }, [currentRepair]);
 
-  if (hasError) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Error</DialogTitle>
-            <DialogDescription>
-              An error occurred while loading the repair details. Please try
-              again.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
-            <Button onClick={() => window.location.reload()}>
-              Reload Page
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  const remainingBalance = useMemo(() => {
+    const estimatedCost = currentRepair?.estimatedCost || 0;
+    return estimatedCost - totalPaid;
+  }, [currentRepair?.estimatedCost, totalPaid]);
+
+  // Refetch repair data when dialog opens to ensure latest parts/payments
+  useEffect(() => {
+    if (open && repair?.id) {
+      fetchRepairById(repair.id);
+
+      // Fetch history separately to ensure it's properly merged with the repair
+      const fetchRepairHistory = async () => {
+        try {
+          const historyData: RepairHistory[] = await invoke(
+            "get_history_for_repair",
+            { repairId: repair.id }
+          );
+          setRepairHistory(historyData);
+        } catch (error) {
+          console.error("Error fetching repair history:", error);
+        }
+      };
+
+      fetchRepairHistory();
+    }
+  }, [open, repair?.id, fetchRepairById]);
 
   if (!currentRepair) return null;
 
-  const repairData: Repair = currentRepair;
+  const formatDate = (date: string) => {
+    // Handle different date formats that might come from the backend
+    let dateObj: Date;
 
-  // Print handlers with error handling
-  const handlePrintReceipt = async () => {
-    if (isGeneratingReceipt) return;
-
-    setIsGeneratingReceipt(true);
     try {
-      // Validate repair data before printing
-      if (!repairData.id) {
-        throw new Error("Invalid repair data for printing");
-      }
+      // First try parsing as ISO string
+      dateObj = new Date(date);
 
-      const success = await printReceipt(repairData, {
-        includePayments: true,
-        includeParts: true,
-      });
+      // Check if the date is valid
+      if (isNaN(dateObj.getTime())) {
+        // If not valid, try other formats
+        dateObj = new Date(parseInt(date)); // Try as timestamp
 
-      if (!success) {
-        toast.error("❌ Receipt printing failed. Please try again.");
+        if (isNaN(dateObj.getTime())) {
+          // If still not valid, try to parse with common formats
+          const parsedDate = Date.parse(date.replace(/-/g, "/"));
+          dateObj = isNaN(parsedDate) ? new Date() : new Date(parsedDate);
+        }
       }
-    } catch (error) {
-      console.error("Failed to print receipt:", error);
-      reportError(error as Error, "RepairDetail.handlePrintReceipt");
-      toast.error(
-        "❌ Receipt printing failed. Please try again or check your printer."
-      );
-    } finally {
-      setIsGeneratingReceipt(false);
+    } catch (e) {
+      console.error("Error parsing date:", date, e);
+      dateObj = new Date();
     }
+
+    return dateObj.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  const handlePrintSticker = async () => {
-    if (isGeneratingSticker) return;
-
-    setIsGeneratingSticker(true);
-    try {
-      // Validate repair data before printing
-      if (!repairData.id) {
-        throw new Error("Invalid repair data for sticker printing");
-      }
-
-      const success = await printSticker(repairData);
-
-      if (!success) {
-        toast.error("❌ Sticker printing failed. Please try again.");
-      }
-    } catch (error) {
-      console.error("Failed to print sticker:", error);
-      reportError(error as Error, "RepairDetail.handlePrintSticker");
-      toast.error(
-        "❌ Sticker printing failed. Please try again or check your printer."
-      );
-    } finally {
-      setIsGeneratingSticker(false);
-    }
-  };
-
-  const handlePopupBlocked = () => {
-    toast.info(
-      "ℹ️ If printing doesn't work:\n" +
-        "• Check if popups are blocked for this site\n" +
-        "• Click the popup blocker icon in your browser\n" +
-        "• Allow popups for this site and try again\n" +
-        "• Alternatively, use the Download option",
-      { duration: 10000 }
-    );
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch (error) {
-      console.error("Date formatting error:", error);
-      return "Invalid Date";
-    }
-  };
+  const status =
+    statusConfig[currentRepair.status as RepairStatus] ||
+    statusConfig["Pending"];
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader className="pb-4 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-2xl font-bold">
-                  Repair Details
-                </DialogTitle>
-                <DialogDescription className="text-base mt-1">
-                  Order #{repairData.id} • Created{" "}
-                  {repairData.createdAt
-                    ? formatDate(repairData.createdAt)
-                    : "N/A"}
-                </DialogDescription>
-              </div>
+        <DialogContent className="max-w-5xl max-h-[90vh] p-0 flex flex-col border-none shadow-2xl rounded-3xl overflow-hidden">
+          {/* Top Branding Section */}
+          <div className="bg-primary px-8 py-6 text-white flex items-center justify-between">
+            <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className={`px-3 py-1 ${getStatusColor(repairData.status)}`}
-                >
-                  {getStatusIcon(repairData.status)}
-                  <span className="ml-1">{repairData.status}</span>
-                </Badge>
+                <div className="p-2 bg-white/10 rounded-lg">
+                  <Wrench className="h-4 w-4 text-white" />
+                </div>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">
+                  Order Details
+                </h2>
               </div>
+              <DialogTitle className="text-2xl font-black">
+                #
+                {currentRepair.code ||
+                  currentRepair.id.split("-")[0].toUpperCase()}
+              </DialogTitle>
             </div>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="space-y-4 pr-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Customer Information Card */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <User className="h-5 w-5 text-blue-600" />
-                      Customer Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {repairData.customerName || "Unknown Customer"}
-                        </p>
-                        <p className="text-sm text-gray-500">Customer</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <Phone className="h-5 w-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {repairData.customerPhone || "No phone provided"}
-                        </p>
-                        <p className="text-sm text-gray-500">Phone Number</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Device Information Card */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Smartphone className="h-5 w-5 text-purple-600" />
-                      Device Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Smartphone className="h-5 w-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {repairData.deviceBrand || "Unknown"}{" "}
-                          {repairData.deviceModel || "Device"}
-                        </p>
-                        <p className="text-sm text-gray-500">Device</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            Issue Description
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {repairData.issueDescription ||
-                              "No description provided"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            <div className="flex items-center gap-4">
+              <div className="text-right hidden sm:block">
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">
+                  Created
+                </p>
+                <p className="text-sm font-bold">
+                  {formatDate(currentRepair.createdAt)}
+                </p>
               </div>
-
-              {/* Status Management Card */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText className="h-5 w-5 text-indigo-600" />
-                    Status Management
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">
-                        Repair Status
-                      </label>
-                      <Select
-                        value={repairData.status}
-                        onValueChange={(val) =>
-                          updateRepairStatus(repairData.id, val as RepairStatus)
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(repairData.status)}
-                            <SelectValue />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pending">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              <span>Pending</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="In Progress">
-                            <div className="flex items-center gap-2">
-                              <Loader className="h-4 w-4 animate-spin" />
-                              <span>In Progress</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="Completed">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4" />
-                              <span>Completed</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="Delivered">
-                            <div className="flex items-center gap-2">
-                              <Truck className="h-4 w-4" />
-                              <span>Delivered</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">
-                        Payment Status
-                      </label>
-                      <div className="mt-2">
-                        <Badge
-                          variant="outline"
-                          className={`px-3 py-1 ${getPaymentStatusColor(
-                            repairData.paymentStatus
-                          )}`}
-                        >
-                          <DollarSign className="h-4 w-4" />
-                          <span className="ml-1">
-                            {repairData.paymentStatus}
-                          </span>
-                        </Badge>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Payment status is automatically calculated
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Financial Information Card */}
-              <Card className="shadow-sm border border-gray-200">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-                    <DollarSign className="h-5 w-5 text-green-600" />
-                    Financial Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-blue-700 uppercase tracking-wide">
-                            Estimated Cost
-                          </p>
-                          <p className="text-xl font-bold text-blue-900 mt-1">
-                            {(repairData.estimatedCost || 0).toFixed(2)}
-                          </p>
-                        </div>
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <DollarSign className="h-6 w-6 text-blue-600" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-green-50 rounded-xl border border-green-100 hover:bg-green-100 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-green-700 uppercase tracking-wide">
-                            Parts Used
-                          </p>
-                          <p className="text-xl font-bold text-green-900 mt-1">
-                            {repairData.usedParts?.length || 0}
-                          </p>
-                        </div>
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <Smartphone className="h-6 w-6 text-green-600" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 hover:bg-purple-100 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-purple-700 uppercase tracking-wide">
-                            Payments
-                          </p>
-                          <p className="text-xl font-bold text-purple-900 mt-1">
-                            {repairData.payments?.length || 0}
-                          </p>
-                        </div>
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <CheckCircle className="h-6 w-6 text-purple-600" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-orange-50 rounded-xl border border-orange-100 hover:bg-orange-100 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-orange-700 uppercase tracking-wide">
-                            Last Updated
-                          </p>
-                          <p className="text-sm font-bold text-orange-900 mt-1">
-                            {repairData.updatedAt
-                              ? formatDate(repairData.updatedAt)
-                              : "N/A"}
-                          </p>
-                        </div>
-                        <div className="p-2 bg-orange-100 rounded-lg">
-                          <Calendar className="h-6 w-6 text-orange-600" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Separator className="my-6" />
-
-                  {/* Combined Payment Section - Record Payment and Payment History side-by-side */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Payment History Section - Now on the left */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                        Payment History
-                      </h4>
-                      {repairData.payments &&
-                      Array.isArray(repairData.payments) &&
-                      repairData.payments.length > 0 ? (
-                        <div className="border rounded-xl overflow-hidden shadow-sm">
-                          <Table>
-                            <TableHeader className="bg-gray-50">
-                              <TableRow>
-                                <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                  Date
-                                </TableHead>
-                                <TableHead className="text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                  Amount
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {repairData.payments.map((payment) => (
-                                <TableRow
-                                  key={payment.id}
-                                  className="hover:bg-gray-50"
-                                >
-                                  <TableCell className="py-3">
-                                    <div className="text-sm text-gray-900">
-                                      {payment.date
-                                        ? formatDate(payment.date)
-                                        : "N/A"}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-right py-3">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {(payment.amount || 0).toFixed(2)}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                          <div className="p-4 bg-gray-50 border-t">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-700">
-                                Total Paid
-                              </span>
-                              <span className="text-lg font-bold text-green-700">
-                                {repairData.payments
-                                  .reduce((sum, p) => sum + (p.amount || 0), 0)
-                                  .toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-200">
-                          <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                            <DollarSign className="h-6 w-6 text-gray-400" />
-                          </div>
-                          <p className="text-sm font-medium text-gray-900 mb-1">
-                            No payment history yet
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Record a payment to see history
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Record a Payment Section - Now on the right */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3">
-                        Record a Payment
-                      </h4>
-                      <div className="border rounded-xl p-5 bg-white shadow-sm">
-                        <RepairPaymentForm
-                          repair={repairData}
-                          onSuccess={() => {
-                            console.log("Payment recorded successfully");
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Repair History Card */}
-              {repairData.history &&
-                Array.isArray(repairData.history) &&
-                repairData.history.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <Clock className="h-5 w-5 text-gray-600" />
-                        Repair History
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {repairData.history.slice(0, 5).map((historyItem) => (
-                          <div
-                            key={historyItem.id}
-                            className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
-                          >
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                            <div className="flex-1">
-                              <p className="text-sm text-gray-600">
-                                {historyItem.timestamp
-                                  ? formatDate(historyItem.timestamp)
-                                  : "N/A"}
-                              </p>
-                              <p className="text-sm font-medium">
-                                {JSON.stringify(historyItem.event)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+              <Badge
+                className={cn(
+                  "px-4 py-2 rounded-xl border-none shadow-lg text-xs font-black uppercase tracking-widest",
+                  status.bg,
+                  status.color
                 )}
+              >
+                <status.icon className="h-3 w-3 mr-2" />
+                {currentRepair.status}
+              </Badge>
             </div>
           </div>
 
-          <Separator className="my-3 flex-shrink-0" />
+          <div className="flex-1 overflow-y-auto bg-[#fdfdfd]">
+            <div className="grid grid-cols-1 lg:grid-cols-12">
+              {/* Main Content Area */}
+              <div className="lg:col-span-8 p-8 space-y-8">
+                {/* Information Header Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Customer Info */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 px-1">
+                      <User className="h-3 w-3 text-primary" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+                        Customer information
+                      </span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 hover:border-primary/20 transition-all">
+                      <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary font-black text-lg">
+                        {currentRepair.customerName.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-foreground uppercase tracking-tight">
+                          {currentRepair.customerName}
+                        </p>
+                        <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 opacity-60">
+                          <SmartphoneNfc className="h-3 w-3" />{" "}
+                          {currentRepair.customerPhone || "NO PHONE"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-          <div className="flex justify-between items-center flex-shrink-0 gap-2">
-            <div className="flex gap-2">
-              <Button
-                onClick={handlePrintReceipt}
-                disabled={isGeneratingReceipt}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-              >
-                {isGeneratingReceipt ? (
-                  <Loader className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Printer className="h-4 w-4" />
-                )}
-                {isGeneratingReceipt ? "Printing..." : "Print Receipt"}
-              </Button>
+                  {/* Device Info */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 px-1">
+                      <Smartphone className="h-3 w-3 text-primary" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+                        Device Details
+                      </span>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 hover:border-primary/20 transition-all">
+                      <div className="h-12 w-12 rounded-xl bg-orange-500/5 flex items-center justify-center text-orange-600">
+                        <Smartphone className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-foreground uppercase tracking-tight">
+                          {currentRepair.deviceBrand}{" "}
+                          {currentRepair.deviceModel}
+                        </p>
+                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 uppercase tracking-widest">
+                          WARRANTY ACTIVE
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-              <Button
-                onClick={handlePrintSticker}
-                disabled={isGeneratingSticker}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-              >
-                {isGeneratingSticker ? (
-                  <Loader className="h-4 w-4 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4" />
-                )}
-                {isGeneratingSticker ? "Printing..." : "Print Sticker"}
-              </Button>
+                {/* Complaint / Diagnosis */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 px-1">
+                    <AlertCircle className="h-3 w-3 text-orange-500" />
+                    <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+                      Diagnosis & Report
+                    </span>
+                  </div>
+                  <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm relative overflow-hidden group">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500/40" />
+                    <p className="text-xs font-medium text-gray-700 leading-relaxed italic">
+                      "{currentRepair.issueDescription}"
+                    </p>
+                  </div>
+                </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={showPrintTroubleshoot}
-                    className="flex items-center gap-2 text-blue-600"
+                {/* Parts Breakdown Table */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 px-1">
+                    <CreditCard className="h-3 w-3 text-primary" />
+                    <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+                      Used parts & services
+                    </span>
+                  </div>
+                  <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-muted/5 border-b border-gray-50">
+                          <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                            Item Description
+                          </th>
+                          <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground text-center">
+                            Qty
+                          </th>
+                          <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground text-right">
+                            Unit Price
+                          </th>
+                          <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground text-right">
+                            Subtotal
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {currentRepair.usedParts &&
+                        currentRepair.usedParts.length > 0 ? (
+                          currentRepair.usedParts.map((part, idx) => {
+                            // Handle different possible structures for the part data
+                            const partAsAny = part as any;
+                            const partName =
+                              partAsAny.partName ||
+                              partAsAny.name ||
+                              partAsAny.part_name ||
+                              "Unknown Part";
+                            const quantity =
+                              partAsAny.quantity || partAsAny.qty || 0;
+                            const cost =
+                              partAsAny.cost ||
+                              partAsAny.unitCost ||
+                              partAsAny.price ||
+                              0;
+
+                            return (
+                              <tr
+                                key={idx}
+                                className="hover:bg-muted/5 transition-colors"
+                              >
+                                <td className="px-5 py-3 text-xs font-bold text-gray-700 uppercase tracking-tight">
+                                  {partName}
+                                </td>
+                                <td className="px-5 py-3 text-xs font-bold text-center text-gray-500">
+                                  {quantity}
+                                </td>
+                                <td className="px-5 py-3 text-xs font-bold text-right text-gray-500">
+                                  ${cost.toFixed(2)}
+                                </td>
+                                <td className="px-5 py-3 text-xs font-black text-right text-foreground">
+                                  ${(quantity * cost).toFixed(2)}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="px-5 py-10 text-center text-xs font-bold text-muted-foreground opacity-40 uppercase tracking-[0.2em]"
+                            >
+                              No parts registered
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-muted/5">
+                          <td
+                            colSpan={3}
+                            className="px-5 py-3 text-[10px] font-black text-right uppercase tracking-widest text-muted-foreground"
+                          >
+                            Subtotal (Parts)
+                          </td>
+                          <td className="px-5 py-3 text-sm font-black text-right text-primary">
+                            $
+                            {(
+                              currentRepair.usedParts?.reduce((sum, p) => {
+                                const partAsAny = p as any;
+                                const quantity =
+                                  partAsAny.quantity || partAsAny.qty || 0;
+                                const cost =
+                                  partAsAny.cost ||
+                                  partAsAny.unitCost ||
+                                  partAsAny.price ||
+                                  0;
+                                return sum + quantity * cost;
+                              }, 0) || 0
+                            ).toFixed(2)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Timeline / History */}
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center justify-between gap-2 px-1">
+                    <div className="flex items-center gap-2">
+                      <History className="h-3 w-3 text-primary" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+                        Repair history logs
+                      </span>
+                    </div>
+                    <div className="text-[8px] font-bold text-muted-foreground">
+                      {currentRepairHistory?.length || 0} events
+                    </div>
+                  </div>
+                  <div className="space-y-3 pl-4 border-l-2 border-gray-100 ml-1">
+                    {currentRepairHistory && currentRepairHistory.length > 0 ? (
+                      (() => {
+                        const allHistory = [...currentRepairHistory].reverse();
+                        const displayHistory = expandedHistory
+                          ? allHistory
+                          : allHistory.slice(0, 5); // Show only first 5 initially unless expanded
+                        const hasMore = allHistory.length > 5;
+                        const isExpanded = expandedHistory && hasMore;
+
+                        return (
+                          <>
+                            {displayHistory.map((log, idx) => {
+                              // The backend might return history in a different format than expected
+                              // Check if log has the expected structure
+                              const event = log.event;
+                              let content = "";
+                              let icon = <Clock className="h-3 w-3" />;
+
+                              // Handle different possible structures for the event data
+                              if (event && typeof event === "object") {
+                                // Check if it's a properly structured event
+                                if (event.type === "StatusChanged") {
+                                  content = `Status: ${event.to}`;
+                                  icon = (
+                                    <ShieldCheck className="h-3 w-3 text-blue-500" />
+                                  );
+                                } else if (event.type === "PaymentAdded") {
+                                  const eventAsAny = event as any;
+                                  // Extract amount from details if amount field is not available in the event object
+                                  const eventDetailsAmount =
+                                    eventAsAny.details?.match(
+                                      /\$([\d.]+)/
+                                    )?.[1] || "0";
+                                  content = `Payment: $${(
+                                    eventAsAny.amount ||
+                                    eventAsAny.total_amount ||
+                                    eventAsAny.payment_amount ||
+                                    parseFloat(eventDetailsAmount) ||
+                                    0
+                                  ).toFixed(2)}`; // Shorter text
+                                  icon = (
+                                    <CreditCard className="h-3 w-3 text-green-500" />
+                                  );
+                                } else if (event.type === "PartAdded") {
+                                  const eventAsAny = event as any;
+                                  content = `Part: ${
+                                    eventAsAny.partName ||
+                                    eventAsAny.name ||
+                                    eventAsAny.part_name
+                                  } (x${
+                                    eventAsAny.qty || eventAsAny.quantity || 1
+                                  })`; // Shorter text
+                                  icon = (
+                                    <Plus className="h-3 w-3 text-orange-500" />
+                                  );
+                                } else if (event.type === "Note") {
+                                  content =
+                                    event.text?.length > 30
+                                      ? `${event.text.substring(0, 30)}...`
+                                      : event.text;
+                                  icon = (
+                                    <FileText className="h-3 w-3 text-muted-foreground" />
+                                  );
+                                } else {
+                                  // Handle case where event has a different structure
+                                  content = `Event: ${JSON.stringify(event)}`;
+                                  icon = (
+                                    <Clock className="h-3 w-3 text-gray-500" />
+                                  );
+                                }
+                              } else {
+                                // Handle case where event is undefined or has unknown type
+                                // Try to access fields that might exist in different formats
+                                const logAsAny = log as any;
+                                if (logAsAny.event_type && logAsAny.details) {
+                                  // Handle legacy format where event_type and details are separate fields
+                                  content = logAsAny.details;
+
+                                  // Determine icon based on event type
+                                  switch (logAsAny.event_type) {
+                                    case "status_changed":
+                                      icon = (
+                                        <ShieldCheck className="h-3 w-3 text-blue-500" />
+                                      );
+                                      break;
+                                    case "payment_added":
+                                      // Extract amount from details if amount field is not available
+                                      const detailsAmount =
+                                        logAsAny.details?.match(
+                                          /\$([\d.]+)/
+                                        )?.[1] || "0";
+                                      content = `Payment: $${(
+                                        logAsAny.amount ||
+                                        logAsAny.total_amount ||
+                                        logAsAny.payment_amount ||
+                                        parseFloat(detailsAmount) ||
+                                        0
+                                      ).toFixed(2)}`; // Shorter text
+                                      icon = (
+                                        <CreditCard className="h-3 w-3 text-green-500" />
+                                      );
+                                      break;
+                                    case "part_added":
+                                      content = `Part: ${
+                                        logAsAny.partName || "Item"
+                                      } (x${logAsAny.qty || 1})`; // Shorter text
+                                      icon = (
+                                        <Plus className="h-3 w-3 text-orange-500" />
+                                      );
+                                      break;
+                                    case "note":
+                                      content =
+                                        logAsAny.details?.length > 30
+                                          ? `${logAsAny.details.substring(
+                                              0,
+                                              30
+                                            )}...`
+                                          : logAsAny.details;
+                                      icon = (
+                                        <FileText className="h-3 w-3 text-muted-foreground" />
+                                      );
+                                      break;
+                                    default:
+                                      icon = (
+                                        <Clock className="h-3 w-3 text-gray-500" />
+                                      );
+                                  }
+                                } else {
+                                  content = "Unknown event";
+                                  icon = (
+                                    <Clock className="h-3 w-3 text-gray-500" />
+                                  );
+                                }
+                              }
+
+                              return (
+                                <div key={idx} className="relative">
+                                  <div className="absolute -left-[1.25rem] top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-primary flex items-center justify-center">
+                                    <div className="h-1 w-1 rounded-full bg-white" />
+                                  </div>
+                                  <div className="p-2.5 rounded-lg bg-white border border-gray-100 shadow-sm hover:border-primary/20 transition-all">
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <p className="text-[8px] font-black text-primary uppercase tracking-wider">
+                                        {formatDate(
+                                          log.timestamp ||
+                                            (log as any).date ||
+                                            (log as any).created_at
+                                        )}
+                                      </p>
+                                      <div className="opacity-60">{icon}</div>
+                                    </div>
+                                    <p className="text-[10px] font-bold text-gray-700 truncate">
+                                      {content}
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {hasMore && (
+                              <div className="relative pt-2">
+                                <div className="absolute -left-[1.25rem] top-4 h-2.5 w-2.5 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center">
+                                  <div className="h-1 w-1 rounded-full bg-gray-500" />
+                                </div>
+                                <div className="p-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                                  <button
+                                    className="text-[10px] font-bold text-gray-500 text-center w-full hover:text-gray-700"
+                                    onClick={() =>
+                                      setExpandedHistory(!expandedHistory)
+                                    }
+                                  >
+                                    {isExpanded
+                                      ? `Show less (${
+                                          allHistory.length - 5
+                                        } hidden)`
+                                      : `+${allHistory.length - 5} more events`}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()
+                    ) : (
+                      <p className="text-xs font-bold text-muted-foreground py-4 uppercase tracking-[0.15em] opacity-40 text-center">
+                        No history events recorded
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Sidebar Area */}
+              <div className="lg:col-span-4 border-l border-gray-100 bg-white p-8 space-y-8 flex flex-col">
+                {/* Status Quick Control */}
+                <div className="space-y-3">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                    Order Status Control
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        "Pending",
+                        "In Progress",
+                        "Completed",
+                        "Delivered",
+                      ] as RepairStatus[]
+                    ).map((s) => (
+                      <button
+                        key={s}
+                        onClick={async () => {
+                          await updateRepairStatus(currentRepair.id, s);
+                          // Refetch repair data to ensure latest history is shown
+                          fetchRepairById(currentRepair.id);
+                        }}
+                        className={cn(
+                          "px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5",
+                          currentRepair.status === s
+                            ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
+                            : "border-gray-100 bg-gray-50/50 text-muted-foreground hover:border-primary/20 hover:text-primary"
+                        )}
+                      >
+                        {currentRepair.status === s && (
+                          <Check className="h-3 w-3" />
+                        )}
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Financial Summary Premium UI */}
+                <div className="space-y-3 pt-4 border-t border-gray-50">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                    Financial Overview
+                  </p>
+                  <div className="space-y-3">
+                    <div className="p-5 rounded-3xl bg-primary/5 border border-primary/10 flex flex-col items-center justify-center relative shadow-inner">
+                      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-primary mb-1">
+                        Total Estimated
+                      </p>
+                      <p className="text-4xl font-black text-primary tracking-tighter">
+                        ${currentRepair.estimatedCost.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-4 rounded-2xl bg-green-500/5 border border-green-500/10 flex flex-col">
+                        <span className="text-[8px] font-black text-green-600 uppercase tracking-widest mb-1">
+                          Paid Amount
+                        </span>
+                        <span className="text-lg font-black text-green-700">
+                          ${totalPaid.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/10 flex flex-col">
+                        <span className="text-[8px] font-black text-red-600 uppercase tracking-widest mb-1">
+                          Total Balance
+                        </span>
+                        <span className="text-lg font-black text-red-700">
+                          ${remainingBalance.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Form Injection */}
+                <div className="pt-4 border-t border-gray-50 flex-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">
+                    Record New Transaction
+                  </p>
+                  <div className="p-2 rounded-2xl border border-gray-100/50 bg-gray-50/30">
+                    <RepairPaymentForm
+                      repair={currentRepair}
+                      onSuccess={() => {
+                        // Refetch repair data to update parts/payments immediately
+                        if (repair?.id) {
+                          fetchRepairById(repair.id);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Unified Footer Actions */}
+                <div className="pt-6 border-t border-gray-50 flex flex-col gap-3">
+                  <Button
+                    onClick={async () => {
+                      setIsPrintingReceipt(true);
+                      await printReceipt(currentRepair, {
+                        includePayments: true,
+                        includeParts: true,
+                      });
+                      setIsPrintingReceipt(false);
+                    }}
+                    disabled={isPrintingReceipt}
+                    className="h-12 rounded-xl bg-white border-2 border-primary text-primary hover:bg-primary/5 shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-wider"
                   >
-                    <AlertCircle className="h-4 w-4" />
-                    Print Help & Tips
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {isPrintingReceipt ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Printer className="h-4 w-4 mr-2" />
+                    )}
+                    Print Receipt
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      setIsPrintingSticker(true);
+                      await printSticker(currentRepair);
+                      setIsPrintingSticker(false);
+                    }}
+                    disabled={isPrintingSticker}
+                    className="h-12 rounded-xl bg-slate-900 border-none text-white hover:bg-slate-800 shadow-lg shadow-slate-200/20 font-black text-xs uppercase tracking-wider"
+                  >
+                    {isPrintingSticker ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileText className="h-4 w-4 mr-2" />
+                    )}
+                    Print Sticker
+                  </Button>
+                </div>
+              </div>
             </div>
-            <Button onClick={() => onOpenChange(false)}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Hidden Print Templates - These are rendered outside the dialog */}
-      {repairData && (
-        <>
-          <div id="receipt-print-template">
-            <ReceiptTemplate
-              repair={repairData}
-              includePayments={true}
-              includeParts={true}
-            />
-          </div>
-          <div id="sticker-print-template">
-            <StickerTemplate repair={repairData} />
-          </div>
-        </>
-      )}
+      {/* Hidden Layout for Printing */}
+      <div className="hidden">
+        <div id="receipt-print-template">
+          <ReceiptTemplate
+            repair={currentRepair}
+            includePayments={true}
+            includeParts={true}
+          />
+        </div>
+        <div id="sticker-print-template">
+          <StickerTemplate repair={currentRepair} />
+        </div>
+      </div>
     </>
   );
 }

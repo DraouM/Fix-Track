@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Filter } from "lucide-react";
+import { X, Filter, Search, ChevronRight, ChevronLeft } from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -147,14 +147,15 @@ export function RepairDataTable<TData, TValue>({
   return (
     <div className="w-full space-y-4">
       {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+      <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center px-6 py-4 border-b bg-white/50">
         {/* Search Bar */}
-        <div className="flex-1 min-w-0">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={searchPlaceholder}
             value={globalFilter ?? ""}
             onChange={(event) => setGlobalFilter(event.target.value)}
-            className="max-w-sm"
+            className="pl-10 rounded-xl h-11 border-gray-200 focus:ring-primary/20 bg-white"
           />
         </div>
 
@@ -169,30 +170,30 @@ export function RepairDataTable<TData, TValue>({
 
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px] h-10">
+            <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 bg-white font-bold text-xs uppercase tracking-wider">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Status</SelectItem>
-              <SelectItem value="Pending">
+            <SelectContent className="rounded-2xl border-none shadow-2xl">
+              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">All Status</SelectItem>
+              <SelectItem value="Pending" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                   Pending
                 </div>
               </SelectItem>
-              <SelectItem value="In Progress">
+              <SelectItem value="In Progress" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                   In Progress
                 </div>
               </SelectItem>
-              <SelectItem value="Completed">
+              <SelectItem value="Completed" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   Completed
                 </div>
               </SelectItem>
-              <SelectItem value="Delivered">
+              <SelectItem value="Delivered" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   Delivered
@@ -206,30 +207,30 @@ export function RepairDataTable<TData, TValue>({
             value={paymentStatusFilter}
             onValueChange={setPaymentStatusFilter}
           >
-            <SelectTrigger className="w-[140px] h-10">
+            <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 bg-white font-bold text-xs uppercase tracking-wider">
               <SelectValue placeholder="Payment" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All Payments</SelectItem>
-              <SelectItem value="Unpaid">
+            <SelectContent className="rounded-2xl border-none shadow-2xl">
+              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">All Payments</SelectItem>
+              <SelectItem value="Unpaid" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                   Unpaid
                 </div>
               </SelectItem>
-              <SelectItem value="Partially">
+              <SelectItem value="Partially" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                   Partially
                 </div>
               </SelectItem>
-              <SelectItem value="Paid">
+              <SelectItem value="Paid" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   Paid
                 </div>
               </SelectItem>
-              <SelectItem value="Refunded">
+              <SelectItem value="Refunded" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                   Refunded
@@ -243,28 +244,23 @@ export function RepairDataTable<TData, TValue>({
             date={dateRange}
             onDateChange={setDateRange}
             placeholder="Pick dates"
-            className="w-[160px] h-10"
+            className="w-[180px] h-11 rounded-xl border-gray-200 bg-white"
             showPresets={true}
           />
 
-          {/* Page Size Selector */}
-          <Select
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => {
-              table.setPageSize(Number(value));
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="rounded-xl h-11 w-11 bg-white border-gray-200"
+            onClick={() => {
+                setGlobalFilter("");
+                setStatusFilter("All");
+                setPaymentStatusFilter("All");
+                setDateRange(undefined);
             }}
           >
-            <SelectTrigger className="h-10 w-[70px]">
-              <SelectValue placeholder={table.getState().pagination.pageSize} />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {[10, 20, 30, 40, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
@@ -330,14 +326,14 @@ export function RepairDataTable<TData, TValue>({
       )}
 
       {/* Table */}
-      <div className="rounded-md border">
-        <Table>
+      <div className="overflow-x-auto">
+        <Table className="w-full text-left border-collapse">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="bg-muted/10 border-b hover:bg-muted/10">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -356,10 +352,10 @@ export function RepairDataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                  className="hover:bg-muted/5 border-b transition-colors group cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="px-6 py-4">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -383,74 +379,56 @@ export function RepairDataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex items-center justify-between px-6 py-4 bg-muted/5 border-t">
+        <div className="text-sm font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">
           Showing {table.getRowModel().rows.length} of{" "}
           {table.getPreFilteredRowModel().rows.length} repair(s)
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">
-            <p className="text-sm font-medium">Rows per page</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Rows per page</p>
             <Select
               value={`${table.getState().pagination.pageSize}`}
               onValueChange={(value) => {
                 table.setPageSize(Number(value));
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[70px] rounded-lg border-gray-200 text-xs font-bold">
                 <SelectValue
                   placeholder={table.getState().pagination.pageSize}
                 />
               </SelectTrigger>
-              <SelectContent side="top">
+              <SelectContent side="top" className="rounded-xl border-none shadow-xl">
                 {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
+                  <SelectItem key={pageSize} value={`${pageSize}`} className="text-xs font-bold">
                     {pageSize}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          <div className="flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </div>
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <span className="sr-only">Go to first page</span>
-              {"<<"}
-            </Button>
-            <Button
-              variant="outline"
-              className="h-8 w-8 p-0"
+              size="icon"
+              className="h-8 w-8 rounded-lg border-gray-200"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              <span className="sr-only">Go to previous page</span>
-              {"<"}
+              <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
-              className="h-8 w-8 p-0"
+              size="icon"
+              className="h-8 w-8 rounded-lg border-gray-200"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              <span className="sr-only">Go to next page</span>
-              {">"}
-            </Button>
-            <Button
-              variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <span className="sr-only">Go to last page</span>
-              {">>"}
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>

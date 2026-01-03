@@ -28,15 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, User, Mail, Phone, MapPin, CreditCard } from "lucide-react";
+import { Building2, User, Mail, Phone, MapPin, CreditCard, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Supplier, supplierSchema } from "@/types/supplier";
 import { useSupplierActions } from "@/context/SupplierContext";
-
-// SupplierForm component handles both adding new suppliers and editing existing ones
-// It can be used in two ways:
-// 1. As a controlled dialog with an external trigger (used in SupplierPageClient)
-// 2. As a self-contained component with its own trigger button (used elsewhere)
+import { cn } from "@/lib/utils";
 
 interface SupplierFormProps {
   supplier?: Supplier | null;
@@ -71,515 +67,281 @@ export function SupplierForm({
     try {
       if (isEditing && supplier) {
         await updateSupplier(supplier.id, data);
-        toast.success("Supplier updated successfully");
+        toast.success("Operational records updated");
       } else {
         await createSupplier(data);
-        toast.success("Supplier created successfully");
+        toast.success("New supplier entity registered");
       }
       if (trigger) {
         setOpen(false);
       }
       onSuccess?.();
     } catch (error) {
-      toast.error("Failed to save supplier");
+      toast.error("Failed to commit changes");
       console.error("Error saving supplier:", error);
     }
   }
 
-  // When used directly (without a trigger), render the form content directly
-  // When used with a trigger, use the dialog pattern
+  const labelStyles = "text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 mb-1.5 flex items-center gap-2";
+  const inputStyles = "h-11 rounded-xl border-2 border-gray-100 bg-white/50 focus:bg-white focus:border-primary/20 focus:ring-0 transition-all font-bold text-sm placeholder:font-medium placeholder:text-muted-foreground/30";
+  const sectionHeaderStyles = "text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-4 flex items-center gap-2";
+
+  const FormContent = () => (
+    <div className="space-y-6">
+      {/* Supplier Identity Section */}
+      <div className="space-y-4">
+        <h4 className={sectionHeaderStyles}>
+          <Building2 className="h-3 w-3" /> Entity Identity
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={labelStyles}>Official Name *</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Company or Corporate Entity"
+                    className={inputStyles}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px] font-bold" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="contactName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={labelStyles}>Liaison Officer</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Primary contact person"
+                    className={inputStyles}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px] font-bold" />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
+      {/* Communications Section */}
+      <div className="space-y-4">
+        <h4 className={sectionHeaderStyles}>
+          <Phone className="h-3 w-3" /> Communication Channels
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={labelStyles}>Email Address</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    placeholder="operations@entity.com"
+                    className={inputStyles}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px] font-bold" />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={labelStyles}>Direct Line</FormLabel>
+                <FormControl>
+                  <Input
+                    type="tel"
+                    placeholder="Call identity"
+                    className={inputStyles}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage className="text-[10px] font-bold" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className={labelStyles}>Physical Distribution Point</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Street, City, Logistics Hub"
+                  className={cn(inputStyles, "min-h-[80px] py-3 resize-none")}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage className="text-[10px] font-bold" />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Financial Section */}
+      <div className="space-y-4">
+        <h4 className={sectionHeaderStyles}>
+          <CreditCard className="h-3 w-3" /> Settlement Parameters
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <FormField
+            control={form.control}
+            name="preferredPaymentMethod"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={labelStyles}>Settlement Mode</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || ""}
+                >
+                  <FormControl>
+                    <SelectTrigger className={inputStyles}>
+                      <SelectValue placeholder="Select mode" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="rounded-xl border-none shadow-2xl">
+                    <SelectItem value="Bank Transfer" className="font-bold text-xs py-2.5">Bank Transfer</SelectItem>
+                    <SelectItem value="Cash" className="font-bold text-xs py-2.5">Cash</SelectItem>
+                    <SelectItem value="Check" className="font-bold text-xs py-2.5">Check</SelectItem>
+                    <SelectItem value="Credit Card" className="font-bold text-xs py-2.5">Credit Card</SelectItem>
+                    <SelectItem value="Other" className="font-bold text-xs py-2.5">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-[10px] font-bold" />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={labelStyles}>Partnership Status</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || "active"}
+                >
+                  <FormControl>
+                    <SelectTrigger className={cn(inputStyles, "capitalize")}>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="rounded-xl border-none shadow-2xl">
+                    <SelectItem value="active" className="font-bold text-xs py-2.5">Operational</SelectItem>
+                    <SelectItem value="inactive" className="font-bold text-xs py-2.5">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-[10px] font-bold" />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className={labelStyles}>Administrative Observations</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Terms, agreements, or constraints..."
+                  className={cn(inputStyles, "min-h-[80px] py-3 resize-none")}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage className="text-[10px] font-bold" />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
+  );
+
+  const FormActions = (cancelAction?: () => void) => (
+    <div className="flex justify-end gap-3 pt-6">
+      <Button 
+        type="button" 
+        variant="outline" 
+        onClick={cancelAction}
+        className="h-11 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
+      >
+        Cancel
+      </Button>
+      <Button 
+        type="submit" 
+        disabled={form.formState.isSubmitting}
+        className="h-11 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all font-black text-xs uppercase tracking-widest min-w-[160px]"
+      >
+        {form.formState.isSubmitting ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Committing...
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Save className="h-4 w-4" /> {isEditing ? "Update Entity" : "Register Entity"}
+          </div>
+        )}
+      </Button>
+    </div>
+  );
+
   if (!trigger) {
     return (
-      <div className="flex flex-col h-full min-h-0">
+      <div className="flex flex-col h-full min-h-0 bg-white">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col h-full min-h-0"
+            className="flex flex-col h-full min-h-0 p-6"
           >
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-              {/* Supplier Information Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-gray-600" />
-                  <h4 className="font-medium text-gray-900">
-                    Supplier Information
-                  </h4>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Supplier Name *</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                            <Input
-                              placeholder="Enter supplier name"
-                              className="pl-10"
-                              {...field}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="contactName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Person</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                            <Input
-                              placeholder="Contact person name"
-                              className="pl-10"
-                              {...field}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Contact Information Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-gray-600" />
-                  <h4 className="font-medium text-gray-900">
-                    Contact Information
-                  </h4>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                type="email"
-                                placeholder="email@example.com"
-                                className="pl-10"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                type="tel"
-                                placeholder="+1 (555) 123-4567"
-                                className="pl-10"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                            <Textarea
-                              placeholder="Enter full address"
-                              className="pl-10"
-                              {...field}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Business Information Section */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-gray-600" />
-                  <h4 className="font-medium text-gray-900">
-                    Business Information
-                  </h4>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="preferredPaymentMethod"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Preferred Payment Method</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select payment method" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Bank Transfer">
-                              Bank Transfer
-                            </SelectItem>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                            <SelectItem value="Check">Check</SelectItem>
-                            <SelectItem value="Credit Card">
-                              Credit Card
-                            </SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || "active"}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Notes</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Additional notes about this supplier"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+            <div className="flex-1 overflow-y-auto min-h-0 pr-2">
+              <FormContent />
             </div>
-
-            <div className="flex justify-end gap-4 p-4 border-t shrink-0">
-              <Button type="button" variant="outline" onClick={onSuccess}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting
-                  ? "Saving..."
-                  : isEditing
-                  ? "Update Supplier"
-                  : "Create Supplier"}
-              </Button>
-            </div>
+            <FormActions cancelAction={onSuccess} />
           </form>
         </Form>
       </div>
     );
   }
 
-  // When used with a trigger, use the dialog pattern
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-blue-600" />
-            {isEditing ? "Edit Supplier" : "Add New Supplier"}
+      <DialogContent className="max-w-2xl max-h-[90vh] rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
+        <DialogHeader className="p-6 border-b bg-gray-50/50">
+          <DialogTitle className="flex items-center gap-3 font-black text-xl tracking-tight">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <Building2 className="h-5 w-5" />
+            </div>
+            {isEditing ? "Edit Operational Records" : "Register New Supplier"}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Supplier Information Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-gray-600" />
-                <h4 className="font-medium text-gray-900">
-                  Supplier Information
-                </h4>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supplier Name *</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            placeholder="Enter supplier name"
-                            className="pl-10"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="contactName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Person</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            placeholder="Contact person name"
-                            className="pl-10"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Contact Information Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-gray-600" />
-                <h4 className="font-medium text-gray-900">
-                  Contact Information
-                </h4>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                            <Input
-                              type="email"
-                              placeholder="email@example.com"
-                              className="pl-10"
-                              {...field}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                            <Input
-                              type="tel"
-                              placeholder="+1 (555) 123-4567"
-                              className="pl-10"
-                              {...field}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Textarea
-                            placeholder="Enter full address"
-                            className="pl-10"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Business Information Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-gray-600" />
-                <h4 className="font-medium text-gray-900">
-                  Business Information
-                </h4>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                <FormField
-                  control={form.control}
-                  name="preferredPaymentMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preferred Payment Method</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select payment method" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Bank Transfer">
-                            Bank Transfer
-                          </SelectItem>
-                          <SelectItem value="Cash">Cash</SelectItem>
-                          <SelectItem value="Check">Check</SelectItem>
-                          <SelectItem value="Credit Card">
-                            Credit Card
-                          </SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || "active"}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Additional notes about this supplier"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setOpen(false);
-                  onSuccess?.();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting
-                  ? "Saving..."
-                  : isEditing
-                  ? "Update Supplier"
-                  : "Create Supplier"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <FormContent />
+              <FormActions cancelAction={() => setOpen(false)} />
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -18,11 +18,20 @@ import {
   DollarSign,
   MoreVertical,
   Trash2,
+  Activity,
+  ChevronRight,
+  TrendingUp,
+  FileText,
+  LayoutDashboard,
+  Box,
+  Link as LinkIcon,
+  Calendar,
+  Wallet,
 } from "lucide-react";
-import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -40,11 +49,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/supplierUtils";
 import {
   useSupplierState,
@@ -52,32 +61,26 @@ import {
 } from "@/context/SupplierContext";
 import { SupplierForm } from "./SupplierForm";
 import { SupplierPaymentModal } from "./SupplierPaymentModal";
+import { getOrdersBySupplier } from "@/lib/api/orders";
+import type { Order as DBOrder } from "@/types/order";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface SupplierDetailProps {
   supplierId: string;
 }
 
-import { getOrdersBySupplier } from "@/lib/api/orders";
-import type { Order as DBOrder } from "@/types/order";
-import Link from "next/link";
-
 export function SupplierDetail({ supplierId }: SupplierDetailProps) {
   const { suppliers } = useSupplierState();
-  const { getSupplierHistory, getSupplierById } = useSupplierActions();
+  const { getSupplierHistory, getSupplierById, initialize } = useSupplierActions();
   
-  // Get supplier from context
   const supplier = getSupplierById(supplierId);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-
   const [orders, setOrders] = useState<DBOrder[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
 
-  // Fetch history and orders when supplierId changes
   useEffect(() => {
     if (supplierId) {
       getSupplierHistory(supplierId);
@@ -99,473 +102,397 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
 
   if (!supplier) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
-        <p className="text-gray-600">Loading supplier details...</p>
+      <div className="flex flex-col items-center justify-center p-20 bg-gray-50/50 rounded-[3rem]">
+        <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center animate-pulse mb-6">
+          <Building2 className="h-8 w-8 text-primary" />
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+          Syncing entity data...
+        </p>
       </div>
     );
   }
 
-  // Use history from the supplier object (enhanced by the context)
   const history = supplier.history || [];
 
-  // Filter payment history based on search and filters
-  const filteredHistory = history.filter((event) => {
-    const matchesSearch =
-      !searchTerm ||
-      event.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.relatedId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.type.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesPaymentMethod =
-      paymentMethodFilter === "all" ||
-      (event.type === "Payment Made" && paymentMethodFilter === "payment") ||
-      (event.type === "Purchase Order Created" &&
-        paymentMethodFilter === "purchase") ||
-      (event.type === "Credit Balance Adjusted" &&
-        paymentMethodFilter === "adjustment");
-
-    const matchesStatus = statusFilter === "all"; 
-
-    return matchesSearch && matchesPaymentMethod && matchesStatus;
-  });
-
-  const getStatusBadgeVariant = (type: string) => {
+  const getHistoryEventBadgeVariant = (type: string) => {
     switch (type) {
       case "Payment Made":
-        return "default";
+        return "bg-green-50 text-green-600 border-green-100";
       case "Purchase Order Created":
-        return "secondary";
+        return "bg-blue-50 text-blue-600 border-blue-100";
       case "Credit Balance Adjusted":
-        return "outline";
+        return "bg-orange-50 text-orange-600 border-orange-100";
       default:
-        return "outline";
+        return "bg-gray-50 text-gray-500 border-gray-100";
     }
   };
 
-  const handleExportReport = () => {
-    alert("Export functionality would be implemented here");
-  };
-
-  const handleEditSupplier = () => {
-    setShowEditModal(true);
-  };
-
-  const handleCloseEditModal = () => {
-    setShowEditModal(false);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50/50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-          <div className="flex items-start gap-5">
-             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg transform transition-transform hover:scale-105">
-                <span className="text-3xl font-bold text-white">
-                  {supplier.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                {supplier.name}
-              </h1>
-              <div className="flex items-center gap-3 text-sm">
-                <Badge 
-                  variant={supplier.status === "active" ? "default" : "secondary"}
-                  className={`px-3 py-1 ${
-                    supplier.status === "active" 
-                      ? "bg-green-100 text-green-700 hover:bg-green-200 border-green-200" 
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200"
-                  }`}
-                >
-                  {supplier.status === "active" ? (
-                    <span className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse" />
-                      Active
-                    </span>
-                  ) : (
-                    "Inactive"
-                  )}
-                </Badge>
-                <span className="text-gray-400 font-medium">#{supplier.id.slice(0, 8)}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    onClick={() => setShowPaymentModal(true)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all hover:shadow-lg gap-2"
-                  >
-                    <DollarSign className="h-4 w-4" />
-                    Record Payment
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Record a new payment</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={handleEditSupplier}
-                    variant="outline"
-                    className="bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 shadow-sm"
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Edit Supplier Details</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="bg-white border-gray-200 hover:bg-gray-50 shadow-sm">
-                  <MoreVertical className="h-4 w-4 text-gray-500" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={handleExportReport} disabled>
-                  <Download className="mr-2 h-4 w-4" />
-                  Export Report
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Supplier
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+    <div className="flex flex-col h-full bg-[#fbfcfd]">
+      {/* Top Banner & Header */}
+      <div className="relative p-8 pb-32 bg-primary/5 border-b border-primary/5 overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 opacity-5">
+           <Building2 className="w-64 h-64 -mr-20 -mt-20" />
         </div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 max-w-7xl mx-auto w-full">
+           <div className="flex items-center gap-6">
+              <div className="w-24 h-24 rounded-[2rem] bg-white shadow-xl shadow-primary/5 border-4 border-white flex items-center justify-center text-4xl font-black text-primary">
+                 {supplier.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="space-y-2">
+                 <div className="flex items-center gap-3">
+                   <h1 className="text-3xl font-black tracking-tight text-foreground">
+                     {supplier.name}
+                   </h1>
+                   <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-widest border shadow-none",
+                      supplier.status === "active" 
+                        ? "bg-green-50 text-green-600 border-green-100" 
+                        : "bg-gray-100 text-gray-500 border-gray-200"
+                    )}
+                   >
+                    {supplier.status === "active" ? "Operational" : "Inactive"}
+                   </Badge>
+                 </div>
+                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                       <LinkIcon className="w-3.5 h-3.5 opacity-40 text-primary" />
+                       ID: {supplier.id.slice(0, 8)}
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                       <Calendar className="w-3.5 h-3.5 opacity-40 text-primary" />
+                       Updated: {formatDate(supplier.updatedAt)}
+                    </div>
+                 </div>
+              </div>
+           </div>
 
-        {showPaymentModal && (
-            <SupplierPaymentModal
-                supplierId={supplierId}
-                supplierName={supplier.name}
-                currentBalance={supplier.outstandingBalance || 0}
-                onClose={() => setShowPaymentModal(false)}
-            />
-        )}
+           <div className="flex flex-wrap items-center gap-3">
+              <Button 
+                onClick={() => setShowPaymentModal(true)}
+                className="h-12 px-6 rounded-2xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all font-black text-[10px] uppercase tracking-widest"
+              >
+                <DollarSign className="w-4 h-4 mr-2" />
+                Record Settlement
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowEditModal(true)}
+                className="h-12 px-6 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-sm"
+              >
+                <Pencil className="w-4 h-4 mr-2 opacity-40" />
+                Edit Credentials
+              </Button>
+           </div>
+        </div>
+      </div>
 
+      {/* Main Content Dashboard */}
+      <div className="max-w-7xl mx-auto w-full px-8 -mt-20 pb-20 space-y-8">
         {/* Info Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Contact Information Card */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow duration-200">
-             <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
-                  <User className="h-5 w-5" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* identity Card */}
+          <Card className="lg:col-span-1 rounded-[2rem] border-none shadow-xl shadow-gray-200/50 overflow-hidden bg-white/80 backdrop-blur-md">
+            <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-5">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                  <User className="w-4 h-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-900">Contact Information</h2>
-             </div>
-             
-             <div className="space-y-5">
-                <div className="flex items-center gap-3 group">
-                   <div className="w-40 text-sm font-medium text-gray-500">Contact Person</div>
-                   <div className="text-sm font-medium text-gray-900">{supplier.contactName || "—"}</div>
+                <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Primary Identity</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-8 space-y-6">
+              <div className="space-y-1">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 ml-1">Operations Liaison</p>
+                <div className="h-12 w-full px-4 rounded-xl bg-gray-50 border border-gray-100 flex items-center font-bold text-sm text-foreground">
+                  {supplier.contactName || "—"}
                 </div>
-
-                <div className="flex items-center gap-3">
-                   <div className="w-40 text-sm font-medium text-gray-500">Email Address</div>
-                   <div className="text-sm text-gray-900">
-                      {supplier.email ? (
-                        <a href={`mailto:${supplier.email}`} className="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1.5 transition-colors">
-                          <Mail className="h-3.5 w-3.5" />
-                          {supplier.email}
-                        </a>
-                      ) : "—"}
-                   </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                   <div className="w-40 text-sm font-medium text-gray-500">Phone Number</div>
-                   <div className="text-sm text-gray-900">
-                      {supplier.phone ? (
-                        <a href={`tel:${supplier.phone}`} className="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1.5 transition-colors">
-                          <Phone className="h-3.5 w-3.5" />
-                          {supplier.phone}
-                        </a>
-                      ) : "—"}
-                   </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                   <div className="w-40 text-sm font-medium text-gray-500 pt-0.5">Address</div>
-                   <div className="text-sm text-gray-900 flex items-start gap-1.5">
-                      {supplier.address ? (
-                        <>
-                          <MapPin className="h-3.5 w-3.5 mt-0.5 text-gray-400" />
-                          <span className="max-w-[200px] leading-relaxed">{supplier.address}</span>
-                        </>
-                      ) : "—"}
-                   </div>
-                </div>
-             </div>
-          </div>
-
-          {/* Financial Overview Card */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow duration-200">
-             <div className="flex items-center gap-3 mb-6">
-                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
-                  <CreditCard className="h-5 w-5" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900">Financial Overview</h2>
-             </div>
-
-             <div className="space-y-6">
-                <div>
-                   <div className="text-sm font-medium text-gray-500 mb-2">Outstanding Balance</div>
-                   <div className="flex items-baseline gap-2">
-                      <span className={`text-4xl font-bold tracking-tight ${
-                        (supplier.outstandingBalance || 0) > 0 ? "text-orange-600" : "text-emerald-600"
-                      }`}>
-                        {formatCurrency(supplier.outstandingBalance || 0)}
-                      </span>
-                      <span className="text-sm font-medium text-gray-500">current due</span>
-                   </div>
-                </div>
-
-                <div className="h-px bg-gray-100" />
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                     <span className="text-sm text-gray-500">Preferred Payment</span>
-                     <Badge variant="outline" className="font-medium">
-                        {supplier.preferredPaymentMethod || "Not set"}
-                     </Badge>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 ml-1">Direct Comms</p>
+                <div className="space-y-3">
+                  <div className="h-12 w-full px-4 rounded-xl bg-gray-50 border border-gray-100 flex items-center gap-3">
+                    <Mail className="w-4 h-4 opacity-30 text-primary" />
+                    <span className="font-bold text-sm text-foreground/80">{supplier.email || "No email documented"}</span>
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                     <span className="text-sm text-gray-500">Last Updated</span>
-                     <span className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5 text-gray-400" />
-                        {formatDate(supplier.updatedAt)}
-                     </span>
-                  </div>
-                </div>
-             </div>
-          </div>
-        </div>
-
-        {supplier.notes && (
-          <div className="bg-amber-50 rounded-xl border border-amber-100 p-4">
-            <h3 className="font-medium text-amber-900 mb-2 flex items-center gap-2">
-              <Pencil className="h-4 w-4" />
-              Notes
-            </h3>
-            <p className="text-amber-800 text-sm leading-relaxed">{supplier.notes}</p>
-          </div>
-        )}
-
-        {/* Tabs - Search Bar Container */}
-        <Tabs defaultValue="payment-history" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="payment-history">History & Logs</TabsTrigger>
-            <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="payment-history" className="mt-6">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-              {/* Filters and Search */}
-              <div className="p-4 border-b border-gray-200">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <input
-                      type="text"
-                      placeholder="Search transactions..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <select
-                      value={paymentMethodFilter}
-                      onChange={(e) => setPaymentMethodFilter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="all">All Types</option>
-                      <option value="payment">Payments</option>
-                      <option value="purchase">Purchase Orders</option>
-                      <option value="adjustment">Adjustments</option>
-                    </select>
+                  <div className="h-12 w-full px-4 rounded-xl bg-gray-50 border border-gray-100 flex items-center gap-3">
+                    <Phone className="w-4 h-4 opacity-30 text-primary" />
+                    <span className="font-bold text-sm text-foreground/80">{supplier.phone || "No phone documented"}</span>
                   </div>
                 </div>
               </div>
+              <div className="space-y-1">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 ml-1">Operational Base</p>
+                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 min-h-[80px] flex items-start gap-3">
+                  <MapPin className="w-4 h-4 opacity-30 text-primary mt-0.5" />
+                  <span className="font-bold text-sm text-foreground/80 leading-relaxed italic">{supplier.address || "Address not specified"}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-              {/* Payment History Table */}
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredHistory.length > 0 ? (
-                      filteredHistory.map((event) => (
-                        <TableRow key={event.id}>
-                          <TableCell className="font-medium">
-                            {formatDate(event.date)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={getStatusBadgeVariant(event.type)}>
+          {/* financial dashboard card */}
+          <Card className="lg:col-span-2 rounded-[2rem] border-none shadow-xl shadow-gray-200/50 overflow-hidden bg-white/80 backdrop-blur-md">
+            <CardHeader className="bg-emerald-50/50 border-b border-emerald-100/50 py-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-100 text-emerald-600">
+                    <Wallet className="w-4 h-4" />
+                  </div>
+                  <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-800/60">Financial Standing</CardTitle>
+                </div>
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Real-time status</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-3">Outstanding Aggregate</p>
+                    <div className="flex items-baseline gap-3">
+                      <h2 className={cn(
+                        "text-5xl font-black tracking-tighter",
+                        (supplier.outstandingBalance || 0) > 0 ? "text-orange-600" : "text-emerald-600"
+                      )}>
+                        {formatCurrency(supplier.outstandingBalance || 0)}
+                      </h2>
+                    </div>
+                    <p className="text-[10px] font-bold text-muted-foreground mt-4 uppercase tracking-widest">Current procurement debt</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl bg-gray-50/80 border border-gray-100">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 mb-1">Settlement</p>
+                      <p className="text-sm font-black text-foreground">{supplier.preferredPaymentMethod || "Direct"}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-gray-50/80 border border-gray-100">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 mb-1">Status</p>
+                      <p className="text-sm font-black text-foreground capitalize">{supplier.status}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-3">Strategic Observations</p>
+                   <div className="relative p-6 rounded-3xl bg-amber-50/30 border border-amber-100 min-h-[140px]">
+                      <AlertCircle className="absolute top-4 right-4 w-5 h-5 text-amber-500/20" />
+                      <p className="text-sm font-medium text-amber-900 leading-relaxed italic">
+                        {supplier.notes || "No administrative notes provided for this entity."}
+                      </p>
+                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Activity & Documents Tabs */}
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+          <Tabs defaultValue="history" className="w-full">
+            <div className="px-8 pt-6 border-b border-gray-50">
+              <TabsList className="bg-transparent gap-8 h-14 p-0">
+                <TabsTrigger 
+                  value="history" 
+                  className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
+                >
+                  <Activity className="w-3.5 h-3.5 mr-2" />
+                  Activity Timeline
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="orders" 
+                  className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
+                >
+                  <Box className="w-3.5 h-3.5 mr-2" />
+                  Procurement Orders
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="analytics" 
+                  className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5 mr-2" />
+                  Supplier Intelligence
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="history" className="p-8 mt-0 outline-none">
+              <ScrollArea className="h-[500px] pr-4">
+                <div className="relative pl-12 space-y-8 pb-8">
+                  {/* Timeline track */}
+                  <div className="absolute left-[23px] top-2 bottom-6 w-0.5 bg-gray-100" />
+                  
+                  {history.length > 0 ? (
+                    history.map((event, idx) => (
+                      <div key={event.id} className="relative group animate-in fade-in slide-in-from-left-4 duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+                        {/* Event indicator */}
+                        <div className="absolute -left-[45px] top-1.5 w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                          <Clock className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                        </div>
+                        
+                        <div className="flex flex-col gap-1 italic mb-2">
+                           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">{formatDate(event.date)}</span>
+                        </div>
+
+                        <div className="p-5 rounded-2xl bg-gray-50/50 border border-gray-100 group-hover:bg-white group-hover:shadow-md transition-all duration-300">
+                          <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
+                            <Badge 
+                              variant="outline" 
+                              className={cn(
+                                "rounded-lg px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider shadow-none border",
+                                getHistoryEventBadgeVariant(event.type)
+                              )}
+                            >
                               {event.type}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm text-gray-900">
-                              {event.notes}
-                            </div>
-                            {event.relatedId && (
-                              <div className="text-xs text-gray-500">
-                                ID: {event.relatedId}
-                              </div>
+                            {event.amount && (
+                              <span className="text-sm font-black text-foreground">
+                                {formatCurrency(event.amount)}
+                              </span>
                             )}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {event.amount !== undefined && event.amount !== 0
-                              ? formatCurrency(event.amount)
-                              : "-"}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell
-                          colSpan={4}
-                          className="text-center py-8 text-gray-500"
-                        >
-                          No history found matching your criteria
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Summary */}
-              <div className="border-t border-gray-200 p-4 bg-gray-50">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
-                  <span className="text-gray-600">
-                    Showing {filteredHistory.length} of {history.length} events
-                  </span>
+                          </div>
+                          <p className="text-sm font-bold text-foreground/70 leading-relaxed mb-4">
+                            {event.notes}
+                          </p>
+                          {event.relatedId && (
+                            <div className="flex items-center gap-2 pt-3 border-t border-gray-100/50">
+                              <FileText className="w-3 h-3 text-primary opacity-50" />
+                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">Reference: {event.relatedId}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                        <Activity className="w-8 h-8 text-muted-foreground/10" />
+                      </div>
+                      <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/40">No activity documented.</h3>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
-          </TabsContent>
+              </ScrollArea>
+            </TabsContent>
 
-          <TabsContent value="purchase-orders" className="mt-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Icons.file className="h-8 w-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Purchase Orders
-              </h3>
-              <div className="mt-4 overflow-x-auto">
+            <TabsContent value="orders" className="p-8 mt-0 outline-none">
                 {loadingOrders ? (
-                  <div className="py-8 text-center text-gray-500">Loading orders...</div>
+                  <div className="py-20 text-center">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Fetching procurement history...</p>
+                  </div>
                 ) : orders.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Order #</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Paid</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium">{order.order_number}</TableCell>
-                          <TableCell>{order.created_at.split('T')[0]}</TableCell>
-                          <TableCell>{formatCurrency(order.total_amount)}</TableCell>
-                          <TableCell>{formatCurrency(order.paid_amount)}</TableCell>
-                          <TableCell>
-                            <Badge variant={order.payment_status === 'paid' ? 'default' : 'secondary'}>
-                              {order.payment_status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/orders`}>View</Link>
-                            </Button>
-                          </TableCell>
+                  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-gray-50/50 border-b border-gray-100">
+                        <TableRow>
+                          <TableHead className="text-[9px] font-black uppercase tracking-widest py-4 pl-6">Order Registry</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase tracking-widest py-4">Total Value</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase tracking-widest py-4">Paid Status</TableHead>
+                          <TableHead className="text-[9px] font-black uppercase tracking-widest py-4">Fulfillment</TableHead>
+                          <TableHead className="text-right text-[9px] font-black uppercase tracking-widest py-4 pr-6">Commands</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {orders.map((order) => (
+                          <TableRow key={order.id} className="group hover:bg-muted/30 transition-colors">
+                            <TableCell className="py-5 pl-6">
+                              <div className="flex flex-col">
+                                <span className="font-black text-sm text-foreground">#{order.order_number}</span>
+                                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-1 opacity-60">{order.created_at.split('T')[0]}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-5 font-black text-sm text-foreground">
+                              {formatCurrency(order.total_amount)}
+                            </TableCell>
+                            <TableCell className="py-5">
+                               <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-1.5 font-bold text-xs text-foreground/70">
+                                    <span className="text-emerald-600">{formatCurrency(order.paid_amount)}</span>
+                                    <span className="text-muted-foreground/30 ml-1">/ {formatCurrency(order.total_amount)}</span>
+                                  </div>
+                               </div>
+                            </TableCell>
+                            <TableCell className="py-5">
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "rounded-lg px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest border shadow-none",
+                                  order.payment_status === 'paid' ? "bg-green-50 text-green-600 border-green-100" : "bg-orange-50 text-orange-600 border-orange-100"
+                                )}
+                              >
+                                {order.payment_status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right py-5 pr-6">
+                              <Button variant="ghost" size="icon" asChild className="h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-white">
+                                <Link href={`/orders`}>
+                                  <ChevronRight className="w-4 h-4" />
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 ) : (
-                  <div className="py-8 text-center text-gray-500">No orders found for this supplier.</div>
+                  <div className="py-20 text-center border-2 border-dashed border-gray-100 rounded-3xl">
+                    <Box className="w-12 h-12 text-muted-foreground/10 mx-auto mb-4" />
+                    <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/30">Zero procurement orders documented.</h3>
+                  </div>
                 )}
-              </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="analytics" className="mt-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Icons.barChart className="h-8 w-8 text-gray-400" />
+            <TabsContent value="analytics" className="p-8 mt-0 outline-none">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-10 border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center text-center">
+                    <TrendingUp className="w-12 h-12 text-primary opacity-10 mb-6" />
+                    <h3 className="text-lg font-black tracking-tight text-foreground/30 mb-2">Predictive Intelligence</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest max-w-[200px] mx-auto">Future integration: Demand forecasting based on procurement history.</p>
+                  </div>
+                  <div className="p-10 border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center text-center">
+                    <LayoutDashboard className="w-12 h-12 text-primary opacity-10 mb-6" />
+                    <h3 className="text-lg font-black tracking-tight text-foreground/30 mb-2">Performance Metrics</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest max-w-[200px] mx-auto">Future integration: Fulfillment speed and accuracy analysis.</p>
+                  </div>
+               </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* Dialogs */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_32px_128px_-32px_rgba(0,0,0,0.5)] overflow-hidden scale-in-center">
+            <div className="flex justify-between items-center p-8 border-b border-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
+                  <Pencil className="h-5 w-5" />
+                </div>
+                <h3 className="text-xl font-black tracking-tight">Edit Operational Credentials</h3>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Supplier Analytics
-              </h3>
-              <p className="text-gray-500 mb-4">
-                Analytics and reporting features will be implemented in a future
-                update.
-              </p>
-              <Button variant="outline" disabled>
-                View Analytics
+              <Button variant="ghost" size="icon" onClick={() => setShowEditModal(false)} className="rounded-xl h-10 w-10 text-muted-foreground hover:bg-gray-100">
+                 <XCircle className="h-6 w-6" />
               </Button>
             </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Edit Supplier Modal */}
-        {showEditModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
-              <div className="flex justify-between items-center p-4 border-b">
-                <h3 className="text-lg font-semibold">Edit Supplier</h3>
-                <button
-                  onClick={handleCloseEditModal}
-                  className="text-gray-400 hover:text-gray-500 text-2xl font-bold"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="flex-1 min-h-0 flex flex-col">
-                <SupplierForm
-                  supplier={supplier}
-                  onSuccess={() => {
-                    handleCloseEditModal();
-                  }}
-                />
-              </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <SupplierForm
+                supplier={supplier}
+                onSuccess={() => {
+                  setShowEditModal(false);
+                  initialize();
+                }}
+              />
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

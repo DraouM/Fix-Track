@@ -28,7 +28,7 @@ import {
   ClientFormValues,
   CLIENT_STATUSES,
 } from "@/types/client";
-import { Loader2, Save, X } from "lucide-react";
+import { Loader2, Save, X, Phone, Mail, MapPin, FileText, User, DollarSign } from "lucide-react";
 
 interface ClientFormProps {
   clientId?: string;
@@ -81,20 +81,25 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
     if (onSuccess) onSuccess();
   }
 
+  const labelStyles = "text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 mb-1.5 flex items-center gap-2";
+  const inputStyles = "h-11 rounded-xl border-2 border-gray-100 bg-white/50 focus:bg-white focus:border-primary/20 focus:ring-0 transition-all font-bold text-sm placeholder:font-medium placeholder:text-muted-foreground/30";
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Client Name *</FormLabel>
+                <FormLabel className={labelStyles}>
+                  <User className="w-3 h-3" /> Client Name *
+                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Company or Individual Name" {...field} />
+                  <Input placeholder="Company or Individual" className={inputStyles} {...field} />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-[10px] font-bold" />
               </FormItem>
             )}
           />
@@ -103,31 +108,36 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             name="contactName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Contact Person</FormLabel>
+                <FormLabel className={labelStyles}>
+                  <User className="w-3 h-3 opacity-50" /> Primary Contact
+                </FormLabel>
                 <FormControl>
-                  <Input placeholder="John Doe" {...field} />
+                  <Input placeholder="Full Name" className={inputStyles} {...field} />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-[10px] font-bold" />
               </FormItem>
             )}
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email Address</FormLabel>
+                <FormLabel className={labelStyles}>
+                  <Mail className="w-3 h-3" /> Email Address
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="client@example.com"
+                    placeholder="client@verify.com"
+                    className={inputStyles}
                     {...field}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-[10px] font-bold" />
               </FormItem>
             )}
           />
@@ -136,11 +146,13 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Phone Number</FormLabel>
+                <FormLabel className={labelStyles}>
+                  <Phone className="w-3 h-3" /> Phone Number
+                </FormLabel>
                 <FormControl>
-                  <Input placeholder="+1 (555) 000-0000" {...field} />
+                  <Input placeholder="Call Identity" className={inputStyles} {...field} />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-[10px] font-bold" />
               </FormItem>
             )}
           />
@@ -151,48 +163,54 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Address</FormLabel>
+              <FormLabel className={labelStyles}>
+                <MapPin className="w-3 h-3" /> Physical Address
+              </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Full billing or shipping address"
-                  className="min-h-[60px]"
+                  placeholder="Street, City, Postcode"
+                  className={inputStyles + " min-h-[80px] py-3 resize-none"}
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-[10px] font-bold" />
             </FormItem>
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {!clientId && (
             <FormField
               control={form.control}
               name="outstandingBalance"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Opening Balance ($)</FormLabel>
+                  <FormLabel className={labelStyles}>
+                    <DollarSign className="w-3 h-3" /> Opening Balance
+                  </FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={
-                        field.value === null || field.value === undefined
-                          ? ""
-                          : String(field.value)
-                      }
-                      onChange={(e) =>
-                        field.onChange(parseFloat(e.target.value) || 0)
-                      }
-                      onBlur={field.onBlur}
-                      name={field.name}
-                    />
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/30" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        className={inputStyles + " pl-10"}
+                        value={
+                          field.value === null || field.value === undefined
+                            ? ""
+                            : String(field.value)
+                        }
+                        onChange={(e) =>
+                          field.onChange(parseFloat(e.target.value) || 0)
+                        }
+                      />
+                    </div>
                   </FormControl>
-                  <FormDescription>
-                    Current debt if importing existing client.
+                  <FormDescription className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 mt-1.5">
+                    Initial credit if importing account
                   </FormDescription>
-                  <FormMessage />
+                  <FormMessage className="text-[10px] font-bold" />
                 </FormItem>
               )}
             />
@@ -202,29 +220,29 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Account Status</FormLabel>
+                <FormLabel className={labelStyles}>Account Status</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className={inputStyles + " capitalize"}>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-none shadow-2xl">
                     {CLIENT_STATUSES.map((status) => (
                       <SelectItem
                         key={status}
                         value={status}
-                        className="capitalize"
+                        className="capitalize font-bold text-xs py-3"
                       >
                         {status}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
+                <FormMessage className="text-[10px] font-bold" />
               </FormItem>
             )}
           />
@@ -235,40 +253,46 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Administrative Notes</FormLabel>
+              <FormLabel className={labelStyles}>
+                <FileText className="w-3 h-3" /> Internal Records
+              </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Internal notes about this client..."
-                  className="min-h-[80px]"
+                  placeholder="Administrative observations..."
+                  className={inputStyles + " min-h-[80px] py-3 resize-none"}
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-[10px] font-bold" />
             </FormItem>
           )}
         />
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="flex justify-end gap-3 pt-4">
           {onCancel && (
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
               disabled={loading}
+              className="h-11 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50"
             >
-              <X className="mr-2 h-4 w-4" />
               Cancel
             </Button>
           )}
-          <Button type="submit" disabled={loading} className="min-w-[120px]">
+          <Button 
+            type="submit" 
+            disabled={loading} 
+            className="h-11 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-widest min-w-[140px]"
+          >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Finalizing...
               </>
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />{" "}
-                {clientId ? "Update Client" : "Create Client"}
+                {clientId ? "Commit Updates" : "Register Client"}
               </>
             )}
           </Button>

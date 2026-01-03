@@ -18,7 +18,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import {
+  Package,
   ArrowUp,
   ArrowUpDown,
   MoreHorizontal,
@@ -28,6 +30,7 @@ import {
   Trash,
   TrendingUp,
   TrendingDown,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,8 +43,8 @@ interface VirtualizedTableProps {
   onDelete: (id: string) => void;
 }
 
-const ROW_HEIGHT = 60;
-const HEADER_HEIGHT = 48;
+const ROW_HEIGHT = 64;
+const HEADER_HEIGHT = 44;
 
 /* ---------- Sortable Header ---------- */
 const SortableHeader = ({
@@ -65,8 +68,8 @@ const SortableHeader = ({
         variant="ghost"
         onClick={() => onSort(columnKey)}
         className={cn(
-          "h-auto p-0 text-sm font-medium hover:bg-transparent hover:text-foreground",
-          sortConfig?.key === columnKey && "text-foreground",
+          "h-auto p-0 text-[10px] font-black uppercase tracking-widest hover:bg-transparent hover:text-primary transition-colors",
+          sortConfig?.key === columnKey ? "text-primary" : "text-muted-foreground/60",
           className
         )}
       >
@@ -74,24 +77,24 @@ const SortableHeader = ({
           {children}
           <div
             className={cn(
-              "transition-transform",
+              "transition-transform duration-200",
               sortConfig?.key === columnKey &&
                 sortConfig.direction === "descending" &&
                 "rotate-180"
             )}
           >
             {sortConfig?.key === columnKey ? (
-              <ArrowUp className="h-3.5 w-3.5" />
+              <ChevronDown className="h-3 w-3" />
             ) : (
-              <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />
+              <ArrowUpDown className="h-3 w-3 opacity-20" />
             )}
           </div>
         </div>
       </Button>
     </TooltipTrigger>
     {tooltip && (
-      <TooltipContent side="top" align="center">
-        <p className="text-xs">{tooltip}</p>
+      <TooltipContent side="top" align="center" className="rounded-lg border-none shadow-xl font-bold text-[10px] uppercase tracking-wider">
+        <p>{tooltip}</p>
       </TooltipContent>
     )}
   </Tooltip>
@@ -124,85 +127,95 @@ const InventoryRow = memo(function InventoryRow({
     <div
       key={item.id}
       role="row"
-      className="absolute top-0 left-0 w-full flex items-center border-b border-border/40 hover:bg-muted/30 transition-colors group"
+      className="absolute top-0 left-0 w-full flex items-center border-b border-gray-100 hover:bg-muted/30 transition-all duration-200 group cursor-default"
       style={{
         height: `${virtualRow.size}px`,
         transform: `translateY(${virtualRow.start}px)`,
       }}
     >
       {/* Product Name */}
-      <div className="flex-[2] pl-4 truncate pr-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="truncate block cursor-default text-sm">
-              {item.itemName}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="top" align="center">
-            <p>{item.itemName}</p>
-          </TooltipContent>
-        </Tooltip>
+      <div className="flex-[2] pl-6 pr-2">
+        <div className="flex flex-col">
+          <span className="font-black text-sm text-foreground truncate uppercase tracking-tight">
+            {item.itemName}
+          </span>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-40">
+             SKU: {item.id.split('-')[0]}
+          </span>
+        </div>
       </div>
 
       {/* Brand */}
       <div className="flex-1">
-        <span className="text-sm text-muted-foreground">{item.phoneBrand}</span>
+        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
+           {item.phoneBrand}
+        </span>
       </div>
 
       {/* Category */}
       <div className="flex-1">
-        <span className="text-sm text-muted-foreground">{item.itemType}</span>
+         <Badge variant="secondary" className="bg-muted px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest">
+            {item.itemType}
+         </Badge>
       </div>
 
       {/* Cost */}
-      <div className="flex-1 text-right pr-4 font-mono text-sm text-muted-foreground">
-        {(item.buyingPrice ?? 0).toFixed(2)}
+      <div className="flex-1 text-right pr-6">
+        <span className="text-xs font-bold text-muted-foreground/60 tracking-tight">
+           ${(item.buyingPrice ?? 0).toFixed(2)}
+        </span>
       </div>
 
       {/* Price */}
-      <div className="flex-1 text-right pr-4 font-mono text-sm text-foreground">
-        {(item.sellingPrice ?? 0).toFixed(2)}
+      <div className="flex-1 text-right pr-6">
+        <span className="text-sm font-black text-foreground tracking-tight">
+           ${(item.sellingPrice ?? 0).toFixed(2)}
+        </span>
       </div>
 
       {/* Profit */}
-      <div className="flex-1 text-right pr-4">
+      <div className="flex-1 text-right pr-6">
         <div className="flex items-center justify-end gap-1.5">
-          {isPositive && <TrendingUp className="h-3.5 w-3.5 text-green-600" />}
-          {isNegative && <TrendingDown className="h-3.5 w-3.5 text-red-600" />}
           <span
             className={cn(
-              "font-mono text-sm",
+              "text-xs font-black tracking-tight",
               isPositive && "text-green-600",
               isNegative && "text-red-600",
-              !isPositive && !isNegative && "text-muted-foreground"
+              !isPositive && !isNegative && "text-muted-foreground/40"
             )}
           >
-            {Math.abs(profit).toFixed(2)}
+            {isPositive ? "+" : ""}{profit.toFixed(2)}
           </span>
         </div>
       </div>
 
       {/* Stock */}
-      <div className="flex-1 text-right pr-4">
-        <div className="flex items-center justify-end gap-1.5">
-          {(isOutOfStock || isLowStock) && (
-            <AlertTriangle
-              className={cn(
-                "h-3.5 w-3.5",
-                isOutOfStock ? "text-red-500" : "text-amber-500"
+      <div className="flex-1 text-right pr-6">
+        <div className="flex items-center justify-end gap-2 text-right">
+           <div className="flex flex-col items-end">
+             <span
+                className={cn(
+                  "text-sm font-black tracking-tight",
+                  isOutOfStock && "text-red-600",
+                  isLowStock && "text-orange-600",
+                  !isOutOfStock && !isLowStock && "text-foreground"
+                )}
+              >
+                {quantity}
+              </span>
+              {(isOutOfStock || isLowStock) && (
+                 <span className={cn(
+                   "text-[8px] font-black uppercase tracking-tighter",
+                   isOutOfStock ? "text-red-500" : "text-orange-500"
+                 )}>
+                   {isOutOfStock ? "EMPTY" : "LOW"}
+                 </span>
               )}
-            />
-          )}
-          <span
-            className={cn(
-              "font-mono text-sm min-w-[2.5rem] text-right",
-              isOutOfStock && "text-red-600 font-medium",
-              isLowStock && "text-amber-600",
-              !isOutOfStock && !isLowStock && "text-muted-foreground"
-            )}
-          >
-            {quantity}
-          </span>
+           </div>
+           <div className={cn(
+              "h-1.5 w-1.5 rounded-full shrink-0",
+              isOutOfStock ? "bg-red-500 animate-pulse" : isLowStock ? "bg-orange-500" : "bg-green-500"
+           )}></div>
         </div>
       </div>
 
@@ -210,26 +223,23 @@ const InventoryRow = memo(function InventoryRow({
       <div className="w-24 text-center pr-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-9 w-9 p-0 rounded-xl hover:bg-white border-transparent hover:border-gray-100 hover:shadow-sm transition-all opacity-40 group-hover:opacity-100">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => onViewHistory(item)}>
-              <Info className="h-4 w-4 mr-2" />
-              View Details
+          <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 min-w-[160px]">
+            <DropdownMenuItem onClick={() => onViewHistory(item)} className="rounded-xl font-bold text-xs uppercase tracking-wider py-2">
+              <Info className="h-4 w-4 mr-3 opacity-70" /> View History
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(item)}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Edit Item
+            <DropdownMenuItem onClick={() => onEdit(item)} className="rounded-xl font-bold text-xs uppercase tracking-wider py-2 text-primary focus:text-primary focus:bg-primary/5">
+              <Pencil className="h-4 w-4 mr-3 opacity-70" /> Edit Item
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="my-1 mx-1 bg-muted" />
             <DropdownMenuItem
               onClick={() => onDelete(item.id)}
-              className="text-red-600 focus:text-red-600"
+              className="rounded-xl font-bold text-xs uppercase tracking-wider py-2 text-red-600 focus:text-red-600 focus:bg-red-50"
             >
-              <Trash className="h-4 w-4 mr-2" />
-              Delete Item
+              <Trash className="h-4 w-4 mr-3 opacity-70" /> Delete Item
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -257,18 +267,18 @@ export const VirtualizedTable = memo(function VirtualizedTable({
   });
 
   return (
-    <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full">
       <TooltipProvider>
         {/* Header */}
         <div
-          className="sticky top-0 bg-muted/30 backdrop-blur-sm border-b border-border/40 z-10"
+          className="bg-muted/10 backdrop-blur-sm border-b border-gray-100 z-10 shrink-0"
           style={{ height: HEADER_HEIGHT }}
         >
-          <div className="flex w-full h-full items-center text-sm text-muted-foreground">
-            <div className="flex-[2] pl-4">
+          <div className="flex w-full h-full items-center">
+            <div className="flex-[2] pl-6">
               <SortableHeader
                 columnKey="itemName"
-                tooltip="Sort by item name"
+                tooltip="Sort by item"
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
@@ -295,7 +305,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 Category
               </SortableHeader>
             </div>
-            <div className="flex-1 text-right pr-4">
+            <div className="flex-1 text-right pr-6">
               <SortableHeader
                 columnKey="buyingPrice"
                 tooltip="Sort by cost"
@@ -305,7 +315,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 Cost
               </SortableHeader>
             </div>
-            <div className="flex-1 text-right pr-4">
+            <div className="flex-1 text-right pr-6">
               <SortableHeader
                 columnKey="sellingPrice"
                 tooltip="Sort by price"
@@ -315,7 +325,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 Price
               </SortableHeader>
             </div>
-            <div className="flex-1 text-right pr-4">
+            <div className="flex-1 text-right pr-6">
               <SortableHeader
                 columnKey="profit"
                 tooltip="Sort by profit"
@@ -325,7 +335,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 Profit
               </SortableHeader>
             </div>
-            <div className="flex-1 text-right pr-4">
+            <div className="flex-1 text-right pr-6">
               <SortableHeader
                 columnKey="quantityInStock"
                 tooltip="Sort by stock"
@@ -335,7 +345,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 Stock
               </SortableHeader>
             </div>
-            <div className="w-24 text-center pr-4 text-muted-foreground text-sm font-medium">
+            <div className="w-24 text-center pr-4 text-muted-foreground/60 text-[10px] font-black uppercase tracking-widest">
               Actions
             </div>
           </div>
@@ -344,8 +354,8 @@ export const VirtualizedTable = memo(function VirtualizedTable({
         {/* Rows */}
         <div
           ref={parentRef}
-          className="overflow-auto relative"
-          style={{ height: "calc(100vh - 280px)", minHeight: "400px" }}
+          className="overflow-auto relative bg-[#fdfdfd]"
+          style={{ height: "calc(100vh - 420px)", minHeight: "350px" }}
         >
           <div
             style={{
@@ -354,49 +364,51 @@ export const VirtualizedTable = memo(function VirtualizedTable({
               position: "relative",
             }}
           >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const item = items[virtualRow.index];
-              return (
-                <InventoryRow
-                  key={item.id}
-                  item={item}
-                  virtualRow={virtualRow}
-                  onViewHistory={onViewHistory}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                />
-              );
-            })}
+            {rowVirtualizer.getVirtualItems().length > 0 ? (
+              rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const item = items[virtualRow.index];
+                if (!item) return null;
+                return (
+                  <InventoryRow
+                    key={item.id}
+                    item={item}
+                    virtualRow={virtualRow}
+                    onViewHistory={onViewHistory}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
+                );
+              })
+            ) : items.length === 0 ? (
+              /* Empty State */
+              <div className="flex flex-col items-center justify-center py-24 px-8 text-center h-full">
+                <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mb-6">
+                  <Package className="w-10 h-10 text-muted-foreground/20" />
+                </div>
+                <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">
+                  Inventory is empty
+                </h3>
+                <p className="text-muted-foreground max-w-sm text-xs font-bold opacity-60 uppercase tracking-wider">
+                  Add items to your catalog to start tracking stock levels and potential profits.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </TooltipProvider>
 
-      {/* Empty State */}
-      {items.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-            <Info className="w-6 h-6 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            No inventory items
-          </h3>
-          <p className="text-muted-foreground max-w-sm text-sm">
-            Add your first item to start tracking inventory and profits.
-          </p>
-        </div>
-      )}
-
       {/* Footer Stats */}
       {items.length > 0 && (
-        <div className="border-t px-4 py-3 bg-muted/20">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>
-              {items.length} item{items.length !== 1 ? "s" : ""}
-            </span>
-            <span className="text-xs">
-              Sorted by {sortConfig?.key || "name"}
-            </span>
+        <div className="border-t border-gray-100 px-6 py-4 bg-muted/5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+             <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
+             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                Showing {items.length} Catalog Item{items.length !== 1 ? "s" : ""}
+             </span>
           </div>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+             Optimized Virtualized View
+          </span>
         </div>
       )}
     </div>

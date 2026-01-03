@@ -153,25 +153,30 @@ export function InventoryPageInner() {
     color?: "blue" | "green" | "orange" | "red" | "purple";
   }) => {
     const colorClasses = {
-      blue: "bg-blue-100 text-blue-600",
-      green: "bg-green-100 text-green-600",
-      orange: "bg-orange-100 text-orange-600",
-      red: "bg-red-100 text-red-600",
-      purple: "bg-purple-100 text-purple-600",
+      blue: "bg-blue-50 text-blue-600",
+      green: "bg-green-50 text-green-600",
+      orange: "bg-orange-50 text-orange-600",
+      red: "bg-red-50 text-red-600",
+      purple: "bg-purple-50 text-purple-600",
     };
 
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-            <Icon className="w-5 h-5" />
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2.5">
+            <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
+              <Icon className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{title}</span>
           </div>
-          <span className="text-sm font-medium text-gray-600">{title}</span>
         </div>
-        <div className="mt-3">
-          <div className="text-2xl font-bold text-gray-900">{value}</div>
+        <div className="flex items-baseline justify-between">
+          <div className="text-2xl font-black text-foreground">{value}</div>
           {subtitle && (
-            <div className="text-sm text-gray-500 mt-1">{subtitle}</div>
+            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
+              <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
+              {subtitle}
+            </div>
           )}
         </div>
       </div>
@@ -179,40 +184,53 @@ export function InventoryPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#f8fafc] p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Package className="w-8 h-8 text-blue-600" />
-              Inventory
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Manage your parts inventory and stock levels
-            </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <Package className="h-6 w-6" />
+            </div>
+            <div className="flex items-baseline gap-3">
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
+                Inventory
+              </h1>
+              <p className="hidden md:block text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-60">
+                Stock & parts management
+              </p>
+            </div>
           </div>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
-              <Download className="w-4 h-4" />
-              Export
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
-              <Upload className="w-4 h-4" />
-              Import
-            </button>
             <Button
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              variant="outline"
+              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
             >
-              <Plus className="w-4 h-4" />
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+            <Button
+              variant="outline"
+              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import
+            </Button>
+            <Button
+              onClick={() => {
+                setEditItem(null);
+                setShowForm(true);
+              }}
+              className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
+            >
+              <Plus className="mr-2 h-4 w-4" />
               Add Item
             </Button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Package}
             title="Total Items"
@@ -231,55 +249,49 @@ export function InventoryPageInner() {
             icon={DollarSign}
             title="Total Value"
             value={formatCurrency(statistics.totalValue)}
-            subtitle="Current inventory value"
+            subtitle="Current value"
             color="green"
           />
           <StatCard
             icon={TrendingUp}
             title="Potential Profit"
             value={formatCurrency(statistics.potentialProfit)}
-            subtitle="If all items sold"
+            subtitle="Estimated"
             color="purple"
           />
         </div>
 
         {/* Filters and Search */}
-        <div>
-          <div className="flex flex-col md:flex-row gap-4 items-center">
+        <div className="bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-4 items-end">
             {/* Search */}
-            <div className="flex-1 relative self-end">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search by item name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all"
-                aria-label="Search items"
-              />
+            <div className="flex-1 relative w-full">
+               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Search Catalog</span>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/40 w-4 h-4 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Filter items..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full h-11 pl-10 pr-4 bg-white border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium"
+                />
+              </div>
             </div>
 
             {/* Brand Filter */}
-            <div className="space-y-1">
-              <label
-                htmlFor="brand-filter"
-                className="text-sm font-medium text-gray-600"
-              >
-                Filter by Brand
-              </label>
+            <div className="w-full md:w-[180px]">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Brand</span>
               <Select
                 value={selectedBrand}
                 onValueChange={(value) => setSelectedBrand(value as PhoneBrand)}
               >
-                <SelectTrigger
-                  id="brand-filter"
-                  className="w-full md:w-[180px]"
-                >
+                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 bg-white font-bold text-sm">
                   <SelectValue placeholder="All Brands" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl border-none shadow-2xl">
                   {PHONE_BRANDS.map((brand) => (
-                    <SelectItem key={brand} value={brand}>
+                    <SelectItem key={brand} value={brand} className="font-bold text-xs uppercase py-2.5">
                       {brand}
                     </SelectItem>
                   ))}
@@ -288,29 +300,25 @@ export function InventoryPageInner() {
             </div>
 
             {/* Type Filter */}
-            <div className="space-y-1">
-              <label
-                htmlFor="type-filter"
-                className="text-sm font-medium text-gray-600"
-              >
-                Filter by Type
-              </label>
+            <div className="w-full md:w-[180px]">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Category</span>
               <Select
                 value={selectedType}
                 onValueChange={(value) => setSelectedType(value as ItemType)}
               >
-                <SelectTrigger id="type-filter" className="w-full md:w-[180px]">
+                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 bg-white font-bold text-sm">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl border-none shadow-2xl">
                   {ITEM_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
+                    <SelectItem key={type} value={type} className="font-bold text-xs uppercase py-2.5">
                       {type}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
             {/* Clear Filters */}
             {(searchTerm !== "" ||
               selectedBrand !== "All" ||
@@ -318,10 +326,10 @@ export function InventoryPageInner() {
               <Button
                 variant="ghost"
                 onClick={clearFilters}
-                className="self-end flex items-center gap-2 text-gray-500 hover:text-gray-700 h-10"
+                className="h-11 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-all"
               >
-                <RotateCcw className="w-4 h-4" />
-                Clear
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset
               </Button>
             )}
           </div>
@@ -348,7 +356,10 @@ export function InventoryPageInner() {
 
         {/* Add/Edit Form */}
         {showForm && (
-          <Dialog open={showForm} onOpenChange={(o) => setShowForm(o)}>
+          <Dialog open={showForm} onOpenChange={(o) => {
+            setShowForm(o);
+            if (!o) setEditItem(null);
+          }}>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>
@@ -361,6 +372,7 @@ export function InventoryPageInner() {
                 </DialogDescription>
               </DialogHeader>
               <InventoryForm
+                key={editItem ? `edit-${editItem.id}` : "new-inventory-item"}
                 itemToEdit={editItem}
                 onSuccess={() => {
                   setShowForm(false);

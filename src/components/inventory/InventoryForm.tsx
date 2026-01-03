@@ -111,11 +111,17 @@ export function InventoryForm({
           name="itemName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Item Name</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                Product Name
+              </FormLabel>
               <FormControl>
-                <Input placeholder="Enter item name" {...field} />
+                <Input 
+                  placeholder="e.g. iPhone 13 Pro Screen" 
+                  className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
+                  {...field} 
+                />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
             </FormItem>
           )}
         />
@@ -127,24 +133,31 @@ export function InventoryForm({
             control={form.control}
             name="phoneBrand"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone Brand</FormLabel>
+              <FormItem className="flex flex-col">
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1">
+                  Brand
+                </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-full justify-between"
-                    >
-                      {field.value || "Select brand"}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs justify-between hover:bg-gray-50",
+                          !field.value && "text-muted-foreground font-medium"
+                        )}
+                      >
+                        {field.value || "Select brand"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
+                      </Button>
+                    </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0">
-                    <Command>
-                      <CommandInput placeholder="Search brand..." />
-                      <CommandEmpty>No brand found.</CommandEmpty>
-                      <CommandGroup>
+                  <PopoverContent className="w-[240px] p-2 rounded-2xl border-none shadow-2xl">
+                    <Command className="rounded-xl">
+                      <CommandInput placeholder="Search brand..." className="h-9 font-bold text-xs" />
+                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">No brand found.</CommandEmpty>
+                      <CommandGroup className="max-h-[160px] overflow-auto">
                         {PHONE_BRANDS.map((brand) => (
                           <CommandItem
                             key={brand}
@@ -152,10 +165,11 @@ export function InventoryForm({
                             onSelect={() =>
                               form.setValue("phoneBrand", brand as PhoneBrand)
                             }
+                            className="rounded-lg font-bold text-xs uppercase tracking-wider py-1.5"
                           >
                             <Check
                               className={cn(
-                                "mr-2 h-4 w-4",
+                                "mr-3 h-3.5 w-3.5 text-primary",
                                 field.value === brand
                                   ? "opacity-100"
                                   : "opacity-0"
@@ -168,7 +182,7 @@ export function InventoryForm({
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <FormMessage />
+                <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
               </FormItem>
             )}
           />
@@ -178,24 +192,31 @@ export function InventoryForm({
             control={form.control}
             name="itemType"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Item Type</FormLabel>
+              <FormItem className="flex flex-col">
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1">
+                  Category
+                </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-full justify-between"
-                    >
-                      {field.value || "Select type"}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs justify-between hover:bg-gray-50",
+                          !field.value && "text-muted-foreground font-medium"
+                        )}
+                      >
+                        {field.value || "Select type"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
+                      </Button>
+                    </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0">
-                    <Command>
-                      <CommandInput placeholder="Search type..." />
-                      <CommandEmpty>No type found.</CommandEmpty>
-                      <CommandGroup>
+                  <PopoverContent className="w-[240px] p-2 rounded-2xl border-none shadow-2xl">
+                    <Command className="rounded-xl">
+                      <CommandInput placeholder="Search type..." className="h-9 font-bold text-xs" />
+                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">No type found.</CommandEmpty>
+                      <CommandGroup className="max-h-[160px] overflow-auto">
                         {ITEM_TYPES.map((type) => (
                           <CommandItem
                             key={type}
@@ -203,10 +224,11 @@ export function InventoryForm({
                             onSelect={() =>
                               form.setValue("itemType", type as ItemType)
                             }
+                            className="rounded-lg font-bold text-xs uppercase tracking-wider py-1.5"
                           >
                             <Check
                               className={cn(
-                                "mr-2 h-4 w-4",
+                                "mr-3 h-3.5 w-3.5 text-primary",
                                 field.value === type
                                   ? "opacity-100"
                                   : "opacity-0"
@@ -219,24 +241,31 @@ export function InventoryForm({
                     </Command>
                   </PopoverContent>
                 </Popover>
-                <FormMessage />
+                <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
               </FormItem>
             )}
           />
         </div>
 
         {/* Prices */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-2xl border border-gray-100/50">
           <FormField
             control={form.control}
             name="buyingPrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Buying Price</FormLabel>
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                  Cost Price ($)
+                </FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" {...field} />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm focus-visible:ring-primary/20 transition-all"
+                    {...field} 
+                  />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
               </FormItem>
             )}
           />
@@ -245,11 +274,18 @@ export function InventoryForm({
             name="sellingPrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Selling Price</FormLabel>
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                  Selling Price ($)
+                </FormLabel>
                 <FormControl>
-                  <Input type="number" step="0.01" {...field} />
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm text-primary focus-visible:ring-primary/20 transition-all"
+                    {...field} 
+                  />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
               </FormItem>
             )}
           />
@@ -262,11 +298,17 @@ export function InventoryForm({
             name="quantityInStock"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Quantity</FormLabel>
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                  Quantity
+                </FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} />
+                  <Input 
+                    type="number" 
+                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm focus-visible:ring-primary/20 transition-all"
+                    {...field} 
+                  />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
               </FormItem>
             )}
           />
@@ -275,11 +317,17 @@ export function InventoryForm({
             name="lowStockThreshold"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Low Stock Threshold</FormLabel>
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                  Alert At
+                </FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} />
+                  <Input 
+                    type="number" 
+                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm text-orange-600 focus-visible:ring-primary/20 transition-all"
+                    {...field} 
+                  />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
               </FormItem>
             )}
           />
@@ -291,22 +339,31 @@ export function InventoryForm({
           name="supplierInfo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Supplier Info</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                Supplier & Notes
+              </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Supplier name / contact"
+                  placeholder="e.g. Shenzhen Electronics"
+                  className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
                   {...field}
                   value={field.value ?? ""}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
             </FormItem>
           )}
         />
 
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {itemToEdit ? "Update Item" : "Add Item"}
-        </Button>
+        <div className="pt-2">
+          <Button 
+            type="submit" 
+            disabled={form.formState.isSubmitting}
+            className="w-full h-11 rounded-2xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-[11px] font-black uppercase tracking-[0.2em] transition-all active:scale-95"
+          >
+            {itemToEdit ? "Update Item" : "Create Item"}
+          </Button>
+        </div>
       </form>
     </Form>
   );

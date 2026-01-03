@@ -7,19 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import type {
   InventoryItem,
   InventoryHistoryEvent,
@@ -27,6 +17,17 @@ import type {
 } from "@/types/inventory";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import {
+  Package,
+  History,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Wrench,
+  RotateCcw,
+  Settings,
+  Calendar,
+  Layers
+} from "lucide-react";
 
 // --- Props ---
 interface InventoryHistoryDialogProps {
@@ -36,23 +37,38 @@ interface InventoryHistoryDialogProps {
   historyEvents: InventoryHistoryEvent[]; // history already fetched in parent
 }
 
-// --- Badge UI helper ---
-const getEventTypeBadgeVariant = (
-  eventType: HistoryEventType
-): "default" | "secondary" | "destructive" | "outline" => {
-  switch (eventType) {
+// --- Status Icon Helper ---
+const getEventIcon = (type: HistoryEventType) => {
+  switch (type) {
     case "Purchased":
-      return "default";
+      return <ArrowDownLeft className="w-3.5 h-3.5" />;
     case "Sold":
-      return "destructive";
+      return <ArrowUpRight className="w-3.5 h-3.5" />;
     case "Used in Repair":
-      return "secondary";
+      return <Wrench className="w-3.5 h-3.5" />;
     case "Returned":
-      return "outline";
+      return <RotateCcw className="w-3.5 h-3.5" />;
     case "Manual Correction":
-      return "secondary";
+      return <Settings className="w-3.5 h-3.5" />;
     default:
-      return "outline";
+      return <History className="w-3.5 h-3.5" />;
+  }
+};
+
+const getEventColor = (type: HistoryEventType) => {
+  switch (type) {
+    case "Purchased":
+      return "bg-green-50 text-green-600 border-green-100";
+    case "Sold":
+      return "bg-blue-50 text-blue-600 border-blue-100";
+    case "Used in Repair":
+      return "bg-orange-50 text-orange-600 border-orange-100";
+    case "Returned":
+      return "bg-purple-50 text-purple-600 border-purple-100";
+    case "Manual Correction":
+      return "bg-gray-50 text-gray-600 border-gray-100";
+    default:
+      return "bg-muted text-muted-foreground border-border";
   }
 };
 
@@ -75,71 +91,125 @@ export function InventoryHistoryDialog({
       open={open}
       onOpenChange={(isOpen) => !isOpen && onOpenChange(false)}
     >
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Movement History: {item.itemName}</DialogTitle>
-          <DialogDescription>
-            A log of all stock changes for this item. Current stock:{" "}
-            <strong>{item.quantityInStock ?? 0}</strong>
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-3xl border-none shadow-2xl">
+        <div className="bg-primary/5 p-4 border-b border-primary/10">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-xl bg-white shadow-sm text-primary">
+                <History className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-black tracking-tight leading-tight">History</DialogTitle>
+                <DialogDescription className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                   {item.itemName}
+                </DialogDescription>
+              </div>
+            </div>
+            
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-3 gap-2">
+               <div className="bg-white/60 backdrop-blur-sm rounded-xl p-2 border border-white/50">
+                  <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60 mb-0.5 flex items-center gap-1.5">
+                    <Layers className="w-2.5 h-2.5" />
+                    Stock
+                  </div>
+                  <div className="text-sm font-black lead-none">{item.quantityInStock}</div>
+               </div>
+               <div className="bg-white/60 backdrop-blur-sm rounded-xl p-2 border border-white/50">
+                  <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60 mb-0.5 flex items-center gap-1.5">
+                    <Calendar className="w-2.5 h-2.5" />
+                    Last Change
+                  </div>
+                  <div className="text-[10px] font-bold leading-none">
+                    {sortedHistory.length > 0 ? format(new Date(sortedHistory[0].date), "MMM d") : "N/A"}
+                  </div>
+               </div>
+               <div className="bg-white/60 backdrop-blur-sm rounded-xl p-2 border border-white/50">
+                  <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60 mb-0.5 flex items-center gap-1.5">
+                    <Package className="w-2.5 h-2.5" />
+                    Type
+                  </div>
+                  <div className="text-[9px] font-black uppercase tracking-wider text-primary truncate leading-none">
+                    {item.itemType}
+                  </div>
+               </div>
+            </div>
+          </DialogHeader>
+        </div>
 
-        {/* Scrollable history table */}
-        <ScrollArea className="max-h-[60vh] border rounded-md">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background">
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Change</TableHead>
-                <TableHead>Notes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedHistory.length > 0 ? (
-                sortedHistory.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell className="text-xs">
-                      {format(new Date(event.date), "Pp")}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getEventTypeBadgeVariant(event.type)}>
-                        {event.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        "text-right font-mono",
-                        event.quantityChange > 0
-                          ? "text-green-600"
-                          : "text-destructive"
-                      )}
-                    >
-                      {event.quantityChange > 0
-                        ? `+${event.quantityChange}`
-                        : event.quantityChange}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {event.notes || "N/A"}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center h-24">
-                    No history recorded for this item.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+        <div className="p-4">
+          <ScrollArea className="h-[320px] pr-4">
+            {sortedHistory.length > 0 ? (
+              <div className="space-y-3">
+                {sortedHistory.map((event, idx) => (
+                  <div key={event.id} className="relative group">
+                    {/* Vertical Line Connector */}
+                    {idx !== sortedHistory.length - 1 && (
+                      <div className="absolute left-[16px] top-[32px] bottom-[-16px] w-0.5 bg-gray-100 group-hover:bg-primary/20 transition-colors" />
+                    )}
+                    
+                    <div className="flex gap-3 items-start">
+                      {/* Icon Circle */}
+                      <div className={cn(
+                        "z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-transform group-hover:scale-110 shrink-0 shadow-sm",
+                        getEventColor(event.type)
+                      )}>
+                        {getEventIcon(event.type)}
+                      </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+                      {/* Content Card */}
+                      <div className="flex-1 bg-white rounded-xl border border-gray-100 p-3 hover:shadow-md transition-all">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-0.5">
+                            <div className="text-[11px] font-black uppercase tracking-wider text-foreground leading-none">
+                              {event.type}
+                            </div>
+                            <div className="text-[9px] font-bold text-muted-foreground/60">
+                              {format(new Date(event.date), "PPP p")}
+                            </div>
+                          </div>
+                          
+                          {/* Quantity Change Bubble */}
+                          <div className={cn(
+                            "px-2 py-0.5 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-sm",
+                            event.quantityChange > 0 
+                              ? "bg-green-500 text-white" 
+                              : "bg-red-500 text-white"
+                          )}>
+                            {event.quantityChange > 0 ? `+${event.quantityChange}` : event.quantityChange}
+                          </div>
+                        </div>
+
+                        {event.notes && (
+                          <div className="mt-1.5 p-1.5 bg-muted/30 rounded-lg text-[9px] font-medium text-muted-foreground leading-tight border border-gray-50 italic">
+                            "{event.notes}"
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center opacity-40 py-8">
+                <div className="p-3 rounded-full bg-gray-50 mb-2">
+                  <Package className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">No History</p>
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+
+        <div className="p-3 bg-gray-50/50 border-t flex justify-end">
+          <Button 
+            variant="ghost" 
+            onClick={() => onOpenChange(false)}
+            className="h-9 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white"
+          >
             Close
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

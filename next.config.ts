@@ -7,9 +7,19 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 
 const nextConfig: NextConfig = {
   /* config options here */
-  output: process.env.NODE_ENV === "production" ? "export" : undefined,
-  trailingSlash: true,
-  distDir: "out",
+  output:
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PUBLIC_BUILD_MODE === "export"
+      ? "export"
+      : undefined,
+  trailingSlash:
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PUBLIC_BUILD_MODE === "export",
+  distDir:
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PUBLIC_BUILD_MODE === "export"
+      ? "out"
+      : ".next",
   eslint: {
     ignoreDuringBuilds: true,
   },

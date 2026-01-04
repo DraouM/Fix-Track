@@ -24,6 +24,8 @@ import {
   Clock,
   RotateCcw,
   ArrowUpRight,
+  RefreshCcw,
+  CreditCard,
 } from "lucide-react";
 import type { Supplier } from "@/types/supplier";
 import { formatCurrency, formatDate } from "@/lib/supplierUtils";
@@ -32,7 +34,6 @@ import {
   useSupplierActions,
 } from "@/context/SupplierContext";
 import { SupplierForm } from "./SupplierForm";
-import SupplierDetail from "./SupplierDetail";
 import { SupplierPaymentModal } from "./SupplierPaymentModal";
 import {
   DropdownMenu,
@@ -50,6 +51,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -67,43 +69,37 @@ const StatCard = ({
   subtitle,
   color = "blue",
 }: {
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   title: string;
   value: string | number;
   subtitle?: string;
-  color?: "blue" | "green" | "orange" | "purple" | "red";
+  color?: "blue" | "green" | "orange" | "red" | "purple";
 }) => {
-  const colorMap = {
-    blue: "bg-blue-50 text-blue-600 border-blue-100",
-    green: "bg-green-50 text-green-600 border-green-100",
-    orange: "bg-orange-50 text-orange-600 border-orange-100",
-    purple: "bg-purple-50 text-purple-600 border-purple-100",
-    red: "bg-red-50 text-red-600 border-red-100",
+  const colorClasses = {
+    blue: "bg-blue-50 text-blue-600",
+    green: "bg-green-50 text-green-600",
+    orange: "bg-orange-50 text-orange-600",
+    red: "bg-red-50 text-red-600",
+    purple: "bg-purple-50 text-purple-600",
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all group">
-      <div className="flex justify-between items-start mb-4">
-        <div className={cn("p-2.5 rounded-2xl border transition-colors", colorMap[color])}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2.5">
+          <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
+            <Icon className="w-4 h-4" />
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{title}</span>
         </div>
       </div>
-      <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">
-          {title}
-        </p>
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-2xl font-black tracking-tight text-foreground">
-            {value}
-          </h3>
-        </div>
+      <div className="flex items-baseline justify-between">
+        <div className="text-2xl font-black text-foreground">{value}</div>
         {subtitle && (
-          <p className="text-[10px] font-bold text-muted-foreground/40 mt-1 uppercase tracking-wider">
+          <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
+            <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
             {subtitle}
-          </p>
+          </div>
         )}
       </div>
     </div>
@@ -126,32 +122,28 @@ const SupplierPageClient = () => {
   });
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
+    null
+  );
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentSupplier, setPaymentSupplier] = useState<Supplier | null>(null);
-
-  const searchParams = useSearchParams();
-  const supplierId = searchParams.get('id');
-
-  useEffect(() => {
-    if (supplierId && suppliers.length > 0) {
-      const supplier = suppliers.find(s => s.id === supplierId);
-      if (supplier) {
-        setSelectedSupplier(supplier);
-        setShowDetailModal(true);
-      }
-    }
-  }, [supplierId, suppliers]);
 
   const filteredAndSortedSuppliers = useMemo(() => {
     let filtered = suppliers.filter((supplier) => {
       const matchesSearch =
         !filters.searchTerm ||
-        supplier.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        supplier.contactName?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        supplier.email?.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        supplier.phone?.toLowerCase().includes(filters.searchTerm.toLowerCase());
+        supplier.name
+          .toLowerCase()
+          .includes(filters.searchTerm.toLowerCase()) ||
+        supplier.contactName
+          ?.toLowerCase()
+          .includes(filters.searchTerm.toLowerCase()) ||
+        supplier.email
+          ?.toLowerCase()
+          .includes(filters.searchTerm.toLowerCase()) ||
+        supplier.phone
+          ?.toLowerCase()
+          .includes(filters.searchTerm.toLowerCase());
 
       const matchesActive =
         filters.active === "All" ||
@@ -191,15 +183,21 @@ const SupplierPageClient = () => {
   }, [suppliers, filters, sortConfig]);
 
   const metrics = useMemo(() => {
-    const suppliersList = filteredAndSortedSuppliers;
-    const activeCount = suppliersList.filter((s) => s.status === "active").length;
-    const totalBalance = suppliersList.reduce((sum, s) => sum + (s.outstandingBalance || 0), 0);
-    const suppliersWithBalance = suppliersList.filter((s) => (s.outstandingBalance || 0) > 0).length;
+    const activeCount = filteredAndSortedSuppliers.filter(
+      (s) => s.status === "active"
+    ).length;
+    const totalBalance = filteredAndSortedSuppliers.reduce(
+      (sum, s) => sum + (s.outstandingBalance || 0),
+      0
+    );
+    const suppliersWithBalance = filteredAndSortedSuppliers.filter(
+      (s) => (s.outstandingBalance || 0) > 0
+    ).length;
 
     return {
-      total: suppliersList.length,
+      total: filteredAndSortedSuppliers.length,
       active: activeCount,
-      inactive: suppliersList.length - activeCount,
+      inactive: filteredAndSortedSuppliers.length - activeCount,
       totalBalance,
       suppliersWithBalance,
     };
@@ -243,7 +241,7 @@ const SupplierPageClient = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
               <Building2 className="h-6 w-6" />
             </div>
             <div className="flex items-baseline gap-3">
@@ -255,26 +253,39 @@ const SupplierPageClient = () => {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-             <Button variant="outline" className="h-11 px-4 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-sm">
-              <Download className="w-4 h-4 mr-2 opacity-40" />
-              Export
-            </Button>
+          <div className="flex gap-3">
             <Button
-              onClick={() => {
-                setSelectedSupplier(null);
-                setShowAddModal(true);
-              }}
-              className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all font-black text-[10px] uppercase tracking-widest"
+              variant="outline"
+              onClick={() => initialize()}
+              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Supplier
+              <RefreshCcw className="w-4 h-4 mr-2" />
+              Sync
             </Button>
+            <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+              <DialogTrigger asChild>
+                <Button className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Supplier
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg rounded-3xl border-none shadow-2xl">
+                <DialogHeader className="pb-4 border-b">
+                  <DialogTitle className="text-xl font-black">Register New Supplier</DialogTitle>
+                  <DialogDescription className="font-medium text-muted-foreground">
+                    Enter the details for the new supplier record.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="pt-4">
+                   <SupplierForm onSuccess={() => setShowAddModal(false)} />
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
-        {/* Summary Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Building2}
             title="Registry Size"
@@ -283,18 +294,18 @@ const SupplierPageClient = () => {
             color="blue"
           />
           <StatCard
-            icon={CheckCircle2}
-            title="Active Partnerships"
-            value={metrics.active}
-            subtitle="Engaged supply lines"
-            color="green"
-          />
-          <StatCard
             icon={DollarSign}
             title="Aggregate Credit"
             value={formatCurrency(metrics.totalBalance)}
             subtitle={`${metrics.suppliersWithBalance} outstanding accounts`}
             color="orange"
+          />
+          <StatCard
+            icon={CheckCircle2}
+            title="Active Partnerships"
+            value={metrics.active}
+            subtitle="Engaged supply lines"
+            color="green"
           />
           <StatCard
             icon={TrendingUp}
@@ -305,9 +316,10 @@ const SupplierPageClient = () => {
           />
         </div>
 
-        {/* Filters Bar */}
+        {/* Filters and Search */}
         <div className="bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 shadow-sm">
           <div className="flex flex-col md:flex-row gap-4 items-end">
+            {/* Search */}
             <div className="flex-1 relative w-full">
                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Search Entity</span>
               <div className="relative">
@@ -321,10 +333,12 @@ const SupplierPageClient = () => {
                 />
               </div>
             </div>
+
+            {/* Status Filter */}
             <div className="w-full md:w-[200px]">
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Partnership Status</span>
-              <Select 
-                value={filters.active === "All" ? "all" : filters.active ? "active" : "inactive"} 
+              <Select
+                value={filters.active === "All" ? "all" : filters.active ? "active" : "inactive"}
                 onValueChange={(v) => setFilters(prev => ({ ...prev, active: v === "all" ? "All" : v === "active" }))}
               >
                 <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 bg-white font-bold text-sm">
@@ -337,9 +351,11 @@ const SupplierPageClient = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Clear Filters */}
             {(filters.searchTerm !== "" || filters.active !== "All") && (
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={() => setFilters({ searchTerm: "", active: "All" })}
                 className="h-11 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-all"
               >
@@ -351,155 +367,191 @@ const SupplierPageClient = () => {
         </div>
 
         {/* Suppliers Table */}
-        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full relative">
-              <thead className="bg-gray-50/50 sticky top-0 z-10 backdrop-blur-sm border-b border-gray-100 shadow-sm">
+              <thead className="bg-white/90 sticky top-0 z-20 backdrop-blur-md border-b-2 border-gray-50 shadow-sm">
                 <tr>
-                  <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 h-14 cursor-pointer hover:bg-gray-100/50 transition-colors" onClick={() => handleSort("name")}>
+                  <th
+                    className="px-8 py-0 h-16 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 border-none select-none cursor-pointer hover:bg-gray-50/50 transition-colors"
+                    onClick={() => handleSort("name")}
+                  >
                     <div className="flex items-center gap-2">
-                       Supplier Entity
-                       {sortConfig.key === "name" && (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                      Supplier Entity
+                      {sortConfig.key === "name" &&
+                        (sortConfig.direction === "asc" ? " ↑" : " ↓")}
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Technical & Comms</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 cursor-pointer hover:bg-gray-100/50 transition-colors" onClick={() => handleSort("outstandingBalance")}>
+                  <th className="px-6 py-0 h-16 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 border-none select-none">
+                    Technical & Comms
+                  </th>
+                  <th
+                    className="px-6 py-0 h-16 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 border-none select-none cursor-pointer hover:bg-gray-50/50 transition-colors"
+                    onClick={() => handleSort("outstandingBalance")}
+                  >
                     <div className="flex items-center gap-2">
-                      Credit Balance
-                      {sortConfig.key === "outstandingBalance" && (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                      Financial Position
+                      {sortConfig.key === "outstandingBalance" &&
+                        (sortConfig.direction === "asc" ? " ↑" : " ↓")}
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Status</th>
-                  <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Management</th>
+                  <th className="px-6 py-0 h-16 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 border-none select-none">
+                    System Status
+                  </th>
+                  <th className="px-8 py-0 h-16 text-right text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 border-none select-none">
+                    Directives
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredAndSortedSuppliers.length > 0 ? (
-                  filteredAndSortedSuppliers.map((supplier) => (
+                  filteredAndSortedSuppliers.map((supplier, idx) => (
                     <tr
                       key={supplier.id}
-                      className="group hover:bg-muted/30 transition-all duration-200 cursor-default"
-                      onClick={() => {
-                        setSelectedSupplier(supplier);
-                        setShowDetailModal(true);
-                      }}
+                      className="group cursor-default border-b border-gray-50 hover:bg-muted/30 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+                      style={{ animationDelay: `${idx * 40}ms` }}
                     >
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col cursor-pointer hover:translate-x-1 transition-transform">
-                          <div className="flex items-center gap-2">
+                      <td className="py-6 pl-8">
+                        <div 
+                          className="flex flex-col cursor-pointer group-hover:translate-x-1.5 transition-transform duration-300"
+                          onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                        >
+                          <div className="flex items-center gap-2.5">
                             <span className="font-black text-sm tracking-tight text-foreground group-hover:text-primary transition-colors">
                               {supplier.name}
                             </span>
-                            <ArrowUpRight className="w-3 h-3 opacity-0 group-hover:opacity-40 transition-opacity" />
+                            <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-all text-primary" />
                           </div>
                           {supplier.contactName && (
-                            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-60">
-                              {supplier.contactName}
-                            </span>
+                            <div className="flex items-center gap-1.5 mt-1.5 opacity-40">
+                               <User className="w-3 h-3 text-primary" />
+                               <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">
+                                 {supplier.contactName}
+                               </span>
+                            </div>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col gap-1.5">
+                      <td className="py-6">
+                        <div className="flex flex-col gap-2.5">
                           {supplier.phone && (
-                            <div className="flex items-center gap-2">
-                              <div className="p-1 rounded bg-gray-50 border border-gray-100 shrink-0">
-                                <Phone className="w-2.5 h-2.5 text-muted-foreground/60" />
-                              </div>
-                              <span className="text-[11px] font-bold tracking-tight text-foreground/80">{supplier.phone}</span>
+                            <div className="flex items-center text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                              <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center mr-2.5 border border-gray-100 group-hover:bg-white group-hover:border-primary/20 transition-all">
+                                <Phone className="h-3 w-3 opacity-40" />
+                              </div> 
+                              {supplier.phone}
                             </div>
                           )}
                           {supplier.email && (
-                            <div className="flex items-center gap-2">
-                              <div className="p-1 rounded bg-gray-50 border border-gray-100 shrink-0">
-                                <Mail className="w-2.5 h-2.5 text-muted-foreground/60" />
-                              </div>
-                              <span className="text-[11px] font-bold tracking-tight text-muted-foreground">{supplier.email}</span>
+                            <div className="flex items-center text-[10px] font-black text-muted-foreground/80 uppercase tracking-widest">
+                              <div className="w-6 h-6 rounded-lg bg-primary/5 flex items-center justify-center mr-2.5 border border-primary/5 group-hover:bg-white group-hover:border-primary/20 transition-all">
+                                <Mail className="h-3 w-3 opacity-40 text-primary" />
+                              </div> 
+                              <span className="truncate max-w-[180px]">{supplier.email}</span>
                             </div>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col items-start">
+                      <td className="text-right py-6">
+                        <div className="flex flex-col items-end gap-1.5">
                           <div className={cn(
-                            "px-2.5 py-1 rounded-lg text-[11px] font-black shadow-sm border",
+                            "px-3 py-1.5 rounded-xl text-[11px] font-black shadow-sm flex items-center gap-2",
                             (supplier.outstandingBalance || 0) > 0 
-                              ? "bg-orange-50 text-orange-600 border-orange-100" 
-                              : "bg-green-50 text-green-600 border-green-100"
+                              ? "bg-orange-50 text-orange-600 border border-orange-100" 
+                              : "bg-emerald-50 text-emerald-600 border border-emerald-100"
                           )}>
+                            <CreditCard className="w-3.5 h-3.5 opacity-60" />
                             {formatCurrency(supplier.outstandingBalance || 0)}
                           </div>
-                          <span className="text-[9px] uppercase text-muted-foreground/40 font-black tracking-widest mt-1.5">
-                            Outstanding
+                          <span className="text-[9px] uppercase text-muted-foreground/30 font-black tracking-widest mr-1">
+                            Aggregate Credit
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
+                      <td className="text-center py-6">
                         <div className="flex justify-center">
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={cn(
-                              "rounded-lg px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider shadow-none border",
-                              supplier.status === "active" 
-                                ? "bg-green-50 text-green-600 border-green-100" 
-                                : "bg-gray-50 text-gray-500 border-gray-100"
+                              "rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-[0.15em] shadow-none border transition-all",
+                              supplier.status === "active"
+                                ? "bg-green-50 text-green-600 border-green-100 group-hover:bg-green-100"
+                                : "bg-gray-100 text-gray-400 border-gray-200 group-hover:bg-gray-200"
                             )}
                           >
-                            {supplier.status === "active" ? "Operational" : "Inactive"}
+                            {supplier.status === "active"
+                              ? "Operational"
+                              : "Inactive"}
                           </Badge>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 px-3 rounded-lg border-2 font-black text-[10px] uppercase tracking-wider hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm"
+                      <td className="text-right py-6 pr-8">
+                        <div className="flex items-center justify-end gap-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-10 px-4 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm"
                             onClick={(e) => {
                               e.stopPropagation();
                               setPaymentSupplier(supplier);
                               setShowPaymentModal(true);
                             }}
                           >
-                            Pay
+                            Settlement
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-gray-100 transition-colors" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-xl hover:bg-gray-100 transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <MoreHorizontal className="h-4 w-4 text-muted-foreground/60" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-52 rounded-2xl border-none shadow-2xl p-2">
-                              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 px-3 py-2">Entity Control</DropdownMenuLabel>
-                              <DropdownMenuItem 
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-56 rounded-[1.5rem] border-none shadow-2xl p-2 bg-white/95 backdrop-blur-md"
+                            >
+                              <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 px-3 py-2">
+                                Entity Control
+                              </DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                                className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
+                              >
+                                <Building2 className="mr-3 h-4 w-4 opacity-40 text-primary" /> Core Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setPaymentSupplier(supplier);
                                   setShowPaymentModal(true);
                                 }}
-                                className="rounded-xl font-bold text-xs py-2.5 cursor-pointer focus:bg-green-50 focus:text-green-600"
+                                className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer focus:bg-green-50 focus:text-green-600"
                               >
-                                <DollarSign className="mr-2 h-4 w-4 opacity-70" /> Record Settlement
+                                <DollarSign className="mr-3 h-4 w-4 opacity-70" /> Record Settlement
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="bg-gray-50 my-1" />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedSupplier(supplier);
                                   setShowAddModal(true);
                                 }}
-                                className="rounded-xl font-bold text-xs py-2.5 cursor-pointer"
+                                className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
                               >
-                                <Pencil className="mr-2 h-4 w-4 opacity-70" /> Edit Credentials
+                                <Pencil className="mr-3 h-4 w-4 opacity-40 text-primary" /> Edit Credentials
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDelete(supplier.id);
                                 }}
-                                className="rounded-xl font-bold text-xs py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                                className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
                               >
-                                <Trash className="mr-2 h-4 w-4 opacity-70" /> Terminate Account
+                                <Trash className="mr-3 h-4 w-4 opacity-40" /> Terminate Account
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -509,12 +561,14 @@ const SupplierPageClient = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-20 text-center">
+                    <td colSpan={5} className="py-24 text-center">
                       <div className="flex flex-col items-center">
-                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                          <Building2 className="w-8 h-8 text-muted-foreground/10" />
+                        <div className="p-5 rounded-[2rem] bg-gray-50 mb-6 flex items-center justify-center shadow-inner">
+                          <Building2 className="h-10 w-10 text-muted-foreground/20 font-light" />
                         </div>
-                        <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/40">No entries matched.</h3>
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+                          No entities matched.
+                        </h3>
                       </div>
                     </td>
                   </tr>
@@ -530,10 +584,13 @@ const SupplierPageClient = () => {
         <DialogContent className="sm:max-w-xl rounded-3xl border-none shadow-2xl">
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="text-xl font-black">
-              {selectedSupplier ? "Edit Operational Entity" : "Register New Supplier"}
+              {selectedSupplier
+                ? "Edit Operational Entity"
+                : "Register New Supplier"}
             </DialogTitle>
             <DialogDescription className="font-medium text-muted-foreground">
-              Maintain accurate records for procurement and financial settlement.
+              Maintain accurate records for procurement and financial
+              settlement.
             </DialogDescription>
           </DialogHeader>
           <div className="pt-4">
@@ -544,15 +601,6 @@ const SupplierPageClient = () => {
                 initialize();
               }}
             />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Supplier Detail Dialog */}
-      <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent className="max-w-7xl h-[90vh] p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
-          <div className="h-full overflow-auto">
-            {selectedSupplier && <SupplierDetail supplierId={selectedSupplier.id} />}
           </div>
         </DialogContent>
       </Dialog>
@@ -573,4 +621,5 @@ const SupplierPageClient = () => {
     </div>
   );
 };
+
 export default SupplierPageClient;

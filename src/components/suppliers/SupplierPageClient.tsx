@@ -90,14 +90,21 @@ const StatCard = ({
           <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
             <Icon className="w-4 h-4" />
           </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{title}</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+            {title}
+          </span>
         </div>
       </div>
       <div className="flex items-baseline justify-between">
         <div className="text-2xl font-black text-foreground">{value}</div>
         {subtitle && (
           <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
-            <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
+            <div
+              className={`h-1 w-1 rounded-full ${colorClasses[color].replace(
+                "text-",
+                "bg-"
+              )}`}
+            ></div>
             {subtitle}
           </div>
         )}
@@ -122,6 +129,7 @@ const SupplierPageClient = () => {
   });
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
     null
   );
@@ -262,25 +270,13 @@ const SupplierPageClient = () => {
               <RefreshCcw className="w-4 h-4 mr-2" />
               Sync
             </Button>
-            <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-              <DialogTrigger asChild>
-                <Button className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Supplier
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-lg rounded-3xl border-none shadow-2xl">
-                <DialogHeader className="pb-4 border-b">
-                  <DialogTitle className="text-xl font-black">Register New Supplier</DialogTitle>
-                  <DialogDescription className="font-medium text-muted-foreground">
-                    Enter the details for the new supplier record.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="pt-4">
-                   <SupplierForm onSuccess={() => setShowAddModal(false)} />
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button 
+              onClick={() => setShowAddModal(true)}
+              className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Supplier
+            </Button>
           </div>
         </div>
 
@@ -321,14 +317,21 @@ const SupplierPageClient = () => {
           <div className="flex flex-col md:flex-row gap-4 items-end">
             {/* Search */}
             <div className="flex-1 relative w-full">
-               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Search Entity</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+                Search Entity
+              </span>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/40 w-4 h-4 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Filter suppliers..."
                   value={filters.searchTerm}
-                  onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      searchTerm: e.target.value,
+                    }))
+                  }
                   className="w-full h-11 pl-10 pr-4 bg-white border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium"
                 />
               </div>
@@ -336,18 +339,46 @@ const SupplierPageClient = () => {
 
             {/* Status Filter */}
             <div className="w-full md:w-[200px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Partnership Status</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+                Partnership Status
+              </span>
               <Select
-                value={filters.active === "All" ? "all" : filters.active ? "active" : "inactive"}
-                onValueChange={(v) => setFilters(prev => ({ ...prev, active: v === "all" ? "All" : v === "active" }))}
+                value={
+                  filters.active === "All"
+                    ? "all"
+                    : filters.active
+                    ? "active"
+                    : "inactive"
+                }
+                onValueChange={(v) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    active: v === "all" ? "All" : v === "active",
+                  }))
+                }
               >
                 <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 bg-white font-bold text-sm">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-none shadow-2xl">
-                  <SelectItem value="all" className="font-bold text-xs uppercase py-2.5">All Accounts</SelectItem>
-                  <SelectItem value="active" className="font-bold text-xs uppercase py-2.5">Active Only</SelectItem>
-                  <SelectItem value="inactive" className="font-bold text-xs uppercase py-2.5">Inactive Only</SelectItem>
+                  <SelectItem
+                    value="all"
+                    className="font-bold text-xs uppercase py-2.5"
+                  >
+                    All Accounts
+                  </SelectItem>
+                  <SelectItem
+                    value="active"
+                    className="font-bold text-xs uppercase py-2.5"
+                  >
+                    Active Only
+                  </SelectItem>
+                  <SelectItem
+                    value="inactive"
+                    className="font-bold text-xs uppercase py-2.5"
+                  >
+                    Inactive Only
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -412,9 +443,11 @@ const SupplierPageClient = () => {
                       style={{ animationDelay: `${idx * 40}ms` }}
                     >
                       <td className="py-6 pl-8">
-                        <div 
+                        <div
                           className="flex flex-col cursor-pointer group-hover:translate-x-1.5 transition-transform duration-300"
-                          onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                          onClick={() =>
+                            router.push(`/suppliers/${supplier.id}`)
+                          }
                         >
                           <div className="flex items-center gap-2.5">
                             <span className="font-black text-sm tracking-tight text-foreground group-hover:text-primary transition-colors">
@@ -424,10 +457,10 @@ const SupplierPageClient = () => {
                           </div>
                           {supplier.contactName && (
                             <div className="flex items-center gap-1.5 mt-1.5 opacity-40">
-                               <User className="w-3 h-3 text-primary" />
-                               <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">
-                                 {supplier.contactName}
-                               </span>
+                              <User className="w-3 h-3 text-primary" />
+                              <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">
+                                {supplier.contactName}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -438,7 +471,7 @@ const SupplierPageClient = () => {
                             <div className="flex items-center text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                               <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center mr-2.5 border border-gray-100 group-hover:bg-white group-hover:border-primary/20 transition-all">
                                 <Phone className="h-3 w-3 opacity-40" />
-                              </div> 
+                              </div>
                               {supplier.phone}
                             </div>
                           )}
@@ -446,20 +479,24 @@ const SupplierPageClient = () => {
                             <div className="flex items-center text-[10px] font-black text-muted-foreground/80 uppercase tracking-widest">
                               <div className="w-6 h-6 rounded-lg bg-primary/5 flex items-center justify-center mr-2.5 border border-primary/5 group-hover:bg-white group-hover:border-primary/20 transition-all">
                                 <Mail className="h-3 w-3 opacity-40 text-primary" />
-                              </div> 
-                              <span className="truncate max-w-[180px]">{supplier.email}</span>
+                              </div>
+                              <span className="truncate max-w-[180px]">
+                                {supplier.email}
+                              </span>
                             </div>
                           )}
                         </div>
                       </td>
                       <td className="text-right py-6">
                         <div className="flex flex-col items-end gap-1.5">
-                          <div className={cn(
-                            "px-3 py-1.5 rounded-xl text-[11px] font-black shadow-sm flex items-center gap-2",
-                            (supplier.outstandingBalance || 0) > 0 
-                              ? "bg-orange-50 text-orange-600 border border-orange-100" 
-                              : "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                          )}>
+                          <div
+                            className={cn(
+                              "px-3 py-1.5 rounded-xl text-[11px] font-black shadow-sm flex items-center gap-2",
+                              (supplier.outstandingBalance || 0) > 0
+                                ? "bg-orange-50 text-orange-600 border border-orange-100"
+                                : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                            )}
+                          >
                             <CreditCard className="w-3.5 h-3.5 opacity-60" />
                             {formatCurrency(supplier.outstandingBalance || 0)}
                           </div>
@@ -518,10 +555,13 @@ const SupplierPageClient = () => {
                                 Entity Control
                               </DropdownMenuLabel>
                               <DropdownMenuItem
-                                onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                                onClick={() =>
+                                  router.push(`/suppliers/${supplier.id}`)
+                                }
                                 className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
                               >
-                                <Building2 className="mr-3 h-4 w-4 opacity-40 text-primary" /> Core Profile
+                                <Building2 className="mr-3 h-4 w-4 opacity-40 text-primary" />{" "}
+                                Core Profile
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => {
@@ -531,18 +571,20 @@ const SupplierPageClient = () => {
                                 }}
                                 className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer focus:bg-green-50 focus:text-green-600"
                               >
-                                <DollarSign className="mr-3 h-4 w-4 opacity-70" /> Record Settlement
+                                <DollarSign className="mr-3 h-4 w-4 opacity-70" />{" "}
+                                Record Settlement
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="bg-gray-50 my-1" />
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedSupplier(supplier);
-                                  setShowAddModal(true);
+                                  setShowEditModal(true);
                                 }}
                                 className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
                               >
-                                <Pencil className="mr-3 h-4 w-4 opacity-40 text-primary" /> Edit Credentials
+                                <Pencil className="mr-3 h-4 w-4 opacity-40 text-primary" />{" "}
+                                Edit Credentials
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => {
@@ -551,7 +593,8 @@ const SupplierPageClient = () => {
                                 }}
                                 className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
                               >
-                                <Trash className="mr-3 h-4 w-4 opacity-40" /> Terminate Account
+                                <Trash className="mr-3 h-4 w-4 opacity-40" />{" "}
+                                Terminate Account
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -579,28 +622,55 @@ const SupplierPageClient = () => {
         </div>
       </div>
 
-      {/* Add/Edit Dialog */}
+      {/* Add Dialog */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="sm:max-w-xl rounded-3xl border-none shadow-2xl">
-          <DialogHeader className="pb-4 border-b">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] rounded-3xl border-none shadow-2xl flex flex-col overflow-hidden p-0">
+          <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle className="text-xl font-black">
-              {selectedSupplier
-                ? "Edit Operational Entity"
-                : "Register New Supplier"}
+              Register New Supplier
+            </DialogTitle>
+            <DialogDescription className="font-medium text-muted-foreground">
+              Enter the details for the new supplier record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <SupplierForm
+              onSuccess={() => {
+                setShowAddModal(false);
+                setSelectedSupplier(null);
+                initialize();
+              }}
+              onCancel={() => setShowAddModal(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] rounded-3xl border-none shadow-2xl flex flex-col overflow-hidden p-0">
+          <DialogHeader className="p-6 pb-4 border-b">
+            <DialogTitle className="text-xl font-black">
+              Edit Operational Entity
             </DialogTitle>
             <DialogDescription className="font-medium text-muted-foreground">
               Maintain accurate records for procurement and financial
               settlement.
             </DialogDescription>
           </DialogHeader>
-          <div className="pt-4">
+          <div className="flex-1 overflow-y-auto min-h-0">
             {selectedSupplier && (
               <SupplierForm
                 key={selectedSupplier.id}
                 supplier={selectedSupplier}
                 onSuccess={() => {
-                  setShowAddModal(false);
+                  setShowEditModal(false);
+                  setSelectedSupplier(null);
                   initialize();
+                }}
+                onCancel={() => {
+                  setShowEditModal(false);
+                  setSelectedSupplier(null);
                 }}
               />
             )}

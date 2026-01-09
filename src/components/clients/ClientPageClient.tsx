@@ -135,28 +135,31 @@ export default function ClientPageClient() {
                   Add Client
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-lg rounded-3xl border-none shadow-2xl">
-                <DialogHeader className="pb-4 border-b">
+              <DialogContent className="sm:max-w-lg max-h-[90vh] rounded-3xl border-none shadow-2xl flex flex-col overflow-hidden p-0">
+                <DialogHeader className="p-6 pb-4 border-b">
                   <DialogTitle className="text-xl font-black">Add New Client</DialogTitle>
                   <DialogDescription className="font-medium text-muted-foreground">
                     Enter the details for the new client record.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="pt-4">
-                  <ClientForm onSuccess={() => setIsAddModalOpen(false)} />
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  <ClientForm 
+                    onSuccess={() => setIsAddModalOpen(false)} 
+                    onCancel={() => setIsAddModalOpen(false)}
+                  />
                 </div>
               </DialogContent>
             </Dialog>
 
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-              <DialogContent className="sm:max-w-lg rounded-3xl border-none shadow-2xl">
-                <DialogHeader className="pb-4 border-b">
+              <DialogContent className="sm:max-w-lg max-h-[90vh] rounded-3xl border-none shadow-2xl flex flex-col overflow-hidden p-0">
+                <DialogHeader className="p-6 pb-4 border-b">
                   <DialogTitle className="text-xl font-black">Edit Client</DialogTitle>
                   <DialogDescription className="font-medium text-muted-foreground">
                     Update the client's information.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="pt-4">
+                <div className="flex-1 overflow-y-auto min-h-0">
                   {selectedClientId && (
                     <ClientForm 
                       clientId={selectedClientId} 

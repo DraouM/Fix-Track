@@ -483,9 +483,11 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                  <XCircle className="h-6 w-6" />
               </Button>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <SupplierForm supplier={supplier} onSuccess={() => { setShowEditModal(false); initialize(); }} />
-            </div>
+            <SupplierForm 
+              key={supplier.id}
+              supplier={supplier} 
+              onSuccess={() => { setShowEditModal(false); initialize(); }} 
+            />
           </div>
         </div>
       )}

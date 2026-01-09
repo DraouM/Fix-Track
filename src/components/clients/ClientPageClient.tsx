@@ -51,6 +51,7 @@ export default function ClientPageClient() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const totalOutstanding = clients.reduce((sum, c) => sum + (c.outstandingBalance || 0), 0);
   const activeClients = clients.filter(c => c.status === "active").length;
@@ -143,6 +144,32 @@ export default function ClientPageClient() {
                 </DialogHeader>
                 <div className="pt-4">
                   <ClientForm onSuccess={() => setIsAddModalOpen(false)} />
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+              <DialogContent className="sm:max-w-lg rounded-3xl border-none shadow-2xl">
+                <DialogHeader className="pb-4 border-b">
+                  <DialogTitle className="text-xl font-black">Edit Client</DialogTitle>
+                  <DialogDescription className="font-medium text-muted-foreground">
+                    Update the client's information.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="pt-4">
+                  {selectedClientId && (
+                    <ClientForm 
+                      clientId={selectedClientId} 
+                      onSuccess={() => {
+                        setIsEditModalOpen(false);
+                        setSelectedClientId(null);
+                      }}
+                      onCancel={() => {
+                        setIsEditModalOpen(false);
+                        setSelectedClientId(null);
+                      }}
+                    />
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
@@ -239,6 +266,10 @@ export default function ClientPageClient() {
             onRecordPayment={(id) => {
               setSelectedClientId(id);
               setIsPaymentModalOpen(true);
+            }}
+            onEditClient={(id) => {
+              setSelectedClientId(id);
+              setIsEditModalOpen(true);
             }}
           />
         </div>

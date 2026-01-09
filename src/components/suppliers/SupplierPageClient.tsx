@@ -594,13 +594,16 @@ const SupplierPageClient = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="pt-4">
-            <SupplierForm
-              supplier={selectedSupplier || undefined}
-              onSuccess={() => {
-                setShowAddModal(false);
-                initialize();
-              }}
-            />
+            {selectedSupplier && (
+              <SupplierForm
+                key={selectedSupplier.id}
+                supplier={selectedSupplier}
+                onSuccess={() => {
+                  setShowAddModal(false);
+                  initialize();
+                }}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>

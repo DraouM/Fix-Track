@@ -1,16 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -18,8 +10,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -28,90 +22,101 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSupplierContext } from "@/context/SupplierContext";
+import { Supplier, supplierSchema, SupplierFormValues } from "@/types/supplier";
 import {
-  Building2,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  CreditCard,
-  Save,
   Loader2,
+  Save,
+  X,
+  Phone,
+  Mail,
+  MapPin,
+  FileText,
+  User,
+  DollarSign,
+  Building2,
+  CreditCard,
 } from "lucide-react";
-import { toast } from "sonner";
-import { Supplier, supplierSchema } from "@/types/supplier";
-import { useSupplierActions } from "@/context/SupplierContext";
 import { cn } from "@/lib/utils";
 
 interface SupplierFormProps {
-  supplier?: Supplier | null;
+  supplierId?: string;
+  supplier?: Supplier;
   onSuccess?: () => void;
-  trigger?: React.ReactNode;
+  onCancel?: () => void;
 }
 
 export function SupplierForm({
-  supplier = null,
+  supplierId,
+  supplier,
   onSuccess,
-  trigger,
+  onCancel,
 }: SupplierFormProps) {
-  const [open, setOpen] = useState(false);
-  const isEditing = !!supplier;
-  const { createSupplier, updateSupplier } = useSupplierActions();
+  const { suppliers, createSupplier, updateSupplier, loading } =
+    useSupplierContext();
+
+  const existingSupplier =
+    supplier ||
+    (supplierId ? suppliers.find((s) => s.id === supplierId) : null);
 
   const form = useForm({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
-      name: supplier?.name || "",
-      contactName: supplier?.contactName || "",
-      email: supplier?.email || "",
-      phone: supplier?.phone || "",
-      address: supplier?.address || "",
-      notes: supplier?.notes || "",
-      preferredPaymentMethod: supplier?.preferredPaymentMethod || undefined,
-      status: supplier?.status || "active",
+      name: "",
+      contactName: "",
+      email: "",
+      phone: "",
+      address: "",
+      notes: "",
+      preferredPaymentMethod: undefined,
+      status: "active",
+      outstandingBalance: 0,
     },
   });
 
-  async function onSubmit(data: any) {
-    try {
-      if (isEditing && supplier) {
-        await updateSupplier(supplier.id, data);
-        toast.success("Operational records updated");
-      } else {
-        await createSupplier(data);
-        toast.success("New supplier entity registered");
-      }
-      if (trigger) {
-        setOpen(false);
-      }
-      onSuccess?.();
-    } catch (error) {
-      toast.error("Failed to commit changes");
-      console.error("Error saving supplier:", error);
+  useEffect(() => {
+    if (existingSupplier) {
+      form.reset({
+        name: existingSupplier.name,
+        contactName: existingSupplier.contactName || "",
+        email: existingSupplier.email || "",
+        phone: existingSupplier.phone || "",
+        address: existingSupplier.address || "",
+        notes: existingSupplier.notes || "",
+        preferredPaymentMethod: existingSupplier.preferredPaymentMethod,
+        status: existingSupplier.status,
+        outstandingBalance: existingSupplier.outstandingBalance,
+      });
     }
+  }, [existingSupplier, form]);
+
+  async function onSubmit(data: SupplierFormValues) {
+    const targetId = supplierId || supplier?.id;
+    if (targetId) {
+      await updateSupplier(targetId, data);
+    } else {
+      await createSupplier(data);
+    }
+    if (onSuccess) onSuccess();
   }
 
   const labelStyles =
-    "text-[9px] font-black uppercase tracking-widest text-muted-foreground/70 mb-0.5 flex items-center gap-1";
+    "text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 mb-1 flex items-center gap-2";
   const inputStyles =
-    "h-9 rounded-lg border border-gray-100 bg-white/50 focus:bg-white focus:border-primary/20 focus:ring-0 transition-all font-bold text-xs placeholder:font-medium placeholder:text-muted-foreground/30";
-  const sectionHeaderStyles =
-    "text-[8px] font-black uppercase tracking-[0.15em] text-muted-foreground/40 mb-2 flex items-center gap-1";
+    "h-10 rounded-xl border-2 border-gray-100 bg-white/50 focus:bg-white focus:border-primary/20 focus:ring-0 transition-all font-bold text-sm placeholder:font-medium placeholder:text-muted-foreground/30";
 
-  const FormContent = () => (
-    <div className="space-y-3">
-      {/* Supplier Identity Section */}
-      <div className="space-y-2">
-        <h4 className={sectionHeaderStyles}>
-          <Building2 className="h-2.5 w-2.5" /> Entity Identity
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem className="space-y-0">
-                <FormLabel className={labelStyles}>Official Name *</FormLabel>
+                <FormLabel className={labelStyles}>
+                  <User className="w-3 h-3" /> Supplier Name *
+                </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Company or Corporate Entity"
@@ -119,52 +124,49 @@ export function SupplierForm({
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-[9px] font-bold mt-0.5" />
+                <FormMessage className="text-[10px] font-bold mt-1" />
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="contactName"
             render={({ field }) => (
               <FormItem className="space-y-0">
-                <FormLabel className={labelStyles}>Liaison Officer</FormLabel>
+                <FormLabel className={labelStyles}>
+                  <User className="w-3 h-3 opacity-50" /> Liaison Officer
+                </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Primary contact person"
+                    placeholder="Full Name"
                     className={inputStyles}
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-[9px] font-bold mt-0.5" />
+                <FormMessage className="text-[10px] font-bold mt-1" />
               </FormItem>
             )}
           />
         </div>
-      </div>
 
-      {/* Communications Section */}
-      <div className="space-y-2">
-        <h4 className={sectionHeaderStyles}>
-          <Phone className="h-2.5 w-2.5" /> Communication Channels
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem className="space-y-0">
-                <FormLabel className={labelStyles}>Email Address</FormLabel>
+                <FormLabel className={labelStyles}>
+                  <Mail className="w-3 h-3" /> Email Address
+                </FormLabel>
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="operations@entity.com"
+                    placeholder="supplier@verify.com"
                     className={inputStyles}
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-[9px] font-bold mt-0.5" />
+                <FormMessage className="text-[10px] font-bold mt-1" />
               </FormItem>
             )}
           />
@@ -173,16 +175,17 @@ export function SupplierForm({
             name="phone"
             render={({ field }) => (
               <FormItem className="space-y-0">
-                <FormLabel className={labelStyles}>Direct Line</FormLabel>
+                <FormLabel className={labelStyles}>
+                  <Phone className="w-3 h-3" /> Phone Number
+                </FormLabel>
                 <FormControl>
                   <Input
-                    type="tel"
-                    placeholder="Call identity"
+                    placeholder="Call Identity"
                     className={inputStyles}
                     {...field}
                   />
                 </FormControl>
-                <FormMessage className="text-[9px] font-bold mt-0.5" />
+                <FormMessage className="text-[10px] font-bold mt-1" />
               </FormItem>
             )}
           />
@@ -194,15 +197,14 @@ export function SupplierForm({
           render={({ field }) => (
             <FormItem className="space-y-0">
               <FormLabel className={labelStyles}>
-                Physical Distribution Point
+                <MapPin className="w-3 h-3" /> Physical Address
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Street, City, Logistics Hub"
-                  className={cn(
-                    inputStyles,
-                    "min-h-[60px] h-18 py-2 resize-none"
-                  )}
+                  placeholder="Street, City, Postcode"
+                  className={
+                    inputStyles + " min-h-[60px] h-18 py-2 resize-none"
+                  }
                   {...field}
                 />
               </FormControl>
@@ -210,94 +212,66 @@ export function SupplierForm({
             </FormItem>
           )}
         />
-      </div>
 
-      {/* Financial Section */}
-      <div className="space-y-3">
-        <h4 className={sectionHeaderStyles}>
-          <CreditCard className="h-3 w-3" /> Settlement Parameters
-        </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="preferredPaymentMethod"
-            render={({ field }) => (
-              <FormItem className="space-y-0">
-                <FormLabel className={labelStyles}>Settlement Mode</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value || ""}
-                >
+          {!supplierId && (
+            <FormField
+              control={form.control}
+              name="outstandingBalance"
+              render={({ field }) => (
+                <FormItem className="space-y-0">
+                  <FormLabel className={labelStyles}>
+                    <DollarSign className="w-3 h-3" /> Opening Balance
+                  </FormLabel>
                   <FormControl>
-                    <SelectTrigger className={inputStyles}>
-                      <SelectValue placeholder="Select mode" />
-                    </SelectTrigger>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/30" />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        className={inputStyles + " pl-10"}
+                        value={
+                          field.value === null || field.value === undefined
+                            ? ""
+                            : String(field.value)
+                        }
+                        onChange={(e) =>
+                          field.onChange(parseFloat(e.target.value) || 0)
+                        }
+                      />
+                    </div>
                   </FormControl>
-                  <SelectContent className="rounded-xl border-none shadow-2xl">
-                    <SelectItem
-                      value="Bank Transfer"
-                      className="font-bold text-xs py-2.5"
-                    >
-                      Bank Transfer
-                    </SelectItem>
-                    <SelectItem
-                      value="Cash"
-                      className="font-bold text-xs py-2.5"
-                    >
-                      Cash
-                    </SelectItem>
-                    <SelectItem
-                      value="Check"
-                      className="font-bold text-xs py-2.5"
-                    >
-                      Check
-                    </SelectItem>
-                    <SelectItem
-                      value="Credit Card"
-                      className="font-bold text-xs py-2.5"
-                    >
-                      Credit Card
-                    </SelectItem>
-                    <SelectItem
-                      value="Other"
-                      className="font-bold text-xs py-2.5"
-                    >
-                      Other
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage className="text-[10px] font-bold mt-1" />
-              </FormItem>
-            )}
-          />
-
+                  <FormMessage className="text-[10px] font-bold mt-1" />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="status"
             render={({ field }) => (
               <FormItem className="space-y-0">
-                <FormLabel className={labelStyles}>
-                  Partnership Status
-                </FormLabel>
+                <FormLabel className={labelStyles}>Account Status</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  value={field.value || "active"}
+                  value={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger className={cn(inputStyles, "capitalize")}>
-                      <SelectValue placeholder="Status" />
+                    <SelectTrigger className={inputStyles + " capitalize"}>
+                      <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
                     <SelectItem
                       value="active"
-                      className="font-bold text-xs py-2.5"
+                      className="capitalize font-bold text-xs py-2.5"
                     >
-                      Operational
+                      Active
                     </SelectItem>
                     <SelectItem
                       value="inactive"
-                      className="font-bold text-xs py-2.5"
+                      className="capitalize font-bold text-xs py-2.5"
                     >
                       Inactive
                     </SelectItem>
@@ -311,19 +285,67 @@ export function SupplierForm({
 
         <FormField
           control={form.control}
+          name="preferredPaymentMethod"
+          render={({ field }) => (
+            <FormItem className="space-y-0">
+              <FormLabel className={labelStyles}>
+                <CreditCard className="w-3 h-3" /> Preferred Payment Method
+              </FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger className={inputStyles}>
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="rounded-xl border-none shadow-2xl">
+                  <SelectItem
+                    value="Bank Transfer"
+                    className="font-bold text-xs py-2.5"
+                  >
+                    Bank Transfer
+                  </SelectItem>
+                  <SelectItem value="Cash" className="font-bold text-xs py-2.5">
+                    Cash
+                  </SelectItem>
+                  <SelectItem
+                    value="Check"
+                    className="font-bold text-xs py-2.5"
+                  >
+                    Check
+                  </SelectItem>
+                  <SelectItem
+                    value="Credit Card"
+                    className="font-bold text-xs py-2.5"
+                  >
+                    Credit Card
+                  </SelectItem>
+                  <SelectItem
+                    value="Other"
+                    className="font-bold text-xs py-2.5"
+                  >
+                    Other
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage className="text-[10px] font-bold mt-1" />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="notes"
           render={({ field }) => (
             <FormItem className="space-y-0">
               <FormLabel className={labelStyles}>
-                Administrative Observations
+                <FileText className="w-3 h-3" /> Internal Records
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Terms, agreements, or constraints..."
-                  className={cn(
-                    inputStyles,
-                    "min-h-[60px] h-18 py-2 resize-none"
-                  )}
+                  placeholder="Administrative observations..."
+                  className={
+                    inputStyles + " min-h-[60px] h-18 py-2 resize-none"
+                  }
                   {...field}
                 />
               </FormControl>
@@ -331,78 +353,37 @@ export function SupplierForm({
             </FormItem>
           )}
         />
-      </div>
-    </div>
-  );
 
-  const FormActions = ({ cancelAction }: { cancelAction?: () => void }) => (
-    <div className="flex justify-end gap-3 pt-4">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={cancelAction}
-        className="h-10 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
-      >
-        Cancel
-      </Button>
-      <Button
-        type="submit"
-        disabled={form.formState.isSubmitting}
-        className="h-10 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all font-black text-xs uppercase tracking-widest min-w-[160px]"
-      >
-        {form.formState.isSubmitting ? (
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Committing...
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Save className="h-4 w-4" />{" "}
-            {isEditing ? "Update Entity" : "Register Entity"}
-          </div>
-        )}
-      </Button>
-    </div>
-  );
-
-  if (!trigger) {
-    return (
-      <div className="flex flex-col h-full min-h-0 bg-white">
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col h-full min-h-0 p-4 pt-2"
+        <div className="flex justify-end gap-3 pt-3">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={loading}
+              className="h-10 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50"
+            >
+              Cancel
+            </Button>
+          )}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="h-10 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-widest min-w-[140px]"
           >
-            <div className="flex-1 overflow-y-auto min-h-0 pr-2 scrollbar-hide">
-              <FormContent />
-            </div>
-            <FormActions cancelAction={onSuccess} />
-          </form>
-        </Form>
-      </div>
-    );
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-xl max-h-[90vh] rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
-        <DialogHeader className="p-5 border-b bg-gray-50/50">
-          <DialogTitle className="flex items-center gap-3 font-black text-xl tracking-tight">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <Building2 className="h-5 w-5" />
-            </div>
-            {isEditing ? "Edit Operational Records" : "Register New Supplier"}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="p-5 overflow-y-auto max-h-[calc(90vh-120px)] scrollbar-hide">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <FormContent />
-              <FormActions cancelAction={() => setOpen(false)} />
-            </form>
-          </Form>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Finalizing...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />{" "}
+                {supplierId ? "Commit Updates" : "Register Supplier"}
+              </>
+            )}
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </form>
+    </Form>
   );
 }

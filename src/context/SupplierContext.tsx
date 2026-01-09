@@ -280,16 +280,21 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       // Create updated supplier object with snake_case fields for backend
       const updatedSupplier: SupplierFrontend = {
         id: existingSupplier.id,
-        name: data.name || existingSupplier.name,
-        contact_name: data.contactName || existingSupplier.contactName,
-        email: data.email || existingSupplier.email,
-        phone: data.phone || existingSupplier.phone,
-        address: data.address || existingSupplier.address,
-        notes: data.notes || existingSupplier.notes,
+        name: data.name !== undefined ? data.name : existingSupplier.name,
+        contact_name:
+          data.contactName !== undefined
+            ? data.contactName
+            : existingSupplier.contactName,
+        email: data.email !== undefined ? data.email : existingSupplier.email,
+        phone: data.phone !== undefined ? data.phone : existingSupplier.phone,
+        address:
+          data.address !== undefined ? data.address : existingSupplier.address,
+        notes: data.notes !== undefined ? data.notes : existingSupplier.notes,
         preferred_payment_method:
-          data.preferredPaymentMethod ||
-          existingSupplier.preferredPaymentMethod,
-        status: data.status || existingSupplier.status,
+          data.preferredPaymentMethod !== undefined
+            ? data.preferredPaymentMethod
+            : existingSupplier.preferredPaymentMethod,
+        status: data.status !== undefined ? data.status : existingSupplier.status,
         outstanding_balance:
           data.outstandingBalance !== undefined
             ? data.outstandingBalance

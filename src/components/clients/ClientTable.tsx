@@ -42,9 +42,10 @@ interface ClientTableProps {
   clients: Client[];
   loading: boolean;
   onRecordPayment: (clientId: string) => void;
+  onEditClient: (clientId: string) => void;
 }
 
-export function ClientTable({ clients, loading, onRecordPayment }: ClientTableProps) {
+export function ClientTable({ clients, loading, onRecordPayment, onEditClient }: ClientTableProps) {
   const router = useRouter();
   const { deleteClient } = useClientContext();
 
@@ -192,7 +193,10 @@ export function ClientTable({ clients, loading, onRecordPayment }: ClientTablePr
                       >
                         <ExternalLink className="mr-3 h-4 w-4 opacity-40 text-primary" /> Core Profile
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer">
+                      <DropdownMenuItem 
+                        className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
+                        onClick={() => onEditClient(client.id)}
+                      >
                         <Edit2 className="mr-3 h-4 w-4 opacity-40 text-primary" /> Modify Credentials
                       </DropdownMenuItem>
                       <DropdownMenuItem className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer">

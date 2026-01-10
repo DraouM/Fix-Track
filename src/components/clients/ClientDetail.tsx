@@ -61,13 +61,128 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
 
   if (!client) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 bg-gray-50/50 rounded-[3rem]">
-        <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center animate-pulse mb-6">
-          <User className="h-8 w-8 text-primary" />
+      <div className="flex flex-col h-full bg-[#fbfcfd]">
+        {/* Top Banner & Header Skeleton */}
+        <div className="relative p-8 pb-32 bg-primary/5 border-b border-primary/5 overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+            <User className="w-64 h-64 -mr-20 -mt-20" />
+          </div>
+
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 max-w-7xl mx-auto w-full">
+            <div className="flex items-center gap-6 min-w-0 flex-1">
+              <div className="h-12 w-12 rounded-2xl border-2 font-black bg-white/80 hover:bg-white transition-all shadow-sm" />
+              <div className="w-24 h-24 rounded-[2rem] bg-gray-200/50 shadow-xl shadow-primary/5 border-4 border-white flex items-center justify-center text-4xl font-black text-primary animate-pulse">
+                <User className="h-8 w-8 text-gray-400" />
+              </div>
+              <div className="space-y-2 min-w-0 flex-1">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="h-8 w-48 bg-gray-200/50 rounded-xl animate-pulse" />
+                  <div className="h-6 w-24 bg-gray-200/30 rounded-lg animate-pulse" />
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <div className="h-4 w-32 bg-gray-200/30 rounded animate-pulse" />
+                  <div className="h-4 w-32 bg-gray-200/30 rounded animate-pulse" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="h-12 w-24 bg-gray-200/50 rounded-2xl animate-pulse" />
+              <div className="h-12 w-24 bg-gray-200/50 rounded-2xl animate-pulse" />
+            </div>
+          </div>
         </div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-          Syncing entity data...
-        </p>
+
+        {/* Main Content Dashboard Skeleton */}
+        <div className="max-w-7xl mx-auto w-full px-8 -mt-20 pb-20 space-y-8">
+          {/* Info Grid Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Identity Card Skeleton */}
+            <div className="lg:col-span-1 rounded-[2rem] border-none shadow-xl shadow-gray-200/50 overflow-hidden bg-white/80 backdrop-blur-md">
+              <div className="bg-gray-50/50 border-b border-gray-100 py-5">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-blue-50/50 text-blue-600">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="h-4 w-32 bg-gray-200/30 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="pt-8 space-y-6 p-6">
+                <div className="space-y-1">
+                  <div className="h-3 w-24 bg-gray-200/30 rounded animate-pulse ml-1" />
+                  <div className="h-12 w-full bg-gray-200/30 rounded-xl animate-pulse" />
+                </div>
+                <div className="space-y-3">
+                  <div className="h-12 w-full bg-gray-200/30 rounded-xl animate-pulse" />
+                  <div className="h-12 w-full bg-gray-200/30 rounded-xl animate-pulse" />
+                </div>
+                <div className="space-y-1">
+                  <div className="h-3 w-24 bg-gray-200/30 rounded animate-pulse ml-1" />
+                  <div className="h-16 w-full bg-gray-200/30 rounded-xl animate-pulse" />
+                </div>
+              </div>
+            </div>
+
+            {/* Financial Dashboard Card Skeleton */}
+            <div className="lg:col-span-2 rounded-[2rem] border-none shadow-xl shadow-gray-200/50 overflow-hidden bg-white/80 backdrop-blur-md">
+              <div className="bg-emerald-50/50 border-b border-emerald-100/50 py-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-emerald-100/50 text-emerald-600">
+                      <Wallet className="w-4 h-4" />
+                    </div>
+                    <div className="h-4 w-40 bg-gray-200/30 rounded animate-pulse" />
+                  </div>
+                  <div className="h-4 w-28 bg-gray-200/30 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="space-y-6">
+                    <div>
+                      <div className="h-3 w-32 bg-gray-200/30 rounded animate-pulse mb-3" />
+                      <div className="h-16 w-32 bg-gray-200/30 rounded animate-pulse" />
+                      <div className="h-3 w-40 bg-gray-200/30 rounded animate-pulse mt-4" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-2xl bg-gray-200/30 border border-gray-200/50">
+                        <div className="h-3 w-20 bg-gray-200/50 rounded animate-pulse mb-1" />
+                        <div className="h-5 w-16 bg-gray-200/50 rounded animate-pulse" />
+                      </div>
+                      <div className="p-4 rounded-2xl bg-gray-200/30 border border-gray-200/50">
+                        <div className="h-3 w-20 bg-gray-200/50 rounded animate-pulse mb-1" />
+                        <div className="h-5 w-16 bg-gray-200/50 rounded animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="h-3 w-32 bg-gray-200/30 rounded animate-pulse mb-3" />
+                    <div className="relative p-6 rounded-3xl bg-amber-50/30 border border-amber-100 min-h-[140px]">
+                      <div className="h-3 w-full bg-gray-200/30 rounded animate-pulse" />
+                      <div className="h-3 w-4/5 bg-gray-200/30 rounded animate-pulse mt-2" />
+                      <div className="h-3 w-3/4 bg-gray-200/30 rounded animate-pulse mt-2" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Activity & History Tabs Skeleton */}
+          <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-8 pt-6 border-b border-gray-50">
+              <div className="flex gap-8">
+                <div className="h-10 w-32 bg-gray-200/30 rounded animate-pulse" />
+                <div className="h-10 w-36 bg-gray-200/30 rounded animate-pulse" />
+                <div className="h-10 w-40 bg-gray-200/30 rounded animate-pulse" />
+              </div>
+            </div>
+            <div className="p-8">
+              <div className="h-96 w-full bg-gray-200/20 rounded-2xl animate-pulse" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

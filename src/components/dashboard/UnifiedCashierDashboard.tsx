@@ -56,6 +56,15 @@ import {
   getLastSessionClosingBalance,
   DailySession,
 } from "@/lib/api/session";
+import {
+  getRevenueHistory,
+  getRevenueBreakdown,
+  getDashboardStats,
+  RevenueData,
+  RevenueBreakdown,
+  DashboardStats as DashboardStatsType,
+} from "@/lib/api/dashboard";
+import { useRouter } from "next/navigation";
 
 // Define transaction types
 interface Transaction {
@@ -104,6 +113,11 @@ export function UnifiedCashierDashboard() {
   );
   const [isStartingDay, setIsStartingDay] = useState(false);
   const [openingBalanceInput, setOpeningBalanceInput] = useState("");
+  const [historyData, setHistoryData] = useState<RevenueData[]>([]);
+  const [breakdownData, setBreakdownData] = useState<RevenueBreakdown[]>([]);
+  const [dashboardStats, setDashboardStats] =
+    useState<DashboardStatsType | null>(null);
+  const router = useRouter();
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
@@ -141,7 +155,9 @@ export function UnifiedCashierDashboard() {
       setRepairs(mappedRepairs);
 
       // 4. Get All Session Transactions (Unified)
-      const dbTransactions = await invoke<any[]>("get_current_session_transactions");
+      const dbTransactions = await invoke<any[]>(
+        "get_current_session_transactions"
+      );
       const mappedTransactions: Transaction[] = dbTransactions.map((tx) => ({
         id: tx.id,
         type: tx.tx_type as "credit" | "debit",
@@ -156,6 +172,17 @@ export function UnifiedCashierDashboard() {
       }));
 
       setTransactions(mappedTransactions);
+
+      // 5. Get Dashboard Stats & History
+      const [stats, history, breakdown] = await Promise.all([
+        getDashboardStats(),
+        getRevenueHistory(7),
+        getRevenueBreakdown(30),
+      ]);
+      setDashboardStats(stats);
+      setHistoryData(history);
+      setBreakdownData(breakdown);
+
       setLastUpdated(new Date());
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -185,15 +212,18 @@ export function UnifiedCashierDashboard() {
     };
   }, [subscribe, unsubscribe, handleFinancialUpdate]);
 
-  // Placeholder monthly data for the trend chart
-  const monthlyData = [
-    { month: "Jul", revenue: 4200, profit: 1200 },
-    { month: "Aug", revenue: 3800, profit: 1100 },
-    { month: "Sep", revenue: 5100, profit: 1600 },
-    { month: "Oct", revenue: 4800, profit: 1400 },
-    { month: "Nov", revenue: 6200, profit: 2100 },
-    { month: "Dec", revenue: 7500, profit: 2800 },
-  ];
+  // Historical data for the trend chart
+  const monthlyData =
+    historyData.length > 0
+      ? historyData
+      : [
+          { date: "Jul", revenue: 4200, profit: 1200 },
+          { date: "Aug", revenue: 3800, profit: 1100 },
+          { date: "Sep", revenue: 5100, profit: 1600 },
+          { date: "Oct", revenue: 4800, profit: 1400 },
+          { date: "Nov", revenue: 6200, profit: 2100 },
+          { date: "Dec", revenue: 7500, profit: 2800 },
+        ];
 
   // Calculate financial metrics
   const totalIn = transactions
@@ -226,16 +256,7 @@ export function UnifiedCashierDashboard() {
   ).length;
 
   // Revenue trend
-  const currentMonthRevenue =
-    monthlyData.length > 0 ? monthlyData[monthlyData.length - 1].revenue : 0;
-  const previousMonthRevenue =
-    monthlyData.length > 1
-      ? monthlyData[monthlyData.length - 2].revenue
-      : currentMonthRevenue || 1;
-  const revenueChange = (
-    ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) *
-    100
-  ).toFixed(1);
+  const revenueChange = dashboardStats?.revenue_change || 0;
 
   // Handle adding expense
   const handleAddExpense = async () => {
@@ -340,6 +361,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
     trend,
     trendUp,
     color = "blue",
+    onClick,
   }: {
     icon: any;
     title: string;
@@ -348,12 +370,15 @@ Carry Forward: ${formatCurrency(carryForward)}`);
     trend?: string | number;
     trendUp?: boolean;
     color?: "blue" | "green" | "orange" | "red";
+    onClick?: React.MouseEventHandler<HTMLDivElement>;
   }) => {
     const colorClasses = {
-      blue: "bg-blue-100 text-blue-600 border-blue-200",
-      green: "bg-green-100 text-green-600 border-green-200",
-      orange: "bg-orange-100 text-orange-600 border-orange-200",
-      red: "bg-red-100 text-red-600 border-red-200",
+      blue: "bg-blue-100 text-blue-600 border-blue-200 hover:border-blue-300",
+      green:
+        "bg-green-100 text-green-600 border-green-200 hover:border-green-300",
+      orange:
+        "bg-orange-100 text-orange-600 border-orange-200 hover:border-orange-300",
+      red: "bg-red-100 text-red-600 border-red-200 hover:border-red-300",
     };
 
     const bgClasses = {
@@ -365,9 +390,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
 
     return (
       <Card
-        className={`border-2 ${colorClasses[color].split(" ")[2]} ${
-          bgClasses[color]
-        }`}
+        className={`border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+          colorClasses[color].split(" ")[2]
+        } ${bgClasses[color]}`}
+        onClick={onClick}
       >
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
@@ -526,33 +552,39 @@ Carry Forward: ${formatCurrency(carryForward)}`);
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                   icon={TrendingUp}
-                  title="Total Revenue"
-                  value={formatCurrency(totalIn)}
-                  subtitle="All income sources"
-                  trend={Math.abs(parseFloat(revenueChange))}
-                  trendUp={parseFloat(revenueChange) > 0}
+                  title="Monthly Revenue"
+                  value={formatCurrency(dashboardStats?.total_revenue || 0)}
+                  subtitle="Current month"
+                  trend={Math.abs(revenueChange)}
+                  trendUp={revenueChange > 0}
                   color="green"
+                  onClick={() => setActiveTab("transactions")}
                 />
                 <StatCard
                   icon={DollarSign}
                   title="Net Cash"
                   value={formatCurrency(netCash)}
-                  subtitle={`Balance: ${formatCurrency(expectedCash)}`}
+                  subtitle={`Total Cash: ${formatCurrency(expectedCash)}`}
                   color="blue"
+                  onClick={() => setActiveTab("cashier")}
                 />
                 <StatCard
                   icon={Wrench}
                   title="Active Repairs"
-                  value={activeRepairs}
-                  subtitle={`${completedRepairs} completed`}
+                  value={dashboardStats?.active_repairs || 0}
+                  subtitle={`${
+                    dashboardStats?.completed_repairs || 0
+                  } completed`}
                   color="orange"
+                  onClick={() => router.push("/repairs")}
                 />
                 <StatCard
                   icon={AlertTriangle}
                   title="Stock Alerts"
-                  value={outOfStockItems.length + lowStockItems.length}
-                  subtitle={`${outOfStockItems.length} out of stock`}
+                  value={dashboardStats?.stock_alerts || 0}
+                  subtitle={`${dashboardStats?.out_of_stock || 0} out of stock`}
                   color="red"
+                  onClick={() => router.push("/inventory")}
                 />
               </div>
 
@@ -570,9 +602,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={monthlyData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="month" stroke="#6b7280" />
+                        <XAxis dataKey="date" stroke="#6b7280" />
                         <YAxis stroke="#6b7280" />
                         <Tooltip
+                          formatter={(value: any) => formatCurrency(value)}
                           contentStyle={{
                             backgroundColor: "#fff",
                             border: "1px solid #e5e7eb",
@@ -586,6 +619,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           stroke="#3b82f6"
                           strokeWidth={2}
                           dot={{ fill: "#3b82f6" }}
+                          name="Revenue"
                         />
                         <Line
                           type="monotone"
@@ -593,9 +627,58 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           stroke="#10b981"
                           strokeWidth={2}
                           dot={{ fill: "#10b981" }}
+                          name="Profit"
                         />
                       </LineChart>
                     </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Revenue Breakdown Pie Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-green-600" />
+                      Revenue Breakdown
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px]">
+                      {breakdownData.some((b) => b.amount > 0) ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={breakdownData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="amount"
+                              nameKey="category"
+                              label={({ name, percent }) =>
+                                `${name} ${(percent * 100).toFixed(0)}%`
+                              }
+                            >
+                              {breakdownData.map((entry, index) => (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={COLORS[index % COLORS.length]}
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(value: any) => formatCurrency(value)}
+                            />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          No revenue data for this period
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -755,6 +838,43 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 />
               </div>
 
+              {/* Quick Actions */}
+              <Card className="bg-blue-600 text-white border-none shadow-lg mb-6">
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                      <h2 className="text-xl font-bold">Quick Actions</h2>
+                      <p className="text-blue-100 italic">
+                        Select an action to perform common tasks quickly
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        className="bg-white text-blue-600 hover:bg-blue-50"
+                        onClick={() => router.push("/transactions?mode=sale")}
+                      >
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        New Sale
+                      </Button>
+                      <Button
+                        className="bg-white text-blue-600 hover:bg-blue-50"
+                        onClick={() => router.push("/repairs?action=new")}
+                      >
+                        <Wrench className="w-4 h-4 mr-2" />
+                        New Repair
+                      </Button>
+                      <Button
+                        className="bg-white text-blue-600 hover:bg-blue-50"
+                        onClick={() => router.push("/inventory?action=add")}
+                      >
+                        <Package className="w-4 h-4 mr-2" />
+                        Add Item
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Actions */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
@@ -816,8 +936,23 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           className="pl-10"
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Expected: {formatCurrency(expectedCash)}
+                      <p className="text-xs text-muted-foreground mt-2 space-y-1">
+                        <div className="flex justify-between">
+                          <span>Opening Balance:</span>
+                          <span>{formatCurrency(openingBalance)}</span>
+                        </div>
+                        <div className="flex justify-between text-green-600">
+                          <span>Total Revenue (+):</span>
+                          <span>{formatCurrency(totalIn)}</span>
+                        </div>
+                        <div className="flex justify-between text-red-600">
+                          <span>Total Expenses (-):</span>
+                          <span>{formatCurrency(totalOut)}</span>
+                        </div>
+                        <div className="flex justify-between font-bold pt-1 border-t">
+                          <span>Expected Cash:</span>
+                          <span>{formatCurrency(expectedCash)}</span>
+                        </div>
                       </p>
                     </div>
                     <div>

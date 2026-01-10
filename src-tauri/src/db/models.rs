@@ -314,3 +314,27 @@ pub struct DashboardTransaction {
     pub time: String,
     pub status: String,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RevenueData {
+    pub date: String,
+    pub revenue: f64,
+    pub profit: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RevenueBreakdown {
+    pub category: String,
+    pub amount: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DashboardStats {
+    pub total_revenue: f64,
+    pub net_cash: f64,
+    pub active_repairs: i32,
+    pub completed_repairs: i32,
+    pub stock_alerts: i32,
+    pub out_of_stock: i32,
+    pub revenue_change: f64,
+}

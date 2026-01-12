@@ -936,7 +936,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           className="pl-10"
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2 space-y-1">
+                      <div className="text-xs text-muted-foreground mt-2 space-y-1">
                         <div className="flex justify-between">
                           <span>Opening Balance:</span>
                           <span>{formatCurrency(openingBalance)}</span>
@@ -953,7 +953,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           <span>Expected Cash:</span>
                           <span>{formatCurrency(expectedCash)}</span>
                         </div>
-                      </p>
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium">

@@ -79,6 +79,7 @@ interface InventoryItemDB {
   quantity_in_stock: number;
   low_stock_threshold: number;
   supplier_info: string;
+  barcode: string;
   history?: InventoryHistoryEvent[];
 }
 
@@ -93,6 +94,7 @@ function mapItemFromDB(dbItem: InventoryItemDB): InventoryItem {
     quantityInStock: dbItem.quantity_in_stock,
     lowStockThreshold: dbItem.low_stock_threshold,
     supplierInfo: dbItem.supplier_info || "",
+    barcode: dbItem.barcode || "",
     history: dbItem.history ?? [],
   };
 }
@@ -181,6 +183,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
             quantity_in_stock: quantity,
             low_stock_threshold: itemData.lowStockThreshold,
             supplier_info: itemData.supplierInfo,
+            barcode: itemData.barcode,
           },
         });
 
@@ -229,6 +232,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
             low_stock_threshold:
               itemData.lowStockThreshold ?? currentItem.lowStockThreshold,
             supplier_info: itemData.supplierInfo ?? currentItem.supplierInfo,
+            barcode: itemData.barcode ?? currentItem.barcode,
           },
         });
 

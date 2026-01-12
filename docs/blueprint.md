@@ -1,85 +1,210 @@
-# **App Name**: FixTrack
+# **Fixary POS System**
 
-## Core Features:
+## Overview
 
-- Add New Repair: Form to input repair details: customer name, phone number, device, issue, estimated cost, repair status, date received.
-- Repair List Table: Table listing all repairs with columns: Customer Name, Device, Issue, Status, Date Received, Cost. Includes a 'View' button for details.
-- Repair Detail View: Modal/panel displaying full repair details, timestamps, and status history. Allows updating the repair status.
-- AI Issue Analysis: Use a tool to analyze the issue description to predict parts needed or suggest common fixes. Display suggestions to the user.
-- Basic Analytics: Display counts for total, completed, and pending repairs at the top of the page.
+Fixary is a comprehensive Point of Sale (POS) system designed specifically for retail businesses, particularly repair shops and stores. Built with Next.js and Tauri, it combines a modern web interface with native desktop capabilities for optimal performance and hardware integration.
 
-## Style Guidelines:
+## Core Features
 
-- Light theme with a clean, professional look.
-- Color-coded status badges: Green for 'Completed', Orange for 'In Progress', Red for 'Cancelled', Gray for 'Pending'.
-- Accent color: Teal (#008080) for interactive elements and highlights.
-- Modular design using cards or a form layout for inputs.
-- Responsive layout adapting to mobile and desktop screens.
-- Simple, clear icons for navigation and actions.
+### 1. Dashboard & Analytics
 
-## Original User Request:
-Create a single-page web application for a phone repair shop. The app should allow the user to log and manage repair orders for clients. The app should be clean, modern, and mobile-friendly. Use a modular layout and a minimal UI design with sections for adding a repair, listing current repairs, and showing detailed status of each repair.
+- **Unified Cashier Dashboard**: Central hub for business operations with overview, cashier, and transactions tabs
+- **Real-time Analytics**: Revenue charts, profit trends, and business metrics
+- **Session Management**: Start and close daily sessions with opening/closing balances
+- **Financial Tracking**: Monitor total in/out, net cash, expenses, and discrepancies
+- **Inventory Alerts**: Low stock notifications and out-of-stock alerts
+- **Active Repairs**: Track ongoing repair orders with status updates
 
-Features:
-Add New Repair
+### 2. Cashier Operations
 
-A form with fields:
+- **Session Control**: Start day with opening balance, end day with closing procedures
+- **Expense Management**: Add expenses with amounts and reasons
+- **Transaction Processing**: Handle sales, repairs, and various transaction types
+- **Payment Processing**: Support for multiple payment methods
+- **Quick Actions**: Fast buttons for new sales, repairs, and inventory additions
 
-Customer Name
+### 3. Inventory Management
 
-Phone Number
+- **Item Tracking**: Add, update, and manage inventory items
+- **Stock Levels**: Monitor quantities and set low stock thresholds
+- **Inventory History**: Track changes and movements of inventory
+- **Barcode Integration**: Hardware scanner support with Enter suffix configuration
+- **Low Stock Alerts**: Visual indicators for items needing reordering
 
-Device Brand and Model
+### 4. Repair Orders
 
-Issue Description
+- **Repair Creation**: Form for new repair orders with customer details, device info, and issue description
+- **Status Tracking**: Multiple status options (Pending, In Progress, Waiting for Parts, Completed, Delivered)
+- **Payment Management**: Track payments for repair orders
+- **Used Parts Tracking**: Record parts used in repairs
+- **Repair History**: Maintain history of status changes and updates
+- **Customer Communication**: Store contact information for updates
 
-Estimated Cost
+### 5. Sales Processing
 
-Repair Status (Pending, In Progress, Completed, Cancelled)
+- **Sale Creation**: Create new sales transactions
+- **Item Selection**: Add items to sales from inventory
+- **Payment Collection**: Process payments and complete sales
+- **Receipt Generation**: Print receipts via ESC/POS thermal printers
 
-Date Received
+### 6. Client Management
 
-Submit button to save the repair order
+- **Customer Records**: Store client information and contact details
+- **Payment Tracking**: Record payments made by customers
+- **Transaction History**: View customer's purchase and repair history
+- **Balance Management**: Track customer account balances
 
-Repair List Table
+### 7. Supplier Management
 
-Displays all repairs in a table format
+- **Supplier Records**: Maintain supplier information
+- **Credit Tracking**: Monitor supplier credit balances
+- **Order Management**: Create and track orders from suppliers
+- **Payment Processing**: Handle payments to suppliers
 
-Columns: Customer Name, Device, Issue, Status, Date Received, Cost
+### 8. Order Management
 
-Each row should have a “View” button to open detailed info
+- **Purchase Orders**: Create and track orders from suppliers
+- **Order Status**: Monitor order progress from pending to received
+- **Inventory Updates**: Automatically update inventory when orders arrive
+- **Payment Tracking**: Record payments made for orders
 
-Repair Detail Modal or Panel
+### 9. Hardware Integration
 
-Shows full info for the selected repair, including timestamps and status history
+- **ESC/POS Printing**: Support for thermal receipt printers
+- **Barcode Scanners**: Hardware scanner integration with automatic item addition
+- **Printer Detection**: Automatic detection and selection of available printers
+- **Multiple Printer Types**: Support for USB, network, and Bluetooth printers
 
-Allow updating the repair status from this view
+### 10. Reporting & Data Export
 
-Basic Analytics (Optional)
+- **Revenue Reports**: Daily, weekly, and monthly revenue breakdowns
+- **Transaction Histories**: Detailed logs of all transactions
+- **Business Analytics**: Profit margins, popular items, and performance metrics
 
-Show a count of total repairs, completed repairs, and pending ones at the top
+## Technical Architecture
 
-Simple Styling
+### Frontend
 
-Use a light theme
+- **Framework**: Next.js 14+ with App Router
+- **UI Library**: Shadcn/ui components with Tailwind CSS
+- **State Management**: React hooks and Context API
+- **Charts**: Recharts for data visualization
+- **Icons**: Lucide React icons
 
-Responsive layout for mobile and desktop
+### Backend
 
-Use color-coded badges or labels for statuses (e.g., green for completed, orange for in progress)
+- **Framework**: Tauri with Rust backend
+- **Database**: SQLite for local data storage
+- **API Layer**: Tauri invoke commands for frontend-backend communication
+- **Security**: Native desktop security model
 
-Tech Stack:
-Frontend only (can be HTML/CSS/JS or use React/Vue/Next.js depending on the tool's default)
+### Key Libraries & Dependencies
 
-Store data in-memory or with Firebase Firestore for backend (optional for MVP)
+- React for UI rendering
+- Tauri for desktop integration
+- SQLite for data persistence
+- ESC/POS for receipt printing
+- Recharts for data visualization
+- Tailwind CSS for styling
+- Radix UI for accessible components
 
-Optional: support image upload of the device condition (before/after)
+## Style Guidelines
 
-UI Notes:
-Navigation bar or title header: "Phone Repair Tracker"
+- **Theme**: Clean, professional light theme
+- **Color Scheme**: Blue as primary color with appropriate accents for different states
+- **Responsive Design**: Works on tablets, desktops, and various screen sizes
+- **Accessibility**: Proper contrast ratios and keyboard navigation
+- **Consistent Icons**: Lucide React icons throughout the application
+- **Modular Layout**: Card-based design with clear visual hierarchy
 
-Use cards or a form layout for inputs
+## Hardware Requirements & Setup
 
-Keep it clean and distraction-free, suitable for a small shop using it on a tablet
+### Recommended Hardware
 
-This is meant to be a simple internal tool for a repair shop. It does not require user login at this stage.
-  
+- **Thermal Receipt Printer**: ESC/POS compatible for receipts and stickers
+- **Barcode Scanner**: Configured to send Enter (CR/LF) suffix for auto-add functionality
+- **Cash Drawer**: Connects to printer for automated opening
+- **Customer Display**: Optional for showing transaction details
+
+### Printer Setup
+
+1. Install printer drivers from manufacturer
+2. Connect printer via USB or network
+3. Configure printer sharing if network-based
+4. The system will automatically detect available printers
+
+### Barcode Scanner Configuration
+
+- Configure scanner to send Enter (CR/LF) after each scan
+- This enables automatic item addition to the current transaction
+- Works with most common USB and wireless scanners
+
+## Best Practices & Tips
+
+### Daily Operations
+
+1. **Start Day**: Begin with setting opening cash balance
+2. **Process Transactions**: Handle sales and repairs throughout the day
+3. **Track Expenses**: Record daily expenses and withdrawals
+4. **End Day**: Count cash, record closing amount, and close session
+
+### Data Management
+
+- Regularly backup database files
+- Monitor inventory levels and set appropriate low-stock thresholds
+- Keep customer information updated
+- Review transaction histories for accuracy
+
+### Performance Optimization
+
+- Use barcode scanners for faster item entry
+- Organize inventory with clear product names and SKUs
+- Train staff on keyboard shortcuts and quick actions
+- Regularly update software for bug fixes and improvements
+
+## Troubleshooting
+
+### Common Issues
+
+- **Printer Not Detected**: Ensure drivers are installed and printer is connected
+- **Barcode Scanner Not Working**: Check if scanner is configured to send Enter suffix
+- **Slow Performance**: Large databases may require occasional cleanup
+- **Sync Issues**: Verify database connections and permissions
+
+### Error Recovery
+
+- Session recovery is available if the application crashes mid-session
+- Transaction logs maintain audit trails for reconciliation
+- Database corruption protection through SQLite's built-in mechanisms
+
+## Security Considerations
+
+- Local data storage with no external dependencies
+- No cloud sync required for basic operations
+- Encrypted local database storage
+- Access control through operating system permissions
+
+## Development & Customization
+
+### Extending Functionality
+
+- API endpoints available for custom integrations
+- Plugin architecture for adding new features
+- Database schema documented for custom queries
+- Component library for consistent UI additions
+
+### Configuration Options
+
+- Customizable receipt templates
+- Adjustable tax settings
+- Brand-specific theming
+- Multi-language support potential
+
+## Deployment
+
+- Single executable for desktop deployment
+- No server infrastructure required
+- Works offline with local database
+- Automatic updates available through Tauri
+
+This comprehensive POS system provides all necessary functionality for retail businesses to manage sales, inventory, repairs, and customer relationships in one integrated platform.

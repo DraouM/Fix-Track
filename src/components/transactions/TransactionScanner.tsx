@@ -22,6 +22,8 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [lastScanned, setLastScanned] = useState<string | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -33,12 +35,29 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Autofocus on mount and keep focused
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (query.trim().length >= 2) {
+      const trimmedQuery = query.trim();
+      if (trimmedQuery.length >= 2) {
         setIsSearching(true);
         try {
-          const res = await searchItems(query);
+          const res = await searchItems(trimmedQuery);
+          
+          // CHECK FOR EXACT BARCODE MATCH
+          const exactMatch = res.find(item => item.barcode === trimmedQuery);
+          if (exactMatch && trimmedQuery !== lastScanned) {
+             handleSelect(exactMatch);
+             setLastScanned(trimmedQuery);
+             // Clear last scanned after a bit to allow scanning the same item twice
+             setTimeout(() => setLastScanned(null), 1000);
+             return;
+          }
+
           setResults(res);
           setShowResults(true);
         } catch (error) {
@@ -50,15 +69,23 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
         setResults([]);
         setShowResults(false);
       }
-    }, 300);
+    }, 200); // Shorter debounce for scanning
 
     return () => clearTimeout(timer);
-  }, [query, searchItems]);
+  }, [query, searchItems, lastScanned]);
 
   const handleSelect = (item: InventoryItem) => {
     onAddItem(item);
     setQuery("");
     setShowResults(false);
+    // Keep focus after adding
+    setTimeout(() => inputRef.current?.focus(), 10);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && results.length > 0 && showResults) {
+      handleSelect(results[0]);
+    }
   };
 
   return (
@@ -72,10 +99,12 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
                 isSearching && "animate-pulse"
               )} />
               <Input
+                ref={inputRef}
                 placeholder={`Search for items to ${type === "Sale" ? "sell" : "buy"}...`}
                 className="pl-12 h-14 text-lg border-none focus-visible:ring-0 bg-transparent"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
                 onFocus={() => query.trim().length >= 2 && setShowResults(true)}
               />
               {query && (

@@ -9,6 +9,7 @@ export interface InventoryItem {
   quantityInStock?: number;
   lowStockThreshold?: number;
   supplierInfo?: string;
+  barcode?: string;
   history?: InventoryHistoryEvent[]; // Add history array
 }
 
@@ -107,6 +108,7 @@ export const inventoryItemSchema = z.object({
     .optional(),
 
   supplierInfo: z.union([z.string(), z.undefined(), z.null()]).optional(),
+  barcode: z.string().optional(),
 });
 
 export type InventoryFormValues = z.infer<typeof inventoryItemSchema>;

@@ -13,10 +13,14 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
             quantity_in_stock INTEGER,
             low_stock_threshold INTEGER,
             supplier_info TEXT,
+            barcode TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )",
         [],
     )?;
+
+    // Migration: Add barcode column to inventory_items if it doesn't exist
+    let _ = conn.execute("ALTER TABLE inventory_items ADD COLUMN barcode TEXT", []);
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS inventory_history (

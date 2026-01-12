@@ -14,6 +14,7 @@ pub struct InventoryItem {
     pub quantity_in_stock: Option<i64>,
     pub low_stock_threshold: Option<i64>,
     pub supplier_info: Option<String>,
+    pub barcode: Option<String>,
 }
 
 // #[tauri::command]
@@ -51,7 +52,7 @@ pub fn insert_item(item: InventoryItem) -> Result<(), String> {
     };
 
     conn.execute(
-        "INSERT INTO inventory_items (id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        "INSERT INTO inventory_items (id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info, barcode) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         params![
             item.id,
             item.item_name,
@@ -61,7 +62,8 @@ pub fn insert_item(item: InventoryItem) -> Result<(), String> {
             item.selling_price,
             item.quantity_in_stock,
             item.low_stock_threshold,
-            item.supplier_info
+            item.supplier_info,
+            item.barcode
         ],
     ).map_err(|e| e.to_string())?;
     Ok(())
@@ -70,7 +72,7 @@ pub fn insert_item(item: InventoryItem) -> Result<(), String> {
 #[tauri::command]
 pub fn get_items() -> Result<Vec<InventoryItem>, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
-    let mut stmt = conn.prepare("SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info FROM inventory_items").map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare("SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info, barcode FROM inventory_items").map_err(|e| e.to_string())?;
     let items = stmt
         .query_map([], |row| {
             Ok(InventoryItem {
@@ -83,6 +85,7 @@ pub fn get_items() -> Result<Vec<InventoryItem>, String> {
                 quantity_in_stock: row.get(6).ok(),
                 low_stock_threshold: row.get(7).ok(),
                 supplier_info: row.get(8).ok(),
+                barcode: row.get(9).ok(),
             })
         })
         .map_err(|e| e.to_string())?
@@ -94,7 +97,7 @@ pub fn get_items() -> Result<Vec<InventoryItem>, String> {
 #[tauri::command]
 pub fn get_item_by_id(item_id: String) -> Result<Option<InventoryItem>, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
-    let mut stmt = conn.prepare("SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info FROM inventory_items WHERE id = ?1").map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare("SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info, barcode FROM inventory_items WHERE id = ?1").map_err(|e| e.to_string())?;
     let mut rows = stmt.query(params![item_id]).map_err(|e| e.to_string())?;
     if let Some(row) = rows.next().map_err(|e| e.to_string())? {
         Ok(Some(InventoryItem {
@@ -107,6 +110,7 @@ pub fn get_item_by_id(item_id: String) -> Result<Option<InventoryItem>, String> 
             quantity_in_stock: row.get(6).ok(),
             low_stock_threshold: row.get(7).ok(),
             supplier_info: row.get(8).ok(),
+            barcode: row.get(9).ok(),
         }))
     } else {
         Ok(None)
@@ -117,7 +121,7 @@ pub fn get_item_by_id(item_id: String) -> Result<Option<InventoryItem>, String> 
 pub fn update_item(item: InventoryItem) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     conn.execute(
-        "UPDATE inventory_items SET item_name = ?2, phone_brand = ?3, item_type = ?4, buying_price = ?5, selling_price = ?6, quantity_in_stock = ?7, low_stock_threshold = ?8, supplier_info = ?9 WHERE id = ?1",
+        "UPDATE inventory_items SET item_name = ?2, phone_brand = ?3, item_type = ?4, buying_price = ?5, selling_price = ?6, quantity_in_stock = ?7, low_stock_threshold = ?8, supplier_info = ?9, barcode = ?10 WHERE id = ?1",
         params![
             item.id,
             item.item_name,
@@ -127,7 +131,8 @@ pub fn update_item(item: InventoryItem) -> Result<(), String> {
             item.selling_price,
             item.quantity_in_stock,
             item.low_stock_threshold,
-            item.supplier_info
+            item.supplier_info,
+            item.barcode
         ],
     ).map_err(|e| e.to_string())?;
     Ok(())
@@ -159,7 +164,7 @@ pub fn update_item_quantity(item_id: String, new_quantity: i64) -> Result<(), St
 pub fn get_low_stock_items() -> Result<Vec<InventoryItem>, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     let mut stmt = conn.prepare(
-        "SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info 
+        "SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info, barcode 
          FROM inventory_items 
          WHERE quantity_in_stock IS NOT NULL 
          AND low_stock_threshold IS NOT NULL 
@@ -178,6 +183,7 @@ pub fn get_low_stock_items() -> Result<Vec<InventoryItem>, String> {
                 quantity_in_stock: row.get(6).ok(),
                 low_stock_threshold: row.get(7).ok(),
                 supplier_info: row.get(8).ok(),
+                barcode: row.get(9).ok(),
             })
         })
         .map_err(|e| e.to_string())?
@@ -191,13 +197,13 @@ pub fn search_items(query: String) -> Result<Vec<InventoryItem>, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
     let search_pattern = format!("%{}%", query);
     let mut stmt = conn.prepare(
-        "SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info 
+        "SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info, barcode 
          FROM inventory_items 
-         WHERE item_name LIKE ?1 OR phone_brand LIKE ?1 OR item_type LIKE ?1"
+         WHERE item_name LIKE ?1 OR phone_brand LIKE ?1 OR item_type LIKE ?1 OR barcode = ?2"
     ).map_err(|e| e.to_string())?;
 
     let items = stmt
-        .query_map(params![search_pattern], |row| {
+        .query_map(params![search_pattern, query], |row| {
             Ok(InventoryItem {
                 id: row.get(0)?,
                 item_name: row.get(1)?,
@@ -208,6 +214,7 @@ pub fn search_items(query: String) -> Result<Vec<InventoryItem>, String> {
                 quantity_in_stock: row.get(6).ok(),
                 low_stock_threshold: row.get(7).ok(),
                 supplier_info: row.get(8).ok(),
+                barcode: row.get(9).ok(),
             })
         })
         .map_err(|e| e.to_string())?

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -42,6 +43,10 @@ import {
   ITEM_TYPES,
 } from "@/types/inventory";
 import { useInventoryActions } from "@/context/InventoryContext";
+import { generateBarcode } from "@/lib/barcode";
+import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { StickerPreviewDialog } from "@/components/helpers/StickerPreviewDialog";
+import { useState } from "react";
 
 // Utility: map InventoryItem → form defaults
 function sanitizeItem(item: InventoryItem | null): InventoryFormValues {
@@ -55,6 +60,7 @@ function sanitizeItem(item: InventoryItem | null): InventoryFormValues {
       quantityInStock: 0,
       lowStockThreshold: 5,
       supplierInfo: "",
+      barcode: "",
     };
   }
   return {
@@ -66,6 +72,7 @@ function sanitizeItem(item: InventoryItem | null): InventoryFormValues {
     quantityInStock: item.quantityInStock,
     lowStockThreshold: item.lowStockThreshold,
     supplierInfo: item.supplierInfo,
+    barcode: item.barcode || "",
   };
 }
 
@@ -76,6 +83,9 @@ export function InventoryForm({
   itemToEdit: InventoryItem | null;
   onSuccess: () => void;
 }) {
+  const { printSticker } = usePrintUtils();
+  const [itemToPrint, setItemToPrint] = useState<InventoryItem | null>(null);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const { addInventoryItem, updateInventoryItem } = useInventoryActions();
 
   const form = useForm<InventoryFormValues>({
@@ -92,11 +102,59 @@ export function InventoryForm({
     try {
       if (itemToEdit) {
         await updateInventoryItem(itemToEdit.id, values);
+        // Create a temporary item with updated values
+        const updatedItem: InventoryItem = {
+          id: itemToEdit.id,
+          itemName: values.itemName,
+          phoneBrand: values.phoneBrand,
+          itemType: values.itemType,
+          buyingPrice: values.buyingPrice,
+          sellingPrice: values.sellingPrice,
+          quantityInStock: values.quantityInStock,
+          lowStockThreshold: values.lowStockThreshold,
+          supplierInfo: values.supplierInfo || "",
+          barcode: values.barcode,
+          history: itemToEdit.history,
+        };
+
+        // If the item has a barcode, offer to print it
+        if (updatedItem.barcode) {
+          setItemToPrint(updatedItem);
+          setIsPrintDialogOpen(true);
+        } else {
+          form.reset(sanitizeItem(null)); // reset form
+          onSuccess(); // let parent close dialog
+        }
       } else {
+        // Check if we have a barcode before adding the item
+        if (values.barcode) {
+          setItemToPrint({
+            id: uuidv4(), // temporary ID
+            itemName: values.itemName,
+            phoneBrand: values.phoneBrand,
+            itemType: values.itemType,
+            buyingPrice: values.buyingPrice,
+            sellingPrice: values.sellingPrice,
+            quantityInStock: values.quantityInStock,
+            lowStockThreshold: values.lowStockThreshold,
+            supplierInfo: values.supplierInfo || "",
+            barcode: values.barcode,
+            history: [],
+          });
+          setIsPrintDialogOpen(true);
+        }
+
         await addInventoryItem(values);
+
+        // If no barcode was present, we need to reset form and close dialog
+        if (!values.barcode) {
+          form.reset(sanitizeItem(null)); // reset form
+          onSuccess(); // let parent close dialog
+        }
       }
-      form.reset(sanitizeItem(null)); // reset form
-      onSuccess(); // let parent close dialog
+
+      // Note: Form reset and onSuccess are handled in the respective branches above
+      // to allow for the print dialog to appear before closing the form
     } catch (err) {
       console.error("Form submit error:", err);
     }
@@ -105,6 +163,37 @@ export function InventoryForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Barcode */}
+        <FormField
+          control={form.control}
+          name="barcode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                Barcode (Scan or Generate)
+              </FormLabel>
+              <div className="flex gap-2">
+                <FormControl>
+                  <Input
+                    placeholder="Scan barcode or enter manually..."
+                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
+                    {...field}
+                  />
+                </FormControl>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 px-3 rounded-xl border-2 font-bold text-[10px] uppercase"
+                  onClick={() => form.setValue("barcode", generateBarcode())}
+                >
+                  Generate
+                </Button>
+              </div>
+              <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
+            </FormItem>
+          )}
+        />
+
         {/* Item name */}
         <FormField
           control={form.control}
@@ -115,10 +204,10 @@ export function InventoryForm({
                 Product Name
               </FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="e.g. iPhone 13 Pro Screen" 
+                <Input
+                  placeholder="e.g. iPhone 13 Pro Screen"
                   className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
-                  {...field} 
+                  {...field}
                 />
               </FormControl>
               <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
@@ -155,8 +244,13 @@ export function InventoryForm({
                   </PopoverTrigger>
                   <PopoverContent className="w-[240px] p-2 rounded-2xl border-none shadow-2xl">
                     <Command className="rounded-xl">
-                      <CommandInput placeholder="Search brand..." className="h-9 font-bold text-xs" />
-                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">No brand found.</CommandEmpty>
+                      <CommandInput
+                        placeholder="Search brand..."
+                        className="h-9 font-bold text-xs"
+                      />
+                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">
+                        No brand found.
+                      </CommandEmpty>
                       <CommandGroup className="max-h-[160px] overflow-auto">
                         {PHONE_BRANDS.map((brand) => (
                           <CommandItem
@@ -214,8 +308,13 @@ export function InventoryForm({
                   </PopoverTrigger>
                   <PopoverContent className="w-[240px] p-2 rounded-2xl border-none shadow-2xl">
                     <Command className="rounded-xl">
-                      <CommandInput placeholder="Search type..." className="h-9 font-bold text-xs" />
-                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">No type found.</CommandEmpty>
+                      <CommandInput
+                        placeholder="Search type..."
+                        className="h-9 font-bold text-xs"
+                      />
+                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">
+                        No type found.
+                      </CommandEmpty>
                       <CommandGroup className="max-h-[160px] overflow-auto">
                         {ITEM_TYPES.map((type) => (
                           <CommandItem
@@ -258,11 +357,11 @@ export function InventoryForm({
                   Cost Price ($)
                 </FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
+                  <Input
+                    type="number"
+                    step="0.01"
                     className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm focus-visible:ring-primary/20 transition-all"
-                    {...field} 
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
@@ -278,11 +377,11 @@ export function InventoryForm({
                   Selling Price ($)
                 </FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
+                  <Input
+                    type="number"
+                    step="0.01"
                     className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm text-primary focus-visible:ring-primary/20 transition-all"
-                    {...field} 
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
@@ -302,10 +401,10 @@ export function InventoryForm({
                   Quantity
                 </FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
+                  <Input
+                    type="number"
                     className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm focus-visible:ring-primary/20 transition-all"
-                    {...field} 
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
@@ -321,10 +420,10 @@ export function InventoryForm({
                   Alert At
                 </FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
+                  <Input
+                    type="number"
                     className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm text-orange-600 focus-visible:ring-primary/20 transition-all"
-                    {...field} 
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
@@ -356,8 +455,8 @@ export function InventoryForm({
         />
 
         <div className="pt-2">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={form.formState.isSubmitting}
             className="w-full h-11 rounded-2xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-[11px] font-black uppercase tracking-[0.2em] transition-all active:scale-95"
           >
@@ -365,6 +464,20 @@ export function InventoryForm({
           </Button>
         </div>
       </form>
+
+      {itemToPrint && (
+        <StickerPreviewDialog
+          open={isPrintDialogOpen}
+          onOpenChange={setIsPrintDialogOpen}
+          item={itemToPrint}
+          onConfirm={() => {
+            printSticker(itemToPrint);
+          }}
+          onCancel={() => {
+            setItemToPrint(null);
+          }}
+        />
+      )}
     </Form>
   );
 }

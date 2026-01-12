@@ -91,7 +91,7 @@ export function TestStickerPrint() {
             className="bg-white p-2 shadow-sm"
             style={{ width: "2in", height: "1in" }}
           >
-            <StickerTemplate repair={testRepairData} />
+            <StickerTemplate data={testRepairData} type="repair" />
           </div>
         </div>
       </div>

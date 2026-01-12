@@ -9,6 +9,7 @@ import {
 import { VirtualizedTable } from "./VirtualizedTable";
 import { InventoryForm } from "./InventoryForm";
 import { InventoryHistoryDialog } from "./InventoryHistoryDialog";
+import { InventoryBulkActions } from "./InventoryBulkActions";
 import type { InventoryHistoryEvent, InventoryItem } from "@/types/inventory";
 import {
   PHONE_BRANDS,
@@ -67,6 +68,7 @@ export function InventoryPageInner() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
   const [historyItem, setHistoryItem] = useState<InventoryItem | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [historyEvents, setHistoryEvents] = useState<InventoryHistoryEvent[]>(
     []
@@ -167,14 +169,21 @@ export function InventoryPageInner() {
             <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
               <Icon className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{title}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+              {title}
+            </span>
           </div>
         </div>
         <div className="flex items-baseline justify-between">
           <div className="text-2xl font-black text-foreground">{value}</div>
           {subtitle && (
             <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
-              <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
+              <div
+                className={`h-1 w-1 rounded-full ${colorClasses[color].replace(
+                  "text-",
+                  "bg-"
+                )}`}
+              ></div>
               {subtitle}
             </div>
           )}
@@ -266,7 +275,9 @@ export function InventoryPageInner() {
           <div className="flex flex-col md:flex-row gap-4 items-end">
             {/* Search */}
             <div className="flex-1 relative w-full">
-               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Search Catalog</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+                Search Catalog
+              </span>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/40 w-4 h-4 pointer-events-none" />
                 <input
@@ -281,7 +292,9 @@ export function InventoryPageInner() {
 
             {/* Brand Filter */}
             <div className="w-full md:w-[180px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Brand</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+                Brand
+              </span>
               <Select
                 value={selectedBrand}
                 onValueChange={(value) => setSelectedBrand(value as PhoneBrand)}
@@ -291,7 +304,11 @@ export function InventoryPageInner() {
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-none shadow-2xl">
                   {PHONE_BRANDS.map((brand) => (
-                    <SelectItem key={brand} value={brand} className="font-bold text-xs uppercase py-2.5">
+                    <SelectItem
+                      key={brand}
+                      value={brand}
+                      className="font-bold text-xs uppercase py-2.5"
+                    >
                       {brand}
                     </SelectItem>
                   ))}
@@ -301,7 +318,9 @@ export function InventoryPageInner() {
 
             {/* Type Filter */}
             <div className="w-full md:w-[180px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Category</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+                Category
+              </span>
               <Select
                 value={selectedType}
                 onValueChange={(value) => setSelectedType(value as ItemType)}
@@ -311,7 +330,11 @@ export function InventoryPageInner() {
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-none shadow-2xl">
                   {ITEM_TYPES.map((type) => (
-                    <SelectItem key={type} value={type} className="font-bold text-xs uppercase py-2.5">
+                    <SelectItem
+                      key={type}
+                      value={type}
+                      className="font-bold text-xs uppercase py-2.5"
+                    >
                       {type}
                     </SelectItem>
                   ))}
@@ -335,6 +358,13 @@ export function InventoryPageInner() {
           </div>
         </div>
 
+        {/* Bulk Actions */}
+        <InventoryBulkActions
+          items={filteredAndSortedItems}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+        />
+
         {/* Inventory Table */}
         {loading ? (
           <div className="flex items-center justify-center h-64 bg-white rounded-lg border border-gray-200">
@@ -351,15 +381,20 @@ export function InventoryPageInner() {
             }}
             onViewHistory={handleViewHistory}
             onDelete={(id) => deleteInventoryItem(id)}
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
           />
         )}
 
         {/* Add/Edit Form */}
         {showForm && (
-          <Dialog open={showForm} onOpenChange={(o) => {
-            setShowForm(o);
-            if (!o) setEditItem(null);
-          }}>
+          <Dialog
+            open={showForm}
+            onOpenChange={(o) => {
+              setShowForm(o);
+              if (!o) setEditItem(null);
+            }}
+          >
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>

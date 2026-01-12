@@ -37,6 +37,10 @@ export interface InventoryTableProps {
   onDelete: (id: string) => void; // ✅ Delete row
 }
 
+import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { StickerPreviewDialog } from "@/components/helpers/StickerPreviewDialog";
+import { useState } from "react";
+
 export const InventoryTable = React.memo(function InventoryTable({
   items,
   sortConfig,
@@ -45,6 +49,9 @@ export const InventoryTable = React.memo(function InventoryTable({
   onViewHistory,
   onDelete,
 }: InventoryTableProps) {
+  const { printSticker } = usePrintUtils();
+  const [previewItem, setPreviewItem] = useState<InventoryItem | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   // Memoized sort indicator to prevent re-renders
 
   const SortableHeader = ({
@@ -192,27 +199,42 @@ export const InventoryTable = React.memo(function InventoryTable({
                       {item.quantityInStock ?? 0}
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onViewHistory(item)}>
-                            View History
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onEdit(item)}>
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => onDelete(item.id)}
-                            className="text-destructive"
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setPreviewItem(item);
+                            setIsPreviewOpen(true);
+                          }}
+                          disabled={!item.barcode}
+                        >
+                          Print Sticker
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => onViewHistory(item)}
+                            >
+                              View History
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onEdit(item)}>
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => onDelete(item.id)}
+                              className="text-destructive"
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -227,6 +249,20 @@ export const InventoryTable = React.memo(function InventoryTable({
           </TableBody>
         </Table>
       </div>
+
+      {previewItem && (
+        <StickerPreviewDialog
+          open={isPreviewOpen}
+          onOpenChange={setIsPreviewOpen}
+          item={previewItem}
+          onConfirm={() => {
+            printSticker(previewItem);
+          }}
+          onCancel={() => {
+            setPreviewItem(null);
+          }}
+        />
+      )}
     </TooltipProvider>
   );
 });

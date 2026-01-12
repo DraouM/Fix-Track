@@ -745,7 +745,7 @@ export function RepairDetail({
           />
         </div>
         <div id="sticker-print-template">
-          <StickerTemplate repair={currentRepair} />
+          <StickerTemplate data={currentRepair} type="repair" />
         </div>
       </div>
     </>

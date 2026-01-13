@@ -9,6 +9,7 @@ import type {
   TransactionWithDetails,
 } from "@/types/transaction";
 import { useEvents } from "@/context/EventContext";
+import { useTranslation } from "react-i18next";
 
 interface TransactionWorkspace {
   id: string;
@@ -48,6 +49,7 @@ export function TransactionProvider({
   const [workspaces, setWorkspaces] = useState<TransactionWorkspace[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>("");
   const { emit } = useEvents();
+  const { t } = useTranslation();
 
   // Initialize first workspace if empty
   useEffect(() => {
@@ -66,7 +68,10 @@ export function TransactionProvider({
     setWorkspaces((prev) => {
       const newWorkspace: TransactionWorkspace = {
         id,
-        name: `New ${type} #${prev.length + 1}`,
+        name: t("transactions_module.workspace.new", { 
+          type: t(`transactions_module.${type.toLowerCase()}`), 
+          number: prev.length + 1 
+        }),
         type,
         party_id: "",
         party_type: type === "Sale" ? "Client" : "Supplier",
@@ -89,7 +94,10 @@ export function TransactionProvider({
       const type = "Sale";
       const newWorkspace: TransactionWorkspace = {
         id: newId,
-        name: `New ${type} #1`,
+        name: t("transactions_module.workspace.new", { 
+          type: t(`transactions_module.${type.toLowerCase()}`), 
+          number: 1 
+        }),
         type,
         party_id: "",
         party_type: "Client",
@@ -133,7 +141,9 @@ export function TransactionProvider({
       id: transaction.id,
       name:
         transaction.transaction_number ||
-        `Edit ${transaction.transaction_type}`,
+        t("transactions_module.workspace.edit", { 
+          type: t(`transactions_module.${transaction.transaction_type.toLowerCase()}`) 
+        }),
       type: transaction.transaction_type as TransactionType,
       party_id: transaction.party_id,
       party_type: transaction.party_type as "Client" | "Supplier",

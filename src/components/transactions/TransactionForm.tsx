@@ -32,12 +32,18 @@ import {
 } from "@/types/transaction";
 import { useInventory } from "@/context/InventoryContext";
 import { useEvents } from "@/context/EventContext";
+import { useTranslation } from "react-i18next";
 
 export function TransactionForm() {
   const router = useRouter();
-  const { activeWorkspace, updateActiveWorkspace, removeWorkspace, setActiveWorkspaceId } =
-    useTransactions();
+  const {
+    activeWorkspace,
+    updateActiveWorkspace,
+    removeWorkspace,
+    setActiveWorkspaceId,
+  } = useTransactions();
   const { emit } = useEvents();
+  const { t } = useTranslation();
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -122,11 +128,15 @@ export function TransactionForm() {
 
   const handleSave = async (complete: boolean) => {
     if (!party_id) {
-      toast.error(`Please select a ${party_type.toLowerCase()}`);
+      toast.error(
+        t("transactions_module.form.selectPartyError", {
+          type: t(`transactions_module.party.${party_type.toLowerCase()}`),
+        })
+      );
       return;
     }
     if (items.length === 0) {
-      toast.error("Please add at least one item");
+      toast.error(t("transactions_module.form.addItemError"));
       return;
     }
 
@@ -137,7 +147,9 @@ export function TransactionForm() {
 
       const transactionModel: TxModel = {
         id,
-        transaction_number: activeWorkspace.is_existing ? activeWorkspace.name : "", 
+        transaction_number: activeWorkspace.is_existing
+          ? activeWorkspace.name
+          : "",
         transaction_type: type,
         party_id: party_id || "",
         party_type: party_type,
@@ -172,7 +184,9 @@ export function TransactionForm() {
                 method: payment_method,
                 date: now,
                 received_by: "System",
-                notes: `Payment for ${type}`,
+                notes: t(`transactions_module.summary.paymentFor`, {
+                  type: t(`transactions_module.${type.toLowerCase()}`),
+                }),
                 session_id: session?.id || null,
               },
             ]
@@ -188,7 +202,12 @@ export function TransactionForm() {
       emit("financial-data-change");
 
       toast.success(
-        `${type} ${complete ? "completed" : "saved as draft"} successfully!`
+        t("transactions_module.form.success", {
+          type: t(`transactions_module.${type.toLowerCase()}`),
+          status: complete
+            ? t("transactions_module.form.completed")
+            : t("transactions_module.form.savedAsDraft"),
+        })
       );
 
       setTimeout(() => {
@@ -196,7 +215,12 @@ export function TransactionForm() {
       }, 500);
     } catch (err) {
       console.error("Save error:", err);
-      toast.error(`Failed to save ${type.toLowerCase()}: ${err}`);
+      toast.error(
+        t("transactions_module.form.error", {
+          type: t(`transactions_module.${type.toLowerCase()}`),
+          error: String(err),
+        })
+      );
     } finally {
       setIsSaving(false);
     }
@@ -228,7 +252,7 @@ export function TransactionForm() {
               onClick={() => setActiveWorkspaceId("")}
             >
               <History className="h-4 w-4 mr-2 opacity-50" />
-              History
+              {t("transactions_module.history")}
             </Button>
             <Button
               variant="outline"
@@ -244,7 +268,7 @@ export function TransactionForm() {
               className="rounded-full h-9 w-9 overflow-hidden border p-0"
             >
               <div className="h-full w-full bg-primary/10 flex items-center justify-center text-[10px] font-bold">
-                JD
+                {t("common.userInitial") || "JD"}
               </div>
             </Button>
           </div>
@@ -259,7 +283,7 @@ export function TransactionForm() {
             {/* Context Breadcrumb */}
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">
               <LayoutGrid className="h-3 w-3" />
-              <span>Transactions</span>
+              <span>{t("transactions_module.title")}</span>
               <ChevronRight className="h-3 w-3" />
               <span
                 className={cn(
@@ -269,7 +293,9 @@ export function TransactionForm() {
                     : "bg-blue-100 text-blue-700"
                 )}
               >
-                {type} Module
+                {t("transactions_module.form.module", {
+                  type: t(`transactions_module.${type.toLowerCase()}`),
+                })}
               </span>
             </div>
 
@@ -290,7 +316,7 @@ export function TransactionForm() {
                   <MoreHorizontal className="h-5 w-5" />
                 </div>
                 <Input
-                  placeholder="Add internal notes, instructions or references for this transaction..."
+                  placeholder={t("transactions_module.form.notesPlaceholder")}
                   value={notes}
                   onChange={(e) =>
                     updateActiveWorkspace({ notes: e.target.value })

@@ -1,0 +1,295 @@
+{
+    "nav": {
+        "dashboard": "لوحة التحكم",
+        "transactions": "المعاملات",
+        "inventory": "المخزون",
+        "repairs": "الإصلاحات",
+        "clients": "العملاء",
+        "suppliers": "الموردون",
+        "documentation": "الوثائق",
+        "helpSupport": "المساعدة والدعم",
+        "settings": "الإعدادات",
+        "operations": "العمليات",
+        "management": "الإدارة",
+        "tools": "الأدوات"
+    },
+    "common": {
+        "search": "بحث",
+        "filter": "تصفية",
+        "add": "إضافة",
+        "edit": "تعديل",
+        "delete": "حذف",
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "confirm": "تأكيد",
+        "close": "إغلاق",
+        "loading": "جاري التحميل...",
+        "noResults": "لا توجد نتائج",
+        "error": "خطأ",
+        "success": "نجاح",
+        "warning": "تحذير",
+        "info": "معلومات",
+        "view": "عرض",
+        "actions": "الإجراءات",
+        "status": "الحالة",
+        "date": "التاريخ",
+        "amount": "المبلغ",
+        "total": "الإجمالي",
+        "quantity": "الكمية",
+        "price": "السعر",
+        "description": "الوصف",
+        "name": "الاسم",
+        "type": "النوع",
+        "number": "الرقم",
+        "searchPlaceholder": "البحث بالمعرف أو الرقم...",
+        "retry": "إعادة المحاولة",
+        "noTransactions": "لا توجد معاملات",
+        "errorLoading": "خطأ في تحميل المعاملات",
+        "notes": "ملاحظات",
+        "userInitial": "م"
+    },
+    "status": {
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "pending": "قيد الانتظار",
+        "completed": "مكتمل",
+        "cancelled": "ملغي",
+        "online": "متصل",
+        "offline": "غير متصل"
+    },
+    "system": {
+        "status": "حالة النظام",
+        "database": "قاعدة البيانات",
+        "server": "الخادم",
+        "storage": "التخزين"
+    },
+    "user": {
+        "profile": "الملف الشخصي",
+        "settings": "الإعدادات",
+        "signOut": "تسجيل الخروج",
+        "admin": "المسؤول"
+    },
+    "settings": {
+        "title": "الإعدادات",
+        "languageCurrency": {
+            "title": "اللغة والعملة",
+            "description": "اختر لغتك وعملتك المفضلة للتطبيق",
+            "language": "الغة",
+            "selectLanguage": "اختر اللغة",
+            "currency": "العملة",
+            "selectCurrency": "اختر العملة",
+            "currencyNote": "سيظهر رمز العملة في عناوين الأعمدة",
+            "translationNote": "ستؤثر اللغة على جميع النصوص والتسميات في الواجهة",
+            "formatPreview": "معاينة التنسيق",
+            "samplePrice": "سعر تجريبي",
+            "columnHeader": "عنوان العمود"
+        },
+        "theme": {
+            "title": "المظهر",
+            "light": "فاتح",
+            "dark": "داكن",
+            "system": "النظام"
+        },
+        "print": {
+            "title": "أبعاد الطباعة",
+            "receipt": "الإيصال",
+            "sticker": "الملصق",
+            "width": "العرض",
+            "height": "الارتفاع"
+        }
+    },
+    "app": {
+        "name": "FixTrack",
+        "tagline": "نظام إدارة الإصلاحات"
+    },
+    "transactions": {
+        "title": "المعاملات",
+        "newTransaction": "معاملة جديدة",
+        "sale": "بيع",
+        "purchase": "شراء",
+        "payment": "دفع",
+        "refund": "استرداد"
+    },
+    "inventory": {
+        "title": "المخزون",
+        "addItem": "إضافة عنصر",
+        "stockLevel": "مستوى المخزون",
+        "lowStock": "مخزون منخفض",
+        "outOfStock": "نفد من المخزون",
+        "inStock": "متوفر"
+    },
+    "repairs": {
+        "title": "الإصلاحات",
+        "newRepair": "إصلاح جديد",
+        "pending": "قيد الانتظار",
+        "inProgress": "جاري العمل",
+        "completed": "مكتمل",
+        "delivered": "تم التسليم"
+    },
+    "clients": {
+        "title": "العملاء",
+        "addClient": "إضافة عميل",
+        "phone": "الهاتف",
+        "email": "البريد الإلكتروني",
+        "address": "العنوان"
+    },
+    "suppliers": {
+        "title": "الموردون",
+        "addSupplier": "إضافة مورد",
+        "contact": "جهة الاتصال",
+        "balance": "الرصيد"
+    },
+    "dashboard": {
+        "title": "لوحة تحكم الأعمال",
+        "subtitle": "نظرة عامة في الوقت الفعلي والإدارة المالية",
+        "refresh": "تحديث",
+        "reports": "التقارير",
+        "startDay": {
+            "title": "ابدأ يومك",
+            "description": "قم بتهيئة درج النقود للبدء",
+            "openingBalance": "رصيد الافتتاح",
+            "startSession": "بدء الجلسة"
+        },
+        "tabs": {
+            "overview": "نظرة عامة",
+            "cashier": "أمين الصندوق",
+            "transactions": "المعاملات"
+        },
+        "metrics": {
+            "monthlyRevenue": "الإيرادات الشهرية",
+            "currentMonth": "الشهر الحالي",
+            "netCash": "صافي النقد",
+            "totalCash": "إجمالي النقد: {{amount}}",
+            "activeRepairs": "الإصلاحات النشطة",
+            "completedCount": "{{count}} مكتمل",
+            "stockAlerts": "تنبيهات المخزون",
+            "outOfStockCount": "{{count}} نفد من المخزون"
+        },
+        "charts": {
+            "revenueTrend": "اتجاه الإيرادات والأرباح",
+            "revenueBreakdown": "تفصيل الإيرادات",
+            "noData": "لا توجد بيانات إيرادات لهذه الفترة",
+            "revenue": "الإيرادات",
+            "profit": "الربح"
+        },
+        "repairs": {
+            "recent": "الإصلاحات الأخيرة",
+            "activeCount": "{{count}} نشط"
+        },
+        "inventory": {
+            "alerts": "تنبيهات المخزون",
+            "itemsCount": "{{count}} عناصر",
+            "outOfStock": "نفد من المخزون",
+            "lowStock": "مخزون منخفض: {{count}} وحدات",
+            "reorder": "إعادة طلب"
+        },
+        "cashier": {
+            "totalIn": "إجمالي الداخل",
+            "allRevenue": "كل الإيرادات",
+            "totalOut": "إجمالي الخارج",
+            "expenses": "المصاريف",
+            "netCash": "صافي النقد",
+            "balance": "الرصيد: {{amount}}",
+            "quickActions": "إجراءات سريعة",
+            "quickActionsDesc": "اختر إجراءً لأداء المهام الشائعة بسرعة",
+            "newSale": "بيع جديد",
+            "newRepair": "إصلاح جديد",
+            "addItem": "إضافة عنصر",
+            "addExpense": "إضافة مصروف",
+            "amount": "المبلغ",
+            "reason": "السبب",
+            "reasonPlaceholder": "مثال: لوازم التنظيف",
+            "endOfDay": "إغلاق نهاية اليوم",
+            "countedAmount": "المبلغ المحسوب",
+            "openingBalance": "رصيد الافتتاح",
+            "totalRevenue": "إجمالي الإيرادات (+)",
+            "totalExpenses": "إجمالي المصاريف (-)",
+            "expectedCash": "النقد المتوقع",
+            "withdrawalAmount": "مبلغ السحب",
+            "closeDay": "إغلاق اليوم"
+        },
+        "transactions": {
+            "recent": "معاملات اليوم",
+            "lastUpdated": "آخر تحديث: {{time}}",
+            "loading": "جاري تحميل المعاملات...",
+            "time": "الوقت",
+            "category": "الفئة",
+            "description": "الوصف",
+            "amount": "المبلغ",
+            "noTransactions": "لم يتم العثور على معاملات"
+        }
+    },
+    "transactions_module": {
+        "title": "المعاملات",
+        "sale": "بيع",
+        "purchase": "شراء",
+        "newSale": "بيع جديد",
+        "newPurchase": "شراء جديد",
+        "history": "السجل",
+        "scanner": {
+            "placeholder": "البحث عن أصناف لـ {{action}}...",
+            "barcode": "الباركود",
+            "ready": "جاهز للمسح...",
+            "noItems": "لم يتم العثور على أصناف",
+            "notItemsDesc": "حاول البحث عن شيء آخر",
+            "stock": "المخزون: {{count}}"
+        },
+        "workspace": {
+            "new": "{{type}} جديد #{{number}}",
+            "edit": "تعديل {{type}}"
+        },
+        "form": {
+            "module": "وحدة {{type}}",
+            "notesPlaceholder": "أضف ملاحظات داخلية أو تعليمات أو مراجع لهذه المعاملة...",
+            "saveDraft": "حفظ كمسودة",
+            "complete": "إكمال {{type}}",
+            "success": "تم {{status}} {{type}} بنجاح!",
+            "error": "فشل في حفظ {{type}}: {{error}}",
+            "itemPlaceholder": "ابحث وأضف أصناف لبدء هذه المعاملة",
+            "emptyBasket": "سلتك فارغة",
+            "selectPartyError": "يرجى اختيار {{type}}",
+            "addItemError": "يرجى إضافة صنف واحد على الأقل",
+            "savedAsDraft": "حفظه كمسودة",
+            "completed": "إكماله"
+        },
+        "party": {
+            "customer": "عميل",
+            "supplier": "مورد",
+            "details": "تفاصيل {{type}}",
+            "select": "اختر {{type}}...",
+            "addNew": "+ إضافة {{type}} جديد",
+            "name": "اسم {{type}}",
+            "placeholder": "أدخل اسم {{type}}",
+            "add": "إضافة {{type}}"
+        },
+        "summary": {
+            "title": "ملخص الدفع",
+            "subtotal": "المجموع الفرعي",
+            "total": "الإجمالي",
+            "paymentMethod": "طريقة الدفع",
+            "amountReceived": "المبلغ المستلم",
+            "amountPaid": "المبلغ المدفوع",
+            "change": "الفكة",
+            "overpaid": "مدفوع بالزيادة",
+            "balanceDue": "الرصيد المستحق",
+            "paymentFor": "دفع لـ {{type}}",
+            "addedToCredit": "سيتم إضافته إلى رصيد العميل",
+            "addedToDebt": "سيتم إضافته إلى ديون المورد",
+            "cash": "نقداً",
+            "card": "بطاقة",
+            "transfer": "تحويل"
+        },
+        "itemTable": {
+            "title": {
+                "sale": "أصناف البيع الحالية",
+                "purchase": "أصناف الطلب"
+            },
+            "details": "تفاصيل الصنف",
+            "qty": "الكمية",
+            "sellingPrice": "سعر البيع",
+            "unitCost": "تكلفة الوحدة",
+            "total": "الإجمالي",
+            "itemsCount": "{{count}} {{label}}"
+        }
+    }
+}

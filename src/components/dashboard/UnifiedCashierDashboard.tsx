@@ -34,6 +34,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/clientUtils";
+import { useTranslation } from "react-i18next";
 
 import {
   LineChart,
@@ -94,6 +95,8 @@ interface DashboardRepair {
 }
 
 export function UnifiedCashierDashboard() {
+  const { t } = useTranslation();
+
   // State for UI controls
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseReason, setExpenseReason] = useState("");
@@ -275,7 +278,7 @@ export function UnifiedCashierDashboard() {
         const newTransaction: Transaction = {
           id: Date.now().toString(),
           type: "debit",
-          category: "Expense",
+          category: t("dashboard.cashier.expenses"),
           amount,
           description: expenseReason,
           time: new Date().toLocaleTimeString([], {
@@ -324,7 +327,7 @@ export function UnifiedCashierDashboard() {
           currentSession.id,
           actualCash,
           payout,
-          closingNote || `Closure discrepancy: ${formatCurrency(discrepancy)}`
+          closingNote || `${t("dashboard.cashier.endOfDay")} discrepancy: ${formatCurrency(discrepancy)}`
         );
 
         alert(`Day closed!
@@ -451,10 +454,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Business Dashboard
+                  {t("dashboard.title")}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Real-time overview & financial management
+                  {t("dashboard.subtitle")}
                 </p>
               </div>
             </div>
@@ -468,11 +471,11 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 <RefreshCw
                   className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
                 />
-                Refresh
+                {t("dashboard.refresh")}
               </Button>
               <Button variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-2" />
-                Reports
+                {t("dashboard.reports")}
               </Button>
             </div>
           </div>
@@ -488,16 +491,16 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   <Wallet className="h-8 w-8 text-blue-600" />
                 </div>
                 <CardTitle className="text-2xl font-bold">
-                  Start Your Day
+                  {t("dashboard.startDay.title")}
                 </CardTitle>
                 <p className="text-gray-500">
-                  Initialize the cash drawer to begin
+                  {t("dashboard.startDay.description")}
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">
-                    Opening Cash Balance
+                    {t("dashboard.startDay.openingBalance")}
                   </label>
                   <div className="relative mt-1">
                     <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -515,7 +518,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   className="w-full h-12 text-lg bg-blue-600 hover:bg-blue-700"
                 >
                   <Plus className="mr-2 h-5 w-5" />
-                  Start Session
+                  {t("dashboard.startDay.startSession")}
                 </Button>
               </CardContent>
             </Card>
@@ -531,18 +534,18 @@ Carry Forward: ${formatCurrency(carryForward)}`);
             <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
-                Overview
+                {t("dashboard.tabs.overview")}
               </TabsTrigger>
               <TabsTrigger value="cashier" className="flex items-center gap-2">
                 <Wallet className="h-4 w-4" />
-                Cashier
+                {t("dashboard.tabs.cashier")}
               </TabsTrigger>
               <TabsTrigger
                 value="transactions"
                 className="flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />
-                Transactions
+                {t("dashboard.tabs.transactions")}
               </TabsTrigger>
             </TabsList>
 
@@ -552,9 +555,9 @@ Carry Forward: ${formatCurrency(carryForward)}`);
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                   icon={TrendingUp}
-                  title="Monthly Revenue"
+                  title={t("dashboard.metrics.monthlyRevenue")}
                   value={formatCurrency(dashboardStats?.total_revenue || 0)}
-                  subtitle="Current month"
+                  subtitle={t("dashboard.metrics.currentMonth")}
                   trend={Math.abs(revenueChange)}
                   trendUp={revenueChange > 0}
                   color="green"
@@ -562,27 +565,25 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 />
                 <StatCard
                   icon={DollarSign}
-                  title="Net Cash"
+                  title={t("dashboard.metrics.netCash")}
                   value={formatCurrency(netCash)}
-                  subtitle={`Total Cash: ${formatCurrency(expectedCash)}`}
+                  subtitle={t("dashboard.metrics.totalCash", { amount: formatCurrency(expectedCash) })}
                   color="blue"
                   onClick={() => setActiveTab("cashier")}
                 />
                 <StatCard
                   icon={Wrench}
-                  title="Active Repairs"
+                  title={t("dashboard.metrics.activeRepairs")}
                   value={dashboardStats?.active_repairs || 0}
-                  subtitle={`${
-                    dashboardStats?.completed_repairs || 0
-                  } completed`}
+                  subtitle={t("dashboard.metrics.completedCount", { count: dashboardStats?.completed_repairs || 0 })}
                   color="orange"
                   onClick={() => router.push("/repairs")}
                 />
                 <StatCard
                   icon={AlertTriangle}
-                  title="Stock Alerts"
+                  title={t("dashboard.metrics.stockAlerts")}
                   value={dashboardStats?.stock_alerts || 0}
-                  subtitle={`${dashboardStats?.out_of_stock || 0} out of stock`}
+                  subtitle={t("dashboard.metrics.outOfStockCount", { count: dashboardStats?.out_of_stock || 0 })}
                   color="red"
                   onClick={() => router.push("/inventory")}
                 />
@@ -595,7 +596,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5 text-blue-600" />
-                      Revenue & Profit Trend
+                      {t("dashboard.charts.revenueTrend")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -619,7 +620,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           stroke="#3b82f6"
                           strokeWidth={2}
                           dot={{ fill: "#3b82f6" }}
-                          name="Revenue"
+                          name={t("dashboard.charts.revenue")}
                         />
                         <Line
                           type="monotone"
@@ -627,7 +628,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           stroke="#10b981"
                           strokeWidth={2}
                           dot={{ fill: "#10b981" }}
-                          name="Profit"
+                          name={t("dashboard.charts.profit")}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -639,7 +640,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <DollarSign className="h-5 w-5 text-green-600" />
-                      Revenue Breakdown
+                      {t("dashboard.charts.revenueBreakdown")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -675,7 +676,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                         </ResponsiveContainer>
                       ) : (
                         <div className="flex items-center justify-center h-full text-muted-foreground">
-                          No revenue data for this period
+                          {t("dashboard.charts.noData")}
                         </div>
                       )}
                     </div>
@@ -688,10 +689,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
                         <Wrench className="h-5 w-5 text-orange-600" />
-                        Recent Repairs
+                        {t("dashboard.repairs.recent")}
                       </CardTitle>
                       <span className="text-sm text-gray-500">
-                        {activeRepairs} active
+                        {t("dashboard.repairs.activeCount", { count: activeRepairs })}
                       </span>
                     </div>
                   </CardHeader>
@@ -759,10 +760,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-red-600" />
-                      Stock Alerts
+                      {t("dashboard.inventory.alerts")}
                     </CardTitle>
                     <span className="text-sm text-gray-500">
-                      {outOfStockItems.length + lowStockItems.length} items
+                      {t("dashboard.inventory.itemsCount", { count: outOfStockItems.length + lowStockItems.length })}
                     </span>
                   </div>
                 </CardHeader>
@@ -779,11 +780,11 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                             {item.name}
                           </div>
                           <div className="text-sm text-red-600">
-                            Out of stock
+                            {t("dashboard.inventory.outOfStock")}
                           </div>
                         </div>
                         <button className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 whitespace-nowrap">
-                          Reorder
+                          {t("dashboard.inventory.reorder")}
                         </button>
                       </div>
                     ))}
@@ -798,11 +799,11 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                             {item.name}
                           </div>
                           <div className="text-sm text-amber-600">
-                            Low stock: {item.stock} units
+                            {t("dashboard.inventory.lowStock", { count: item.stock })}
                           </div>
                         </div>
                         <button className="px-3 py-1 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 whitespace-nowrap">
-                          Reorder
+                          {t("dashboard.inventory.reorder")}
                         </button>
                       </div>
                     ))}
@@ -817,23 +818,23 @@ Carry Forward: ${formatCurrency(carryForward)}`);
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                   icon={TrendingUp}
-                  title="Total In"
+                  title={t("dashboard.cashier.totalIn")}
                   value={formatCurrency(totalIn)}
-                  subtitle="All revenue"
+                  subtitle={t("dashboard.cashier.allRevenue")}
                   color="green"
                 />
                 <StatCard
                   icon={TrendingDown}
-                  title="Total Out"
+                  title={t("dashboard.cashier.totalOut")}
                   value={formatCurrency(totalOut)}
-                  subtitle="Expenses"
+                  subtitle={t("dashboard.cashier.expenses")}
                   color="red"
                 />
                 <StatCard
                   icon={DollarSign}
-                  title="Net Cash"
+                  title={t("dashboard.cashier.netCash")}
                   value={formatCurrency(netCash)}
-                  subtitle={`Balance: ${formatCurrency(expectedCash)}`}
+                  subtitle={t("dashboard.cashier.balance", { amount: formatCurrency(expectedCash) })}
                   color="blue"
                 />
               </div>
@@ -843,9 +844,9 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                     <div>
-                      <h2 className="text-xl font-bold">Quick Actions</h2>
+                      <h2 className="text-xl font-bold">{t("dashboard.cashier.quickActions")}</h2>
                       <p className="text-blue-100 italic">
-                        Select an action to perform common tasks quickly
+                        {t("dashboard.cashier.quickActionsDesc")}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
@@ -854,21 +855,21 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                         onClick={() => router.push("/transactions?mode=sale")}
                       >
                         <DollarSign className="w-4 h-4 mr-2" />
-                        New Sale
+                        {t("dashboard.cashier.newSale")}
                       </Button>
                       <Button
                         className="bg-white text-blue-600 hover:bg-blue-50"
                         onClick={() => router.push("/repairs?action=new")}
                       >
                         <Wrench className="w-4 h-4 mr-2" />
-                        New Repair
+                        {t("dashboard.cashier.newRepair")}
                       </Button>
                       <Button
                         className="bg-white text-blue-600 hover:bg-blue-50"
                         onClick={() => router.push("/inventory?action=add")}
                       >
                         <Package className="w-4 h-4 mr-2" />
-                        Add Item
+                        {t("dashboard.cashier.addItem")}
                       </Button>
                     </div>
                   </div>
@@ -881,12 +882,12 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Plus className="h-5 w-5 text-blue-600" />
-                      Add Expense
+                      {t("dashboard.cashier.addExpense")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium">Amount</label>
+                      <label className="text-sm font-medium">{t("dashboard.cashier.amount")}</label>
                       <div className="relative mt-1">
                         <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -899,17 +900,17 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Reason</label>
+                      <label className="text-sm font-medium">{t("dashboard.cashier.reason")}</label>
                       <Input
                         value={expenseReason}
                         onChange={(e) => setExpenseReason(e.target.value)}
-                        placeholder="e.g., Cleaning supplies"
+                        placeholder={t("dashboard.cashier.reasonPlaceholder")}
                         className="mt-1"
                       />
                     </div>
                     <Button onClick={handleAddExpense} className="w-full">
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Expense
+                      {t("dashboard.cashier.addExpense")}
                     </Button>
                   </CardContent>
                 </Card>
@@ -918,13 +919,13 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <CheckCircle className="h-5 w-5 text-green-600" />
-                      End of Day Close-out
+                      {t("dashboard.cashier.endOfDay")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
                       <label className="text-sm font-medium">
-                        Counted Amount
+                        {t("dashboard.cashier.countedAmount")}
                       </label>
                       <div className="relative mt-1">
                         <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -938,26 +939,26 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                       </div>
                       <div className="text-xs text-muted-foreground mt-2 space-y-1">
                         <div className="flex justify-between">
-                          <span>Opening Balance:</span>
+                          <span>{t("dashboard.cashier.openingBalance")}:</span>
                           <span>{formatCurrency(openingBalance)}</span>
                         </div>
                         <div className="flex justify-between text-green-600">
-                          <span>Total Revenue (+):</span>
+                          <span>{t("dashboard.cashier.totalRevenue")}:</span>
                           <span>{formatCurrency(totalIn)}</span>
                         </div>
                         <div className="flex justify-between text-red-600">
-                          <span>Total Expenses (-):</span>
+                          <span>{t("dashboard.cashier.totalExpenses")}:</span>
                           <span>{formatCurrency(totalOut)}</span>
                         </div>
                         <div className="flex justify-between font-bold pt-1 border-t">
-                          <span>Expected Cash:</span>
+                          <span>{t("dashboard.cashier.expectedCash")}:</span>
                           <span>{formatCurrency(expectedCash)}</span>
                         </div>
                       </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium">
-                        Withdrawal Amount
+                        {t("dashboard.cashier.withdrawalAmount")}
                       </label>
                       <div className="relative mt-1">
                         <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -977,7 +978,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                       className="w-full bg-green-600 hover:bg-green-700"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Close Day
+                      {t("dashboard.cashier.closeDay")}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -991,12 +992,12 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5 text-blue-600" />
-                      Today's Transactions
+                      {t("dashboard.transactions.recent")}
                     </CardTitle>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       {lastUpdated && (
                         <span>
-                          Last updated: {lastUpdated.toLocaleTimeString()}
+                          {t("dashboard.transactions.lastUpdated", { time: lastUpdated.toLocaleTimeString() })}
                         </span>
                       )}
                       <Button
@@ -1016,7 +1017,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   {loading ? (
                     <div className="flex items-center justify-center py-12">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      <span className="ml-2">Loading transactions...</span>
+                      <span className="ml-2">{t("dashboard.transactions.loading")}</span>
                     </div>
                   ) : (
                     <div className="rounded-md border overflow-hidden">
@@ -1024,16 +1025,16 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                         <thead className="bg-muted/50">
                           <tr>
                             <th className="text-left p-3 text-sm font-medium">
-                              Time
+                              {t("dashboard.transactions.time")}
                             </th>
                             <th className="text-left p-3 text-sm font-medium">
-                              Category
+                              {t("dashboard.transactions.category")}
                             </th>
                             <th className="text-left p-3 text-sm font-medium">
-                              Description
+                              {t("dashboard.transactions.description")}
                             </th>
                             <th className="text-right p-3 text-sm font-medium">
-                              Amount
+                              {t("dashboard.transactions.amount")}
                             </th>
                           </tr>
                         </thead>
@@ -1082,7 +1083,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                                 colSpan={4}
                                 className="p-8 text-center text-muted-foreground"
                               >
-                                No transactions found
+                                {t("dashboard.transactions.noTransactions")}
                               </td>
                             </tr>
                           )}

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/clientUtils";
 import { TransactionType } from "@/types/transaction";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface TransactionSummaryProps {
   type: TransactionType;
@@ -43,6 +44,7 @@ export function TransactionSummary({
   disabled,
 }: TransactionSummaryProps) {
   const isSale = type === "Sale";
+  const { t } = useTranslation();
   const remainingBalance = totalAmount - paidAmount;
   
   const accentColor = isSale ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700";
@@ -51,33 +53,33 @@ export function TransactionSummary({
 
   return (
     <Card className={cn("border shadow-md overflow-hidden", lightAccent)}>
-      <CardHeader className="pb-3 border-b bg-muted/20">
+       <CardHeader className="pb-3 border-b bg-muted/20">
         <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
           <CreditCard className={cn("h-4 w-4", isSale ? "text-green-600" : "text-blue-600")} />
-          Payment Summary
+          {t("transactions_module.summary.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        <div className="space-y-3">
+         <div className="space-y-3">
           <div className="flex justify-between text-sm font-medium text-muted-foreground uppercase tracking-tight">
-            <span>Subtotal</span>
+            <span>{t("transactions_module.summary.subtotal")}</span>
             <span>{formatCurrency(totalAmount)}</span>
           </div>
           <div className="flex justify-between text-2xl font-black text-foreground border-t pt-3">
-            <span>Total</span>
+            <span>{t("transactions_module.summary.total")}</span>
             <span>{formatCurrency(totalAmount)}</span>
           </div>
         </div>
 
-        <div className="space-y-3 pt-2">
+         <div className="space-y-3 pt-2">
           <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
-            Payment Method
+            {t("transactions_module.summary.paymentMethod")}
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { id: "Cash", icon: Banknote, label: "Cash" },
-              { id: "Card", icon: CreditCard, label: "Card" },
-              { id: "Transfer", icon: ArrowUpRight, label: "Transfer" },
+             {[
+              { id: "Cash", icon: Banknote, label: t("transactions_module.summary.cash") },
+              { id: "Card", icon: CreditCard, label: t("transactions_module.summary.card") },
+              { id: "Transfer", icon: ArrowUpRight, label: t("transactions_module.summary.transfer") },
             ].map((method) => (
               <Button
                 key={method.id}
@@ -95,9 +97,9 @@ export function TransactionSummary({
           </div>
         </div>
 
-        <div className="space-y-3">
+         <div className="space-y-3">
           <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
-            Amount {isSale ? "Received" : "Paid"}
+            {isSale ? t("transactions_module.summary.amountReceived") : t("transactions_module.summary.amountPaid")}
           </label>
           <div className="relative group">
             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -119,18 +121,18 @@ export function TransactionSummary({
               : "bg-orange-100/50 border-orange-200 text-orange-900"
           )}
         >
-          <div className="flex items-center justify-between">
+           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider opacity-70">
-              {remainingBalance <= 0 ? (isSale ? "Change" : "Overpaid") : "Balance Due"}
+              {remainingBalance <= 0 ? (isSale ? t("transactions_module.summary.change") : t("transactions_module.summary.overpaid")) : t("transactions_module.summary.balanceDue")}
             </span>
             <span className="font-black text-2xl tracking-tighter">
               {formatCurrency(Math.abs(remainingBalance))}
             </span>
           </div>
-          {remainingBalance > 0 && (
+           {remainingBalance > 0 && (
             <p className="text-[10px] mt-2 font-bold uppercase flex items-center gap-1 opacity-70">
               <AlertCircle className="h-3 w-3" />
-              Will be added to {isSale ? "customer credit" : "supplier debt"}
+              {isSale ? t("transactions_module.summary.addedToCredit") : t("transactions_module.summary.addedToDebt")}
             </p>
           )}
         </div>
@@ -146,18 +148,18 @@ export function TransactionSummary({
           ) : (
             <>
               <CheckCircle2 className="h-6 w-6" />
-              Complete {isSale ? "Sale" : "Order"}
+              {t("transactions_module.form.complete", { type: t(`transactions_module.${type.toLowerCase()}`) })}
             </>
           )}
         </Button>
         <Button
           variant="outline"
           className="w-full h-11 text-xs font-bold uppercase tracking-widest bg-background border-muted-foreground/10 hover:bg-muted/50 rounded-xl transition-all"
-          disabled={disabled || isSaving}
+           disabled={disabled || isSaving}
           onClick={onSaveDraft}
         >
           <Save className="h-4 w-4 mr-2 opacity-50" />
-          Save as Draft
+          {t("transactions_module.form.saveDraft")}
         </Button>
       </CardFooter>
     </Card>

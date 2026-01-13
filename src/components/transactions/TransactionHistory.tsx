@@ -25,6 +25,7 @@ import { useTransactions } from "@/context/TransactionContext";
 import { toast } from "sonner";
 
 import { useInventory } from "@/context/InventoryContext";
+import { useTranslation } from "react-i18next";
 
 export function TransactionHistory() {
   const { editTransaction } = useTransactions();
@@ -35,6 +36,7 @@ export function TransactionHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("All");
   const [viewLoading, setViewLoading] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (initialized) {
@@ -63,11 +65,11 @@ export function TransactionHistory() {
       if (details) {
         editTransaction(details);
       } else {
-        toast.error("Transaction not found");
+        toast.error(t('common.error'));
       }
     } catch (err) {
       console.error("Failed to fetch transaction:", err);
-      toast.error("Failed to load transaction details");
+      toast.error(t('common.error'));
     } finally {
       setViewLoading(null);
     }
@@ -86,7 +88,7 @@ export function TransactionHistory() {
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search by ID or Number..." 
+            placeholder={t('common.searchPlaceholder')} 
             className="pl-10 rounded-xl"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -105,7 +107,7 @@ export function TransactionHistory() {
                 )}
                 onClick={() => setTypeFilter(type)}
               >
-                {type}
+                {type === "All" ? t('common.all') : t(`transactions_module.${type.toLowerCase()}`)}
               </Button>
             ))}
           </div>
@@ -120,12 +122,12 @@ export function TransactionHistory() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted/30 border-b">
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Number</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Type</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Total</th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Actions</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('common.number')}</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('common.type')}</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('common.date')}</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('common.status')}</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">{t('common.total')}</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -140,10 +142,10 @@ export function TransactionHistory() {
                   <td colSpan={6} className="px-6 py-12 text-center text-red-500">
                     <div className="flex flex-col items-center gap-2">
                         <AlertCircle className="h-8 w-8 text-destructive" />
-                        <p className="font-bold uppercase tracking-widest text-xs">Error loading transactions</p>
+                        <p className="font-bold uppercase tracking-widest text-xs">{t('common.errorLoading')}</p>
                         <p className="text-sm text-muted-foreground">{error}</p>
                         <Button variant="outline" size="sm" onClick={() => loadTransactions()} className="mt-2">
-                          Retry
+                          {t('common.retry')}
                         </Button>
                     </div>
                   </td>
@@ -153,7 +155,7 @@ export function TransactionHistory() {
                   <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                         <Clock className="h-8 w-8 opacity-20" />
-                        <p className="font-bold uppercase tracking-widest text-xs">No transactions found</p>
+                        <p className="font-bold uppercase tracking-widest text-xs">{t('common.noTransactions')}</p>
                     </div>
                   </td>
                 </tr>
@@ -179,7 +181,7 @@ export function TransactionHistory() {
                        <span className={cn(
                          "text-xs font-black uppercase tracking-tight",
                          tx.transaction_type === "Sale" ? "text-green-700" : "text-blue-700"
-                       )}>{tx.transaction_type}</span>
+                       )}>{t(`transactions_module.${tx.transaction_type.toLowerCase()}`)}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -190,7 +192,7 @@ export function TransactionHistory() {
                       "rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-widest",
                       tx.status === "Completed" ? "bg-green-600" : "bg-orange-100 text-orange-700"
                     )}>
-                      {tx.status}
+                      {t(`status.${tx.status.toLowerCase()}`)}
                     </Badge>
                   </td>
                   <td className="px-6 py-4 text-right">

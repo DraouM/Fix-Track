@@ -34,6 +34,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface VirtualizedTableProps {
   items: InventoryItem[];
@@ -127,6 +128,7 @@ const InventoryRow = memo(function InventoryRow({
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
 }) {
+  const { t } = useTranslation();
   const profit = (item.sellingPrice ?? 0) - (item.buyingPrice ?? 0);
   const isPositive = profit > 0;
   const isNegative = profit < 0;
@@ -175,7 +177,7 @@ const InventoryRow = memo(function InventoryRow({
               {item.itemName}
             </span>
             <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-40">
-              SKU: {item.id.split("-")[0]}
+              {t('common.sku')}: {item.id.split("-")[0]}
             </span>
           </div>
         </div>
@@ -287,20 +289,20 @@ const InventoryRow = memo(function InventoryRow({
               onClick={() => onViewHistory(item)}
               className="rounded-xl font-bold text-xs uppercase tracking-wider py-2"
             >
-              <Info className="h-4 w-4 mr-3 opacity-70" /> View History
+              <Info className="h-4 w-4 mr-3 opacity-70" /> {t('common.view')} {t('common.history')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onEdit(item)}
               className="rounded-xl font-bold text-xs uppercase tracking-wider py-2 text-primary focus:text-primary focus:bg-primary/5"
             >
-              <Pencil className="h-4 w-4 mr-3 opacity-70" /> Edit Item
+              <Pencil className="h-4 w-4 mr-3 opacity-70" /> {t('common.edit')} {t('common.item')}
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-1 mx-1 bg-muted" />
             <DropdownMenuItem
               onClick={() => onDelete(item.id)}
               className="rounded-xl font-bold text-xs uppercase tracking-wider py-2 text-red-600 focus:text-red-600 focus:bg-red-50"
             >
-              <Trash className="h-4 w-4 mr-3 opacity-70" /> Delete Item
+              <Trash className="h-4 w-4 mr-3 opacity-70" /> {t('common.delete')} {t('common.item')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -320,6 +322,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
   selectedIds,
   onSelectionChange,
 }: VirtualizedTableProps) {
+  const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -341,7 +344,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
             <div className="flex-[3] pl-2 min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  Product
+                  {t('common.product')}
                 </span>
               </div>
             </div>
@@ -352,7 +355,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                Brand
+                {t('common.brand')}
               </SortableHeader>
             </div>
             <div className="flex-1">
@@ -362,7 +365,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                Category
+                {t('common.category')}
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
@@ -372,7 +375,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                Cost
+                {t('common.cost')}
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
@@ -382,7 +385,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                Price
+                {t('common.price')}
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
@@ -392,7 +395,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                Profit
+                {t('common.profit')}
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
@@ -402,7 +405,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                Stock
+                {t('common.stock')}
               </SortableHeader>
             </div>
             <div className="w-24 text-center pr-4 text-muted-foreground/60 text-[10px] font-black uppercase tracking-widest">

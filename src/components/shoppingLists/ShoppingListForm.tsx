@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { ShoppingListItem } from "@/types/shopping-list";
+import { useTranslation } from "react-i18next";
 
 const shoppingListFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -38,10 +39,11 @@ const shoppingListFormSchema = z.object({
   estimatedCost: z.number().optional(),
   supplierId: z.string().optional(),
   notes: z.string().optional(),
-  urgency: z.enum(["Low", "Medium", "High"]).default("Medium"),
+  urgency: z.enum(["Low", "Medium", "High"]).default("Medium").optional(),
   status: z
     .enum(["Draft", "Pending", "Ordered", "Received", "Cancelled"])
-    .default("Draft"),
+    .default("Draft")
+    .optional(),
 });
 
 type FormValues = z.infer<typeof shoppingListFormSchema>;

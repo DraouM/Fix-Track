@@ -24,20 +24,31 @@ export const getClientHistoryEventBadgeVariant = (eventType: ClientHistoryEventT
     }
 };
 
-export const formatCurrency = (amount: number): string =>
-    new Intl.NumberFormat("en-US", {
+import i18n from '@/lib/i18n';
+import { formatCurrency as formatCurrencyI18n, formatDate as formatDateI18n } from '@/lib/formatters';
+import { Currency } from '@/types/settings';
+
+export const formatCurrency = (amount: number): string => {
+    // Default to USD if currency not available in context/settings
+    // In a real app, you might want to get this from a store or context
+    // For now, we'll try to get it from settings if possible or default to USD
+    // Since this is a util, we probably default to current settings if available
+    // But accessing context outside component is tricky.
+    // We'll stick to formatting with current locale and generic currency for now
+    // Or better, let's try to grab currency from localStorage if needed, or just use 'USD' as fallback
+    // The previous implementation hardcoded 'en-US' and didn't specify currency (defaulted to USD potentially or just number)
+    // The previous implementation used style: "decimal", so it didn't show currency symbol.
+    // We should keep that behavior or enhance it.
+    // LET'S KEEP "decimal" style to be safe as this function signature doesn't take currency.
+
+    return new Intl.NumberFormat(i18n.language || 'en-US', {
         style: "decimal",
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(amount);
+};
 
 export const formatDate = (date: string | Date): string => {
     if (!date) return "N/A";
-    const dateObj = new Date(date);
-    if (isNaN(dateObj.getTime())) return "Invalid Date";
-    return dateObj.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-    });
+    return formatDateI18n(date, i18n.language || 'en-US');
 };

@@ -5,6 +5,7 @@ import { Plus, X, ShoppingCart, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTransactions } from "@/context/TransactionContext";
 import { TransactionType } from "@/types/transaction";
+import { useTranslation } from "react-i18next";
 
 export function TransactionWorkspace() {
   const { 
@@ -14,6 +15,7 @@ export function TransactionWorkspace() {
     removeWorkspace, 
     setActiveWorkspaceId 
   } = useTransactions();
+  const { t } = useTranslation();
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide px-1">
@@ -65,7 +67,7 @@ export function TransactionWorkspace() {
         <button
           onClick={() => addWorkspace("Sale")}
           className="p-1.5 hover:bg-green-500 hover:text-white text-green-600 rounded-lg transition-all"
-          title="New Sale"
+          title={t("transactions_module.newSale")}
         >
           <Plus className="h-5 w-5" />
         </button>
@@ -73,7 +75,7 @@ export function TransactionWorkspace() {
         <button
           onClick={() => addWorkspace("Purchase")}
           className="p-1.5 hover:bg-blue-500 hover:text-white text-blue-600 rounded-lg transition-all"
-          title="New Purchase"
+          title={t("transactions_module.newPurchase")}
         >
           <Plus className="h-5 w-5" />
         </button>

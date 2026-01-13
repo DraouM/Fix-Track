@@ -9,13 +9,17 @@ import { useInventory } from "@/context/InventoryContext";
 import { InventoryItem } from "@/types/inventory";
 import { formatCurrency } from "@/lib/clientUtils";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface TransactionScannerProps {
   onAddItem: (item: InventoryItem) => void;
   type: "Sale" | "Purchase";
 }
 
-export function TransactionScanner({ onAddItem, type }: TransactionScannerProps) {
+export function TransactionScanner({
+  onAddItem,
+  type,
+}: TransactionScannerProps) {
   const { searchItems } = useInventory();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<InventoryItem[]>([]);
@@ -23,11 +27,15 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
   const [lastScanned, setLastScanned] = useState<string | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setShowResults(false);
       }
     };
@@ -47,15 +55,15 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
         setIsSearching(true);
         try {
           const res = await searchItems(trimmedQuery);
-          
+
           // CHECK FOR EXACT BARCODE MATCH
-          const exactMatch = res.find(item => item.barcode === trimmedQuery);
+          const exactMatch = res.find((item) => item.barcode === trimmedQuery);
           if (exactMatch && trimmedQuery !== lastScanned) {
-             handleSelect(exactMatch);
-             setLastScanned(trimmedQuery);
-             // Clear last scanned after a bit to allow scanning the same item twice
-             setTimeout(() => setLastScanned(null), 1000);
-             return;
+            handleSelect(exactMatch);
+            setLastScanned(trimmedQuery);
+            // Clear last scanned after a bit to allow scanning the same item twice
+            setTimeout(() => setLastScanned(null), 1000);
+            return;
           }
 
           setResults(res);
@@ -94,13 +102,20 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
         <CardContent className="p-3">
           <div className="relative flex items-center gap-3">
             <div className="relative flex-1 group">
-              <Search className={cn(
-                "absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors",
-                isSearching && "animate-pulse"
-              )} />
+              <Search
+                className={cn(
+                  "absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors",
+                  isSearching && "animate-pulse"
+                )}
+              />
               <Input
                 ref={inputRef}
-                placeholder={`Search for items to ${type === "Sale" ? "sell" : "buy"}...`}
+                placeholder={t("transactions_module.scanner.placeholder", {
+                  action:
+                    type === "Sale"
+                      ? t("transactions_module.sale")
+                      : t("transactions_module.purchase"),
+                })}
                 className="pl-12 h-14 text-lg border-none focus-visible:ring-0 bg-transparent"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -118,11 +133,15 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
             </div>
             <div className="w-px h-8 bg-muted-foreground/10 hidden sm:block"></div>
             <div className="flex items-center gap-2 px-2">
-               <ScanLine className="h-6 w-6 text-muted-foreground animate-pulse" />
-               <div className="hidden lg:block">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-50">Barcode</p>
-                  <p className="text-[10px] font-medium text-muted-foreground">Ready to scan...</p>
-               </div>
+              <ScanLine className="h-6 w-6 text-muted-foreground animate-pulse" />
+              <div className="hidden lg:block">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-50">
+                  Barcode
+                </p>
+                <p className="text-[10px] font-medium text-muted-foreground">
+                  Ready to scan...
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -146,7 +165,9 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
                           <Package className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="font-bold text-sm text-foreground">{item.itemName}</p>
+                          <p className="font-bold text-sm text-foreground">
+                            {item.itemName}
+                          </p>
                           <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">
                             {item.phoneBrand} • {item.itemType}
                           </p>
@@ -154,12 +175,22 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
                       </div>
                       <div className="text-right">
                         <p className="font-black text-sm text-primary">
-                          {formatCurrency(type === "Sale" ? item.sellingPrice : item.buyingPrice)}
+                          {formatCurrency(
+                            type === "Sale"
+                              ? item.sellingPrice
+                              : item.buyingPrice
+                          )}
                         </p>
-                        <p className={cn(
-                          "text-[10px] font-bold uppercase",
-                          item.quantityInStock !== undefined && item.quantityInStock <= (item.lowStockThreshold || 5) ? "text-destructive" : "text-muted-foreground opacity-50"
-                        )}>
+                        <p
+                          className={cn(
+                            "text-[10px] font-bold uppercase",
+                            item.quantityInStock !== undefined &&
+                              item.quantityInStock <=
+                                (item.lowStockThreshold || 5)
+                              ? "text-destructive"
+                              : "text-muted-foreground opacity-50"
+                          )}
+                        >
                           Stock: {item.quantityInStock ?? 0}
                         </p>
                       </div>
@@ -168,9 +199,13 @@ export function TransactionScanner({ onAddItem, type }: TransactionScannerProps)
                 </div>
               ) : (
                 <div className="py-12 text-center text-muted-foreground">
-                   <Package className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                   <p className="text-sm font-medium">No items found</p>
-                   <p className="text-xs opacity-60">Try searching for something else</p>
+                  <Package className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                  <p className="text-sm font-medium">
+                    {t("transactions_module.scanner.noItems")}
+                  </p>
+                  <p className="text-xs opacity-60">
+                    {t("transactions_module.scanner.noItemsDesc")}
+                  </p>
                 </div>
               )}
             </CardContent>

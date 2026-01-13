@@ -1,0 +1,295 @@
+{
+    "nav": {
+        "dashboard": "Tableau de bord",
+        "transactions": "Transactions",
+        "inventory": "Inventaire",
+        "repairs": "Réparations",
+        "clients": "Clients",
+        "suppliers": "Fournisseurs",
+        "documentation": "Documentation",
+        "helpSupport": "Aide & Support",
+        "settings": "Paramètres",
+        "operations": "Opérations",
+        "management": "Gestion",
+        "tools": "Outils"
+    },
+    "common": {
+        "search": "Rechercher",
+        "filter": "Filtrer",
+        "add": "Ajouter",
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "close": "Fermer",
+        "loading": "Chargement...",
+        "noResults": "Aucun résultat trouvé",
+        "error": "Erreur",
+        "success": "Succès",
+        "warning": "Avertissement",
+        "info": "Info",
+        "view": "Voir",
+        "actions": "Actions",
+        "status": "Statut",
+        "date": "Date",
+        "amount": "Montant",
+        "total": "Total",
+        "quantity": "Quantité",
+        "price": "Prix",
+        "description": "Description",
+        "name": "Nom",
+        "type": "Type",
+        "number": "Numéro",
+        "searchPlaceholder": "Rechercher par ID ou Numéro...",
+        "retry": "Réessayer",
+        "noTransactions": "Aucune transaction trouvée",
+        "errorLoading": "Erreur lors du chargement des transactions",
+        "notes": "Notes",
+        "userInitial": "IU"
+    },
+    "status": {
+        "active": "Actif",
+        "inactive": "Inactif",
+        "pending": "En attente",
+        "completed": "Terminé",
+        "cancelled": "Annulé",
+        "online": "En ligne",
+        "offline": "Hors ligne"
+    },
+    "system": {
+        "status": "État du système",
+        "database": "Base de données",
+        "server": "Serveur",
+        "storage": "Stockage"
+    },
+    "user": {
+        "profile": "Profil",
+        "settings": "Paramètres",
+        "signOut": "Déconnexion",
+        "admin": "Administrateur"
+    },
+    "settings": {
+        "title": "Paramètres",
+        "languageCurrency": {
+            "title": "Langue & Devise",
+            "description": "Définissez votre langue et devise préférées pour l'application",
+            "language": "Langue",
+            "selectLanguage": "Sélectionner la langue",
+            "currency": "Devise",
+            "selectCurrency": "Sélectionner la devise",
+            "currencyNote": "Le symbole de la devise apparaîtra dans les en-têtes de colonnes",
+            "translationNote": "La langue affectera tous les textes et libellés de l'interface",
+            "formatPreview": "Aperçu du format",
+            "samplePrice": "Prix exemple",
+            "columnHeader": "En-tête de colonne"
+        },
+        "theme": {
+            "title": "Thème",
+            "light": "Clair",
+            "dark": "Sombre",
+            "system": "Système"
+        },
+        "print": {
+            "title": "Dimensions d'impression",
+            "receipt": "Reçu",
+            "sticker": "Étiquette",
+            "width": "Largeur",
+            "height": "Hauteur"
+        }
+    },
+    "app": {
+        "name": "FixTrack",
+        "tagline": "Système de gestion des réparations"
+    },
+    "transactions": {
+        "title": "Transactions",
+        "newTransaction": "Nouvelle transaction",
+        "sale": "Vente",
+        "purchase": "Achat",
+        "payment": "Paiement",
+        "refund": "Remboursement"
+    },
+    "inventory": {
+        "title": "Inventaire",
+        "addItem": "Ajouter un article",
+        "stockLevel": "Niveau de stock",
+        "lowStock": "Stock faible",
+        "outOfStock": "Rupture de stock",
+        "inStock": "En stock"
+    },
+    "repairs": {
+        "title": "Réparations",
+        "newRepair": "Nouvelle réparation",
+        "pending": "En attente",
+        "inProgress": "En cours",
+        "completed": "Terminé",
+        "delivered": "Livré"
+    },
+    "clients": {
+        "title": "Clients",
+        "addClient": "Ajouter un client",
+        "phone": "Téléphone",
+        "email": "E-mail",
+        "address": "Adresse"
+    },
+    "suppliers": {
+        "title": "Fournisseurs",
+        "addSupplier": "Ajouter un fournisseur",
+        "contact": "Contact",
+        "balance": "Solde"
+    },
+    "dashboard": {
+        "title": "Tableau de Bord Commercial",
+        "subtitle": "Aperçu en temps réel et gestion financière",
+        "refresh": "Actualiser",
+        "reports": "Rapports",
+        "startDay": {
+            "title": "Commencez Votre Journée",
+            "description": "Initialisez le tiroir-caisse pour commencer",
+            "openingBalance": "Solde d'Ouverture",
+            "startSession": "Démarrer la Session"
+        },
+        "tabs": {
+            "overview": "Aperçu",
+            "cashier": "Caisse",
+            "transactions": "Transactions"
+        },
+        "metrics": {
+            "monthlyRevenue": "Chiffre d'Affaires Mensuel",
+            "currentMonth": "Mois en cours",
+            "netCash": "Trésorerie Nette",
+            "totalCash": "Total Cash: {{amount}}",
+            "activeRepairs": "Réparations Actives",
+            "completedCount": "{{count}} terminés",
+            "stockAlerts": "Alertes de Stock",
+            "outOfStockCount": "{{count}} en rupture"
+        },
+        "charts": {
+            "revenueTrend": "Tendance Revenu & Profit",
+            "revenueBreakdown": "Répartition des Revenus",
+            "noData": "Aucune donnée de revenu pour cette période",
+            "revenue": "Revenu",
+            "profit": "Profit"
+        },
+        "repairs": {
+            "recent": "Réparations Récentes",
+            "activeCount": "{{count}} actives"
+        },
+        "inventory": {
+            "alerts": "Alertes de Stock",
+            "itemsCount": "{{count}} articles",
+            "outOfStock": "Rupture de stock",
+            "lowStock": "Stock faible: {{count}} unités",
+            "reorder": "Récommander"
+        },
+        "cashier": {
+            "totalIn": "Total Entrées",
+            "allRevenue": "Tous les revenus",
+            "totalOut": "Total Sorties",
+            "expenses": "Dépenses",
+            "netCash": "Trésorerie Nette",
+            "balance": "Solde: {{amount}}",
+            "quickActions": "Actions Rapides",
+            "quickActionsDesc": "Sélectionnez une action pour effectuer des tâches courantes rapidement",
+            "newSale": "Nouvelle Vente",
+            "newRepair": "Nouvelle Réparation",
+            "addItem": "Ajouter Article",
+            "addExpense": "Ajouter Dépense",
+            "amount": "Montant",
+            "reason": "Raison",
+            "reasonPlaceholder": "ex: Fournitures de nettoyage",
+            "endOfDay": "Clôture de Fin de Journée",
+            "countedAmount": "Montant Compté",
+            "openingBalance": "Solde d'Ouverture",
+            "totalRevenue": "Revenu Total (+)",
+            "totalExpenses": "Dépenses Totales (-)",
+            "expectedCash": "Cash Attendu",
+            "withdrawalAmount": "Montant du Retrait",
+            "closeDay": "Fermer Journée"
+        },
+        "transactions": {
+            "recent": "Transactions du Jour",
+            "lastUpdated": "Dernière mise à jour: {{time}}",
+            "loading": "Chargement des transactions...",
+            "time": "Heure",
+            "category": "Catégorie",
+            "description": "Description",
+            "amount": "Montant",
+            "noTransactions": "Aucune transaction trouvée"
+        }
+    },
+    "transactions_module": {
+        "title": "Transactions",
+        "sale": "Vente",
+        "purchase": "Achat",
+        "newSale": "Nouvelle Vente",
+        "newPurchase": "Nouvel Achat",
+        "history": "Historique",
+        "scanner": {
+            "placeholder": "Rechercher des articles à {{action}}...",
+            "barcode": "Code-barres",
+            "ready": "Prêt à scanner...",
+            "noItems": "Aucun article trouvé",
+            "noItemsDesc": "Essayez de rechercher autre chose",
+            "stock": "Stock: {{count}}"
+        },
+        "workspace": {
+            "new": "Nouvelle {{type}} #{{number}}",
+            "edit": "Modifier {{type}}"
+        },
+        "form": {
+            "module": "Module {{type}}",
+            "notesPlaceholder": "Ajouter des notes internes, des instructions ou des références pour cette transaction...",
+            "saveDraft": "Enregistrer comme brouillon",
+            "complete": "Terminer {{type}}",
+            "success": "{{type}} {{status}} avec succès!",
+            "error": "Échec de l'enregistrement de {{type}}: {{error}}",
+            "itemPlaceholder": "Recherchez et ajoutez des articles pour commencer cette transaction",
+            "emptyBasket": "Votre panier est vide",
+            "selectPartyError": "Veuillez sélectionner un {{type}}",
+            "addItemError": "Veuillez ajouter au moins un article",
+            "savedAsDraft": "enregistré comme brouillon",
+            "completed": "terminé"
+        },
+        "party": {
+            "customer": "Client",
+            "supplier": "Fournisseur",
+            "details": "Détails du {{type}}",
+            "select": "Sélectionnez un {{type}}...",
+            "addNew": "+ Ajouter un nouveau {{type}}",
+            "name": "Nom du {{type}}",
+            "placeholder": "Entrez le nom du {{type}}",
+            "add": "Ajouter {{type}}"
+        },
+        "summary": {
+            "title": "Résumé du Paiement",
+            "subtotal": "Sous-total",
+            "total": "Total",
+            "paymentMethod": "Mode de Paiement",
+            "amountReceived": "Montant Reçu",
+            "amountPaid": "Montant Payé",
+            "change": "Monnaie",
+            "overpaid": "Trop-perçu",
+            "balanceDue": "Solde Dû",
+            "paymentFor": "Paiement pour {{type}}",
+            "addedToCredit": "Sera ajouté au crédit du client",
+            "addedToDebt": "Sera ajouté à la dette du fournisseur",
+            "cash": "Espèces",
+            "card": "Carte",
+            "transfer": "Virement"
+        },
+        "itemTable": {
+            "title": {
+                "sale": "Articles de la Vente en Cours",
+                "purchase": "Articles de la Commande"
+            },
+            "details": "Détails de l'Article",
+            "qty": "Qté",
+            "sellingPrice": "Prix de Vente",
+            "unitCost": "Coût Unitaire",
+            "total": "Total",
+            "itemsCount": "{{count}} {{label}}"
+        }
+    }
+}

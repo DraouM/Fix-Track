@@ -81,9 +81,8 @@ export function InventoryBulkActions({
           disabled={selectedIds.length === 0 || isProcessing}
         >
           <Printer className="h-4 w-4 mr-2" />
-          `Print ${selectedIds.length} Sticker${
-                selectedIds.length !== 1 ? "s" : ""
-              }`
+          `Print ${selectedIds.length} Sticker$
+          {selectedIds.length !== 1 ? "s" : ""}`
         </Button>
       </div>
 

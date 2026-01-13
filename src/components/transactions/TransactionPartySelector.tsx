@@ -10,6 +10,7 @@ import { useClientContext } from "@/context/ClientContext";
 import { useSupplierState } from "@/context/SupplierContext";
 import { formatCurrency } from "@/lib/clientUtils";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface TransactionPartySelectorProps {
   type: "Client" | "Supplier";
@@ -27,6 +28,7 @@ export function TransactionPartySelector({
   const { clients } = useClientContext();
   const { suppliers } = useSupplierState();
   const [showAddForm, setShowAddForm] = useState(false);
+  const { t } = useTranslation();
 
   const parties = type === "Client" ? clients : suppliers;
   const selectedParty = parties.find((p: any) => p.id === selectedId);
@@ -44,7 +46,7 @@ export function TransactionPartySelector({
           ) : (
             <Building2 className={cn("h-4 w-4", iconColor)} />
           )}
-          {title} Details
+          {t("transactions_module.party.details", { type: t(`transactions_module.party.${type.toLowerCase()}`) })}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-4">
@@ -69,12 +71,12 @@ export function TransactionPartySelector({
                 </select>
              </div>
             
-            <Button
+             <Button
               variant="link"
               className="p-0 h-auto text-xs text-primary/80 hover:text-primary font-medium"
               onClick={() => setShowAddForm(true)}
             >
-              + Add new {label.toLowerCase()}
+              {t("transactions_module.party.addNew", { type: t(`transactions_module.party.${type.toLowerCase()}`) })}
             </Button>
 
             {selectedParty && (
@@ -102,18 +104,18 @@ export function TransactionPartySelector({
             )}
           </div>
         ) : (
-          <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+           <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
             <div>
-              <label className="text-xs font-bold uppercase text-muted-foreground tracking-tight">{label} Name</label>
+              <label className="text-xs font-bold uppercase text-muted-foreground tracking-tight">{t("transactions_module.party.name", { type: t(`transactions_module.party.${type.toLowerCase()}`) })}</label>
               <Input
                 type="text"
-                placeholder={`Enter ${label.toLowerCase()} name`}
+                placeholder={t("transactions_module.party.placeholder", { type: t(`transactions_module.party.${type.toLowerCase()}`) })}
                 className="mt-1 h-9 text-sm"
               />
             </div>
-            <div className="flex gap-2 pt-1">
+             <div className="flex gap-2 pt-1">
               <Button className="flex-1 h-9 text-sm" size="sm" onClick={() => setShowAddForm(false)}>
-                Add {label}
+                {t("transactions_module.party.add", { type: t(`transactions_module.party.${type.toLowerCase()}`) })}
               </Button>
               <Button
                 variant="outline"
@@ -121,7 +123,7 @@ export function TransactionPartySelector({
                 size="sm"
                 onClick={() => setShowAddForm(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </div>

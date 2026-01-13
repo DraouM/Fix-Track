@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
+import { useTranslation } from "react-i18next";
 
 import {
   Sidebar,
@@ -48,45 +49,46 @@ import {
 import { cn } from "@/lib/utils";
 
 interface NavItem {
-  title: string;
+  titleKey: string;
   href: string;
   icon: React.ComponentType<any>;
-  description?: string;
+  descriptionKey?: string;
 }
 
 export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { t } = useTranslation();
 
   const navigationItems: NavItem[] = [
     {
-      title: "Dashboard",
+      titleKey: "nav.dashboard",
       icon: BarChart3,
       href: "/dashboard",
     },
     {
-      title: "Transactions",
+      titleKey: "nav.transactions",
       icon: Wallet,
       href: "/transactions",
     },
     {
-      title: "Inventory",
+      titleKey: "nav.inventory",
       icon: Package,
       href: "/inventory",
     },
     {
-      title: "Repairs",
+      titleKey: "nav.repairs",
       icon: Wrench,
       href: "/repairs",
     },
     {
-      title: "Clients",
+      titleKey: "nav.clients",
       icon: Users,
       href: "/clients",
     },
     {
-      title: "Suppliers",
+      titleKey: "nav.suppliers",
       icon: Building2,
       href: "/suppliers",
     },
@@ -94,24 +96,28 @@ export function AppSidebar() {
 
   const secondaryItems: NavItem[] = [
     {
-      title: "Documentation",
+      titleKey: "nav.documentation",
       icon: FileText,
       href: "/docs",
-      description: "View documentation",
+      descriptionKey: "nav.documentation",
     },
     {
-      title: "Help & Support",
+      titleKey: "nav.helpSupport",
       icon: HelpCircle,
       href: "/help",
-      description: "Get help",
+      descriptionKey: "nav.helpSupport",
     },
     {
-      title: "Settings",
+      titleKey: "nav.settings",
       icon: Settings,
       href: "/settings",
-      description: "App settings",
+      descriptionKey: "nav.settings",
     },
   ];
+
+  // Keys for filtering navigation items
+  const operationsKeys = ["nav.dashboard", "nav.transactions", "nav.inventory", "nav.repairs"];
+  const managementKeys = ["nav.clients", "nav.suppliers"];
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/" || pathname === "/dashboard";
@@ -138,9 +144,9 @@ export function AppSidebar() {
               />
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate font-semibold">FixTrack</span>
+              <span className="truncate font-semibold">{t('app.name')}</span>
               <span className="truncate text-xs text-muted-foreground">
-                Repair Management System
+                {t('app.tagline')}
               </span>
             </div>
           </div>
@@ -150,23 +156,18 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Operations Group */}
         <SidebarGroup>
-          <SidebarGroupLabel>Operations</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('nav.operations')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems
                 .filter((item) =>
-                  [
-                    "Dashboard",
-                    "Transactions",
-                    "Inventory",
-                    "Repairs",
-                  ].includes(item.title)
+                  operationsKeys.includes(item.titleKey)
                 )
                 .map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       onClick={() => router.push(item.href)}
-                      tooltip={item.title}
+                      tooltip={t(item.titleKey)}
                       isActive={isActive(item.href)}
                       className={
                         isActive(item.href)
@@ -175,7 +176,7 @@ export function AppSidebar() {
                       }
                     >
                       <item.icon className="size-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -185,16 +186,16 @@ export function AppSidebar() {
 
         {/* Management Group */}
         <SidebarGroup>
-          <SidebarGroupLabel>Management</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('nav.management')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems
-                .filter((item) => ["Clients", "Suppliers"].includes(item.title))
+                .filter((item) => managementKeys.includes(item.titleKey))
                 .map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       onClick={() => router.push(item.href)}
-                      tooltip={item.title}
+                      tooltip={t(item.titleKey)}
                       isActive={isActive(item.href)}
                       className={
                         isActive(item.href)
@@ -203,7 +204,7 @@ export function AppSidebar() {
                       }
                     >
                       <item.icon className="size-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -213,14 +214,14 @@ export function AppSidebar() {
 
         {/* Secondary Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('nav.tools')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {secondaryItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     onClick={() => router.push(item.href)}
-                    tooltip={item.description}
+                    tooltip={item.descriptionKey ? t(item.descriptionKey) : t(item.titleKey)}
                     isActive={isActive(item.href)}
                     className={
                       isActive(item.href)
@@ -229,7 +230,7 @@ export function AppSidebar() {
                     }
                   >
                     <item.icon className="size-4" />
-                    <span>{item.title}</span>
+                    <span>{t(item.titleKey)}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -239,23 +240,23 @@ export function AppSidebar() {
 
         {/* System Status */}
         <SidebarGroup>
-          <SidebarGroupLabel>System Status</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('system.status')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="space-y-2 px-2">
               {/* Overall Status */}
               <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center rounded-lg bg-sidebar-accent/50 p-2">
                 <span className="text-xs font-medium group-data-[collapsible=icon]:hidden">
-                  Status
+                  {t('common.status')}
                 </span>
                 <Badge
                   variant="default"
                   className="group-data-[collapsible=icon]:hidden"
                 >
-                  Active
+                  {t('status.active')}
                 </Badge>
                 <div
                   className="w-2 h-2 rounded-full bg-green-500 animate-pulse group-data-[collapsible=icon]:block hidden"
-                  title="System Active"
+                  title={t('status.active')}
                 ></div>
               </div>
 
@@ -264,17 +265,17 @@ export function AppSidebar() {
                 <div className="flex items-center gap-2 group-data-[collapsible=icon]:gap-0">
                   <div
                     className="w-2 h-2 rounded-full bg-green-500 animate-pulse"
-                    title="Database Online"
+                    title={`${t('system.database')} ${t('status.online')}`}
                   ></div>
                   <span className="text-xs font-medium text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-                    Database
+                    {t('system.database')}
                   </span>
                 </div>
                 <Badge
                   variant="outline"
                   className="text-xs bg-green-50 text-green-700 border-green-200 ml-auto group-data-[collapsible=icon]:hidden"
                 >
-                  Online
+                  {t('status.online')}
                 </Badge>
               </div>
 
@@ -283,17 +284,17 @@ export function AppSidebar() {
                 <div className="flex items-center gap-2 group-data-[collapsible=icon]:gap-0">
                   <div
                     className="w-2 h-2 rounded-full bg-blue-500"
-                    title="Server Active"
+                    title={`${t('system.server')} ${t('status.active')}`}
                   ></div>
                   <span className="text-xs font-medium text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-                    Server
+                    {t('system.server')}
                   </span>
                 </div>
                 <Badge
                   variant="outline"
                   className="text-xs bg-blue-50 text-blue-700 border-blue-200 ml-auto group-data-[collapsible=icon]:hidden"
                 >
-                  Active
+                  {t('status.active')}
                 </Badge>
               </div>
 
@@ -302,10 +303,10 @@ export function AppSidebar() {
                 <div className="flex items-center gap-2 group-data-[collapsible=icon]:gap-0">
                   <div
                     className="w-2 h-2 rounded-full bg-orange-500"
-                    title="Storage 78% Used"
+                    title={`${t('system.storage')} 78%`}
                   ></div>
                   <span className="text-xs font-medium text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-                    Storage
+                    {t('system.storage')}
                   </span>
                 </div>
                 <Badge
@@ -357,7 +358,7 @@ export function AppSidebar() {
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-semibold">John Doe</span>
                       <span className="truncate text-xs text-muted-foreground">
-                        Admin
+                        {t('user.admin')}
                       </span>
                     </div>
                   </div>
@@ -365,16 +366,16 @@ export function AppSidebar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push("/profile")}>
                   <User className="mr-2 h-4 w-4" />
-                  Profile
+                  {t('user.profile')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/settings")}>
                   <Settings className="mr-2 h-4 w-4" />
-                  Settings
+                  {t('user.settings')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sign out
+                  {t('user.signOut')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

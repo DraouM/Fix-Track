@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,13 +16,21 @@ import { RECEIPT_WIDTH_PRESETS, STICKER_PRESETS } from "@/types/settings";
 import { Printer, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { validatePrintDimensions } from "@/lib/settings";
+import { useTranslation } from "react-i18next";
 
 export function PrintDimensionsCard() {
   const { settings, updateSettings } = useSettings();
-  
-  const [receiptWidth, setReceiptWidth] = useState(settings.printDimensions.receipt.width);
-  const [stickerWidth, setStickerWidth] = useState(settings.printDimensions.sticker.width);
-  const [stickerHeight, setStickerHeight] = useState(settings.printDimensions.sticker.height);
+  const { t } = useTranslation();
+
+  const [receiptWidth, setReceiptWidth] = useState(
+    settings.printDimensions.receipt.width
+  );
+  const [stickerWidth, setStickerWidth] = useState(
+    settings.printDimensions.sticker.width
+  );
+  const [stickerHeight, setStickerHeight] = useState(
+    settings.printDimensions.sticker.height
+  );
 
   const handleReceiptWidthChange = (width: number) => {
     if (validatePrintDimensions(width)) {
@@ -52,9 +66,10 @@ export function PrintDimensionsCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Print Dimensions</CardTitle>
+        <CardTitle>{t("common.print.title")}</CardTitle>
         <CardDescription>
-          Configure thermal printer dimensions for receipts and stickers
+          {t("settings.print.description") ||
+            "Configure thermal printer dimensions for receipts and stickers"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -62,7 +77,7 @@ export function PrintDimensionsCard() {
         <div className="space-y-3">
           <Label className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-purple-500" />
-            Receipt Width (mm)
+            {t("common.print.receipt")} {t("common.print.width")} (mm)
           </Label>
           <div className="flex gap-2">
             {RECEIPT_WIDTH_PRESETS.map((preset) => (
@@ -89,7 +104,8 @@ export function PrintDimensionsCard() {
             <span className="text-sm text-muted-foreground">mm</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Standard thermal receipt printers use 58mm or 80mm paper width
+            {t("settings.print.receipt.note") ||
+              "Standard thermal receipt printers use 58mm or 80mm paper width"}
           </p>
         </div>
 
@@ -97,19 +113,22 @@ export function PrintDimensionsCard() {
         <div className="space-y-3">
           <Label className="flex items-center gap-2">
             <Printer className="h-4 w-4 text-orange-500" />
-            Sticker Dimensions (mm)
+            {t("common.print.sticker")} {t("common.dimensions")} (mm)
           </Label>
           <div className="flex flex-wrap gap-2">
             {STICKER_PRESETS.map((preset) => (
               <Button
                 key={preset.label}
                 variant={
-                  stickerWidth === preset.width && stickerHeight === preset.height
+                  stickerWidth === preset.width &&
+                  stickerHeight === preset.height
                     ? "default"
                     : "outline"
                 }
                 size="sm"
-                onClick={() => handleStickerDimensionsChange(preset.width, preset.height)}
+                onClick={() =>
+                  handleStickerDimensionsChange(preset.width, preset.height)
+                }
               >
                 {preset.label}
               </Button>
@@ -117,8 +136,11 @@ export function PrintDimensionsCard() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Label htmlFor="sticker-width" className="text-sm whitespace-nowrap">
-                Width:
+              <Label
+                htmlFor="sticker-width"
+                className="text-sm whitespace-nowrap"
+              >
+                {t("common.print.width")}:
               </Label>
               <Input
                 id="sticker-width"
@@ -126,7 +148,10 @@ export function PrintDimensionsCard() {
                 value={stickerWidth}
                 onChange={(e) => setStickerWidth(Number(e.target.value))}
                 onBlur={(e) =>
-                  handleStickerDimensionsChange(Number(e.target.value), stickerHeight)
+                  handleStickerDimensionsChange(
+                    Number(e.target.value),
+                    stickerHeight
+                  )
                 }
                 min={1}
                 max={300}
@@ -136,8 +161,11 @@ export function PrintDimensionsCard() {
             </div>
             <span className="text-muted-foreground">×</span>
             <div className="flex items-center gap-2">
-              <Label htmlFor="sticker-height" className="text-sm whitespace-nowrap">
-                Height:
+              <Label
+                htmlFor="sticker-height"
+                className="text-sm whitespace-nowrap"
+              >
+                {t("common.print.height")}:
               </Label>
               <Input
                 id="sticker-height"
@@ -145,7 +173,10 @@ export function PrintDimensionsCard() {
                 value={stickerHeight}
                 onChange={(e) => setStickerHeight(Number(e.target.value))}
                 onBlur={(e) =>
-                  handleStickerDimensionsChange(stickerWidth, Number(e.target.value))
+                  handleStickerDimensionsChange(
+                    stickerWidth,
+                    Number(e.target.value)
+                  )
                 }
                 min={1}
                 max={300}
@@ -155,20 +186,27 @@ export function PrintDimensionsCard() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Common sticker sizes: 2" × 1" (50.8mm × 25.4mm) or 4" × 6" (101.6mm × 152.4mm)
+            {t("settings.print.sticker.note") ||
+              'Common sticker sizes: 2" × 1" (50.8mm × 25.4mm) or 4" × 6" (101.6mm × 152.4mm)'}
           </p>
         </div>
 
         {/* Current Settings Display */}
         <div className="p-4 border rounded-lg bg-muted/30">
-          <h4 className="text-sm font-semibold mb-2">Current Settings</h4>
+          <h4 className="text-sm font-semibold mb-2">
+            {t("settings.current") || "Current Settings"}
+          </h4>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Receipt Width:</span>
+              <span className="text-muted-foreground">
+                {t("common.print.receipt")} {t("common.print.width")}:
+              </span>
               <span className="font-mono font-medium">{receiptWidth}mm</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Sticker Size:</span>
+              <span className="text-muted-foreground">
+                {t("common.print.sticker")} {t("common.size")}:
+              </span>
               <span className="font-mono font-medium">
                 {stickerWidth}mm × {stickerHeight}mm
               </span>

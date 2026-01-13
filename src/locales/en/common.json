@@ -1,0 +1,295 @@
+{
+    "nav": {
+        "dashboard": "Dashboard",
+        "transactions": "Transactions",
+        "inventory": "Inventory",
+        "repairs": "Repairs",
+        "clients": "Clients",
+        "suppliers": "Suppliers",
+        "documentation": "Documentation",
+        "helpSupport": "Help & Support",
+        "settings": "Settings",
+        "operations": "Operations",
+        "management": "Management",
+        "tools": "Tools"
+    },
+    "common": {
+        "search": "Search",
+        "filter": "Filter",
+        "add": "Add",
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "close": "Close",
+        "loading": "Loading...",
+        "noResults": "No results found",
+        "error": "Error",
+        "success": "Success",
+        "warning": "Warning",
+        "info": "Info",
+        "view": "View",
+        "actions": "Actions",
+        "status": "Status",
+        "date": "Date",
+        "amount": "Amount",
+        "total": "Total",
+        "quantity": "Quantity",
+        "price": "Price",
+        "description": "Description",
+        "name": "Name",
+        "type": "Type",
+        "number": "Number",
+        "searchPlaceholder": "Search by ID or Number...",
+        "retry": "Retry",
+        "noTransactions": "No transactions found",
+        "errorLoading": "Error loading transactions",
+        "notes": "Notes",
+        "userInitial": "JD"
+    },
+    "status": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "pending": "Pending",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "online": "Online",
+        "offline": "Offline"
+    },
+    "system": {
+        "status": "System Status",
+        "database": "Database",
+        "server": "Server",
+        "storage": "Storage"
+    },
+    "user": {
+        "profile": "Profile",
+        "settings": "Settings",
+        "signOut": "Sign out",
+        "admin": "Admin"
+    },
+    "settings": {
+        "title": "Settings",
+        "languageCurrency": {
+            "title": "Language & Currency",
+            "description": "Set your preferred language and currency for the application",
+            "language": "Language",
+            "selectLanguage": "Select language",
+            "currency": "Currency",
+            "selectCurrency": "Select currency",
+            "currencyNote": "Currency symbol will appear in column headers",
+            "translationNote": "Language will affect all UI text and labels",
+            "formatPreview": "Format Preview",
+            "samplePrice": "Sample Price",
+            "columnHeader": "Column Header"
+        },
+        "theme": {
+            "title": "Theme",
+            "light": "Light",
+            "dark": "Dark",
+            "system": "System"
+        },
+        "print": {
+            "title": "Print Dimensions",
+            "receipt": "Receipt",
+            "sticker": "Sticker",
+            "width": "Width",
+            "height": "Height"
+        }
+    },
+    "app": {
+        "name": "FixTrack",
+        "tagline": "Repair Management System"
+    },
+    "transactions": {
+        "title": "Transactions",
+        "newTransaction": "New Transaction",
+        "sale": "Sale",
+        "purchase": "Purchase",
+        "payment": "Payment",
+        "refund": "Refund"
+    },
+    "inventory": {
+        "title": "Inventory",
+        "addItem": "Add Item",
+        "stockLevel": "Stock Level",
+        "lowStock": "Low Stock",
+        "outOfStock": "Out of Stock",
+        "inStock": "In Stock"
+    },
+    "repairs": {
+        "title": "Repairs",
+        "newRepair": "New Repair",
+        "pending": "Pending",
+        "inProgress": "In Progress",
+        "completed": "Completed",
+        "delivered": "Delivered"
+    },
+    "clients": {
+        "title": "Clients",
+        "addClient": "Add Client",
+        "phone": "Phone",
+        "email": "Email",
+        "address": "Address"
+    },
+    "suppliers": {
+        "title": "Suppliers",
+        "addSupplier": "Add Supplier",
+        "contact": "Contact",
+        "balance": "Balance"
+    },
+    "dashboard": {
+        "title": "Business Dashboard",
+        "subtitle": "Real-time overview & financial management",
+        "refresh": "Refresh",
+        "reports": "Reports",
+        "startDay": {
+            "title": "Start Your Day",
+            "description": "Initialize the cash drawer to begin",
+            "openingBalance": "Opening Cash Balance",
+            "startSession": "Start Session"
+        },
+        "tabs": {
+            "overview": "Overview",
+            "cashier": "Cashier",
+            "transactions": "Transactions"
+        },
+        "metrics": {
+            "monthlyRevenue": "Monthly Revenue",
+            "currentMonth": "Current month",
+            "netCash": "Net Cash",
+            "totalCash": "Total Cash: {{amount}}",
+            "activeRepairs": "Active Repairs",
+            "completedCount": "{{count}} completed",
+            "stockAlerts": "Stock Alerts",
+            "outOfStockCount": "{{count}} out of stock"
+        },
+        "charts": {
+            "revenueTrend": "Revenue & Profit Trend",
+            "revenueBreakdown": "Revenue Breakdown",
+            "noData": "No revenue data for this period",
+            "revenue": "Revenue",
+            "profit": "Profit"
+        },
+        "repairs": {
+            "recent": "Recent Repairs",
+            "activeCount": "{{count}} active"
+        },
+        "inventory": {
+            "alerts": "Stock Alerts",
+            "itemsCount": "{{count}} items",
+            "outOfStock": "Out of stock",
+            "lowStock": "Low stock: {{count}} units",
+            "reorder": "Reorder"
+        },
+        "cashier": {
+            "totalIn": "Total In",
+            "allRevenue": "All revenue",
+            "totalOut": "Total Out",
+            "expenses": "Expenses",
+            "netCash": "Net Cash",
+            "balance": "Balance: {{amount}}",
+            "quickActions": "Quick Actions",
+            "quickActionsDesc": "Select an action to perform common tasks quickly",
+            "newSale": "New Sale",
+            "newRepair": "New Repair",
+            "addItem": "Add Item",
+            "addExpense": "Add Expense",
+            "amount": "Amount",
+            "reason": "Reason",
+            "reasonPlaceholder": "e.g., Cleaning supplies",
+            "endOfDay": "End of Day Close-out",
+            "countedAmount": "Counted Amount",
+            "openingBalance": "Opening Balance",
+            "totalRevenue": "Total Revenue (+)",
+            "totalExpenses": "Total Expenses (-)",
+            "expectedCash": "Expected Cash",
+            "withdrawalAmount": "Withdrawal Amount",
+            "closeDay": "Close Day"
+        },
+        "transactions": {
+            "recent": "Today's Transactions",
+            "lastUpdated": "Last updated: {{time}}",
+            "loading": "Loading transactions...",
+            "time": "Time",
+            "category": "Category",
+            "description": "Description",
+            "amount": "Amount",
+            "noTransactions": "No transactions found"
+        }
+    },
+    "transactions_module": {
+        "title": "Transactions",
+        "sale": "Sale",
+        "purchase": "Purchase",
+        "newSale": "New Sale",
+        "newPurchase": "New Purchase",
+        "history": "History",
+        "scanner": {
+            "placeholder": "Search for items to {{action}}...",
+            "barcode": "Barcode",
+            "ready": "Ready to scan...",
+            "noItems": "No items found",
+            "noItemsDesc": "Try searching for something else",
+            "stock": "Stock: {{count}}"
+        },
+        "workspace": {
+            "new": "New {{type}} #{{number}}",
+            "edit": "Edit {{type}}"
+        },
+        "form": {
+            "module": "{{type}} Module",
+            "notesPlaceholder": "Add internal notes, instructions or references for this transaction...",
+            "saveDraft": "Save as Draft",
+            "complete": "Complete {{type}}",
+            "success": "{{type}} {{status}} successfully!",
+            "error": "Failed to save {{type}}: {{error}}",
+            "itemPlaceholder": "Search and add items to begin this transaction",
+            "emptyBasket": "Your basket is empty",
+            "selectPartyError": "Please select a {{type}}",
+            "addItemError": "Please add at least one item",
+            "savedAsDraft": "saved as draft",
+            "completed": "completed"
+        },
+        "party": {
+            "customer": "Customer",
+            "supplier": "Supplier",
+            "details": "{{type}} Details",
+            "select": "Select a {{type}}...",
+            "addNew": "+ Add new {{type}}",
+            "name": "{{type}} Name",
+            "placeholder": "Enter {{type}} name",
+            "add": "Add {{type}}"
+        },
+        "summary": {
+            "title": "Payment Summary",
+            "subtotal": "Subtotal",
+            "total": "Total",
+            "paymentMethod": "Payment Method",
+            "amountReceived": "Amount Received",
+            "amountPaid": "Amount Paid",
+            "change": "Change",
+            "overpaid": "Overpaid",
+            "balanceDue": "Balance Due",
+            "paymentFor": "Payment for {{type}}",
+            "addedToCredit": "Will be added to customer credit",
+            "addedToDebt": "Will be added to supplier debt",
+            "cash": "Cash",
+            "card": "Card",
+            "transfer": "Transfer"
+        },
+        "itemTable": {
+            "title": {
+                "sale": "Current Sale Items",
+                "purchase": "Order Items"
+            },
+            "details": "Item Details",
+            "qty": "Qty",
+            "sellingPrice": "Selling Price",
+            "unitCost": "Unit Cost",
+            "total": "Total",
+            "itemsCount": "{{count}} {{label}}"
+        }
+    }
+}

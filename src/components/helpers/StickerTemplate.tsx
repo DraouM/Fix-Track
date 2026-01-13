@@ -15,6 +15,7 @@ import { Repair } from "@/types/repair";
 import { InventoryItem } from "@/types/inventory";
 import { BarcodeVisual } from "@/components/helpers/BarcodeVisual";
 import { getBarcodeData } from "@/lib/barcode";
+import { useSettings } from "@/context/SettingsContext";
 
 interface StickerTemplateProps {
   data: Repair | InventoryItem;
@@ -22,12 +23,18 @@ interface StickerTemplateProps {
 }
 
 export function StickerTemplate({ data, type }: StickerTemplateProps) {
+  const { settings } = useSettings();
+  const { width, height } = settings.printDimensions.sticker;
   const barcodeData = getBarcodeData(data);
 
   return (
     <BarcodeVisual 
       data={barcodeData} 
       className="sticker-container"
+      style={{
+        width: `${width}mm`,
+        height: `${height}mm`,
+      }}
     />
   );
 }

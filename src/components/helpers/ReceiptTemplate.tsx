@@ -12,6 +12,7 @@ Connection: USB, Bluetooth, or Network
 
 import { Repair } from "@/types/repair";
 import { getShopInfo } from "@/lib/shopInfo";
+import { useSettings } from "@/context/SettingsContext";
 
 interface ReceiptTemplateProps {
   repair: Repair;
@@ -29,6 +30,9 @@ export function ReceiptTemplate({
   includeParts = true,
   logoUrl,
 }: ReceiptTemplateProps) {
+  const { settings } = useSettings();
+  const receiptWidth = settings.printDimensions.receipt.width;
+  
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
@@ -51,7 +55,7 @@ export function ReceiptTemplate({
     <div
       className="thermal-receipt"
       style={{
-        width: "80mm",
+        width: `${receiptWidth}mm`,
         padding: "2mm",
         fontFamily: "'Courier New', Courier, monospace",
         fontSize: "8px",

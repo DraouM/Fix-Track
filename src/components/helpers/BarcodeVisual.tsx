@@ -3,9 +3,10 @@ import { BarcodePrintData } from "@/lib/barcode";
 interface BarcodeVisualProps {
   data: BarcodePrintData;
   className?: string; // Allow external styling if needed
+  style?: React.CSSProperties; // Allow custom styles for dimensions
 }
 
-export function BarcodeVisual({ data, className }: BarcodeVisualProps) {
+export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
   const { barcodeValue, title, mainText, subText } = data;
 
   return (
@@ -25,6 +26,7 @@ export function BarcodeVisual({ data, className }: BarcodeVisualProps) {
         boxSizing: "border-box",
         overflow: "hidden",
         position: "relative", // Ensure it's contained
+        ...style, // Merge custom styles (allows overriding width/height)
       }}
     >
       {/* Title */}

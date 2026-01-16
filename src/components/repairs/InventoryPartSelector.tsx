@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -25,6 +26,7 @@ interface InventoryPartSelectorProps {
 export function InventoryPartSelector({
   onSelect,
 }: InventoryPartSelectorProps) {
+  const { t } = useTranslation();
   const { filteredAndSortedItems: inventoryItems, loading } = useInventory();
   const [open, setOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -51,16 +53,16 @@ export function InventoryPartSelector({
           {selectedItem
             ? selectedItem.itemName
             : loading
-            ? "Loading parts..."
-            : "Select part from inventory..."}
+            ? t('repairs.loadingParts')
+            : t('repairs.selectPart')}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput placeholder="Search parts..." />
+          <CommandInput placeholder={t('repairs.searchParts')} />
           <CommandList>
-            <CommandEmpty>No parts found.</CommandEmpty>
+            <CommandEmpty>{t('repairs.noPartsFound')}</CommandEmpty>
             <CommandGroup>
               {inventoryItems
                 .filter(
@@ -89,8 +91,7 @@ export function InventoryPartSelector({
                     <div className="flex flex-col">
                       <span>{item.itemName}</span>
                       <span className="text-xs text-gray-500">
-                        In stock: {item.quantityInStock} | Price: $
-                        {item.sellingPrice.toFixed(2)}
+                        {t('repairs.inStock', { count: item.quantityInStock })} | {t('repairs.price', { symbol: '$', amount: item.sellingPrice.toFixed(2) })}
                       </span>
                     </div>
                   </CommandItem>

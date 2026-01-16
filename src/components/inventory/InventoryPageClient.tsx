@@ -17,6 +17,9 @@ import {
   PhoneBrand,
   ItemType,
 } from "@/types/inventory";
+import { useTranslation } from "react-i18next";
+import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { StickerPreviewDialog } from "@/components/helpers/StickerPreviewDialog";
 
 import {
   Dialog,
@@ -73,6 +76,11 @@ export function InventoryPageInner() {
   const [historyEvents, setHistoryEvents] = useState<InventoryHistoryEvent[]>(
     []
   );
+
+  const { t } = useTranslation();
+  const { printSticker } = usePrintUtils();
+  const [previewItem, setPreviewItem] = useState<InventoryItem | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -203,10 +211,10 @@ export function InventoryPageInner() {
             </div>
             <div className="flex items-baseline gap-3">
               <h1 className="text-2xl font-black tracking-tight text-foreground">
-                Inventory
+                {t('inventory.title')}
               </h1>
               <p className="hidden md:block text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-60">
-                Stock & parts management
+                {t('inventory.subtitle')}
               </p>
             </div>
           </div>
@@ -216,14 +224,14 @@ export function InventoryPageInner() {
               className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
             >
               <Download className="w-4 h-4 mr-2" />
-              Export
+              {t('common.export')}
             </Button>
             <Button
               variant="outline"
               className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
             >
               <Upload className="w-4 h-4 mr-2" />
-              Import
+              {t('common.import')}
             </Button>
             <Button
               onClick={() => {
@@ -233,7 +241,7 @@ export function InventoryPageInner() {
               className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add Item
+              {t('inventory.addItem')}
             </Button>
           </div>
         </div>
@@ -242,30 +250,30 @@ export function InventoryPageInner() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Package}
-            title="Total Items"
+            title={t('inventory.table.footer', { count: statistics.total, plural: statistics.total !== 1 ? 's' : '' })}
             value={statistics.total}
-            subtitle="Items in inventory"
+            subtitle={t('inventory.subtitle')}
             color="blue"
           />
           <StatCard
             icon={AlertTriangle}
-            title="Low Stock"
+            title={t('inventory.lowStock')}
             value={statistics.lowStock}
-            subtitle={`${statistics.outOfStock} out of stock`}
+            subtitle={t('dashboard.inventory.lowStock', { count: statistics.outOfStock })}
             color="red"
           />
           <StatCard
             icon={DollarSign}
-            title="Total Value"
+            title={t('dashboard.cashier.totalRevenue')}
             value={formatCurrency(statistics.totalValue)}
-            subtitle="Current value"
+            subtitle={t('dashboard.cashier.allRevenue')}
             color="green"
           />
           <StatCard
             icon={TrendingUp}
-            title="Potential Profit"
+            title={t('dashboard.charts.profit')}
             value={formatCurrency(statistics.potentialProfit)}
-            subtitle="Estimated"
+            subtitle={t('dashboard.charts.revenueTrend')}
             color="purple"
           />
         </div>
@@ -276,13 +284,13 @@ export function InventoryPageInner() {
             {/* Search */}
             <div className="flex-1 relative w-full">
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
-                Search Catalog
+                {t('common.search')}
               </span>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/40 w-4 h-4 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Filter items..."
+                  placeholder={t('common.filter')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full h-11 pl-10 pr-4 bg-white border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium"
@@ -293,7 +301,7 @@ export function InventoryPageInner() {
             {/* Brand Filter */}
             <div className="w-full md:w-[180px]">
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
-                Brand
+                {t('inventory.table.brand')}
               </span>
               <Select
                 value={selectedBrand}
@@ -319,7 +327,7 @@ export function InventoryPageInner() {
             {/* Type Filter */}
             <div className="w-full md:w-[180px]">
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
-                Category
+                {t('inventory.table.category')}
               </span>
               <Select
                 value={selectedType}
@@ -352,7 +360,7 @@ export function InventoryPageInner() {
                 className="h-11 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-all"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Reset
+                {t('inventory.bulkActions.clear')}
               </Button>
             )}
           </div>
@@ -383,6 +391,10 @@ export function InventoryPageInner() {
             onDelete={(id) => deleteInventoryItem(id)}
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
+            onPrint={(item) => {
+              setPreviewItem(item);
+              setIsPreviewOpen(true);
+            }}
           />
         )}
 
@@ -422,9 +434,23 @@ export function InventoryPageInner() {
         <InventoryHistoryDialog
           open={!!historyItem}
           onOpenChange={(open) => !open && setHistoryItem(null)}
-          item={historyItem}
+           item={historyItem}
           historyEvents={historyEvents}
         />
+
+        {previewItem && (
+          <StickerPreviewDialog
+            open={isPreviewOpen}
+            onOpenChange={setIsPreviewOpen}
+            item={previewItem}
+            onConfirm={() => {
+              printSticker(previewItem);
+            }}
+            onCancel={() => {
+              setPreviewItem(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );

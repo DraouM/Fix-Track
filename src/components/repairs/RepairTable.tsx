@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useRepairContext } from "@/context/RepairContext";
+import { useSettings } from "@/context/SettingsContext";
 import { useRepairFilters } from "@/hooks/useRepairFilters";
+import { formatCurrency as formatCurrencyCentralized, getLocaleForIntl } from "@/lib/formatters";
 import type { Repair, PaymentStatus } from "@/types/repair";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +32,9 @@ interface RepairTableProps {
 }
 
 export function RepairTable({ onEditRepair }: RepairTableProps) {
+  const { t, i18n } = useTranslation();
   const { repairs, updateRepairStatus, deleteRepair } = useRepairContext();
+  const { settings } = useSettings();
   const { printSticker, printReceipt } = usePrintUtils(); // Add print sticker hook
 
   const [selectedRepair, setSelectedRepair] = useState<Repair | null>(null);
@@ -43,12 +48,26 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
   // ✅ Memoized helpers to prevent re-renders
   const formatCurrency = useCallback(
     (value: number) =>
-      new Intl.NumberFormat("en-US", {
+      formatCurrencyCentralized(value, settings.currency, getLocaleForIntl(i18n.language)),
+    [settings.currency, i18n.language]
+  );
+
+  const formatNumber = useCallback(
+    (value: number) =>
+      new Intl.NumberFormat(getLocaleForIntl(i18n.language), {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(value),
-    []
+    [i18n.language]
   );
+
+  const currencySymbol = useMemo(() => settings.currency === 'MAD' ? 'MAD' : (settings.currency === 'DZD' ? 'DA' : (settings.currency === 'EUR' ? '€' : (settings.currency === 'GBP' ? '£' : '$'))), [settings.currency]);
+  // Actually, I can just use getCurrencySymbol if it exists in settings context, which it does!
+  // Wait, I already have getCurrencySymbol in settings context.
+  
+  const currentSymbol = useSettings().getCurrencySymbol(); 
+  // Wait, useSettings is already called at top.
+  
 
   const getPaymentBadgeProps = useCallback((status: PaymentStatus) => {
     switch (status) {
@@ -79,7 +98,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
 
   const handleDeleteRepair = useCallback(
     (id: string) => {
-      if (window.confirm("Are you sure you want to delete this repair?")) {
+      if (window.confirm(t('repairs.deleteConfirm'))) {
         deleteRepair(id);
       }
     },
@@ -92,11 +111,11 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       try {
         const success = await printSticker(repair);
         if (!success) {
-          alert("Failed to print sticker. Please check your printer settings.");
+          alert(t('repairs.printStickerError'));
         }
       } catch (error) {
         console.error("Error printing sticker:", error);
-        alert("An error occurred while printing the sticker.");
+        alert(t('repairs.printGeneralError'));
       }
     },
     [printSticker]
@@ -108,11 +127,11 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       try {
         const success = await printReceipt(repair);
         if (!success) {
-          alert("Failed to print receipt. Please check your printer settings.");
+          alert(t('repairs.printReceiptError'));
         }
       } catch (error) {
         console.error("Error printing receipt:", error);
-        alert("An error occurred while printing the receipt.");
+        alert(t('repairs.printGeneralError'));
       }
     },
     [printReceipt]
@@ -127,6 +146,8 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       onPaymentDialog: setPaymentDialogRepair,
       updateRepairStatus,
       formatCurrency,
+      formatNumber,
+      currencySymbol: currentSymbol,
       getPaymentBadgeProps,
       onPrintSticker: handlePrintSticker, // Add print sticker action
       onPrintReceipt: handlePrintReceipt, // Add print receipt action
@@ -136,6 +157,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       handleDeleteRepair,
       updateRepairStatus,
       formatCurrency,
+      formatNumber,
       getPaymentBadgeProps,
       handlePrintSticker, // Add print sticker to dependencies
       handlePrintReceipt, // Add print receipt to dependencies
@@ -144,8 +166,8 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
 
   // ✅ Create columns with actions
   const columns = useMemo(
-    () => createRepairColumns(columnActions),
-    [columnActions]
+    () => createRepairColumns(columnActions, t),
+    [columnActions, t]
   );
 
   return (
@@ -155,7 +177,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
         columns={columns}
         data={filteredAndSortedRepairs}
         searchColumn="customerName"
-        searchPlaceholder="Search by customer, device, or description..."
+        searchPlaceholder={t('repairs.searchParts')}
       />
 
       {/* -------------------- Detail Modal -------------------- */}
@@ -178,9 +200,9 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
+            <DialogTitle>{t('repairs.addPayment')}</DialogTitle>
             <DialogDescription>
-              Add a payment for this repair order
+              {t('repairs.financialOverview') || "Add a payment for this repair order"}
             </DialogDescription>
           </DialogHeader>
           {paymentDialogRepair && (

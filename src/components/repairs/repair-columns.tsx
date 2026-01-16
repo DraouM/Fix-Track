@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import type { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
 import { format, formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 // Status color configuration
 const getStatusConfig = (status: RepairStatus) => {
@@ -74,6 +75,8 @@ interface RepairColumnActions {
   onPaymentDialog: (repair: Repair) => void;
   updateRepairStatus: (id: string, status: RepairStatus) => void;
   formatCurrency: (value: number) => string;
+  formatNumber: (value: number) => string;
+  currencySymbol: string;
   getPaymentBadgeProps: (status: PaymentStatus) => {
     variant: "default" | "destructive" | "secondary" | "outline";
     className: string;
@@ -85,11 +88,12 @@ interface RepairColumnActions {
 }
 
 export const createRepairColumns = (
-  actions: RepairColumnActions
+  actions: RepairColumnActions,
+  t: any
 ): ColumnDef<Repair>[] => [
   {
     accessorKey: "customerName",
-    header: "Customer",
+    header: t('repairs.customerName'),
     cell: ({ row }) => {
       const repair = row.original;
       return (
@@ -106,7 +110,7 @@ export const createRepairColumns = (
   },
   {
     accessorKey: "deviceModel",
-    header: "Device",
+    header: t('repairs.device'),
     cell: ({ row }) => {
       const repair = row.original;
       return (
@@ -123,7 +127,7 @@ export const createRepairColumns = (
   },
   {
     accessorKey: "issueDescription",
-    header: "Issue",
+    header: t('repairs.issue'),
     cell: ({ row }) => {
       const issue = row.getValue("issueDescription") as string;
       return (
@@ -137,7 +141,7 @@ export const createRepairColumns = (
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: t('repairs.status'),
     filterFn: (row, id, value) => {
       return row.getValue(id) === value;
     },
@@ -162,7 +166,7 @@ export const createRepairColumns = (
             <SelectValue>
               <div className="flex items-center gap-2">
                 <div className={cn("h-1.5 w-1.5 rounded-full", statusConfig.indicator)}></div>
-                <span className="text-[10px] font-black uppercase tracking-widest">{repair.status}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('repairs.' + repair.status.toLowerCase().replace(' ', ''))}</span>
               </div>
             </SelectValue>
           </SelectTrigger>
@@ -184,7 +188,7 @@ export const createRepairColumns = (
                 >
                    <div className="flex items-center gap-2">
                     <div className={cn("h-1.5 w-1.5 rounded-full", config.indicator)}></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest">{status}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">{t('repairs.' + status.toLowerCase().replace(' ', ''))}</span>
                   </div>
                 </SelectItem>
               );
@@ -195,8 +199,13 @@ export const createRepairColumns = (
     },
   },
   {
-    id: "paymentInfo",
-    header: "Payment",
+    id: "paymentStatus",
+    header: () => (
+      <div className="flex items-center gap-1">
+        {t('transactions_module.payment')}
+        <span className="text-[8px] opacity-60 font-black">({actions.currencySymbol})</span>
+      </div>
+    ),
     filterFn: (row, id, value) => {
       return row.original.paymentStatus === value;
     },
@@ -235,20 +244,20 @@ export const createRepairColumns = (
                 badgeProps.className
               )}
             >
-              {repair.paymentStatus}
+              {t('repairs.' + repair.paymentStatus.toLowerCase().replace(' ', ''))}
             </Badge>
-            <span className="text-xs font-black">{actions.formatCurrency(repair.estimatedCost)}</span>
+            <span className="text-xs font-black">{actions.formatNumber(repair.estimatedCost)}</span>
           </div>
           
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-1.5">
                 <div className="h-1 w-1 rounded-full bg-green-500"></div>
-                <span className="text-[10px] font-bold text-green-700 uppercase">{totalPaid.toFixed(2)}</span>
+                <span className="text-[10px] font-bold text-green-700 uppercase">{actions.formatNumber(totalPaid)}</span>
              </div>
              {remaining > 0 && (
                <div className="flex items-center gap-1.5">
                   <div className="h-1 w-1 rounded-full bg-orange-500"></div>
-                  <span className="text-[10px] font-bold text-orange-700 uppercase">{remaining.toFixed(2)} DUE</span>
+                  <span className="text-[10px] font-bold text-orange-700 uppercase">{actions.formatNumber(remaining)}</span>
                </div>
              )}
           </div>
@@ -258,7 +267,7 @@ export const createRepairColumns = (
   },
   {
     accessorKey: "createdAt",
-    header: "Created",
+    header: t('repairs.created'),
     filterFn: (row, id, value: DateRange) => {
       const rowDate = new Date(row.getValue(id));
       const { from, to } = value;
@@ -286,7 +295,7 @@ export const createRepairColumns = (
   },
   {
     id: "actions",
-    header: "Actions",
+    header: t('common.actions'),
     cell: ({ row }) => {
       const repair = row.original;
       return (
@@ -301,27 +310,27 @@ export const createRepairColumns = (
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 min-w-[160px]">
               <DropdownMenuItem onClick={() => actions.onViewRepair(repair)} className="rounded-xl font-bold text-xs uppercase tracking-wider py-2">
-                <Icons.search className="mr-3 h-4 w-4 opacity-70" /> View Details
+                <Icons.search className="mr-3 h-4 w-4 opacity-70" /> {t('repairs.viewDetails')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => actions.onEditRepair(repair)} className="rounded-xl font-bold text-xs uppercase tracking-wider py-2">
-                <Edit className="mr-3 h-4 w-4 opacity-70" /> Edit Order
+                <Edit className="mr-3 h-4 w-4 opacity-70" /> {t('repairs.editOrder')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => actions.onPaymentDialog(repair)} className="rounded-xl font-bold text-xs uppercase tracking-wider py-2">
-                <DollarSign className="mr-3 h-4 w-4 opacity-70" /> Record Payment
+                <DollarSign className="mr-3 h-4 w-4 opacity-70" /> {t('repairs.addPayment')}
               </DropdownMenuItem>
               <div className="h-px bg-muted my-1 mx-1"></div>
               <DropdownMenuItem onClick={() => actions.onPrintSticker(repair)} className="rounded-xl font-bold text-xs uppercase tracking-wider py-2">
-                <FileText className="mr-3 h-4 w-4 opacity-70" /> Print Sticker
+                <FileText className="mr-3 h-4 w-4 opacity-70" /> {t('repairs.printSticker')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => actions.onPrintReceipt(repair)} className="rounded-xl font-bold text-xs uppercase tracking-wider py-2">
-                <Printer className="mr-3 h-4 w-4 opacity-70" /> Print Receipt
+                <Printer className="mr-3 h-4 w-4 opacity-70" /> {t('repairs.printReceipt')}
               </DropdownMenuItem>
               <div className="h-px bg-muted my-1 mx-1"></div>
               <DropdownMenuItem
                 onClick={() => actions.onDeleteRepair(repair.id)}
                 className="rounded-xl font-bold text-xs uppercase tracking-wider py-2 text-destructive focus:text-destructive focus:bg-destructive/10"
               >
-                <Trash2 className="mr-3 h-4 w-4 opacity-70" /> Delete Order
+                <Trash2 className="mr-3 h-4 w-4 opacity-70" /> {t('repairs.deleteOrder')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -2,6 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,12 +29,15 @@ import RepairForm from "@/components/repairs/RepairForm";
 import { RepairTable } from "@/components/repairs/RepairTable";
 import { RepairDetail } from "@/components/repairs/RepairDetail";
 import type { Repair } from "@/types/repair";
-import { useRepairContext } from "@/context/RepairContext";
-
-import { RepairProvider } from "@/context/RepairContext";
+import { useRepairContext, RepairProvider } from "@/context/RepairContext";
+  
+import {  useSettings } from "@/context/SettingsContext";
+import { formatCurrency as formatCurrencyCentralized, getLocaleForIntl } from "@/lib/formatters";
 
 export function RepairsPageInner() {
+  const { t, i18n } = useTranslation();
   const { repairs } = useRepairContext();
+  const { settings } = useSettings();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [repairToEdit, setRepairToEdit] = useState<Repair | null>(null);
   const [createdRepair, setCreatedRepair] = useState<Repair | null>(null);
@@ -169,10 +173,7 @@ export function RepairsPageInner() {
   }, []);
 
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+    formatCurrencyCentralized(value, settings.currency, getLocaleForIntl(i18n.language));
 
   const StatCard = ({
     icon: Icon,
@@ -238,10 +239,10 @@ export function RepairsPageInner() {
             </div>
             <div className="flex items-baseline gap-3">
               <h1 className="text-2xl font-black tracking-tight text-foreground">
-                Repairs
+                {t('repairs.title')}
               </h1>
               <p className="hidden md:block text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-60">
-                Management & tracking
+                {t('repairs.subtitle')}
               </p>
             </div>
           </div>
@@ -251,7 +252,7 @@ export function RepairsPageInner() {
                 className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export
+                {t('common.export')}
               </Button>
             <Dialog open={isFormOpen} onOpenChange={handleDialogOpenChange}>
               <DialogTrigger asChild>
@@ -260,18 +261,18 @@ export function RepairsPageInner() {
                   className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
                 >
                   <Icons.plusCircle className="mr-2 h-4 w-4" />
-                  Add Repair
+                  {t('repairs.addRepair')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[950px] max-h-[90vh] overflow-y-auto rounded-3xl border-none shadow-2xl">
                 <DialogHeader className="pb-6 border-b">
                   <DialogTitle className="text-2xl font-black">
-                    {repairToEdit ? "Edit Repair" : "New Repair"}
+                    {repairToEdit ? t('repairs.editRepair') : t('repairs.newRepair')}
                   </DialogTitle>
                   <DialogDescription className="font-medium text-muted-foreground">
                     {repairToEdit
-                      ? "Update details for this repair order."
-                      : "Fill in the details for a new repair order."}
+                      ? t('repairs.editDesc') || "Update details for this repair order."
+                      : t('repairs.addDesc') || "Fill in the details for a new repair order."}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="pt-6">
@@ -294,30 +295,30 @@ export function RepairsPageInner() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Wrench}
-            title="Total Repairs"
+            title={t('repairs.totalRepairs')}
             value={statistics.total}
-            subtitle={`${statistics.completed} completed`}
+            subtitle={t('common.completedCount', { count: statistics.completed }) || `${statistics.completed} completed`}
             color="blue"
           />
           <StatCard
             icon={Clock}
-            title="In Progress"
+            title={t('repairs.inprogress')}
             value={statistics.inProgress}
-            subtitle={`${statistics.pending} pending`}
+            subtitle={t('common.pendingCount', { count: statistics.pending }) || `${statistics.pending} pending`}
             color="orange"
           />
           <StatCard
             icon={DollarSign}
-            title="Total Revenue"
+            title={t('repairs.totalRevenue')}
             value={formatCurrency(statistics.totalRevenue)}
-            subtitle="Completed"
+            subtitle={t('repairs.completed')}
             color="green"
           />
           <StatCard
             icon={AlertCircle}
-            title="Outstanding"
+            title={t('repairs.outstanding')}
             value={formatCurrency(statistics.pendingRevenue)}
-            subtitle={`${statistics.unpaidCount} unpaid`}
+            subtitle={t('repairs.unpaidCount', { count: statistics.unpaidCount }) || `${statistics.unpaidCount} unpaid`}
             color="red"
           />
         </div>
@@ -326,7 +327,7 @@ export function RepairsPageInner() {
         <div className="space-y-4">
              <div className="flex items-center gap-3">
                  <div className="h-2 w-2 rounded-full bg-primary"></div>
-                 <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Repair History & Tasks</h2>
+                 <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t('repairs.historyLogs')}</h2>
              </div>
              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <RepairTable onEditRepair={openEditForm} />

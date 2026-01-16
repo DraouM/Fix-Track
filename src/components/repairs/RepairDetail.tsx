@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ import {
   Check,
 } from "lucide-react";
 import { useRepairActions, useRepairContext } from "@/context/RepairContext";
+import { useSettings } from "@/context/SettingsContext";
 import {
   Repair,
   RepairStatus,
@@ -76,9 +78,13 @@ export function RepairDetail({
   open,
   onOpenChange,
 }: RepairDetailProps) {
+  const { t } = useTranslation();
   const { updateRepairStatus, fetchRepairById } = useRepairActions();
   const { getItemById, repairs } = useRepairContext();
+  const { getCurrencySymbol } = useSettings();
   const { printReceipt, printSticker } = usePrintUtils();
+  
+  const currencySymbol = getCurrencySymbol();
 
   const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
   const [isPrintingSticker, setIsPrintingSticker] = useState(false);
@@ -161,7 +167,16 @@ export function RepairDetail({
       dateObj = new Date();
     }
 
-    return dateObj.toLocaleDateString("en-US", {
+    // Determine locale based on the current language
+    const localeValue = t("common.locale", "en-US");
+    const currentLocale =
+      localeValue === "ar-SA"
+        ? "ar-SA"
+        : localeValue === "fr-FR"
+        ? "fr-FR"
+        : "en-US";
+
+    return dateObj.toLocaleDateString(currentLocale, {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -186,7 +201,7 @@ export function RepairDetail({
                   <Wrench className="h-4 w-4 text-white" />
                 </div>
                 <h2 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">
-                  Order Details
+                  {t("repairs.orderDetail")}
                 </h2>
               </div>
               <DialogTitle className="text-2xl font-black">
@@ -196,9 +211,9 @@ export function RepairDetail({
               </DialogTitle>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
+              <div className="text-end hidden sm:block">
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                  Created
+                  {t("repairs.created")}
                 </p>
                 <p className="text-sm font-bold">
                   {formatDate(currentRepair.createdAt)}
@@ -212,7 +227,11 @@ export function RepairDetail({
                 )}
               >
                 <status.icon className="h-3 w-3 mr-2" />
-                {currentRepair.status}
+                {t(
+                  `repairs.${currentRepair.status
+                    .toLowerCase()
+                    .replace(/\s+/g, "")}`
+                ) || currentRepair.status}
               </Badge>
             </div>
           </div>
@@ -228,7 +247,7 @@ export function RepairDetail({
                     <div className="flex items-center gap-2 px-1">
                       <User className="h-3 w-3 text-primary" />
                       <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
-                        Customer information
+                        {t("repairs.customerDevice")}
                       </span>
                     </div>
                     <div className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 hover:border-primary/20 transition-all">
@@ -241,7 +260,7 @@ export function RepairDetail({
                         </p>
                         <p className="text-xs font-bold text-muted-foreground flex items-center gap-1 opacity-60">
                           <SmartphoneNfc className="h-3 w-3" />{" "}
-                          {currentRepair.customerPhone || "NO PHONE"}
+                          {currentRepair.customerPhone || t("repairs.noPhone")}
                         </p>
                       </div>
                     </div>
@@ -252,7 +271,7 @@ export function RepairDetail({
                     <div className="flex items-center gap-2 px-1">
                       <Smartphone className="h-3 w-3 text-primary" />
                       <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
-                        Device Details
+                        {t("repairs.deviceDetails")}
                       </span>
                     </div>
                     <div className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 hover:border-primary/20 transition-all">
@@ -265,7 +284,7 @@ export function RepairDetail({
                           {currentRepair.deviceModel}
                         </p>
                         <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 uppercase tracking-widest">
-                          WARRANTY ACTIVE
+                          {t("repairs.warrantyActive")}
                         </span>
                       </div>
                     </div>
@@ -277,11 +296,11 @@ export function RepairDetail({
                   <div className="flex items-center gap-2 px-1">
                     <AlertCircle className="h-3 w-3 text-orange-500" />
                     <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
-                      Diagnosis & Report
+                      {t("repairs.diagnosisAndReport")}
                     </span>
                   </div>
                   <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm relative overflow-hidden group">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500/40" />
+                    <div className="absolute start-0 top-0 bottom-0 w-1 bg-orange-500/40" />
                     <p className="text-xs font-medium text-gray-700 leading-relaxed italic">
                       "{currentRepair.issueDescription}"
                     </p>
@@ -293,24 +312,24 @@ export function RepairDetail({
                   <div className="flex items-center gap-2 px-1">
                     <CreditCard className="h-3 w-3 text-primary" />
                     <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
-                      Used parts & services
+                      {t("repairs.partsAndServices")}
                     </span>
                   </div>
                   <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-start border-collapse">
                       <thead>
                         <tr className="bg-muted/5 border-b border-gray-50">
                           <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                            Item Description
+                            {t("repairs.itemDescription")}
                           </th>
                           <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground text-center">
-                            Qty
+                            {t("repairs.qty")}
                           </th>
-                          <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground text-right">
-                            Unit Price
+                          <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground text-end">
+                            {t("repairs.unitPrice")}
                           </th>
-                          <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground text-right">
-                            Subtotal
+                          <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground text-end">
+                            {t("repairs.subtotal")}
                           </th>
                         </tr>
                       </thead>
@@ -324,7 +343,7 @@ export function RepairDetail({
                               partAsAny.partName ||
                               partAsAny.name ||
                               partAsAny.part_name ||
-                              "Unknown Part";
+                              t("repairs.customPart");
                             const quantity =
                               partAsAny.quantity || partAsAny.qty || 0;
                             const cost =
@@ -344,11 +363,11 @@ export function RepairDetail({
                                 <td className="px-5 py-3 text-xs font-bold text-center text-gray-500">
                                   {quantity}
                                 </td>
-                                <td className="px-5 py-3 text-xs font-bold text-right text-gray-500">
-                                  ${cost.toFixed(2)}
+                                <td className="px-5 py-3 text-xs font-bold text-end text-gray-500">
+                                  {currencySymbol}{cost.toFixed(2)}
                                 </td>
-                                <td className="px-5 py-3 text-xs font-black text-right text-foreground">
-                                  ${(quantity * cost).toFixed(2)}
+                                <td className="px-5 py-3 text-xs font-black text-end text-foreground">
+                                  {currencySymbol}{(quantity * cost).toFixed(2)}
                                 </td>
                               </tr>
                             );
@@ -359,7 +378,7 @@ export function RepairDetail({
                               colSpan={4}
                               className="px-5 py-10 text-center text-xs font-bold text-muted-foreground opacity-40 uppercase tracking-[0.2em]"
                             >
-                              No parts registered
+                              {t("repairs.noParts")}
                             </td>
                           </tr>
                         )}
@@ -368,12 +387,12 @@ export function RepairDetail({
                         <tr className="bg-muted/5">
                           <td
                             colSpan={3}
-                            className="px-5 py-3 text-[10px] font-black text-right uppercase tracking-widest text-muted-foreground"
+                            className="px-5 py-3 text-[10px] font-black text-end uppercase tracking-widest text-muted-foreground"
                           >
-                            Subtotal (Parts)
+                            {t("repairs.subtotal")} ({t("repairs.parts")})
                           </td>
-                          <td className="px-5 py-3 text-sm font-black text-right text-primary">
-                            $
+                          <td className="px-5 py-3 text-sm font-black text-end text-primary">
+                            {currencySymbol}
                             {(
                               currentRepair.usedParts?.reduce((sum, p) => {
                                 const partAsAny = p as any;
@@ -400,14 +419,16 @@ export function RepairDetail({
                     <div className="flex items-center gap-2">
                       <History className="h-3 w-3 text-primary" />
                       <span className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">
-                        Repair history logs
+                        {t("repairs.historyLogs")}
                       </span>
                     </div>
                     <div className="text-[8px] font-bold text-muted-foreground">
-                      {currentRepairHistory?.length || 0} events
+                      {t("repairs.eventsCount", {
+                        count: currentRepairHistory?.length || 0,
+                      })}
                     </div>
                   </div>
-                  <div className="space-y-3 pl-4 border-l-2 border-gray-100 ml-1">
+                  <div className="space-y-3 ps-4 border-s-2 border-gray-100 ms-1">
                     {currentRepairHistory && currentRepairHistory.length > 0 ? (
                       (() => {
                         const allHistory = [...currentRepairHistory].reverse();
@@ -430,7 +451,14 @@ export function RepairDetail({
                               if (event && typeof event === "object") {
                                 // Check if it's a properly structured event
                                 if (event.type === "StatusChanged") {
-                                  content = `Status: ${event.to}`;
+                                  content = t("repairs.history.statusChanged", {
+                                    to:
+                                      t(
+                                        `repairs.${event.to
+                                          .toLowerCase()
+                                          .replace(/\s+/g, "")}`
+                                      ) || event.to,
+                                  });
                                   icon = (
                                     <ShieldCheck className="h-3 w-3 text-blue-500" />
                                   );
@@ -441,33 +469,41 @@ export function RepairDetail({
                                     eventAsAny.details?.match(
                                       /\$([\d.]+)/
                                     )?.[1] || "0";
-                                  content = `Payment: $${(
+                                  const amount =
                                     eventAsAny.amount ||
                                     eventAsAny.total_amount ||
                                     eventAsAny.payment_amount ||
                                     parseFloat(eventDetailsAmount) ||
-                                    0
-                                  ).toFixed(2)}`; // Shorter text
+                                    0;
+                                  content = t("repairs.history.paymentAdded", {
+                                    symbol: currencySymbol,
+                                    amount: amount.toFixed(2),
+                                  });
                                   icon = (
                                     <CreditCard className="h-3 w-3 text-green-500" />
                                   );
                                 } else if (event.type === "PartAdded") {
                                   const eventAsAny = event as any;
-                                  content = `Part: ${
+                                  const pname =
                                     eventAsAny.partName ||
                                     eventAsAny.name ||
-                                    eventAsAny.part_name
-                                  } (x${
-                                    eventAsAny.qty || eventAsAny.quantity || 1
-                                  })`; // Shorter text
+                                    eventAsAny.part_name;
+                                  const pqty =
+                                    eventAsAny.qty || eventAsAny.quantity || 1;
+                                  content = t("repairs.history.partAdded", {
+                                    name: pname,
+                                    qty: pqty,
+                                  });
                                   icon = (
                                     <Plus className="h-3 w-3 text-orange-500" />
                                   );
                                 } else if (event.type === "Note") {
-                                  content =
-                                    event.text?.length > 30
-                                      ? `${event.text.substring(0, 30)}...`
-                                      : event.text;
+                                  content = t("repairs.history.note", {
+                                    text:
+                                      event.text?.length > 30
+                                        ? `${event.text.substring(0, 30)}...`
+                                        : event.text,
+                                  });
                                   icon = (
                                     <FileText className="h-3 w-3 text-muted-foreground" />
                                   );
@@ -499,33 +535,45 @@ export function RepairDetail({
                                         logAsAny.details?.match(
                                           /\$([\d.]+)/
                                         )?.[1] || "0";
-                                      content = `Payment: $${(
+                                      const pAmount =
                                         logAsAny.amount ||
                                         logAsAny.total_amount ||
                                         logAsAny.payment_amount ||
                                         parseFloat(detailsAmount) ||
-                                        0
-                                      ).toFixed(2)}`; // Shorter text
+                                        0;
+                                      content = t(
+                                        "repairs.history.paymentAdded",
+                                        {
+                                          symbol: currencySymbol,
+                                          amount: pAmount.toFixed(2),
+                                        }
+                                      );
                                       icon = (
                                         <CreditCard className="h-3 w-3 text-green-500" />
                                       );
                                       break;
                                     case "part_added":
-                                      content = `Part: ${
-                                        logAsAny.partName || "Item"
-                                      } (x${logAsAny.qty || 1})`; // Shorter text
+                                      const lpname =
+                                        logAsAny.partName || "Item";
+                                      const lpqty = logAsAny.qty || 1;
+                                      content = t("repairs.history.partAdded", {
+                                        name: lpname,
+                                        qty: lpqty,
+                                      });
                                       icon = (
                                         <Plus className="h-3 w-3 text-orange-500" />
                                       );
                                       break;
                                     case "note":
-                                      content =
-                                        logAsAny.details?.length > 30
-                                          ? `${logAsAny.details.substring(
-                                              0,
-                                              30
-                                            )}...`
-                                          : logAsAny.details;
+                                      content = t("repairs.history.note", {
+                                        text:
+                                          logAsAny.details?.length > 30
+                                            ? `${logAsAny.details.substring(
+                                                0,
+                                                30
+                                              )}...`
+                                            : logAsAny.details,
+                                      });
                                       icon = (
                                         <FileText className="h-3 w-3 text-muted-foreground" />
                                       );
@@ -536,7 +584,7 @@ export function RepairDetail({
                                       );
                                   }
                                 } else {
-                                  content = "Unknown event";
+                                  content = t("repairs.history.unknown");
                                   icon = (
                                     <Clock className="h-3 w-3 text-gray-500" />
                                   );
@@ -545,7 +593,7 @@ export function RepairDetail({
 
                               return (
                                 <div key={idx} className="relative">
-                                  <div className="absolute -left-[1.25rem] top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-primary flex items-center justify-center">
+                                  <div className="absolute -start-[1.25rem] top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-primary flex items-center justify-center">
                                     <div className="h-1 w-1 rounded-full bg-white" />
                                   </div>
                                   <div className="p-2.5 rounded-lg bg-white border border-gray-100 shadow-sm hover:border-primary/20 transition-all">
@@ -579,10 +627,16 @@ export function RepairDetail({
                                     }
                                   >
                                     {isExpanded
-                                      ? `Show less (${
+                                      ? t("common.showLessWithCount", {
+                                          count: allHistory.length - 5,
+                                        }) ||
+                                        `Show less (${
                                           allHistory.length - 5
                                         } hidden)`
-                                      : `+${allHistory.length - 5} more events`}
+                                      : `+${allHistory.length - 5} ${
+                                          t("common.moreEvents") ||
+                                          "more events"
+                                        }`}
                                   </button>
                                 </div>
                               </div>
@@ -592,7 +646,7 @@ export function RepairDetail({
                       })()
                     ) : (
                       <p className="text-xs font-bold text-muted-foreground py-4 uppercase tracking-[0.15em] opacity-40 text-center">
-                        No history events recorded
+                        {t("repairs.noHistory")}
                       </p>
                     )}
                   </div>
@@ -600,11 +654,11 @@ export function RepairDetail({
               </div>
 
               {/* Action Sidebar Area */}
-              <div className="lg:col-span-4 border-l border-gray-100 bg-white p-8 space-y-8 flex flex-col">
+              <div className="lg:col-span-4 border-s border-gray-100 bg-white p-8 space-y-8 flex flex-col">
                 {/* Status Quick Control */}
                 <div className="space-y-3">
                   <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                    Order Status Control
+                    {t("repairs.statusControl")}
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {(
@@ -632,7 +686,8 @@ export function RepairDetail({
                         {currentRepair.status === s && (
                           <Check className="h-3 w-3" />
                         )}
-                        {s}
+                        {t(`repairs.${s.toLowerCase().replace(/\s+/g, "")}`) ||
+                          s}
                       </button>
                     ))}
                   </div>
@@ -641,32 +696,32 @@ export function RepairDetail({
                 {/* Financial Summary Premium UI */}
                 <div className="space-y-3 pt-4 border-t border-gray-50">
                   <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                    Financial Overview
+                    {t("repairs.financialOverview")}
                   </p>
                   <div className="space-y-3">
                     <div className="p-5 rounded-3xl bg-primary/5 border border-primary/10 flex flex-col items-center justify-center relative shadow-inner">
                       <p className="text-[10px] font-black uppercase tracking-[0.15em] text-primary mb-1">
-                        Total Estimated
+                        {t("repairs.totalEstimated")}
                       </p>
                       <p className="text-4xl font-black text-primary tracking-tighter">
-                        ${currentRepair.estimatedCost.toFixed(2)}
+                        {currencySymbol}{currentRepair.estimatedCost.toFixed(2)}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-4 rounded-2xl bg-green-500/5 border border-green-500/10 flex flex-col">
                         <span className="text-[8px] font-black text-green-600 uppercase tracking-widest mb-1">
-                          Paid Amount
+                          {t("repairs.paidAmount")}
                         </span>
                         <span className="text-lg font-black text-green-700">
-                          ${totalPaid.toFixed(2)}
+                          {currencySymbol}{totalPaid.toFixed(2)}
                         </span>
                       </div>
                       <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/10 flex flex-col">
                         <span className="text-[8px] font-black text-red-600 uppercase tracking-widest mb-1">
-                          Total Balance
+                          {t("repairs.totalBalance")}
                         </span>
                         <span className="text-lg font-black text-red-700">
-                          ${remainingBalance.toFixed(2)}
+                          {currencySymbol}{remainingBalance.toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -676,7 +731,7 @@ export function RepairDetail({
                 {/* Payment Form Injection */}
                 <div className="pt-4 border-t border-gray-50 flex-1">
                   <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">
-                    Record New Transaction
+                    {t("repairs.recordNewTransaction")}
                   </p>
                   <div className="p-2 rounded-2xl border border-gray-100/50 bg-gray-50/30">
                     <RepairPaymentForm
@@ -710,7 +765,7 @@ export function RepairDetail({
                     ) : (
                       <Printer className="h-4 w-4 mr-2" />
                     )}
-                    Print Receipt
+                    {t("repairs.printReceipt")}
                   </Button>
                   <Button
                     onClick={async () => {
@@ -726,7 +781,7 @@ export function RepairDetail({
                     ) : (
                       <FileText className="h-4 w-4 mr-2" />
                     )}
-                    Print Sticker
+                    {t("repairs.printSticker")}
                   </Button>
                 </div>
               </div>

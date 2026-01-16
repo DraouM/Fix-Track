@@ -25,7 +25,7 @@ function LayoutContent({ children }: AppLayoutProps) {
       <main
         className={cn(
           "flex-1 transition-all duration-300",
-          state === "expanded" ? "ml-0 pl-64" : "ml-0 pl-0"
+          state === "expanded" ? "ms-0 ps-64" : "ms-0 ps-0"
         )}
       >
         <ErrorBoundary>

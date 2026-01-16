@@ -66,7 +66,10 @@ export function TransactionItemTable({
               : "bg-blue-100/50 border-blue-200 text-blue-700"
           )}
         >
-          {items.length} {items.length === 1 ? "Item" : "Items"}
+          {t("transactions_module.itemTable.itemsCount", { 
+            count: items.length, 
+            label: items.length === 1 ? t("common.item") : t("common.items") 
+          })}
         </span>
       </CardHeader>
       <CardContent className="p-0">

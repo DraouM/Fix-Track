@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -50,8 +51,9 @@ interface DataTableProps<TData, TValue> {
 export function RepairDataTable<TData, TValue>({
   columns,
   data,
-  searchPlaceholder = "Search customers, devices, descriptions...",
+  searchPlaceholder,
 }: DataTableProps<TData, TValue>) {
+  const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -152,7 +154,7 @@ export function RepairDataTable<TData, TValue>({
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={searchPlaceholder}
+            placeholder={searchPlaceholder || t('common.filter')}
             value={globalFilter ?? ""}
             onChange={(event) => setGlobalFilter(event.target.value)}
             className="pl-10 rounded-xl h-11 border-gray-200 focus:ring-primary/20 bg-white"
@@ -164,39 +166,39 @@ export function RepairDataTable<TData, TValue>({
           <div className="flex items-center gap-1">
             <Filter className="h-4 w-4 text-gray-500" />
             <span className="text-sm text-gray-600 hidden sm:block">
-              Filters:
+              {t('common.filters')}
             </span>
           </div>
 
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 bg-white font-bold text-xs uppercase tracking-wider">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t('repairs.status')} />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-none shadow-2xl">
-              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">All Status</SelectItem>
+              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">{t('common.all')} {t('repairs.status')}</SelectItem>
               <SelectItem value="Pending" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  Pending
+                  {t('repairs.pending')}
                 </div>
               </SelectItem>
               <SelectItem value="In Progress" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  In Progress
+                  {t('repairs.inprogress')}
                 </div>
               </SelectItem>
               <SelectItem value="Completed" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  Completed
+                  {t('repairs.completed')}
                 </div>
               </SelectItem>
               <SelectItem value="Delivered" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  Delivered
+                  {t('repairs.delivered')}
                 </div>
               </SelectItem>
             </SelectContent>
@@ -208,32 +210,32 @@ export function RepairDataTable<TData, TValue>({
             onValueChange={setPaymentStatusFilter}
           >
             <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 bg-white font-bold text-xs uppercase tracking-wider">
-              <SelectValue placeholder="Payment" />
+              <SelectValue placeholder={t('transactions_module.payment')} />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-none shadow-2xl">
-              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">All Payments</SelectItem>
+              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">{t('common.all')} {t('transactions_module.payment')}</SelectItem>
               <SelectItem value="Unpaid" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  Unpaid
+                  {t('repairs.unpaid')}
                 </div>
               </SelectItem>
               <SelectItem value="Partially" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  Partially
+                  {t('repairs.partially')}
                 </div>
               </SelectItem>
               <SelectItem value="Paid" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  Paid
+                  {t('repairs.paid')}
                 </div>
               </SelectItem>
               <SelectItem value="Refunded" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                  Refunded
+                  {t('repairs.refunded')}
                 </div>
               </SelectItem>
             </SelectContent>
@@ -243,7 +245,7 @@ export function RepairDataTable<TData, TValue>({
           <DateRangePicker
             date={dateRange}
             onDateChange={setDateRange}
-            placeholder="Pick dates"
+            placeholder={t('common.pickDates')}
             className="w-[180px] h-11 rounded-xl border-gray-200 bg-white"
             showPresets={true}
           />
@@ -270,13 +272,13 @@ export function RepairDataTable<TData, TValue>({
         paymentStatusFilter !== "All" ||
         dateRange?.from) && (
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-gray-600">Active filters:</span>
+          <span className="text-sm text-gray-600">{t('common.activeFilters')}:</span>
           {globalFilter && (
             <Badge
               variant="secondary"
               className="bg-blue-100 text-blue-800 text-xs"
             >
-              Search: "
+              {t('common.search')}: "
               {globalFilter.length > 20
                 ? globalFilter.substring(0, 20) + "..."
                 : globalFilter}
@@ -288,7 +290,7 @@ export function RepairDataTable<TData, TValue>({
               variant="secondary"
               className="bg-green-100 text-green-800 text-xs"
             >
-              Status: {statusFilter}
+              {t('repairs.status')}: {t('repairs.' + statusFilter.toLowerCase().replace(' ', ''))}
             </Badge>
           )}
           {paymentStatusFilter !== "All" && (
@@ -296,7 +298,7 @@ export function RepairDataTable<TData, TValue>({
               variant="secondary"
               className="bg-purple-100 text-purple-800 text-xs"
             >
-              Payment: {paymentStatusFilter}
+              {t('transactions_module.payment')}: {t('repairs.' + paymentStatusFilter.toLowerCase().replace(' ', ''))}
             </Badge>
           )}
           {dateRange?.from && (
@@ -304,7 +306,7 @@ export function RepairDataTable<TData, TValue>({
               variant="secondary"
               className="bg-orange-100 text-orange-800 text-xs"
             >
-              Date: {format(dateRange.from!, "MMM dd")}
+              {t('common.date')}: {format(dateRange.from!, "MMM dd")}
               {dateRange.to && ` - ${format(dateRange.to, "MMM dd")}`}
             </Badge>
           )}
@@ -320,7 +322,7 @@ export function RepairDataTable<TData, TValue>({
             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-7"
           >
             <X className="mr-1 h-3 w-3" />
-            Clear All
+            {t('common.clearAll')}
           </Button>
         </div>
       )}
@@ -370,7 +372,7 @@ export function RepairDataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  {t('common.noResults')}
                 </TableCell>
               </TableRow>
             )}
@@ -381,12 +383,15 @@ export function RepairDataTable<TData, TValue>({
       {/* Pagination */}
       <div className="flex items-center justify-between px-6 py-4 bg-muted/5 border-t">
         <div className="text-sm font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">
-          Showing {table.getRowModel().rows.length} of{" "}
-          {table.getPreFilteredRowModel().rows.length} repair(s)
+          {t('common.showingCount', { 
+            count: table.getRowModel().rows.length, 
+            total: table.getPreFilteredRowModel().rows.length,
+            label: t('repairs.title').toLowerCase()
+          }) || `Showing ${table.getRowModel().rows.length} of ${table.getPreFilteredRowModel().rows.length} repair(s)`}
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Rows per page</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{t('common.rowsPerPage')}</p>
             <Select
               value={`${table.getState().pagination.pageSize}`}
               onValueChange={(value) => {
@@ -408,8 +413,10 @@ export function RepairDataTable<TData, TValue>({
             </Select>
           </div>
           <div className="flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
+            {t('common.pageInfo', { 
+              current: table.getState().pagination.pageIndex + 1, 
+              total: table.getPageCount() 
+            })}
           </div>
           <div className="flex items-center space-x-2">
             <Button

@@ -2,7 +2,7 @@
 
 export type ThemeMode = "light" | "dark";
 export type Language = "en" | "fr" | "ar";
-export type Currency = "USD" | "EUR" | "MAD" | "GBP";
+export type Currency = "USD" | "EUR" | "MAD" | "GBP" | "DZD";
 
 export interface PrintDimensions {
     receipt: {
@@ -29,6 +29,7 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
     EUR: "€",
     MAD: "MAD",
     GBP: "£",
+    DZD: "DA",
 };
 
 // Language display names

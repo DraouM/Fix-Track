@@ -34,8 +34,6 @@ export function TransactionPartySelector({
   const selectedParty = parties.find((p: any) => p.id === selectedId);
 
   const iconColor = type === "Client" ? "text-green-600" : "text-blue-600";
-  const title = type === "Client" ? "Customer" : "Supplier";
-  const label = type === "Client" ? "Customer" : "Supplier";
 
   return (
     <Card className={cn("overflow-hidden border shadow-sm", className)}>
@@ -59,12 +57,12 @@ export function TransactionPartySelector({
                   value={selectedId}
                   onChange={(e) => onSelect(e.target.value)}
                 >
-                  <option value="">Select a {label}...</option>
+                  <option value="">{t("transactions_module.party.select", { type: t(`transactions_module.party.${type.toLowerCase()}`) })}</option>
                   {parties.map((p: any) => (
                     <option key={p.id} value={p.id}>
                       {p.name}{" "}
                       {p.outstandingBalance > 0
-                        ? `(Bal: ${formatCurrency(p.outstandingBalance)})`
+                        ? `(${t("suppliers.balance")}: ${formatCurrency(p.outstandingBalance)})`
                         : ""}
                     </option>
                   ))}

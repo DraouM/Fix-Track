@@ -29,6 +29,8 @@ import {
   Layers
 } from "lucide-react";
 
+import { useTranslation } from "react-i18next";
+
 // --- Props ---
 interface InventoryHistoryDialogProps {
   open: boolean;
@@ -79,6 +81,7 @@ export function InventoryHistoryDialog({
   item,
   historyEvents,
 }: InventoryHistoryDialogProps) {
+  const { t } = useTranslation();
   if (!item) return null;
 
   // Sort history (newest first)
@@ -99,7 +102,7 @@ export function InventoryHistoryDialog({
                 <History className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-black tracking-tight leading-tight">History</DialogTitle>
+                <DialogTitle className="text-lg font-black tracking-tight leading-tight">{t('common.history')}</DialogTitle>
                 <DialogDescription className="text-[9px] font-black uppercase tracking-widest opacity-60">
                    {item.itemName}
                 </DialogDescription>
@@ -111,14 +114,14 @@ export function InventoryHistoryDialog({
                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-2 border border-white/50">
                   <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60 mb-0.5 flex items-center gap-1.5">
                     <Layers className="w-2.5 h-2.5" />
-                    Stock
+                    {t('inventory.table.stock')}
                   </div>
                   <div className="text-sm font-black lead-none">{item.quantityInStock}</div>
                </div>
                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-2 border border-white/50">
                   <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60 mb-0.5 flex items-center gap-1.5">
                     <Calendar className="w-2.5 h-2.5" />
-                    Last Change
+                    {t('repairs.historyLogs').split(' ')[0]} {t('common.date')}
                   </div>
                   <div className="text-[10px] font-bold leading-none">
                     {sortedHistory.length > 0 ? format(new Date(sortedHistory[0].date), "MMM d") : "N/A"}
@@ -127,7 +130,7 @@ export function InventoryHistoryDialog({
                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-2 border border-white/50">
                   <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60 mb-0.5 flex items-center gap-1.5">
                     <Package className="w-2.5 h-2.5" />
-                    Type
+                    {t('common.type')}
                   </div>
                   <div className="text-[9px] font-black uppercase tracking-wider text-primary truncate leading-none">
                     {item.itemType}
@@ -195,21 +198,21 @@ export function InventoryHistoryDialog({
                 <div className="p-3 rounded-full bg-gray-50 mb-2">
                   <Package className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em]">No History</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">{t('repairs.noHistory')}</p>
               </div>
             )}
           </ScrollArea>
         </div>
 
         <div className="p-3 bg-gray-50/50 border-t flex justify-end">
-          <Button 
-            variant="ghost" 
+          <button
             onClick={() => onOpenChange(false)}
             className="h-9 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white"
           >
-            Close
-          </Button>
+            {t('common.close')}
+          </button>
         </div>
+
       </DialogContent>
     </Dialog>
   );

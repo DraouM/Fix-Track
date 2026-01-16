@@ -47,6 +47,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import i18n from "@/lib/i18n";
 
 interface NavItem {
   titleKey: string;
@@ -124,10 +125,16 @@ export function AppSidebar() {
     return pathname.startsWith(href);
   };
 
+  const isRTL = i18n.language === "ar";
+
   return (
     <Sidebar
+      side={isRTL ? "right" : "left"}
       variant="inset"
-      className="fixed left-0 top-0 z-40 h-screen border-r-0 w-64 transition-all duration-300 ease-in-out data-[state=collapsed]:w-16"
+      className={cn(
+        "fixed top-0 z-40 h-screen border-r-0 w-64 transition-all duration-300 ease-in-out data-[state=collapsed]:w-16",
+        isRTL ? "right-0" : "left-0"
+      )}
       collapsible="icon"
     >
       <SidebarHeader className="border-b border-sidebar-border">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import {
   Wrench,
   User,
@@ -18,13 +19,13 @@ import {
   Wallet,
   ArrowRightLeft,
   X,
-  Check
+  Check,
 } from "lucide-react";
-import { 
-  Repair, 
-  RepairStatus, 
-  PaymentStatus, 
-  UsedPartForm 
+import {
+  Repair,
+  RepairStatus,
+  PaymentStatus,
+  UsedPartForm,
 } from "@/types/repair";
 import { useRepairContext } from "@/context/RepairContext";
 import { Button } from "@/components/ui/button";
@@ -52,9 +53,27 @@ import { InventoryPartSelector } from "./InventoryPartSelector";
 import { InventoryItem, PHONE_BRANDS } from "@/types/inventory";
 
 const paymentMethods = [
-  { id: "Cash", label: "Cash", icon: Wallet, color: "text-green-600", bg: "bg-green-50" },
-  { id: "Card", label: "Card", icon: CreditCard, color: "text-blue-600", bg: "bg-blue-50" },
-  { id: "Transfer", label: "Transfer", icon: ArrowRightLeft, color: "text-purple-600", bg: "bg-purple-50" },
+  {
+    id: "Cash",
+    label: "repairs.cash",
+    icon: Wallet,
+    color: "text-green-600",
+    bg: "bg-green-50",
+  },
+  {
+    id: "Card",
+    label: "repairs.card",
+    icon: CreditCard,
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+  },
+  {
+    id: "Transfer",
+    label: "repairs.transfer",
+    icon: ArrowRightLeft,
+    color: "text-purple-600",
+    bg: "bg-purple-50",
+  },
 ];
 
 interface RepairFormProps {
@@ -73,14 +92,18 @@ interface FormData {
   usedParts: UsedPartForm[];
 }
 
-export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps) {
-  const { 
-    createRepair, 
-    updateRepair, 
-    addUsedPart, 
-    deleteUsedPart, 
-    addPayment, 
-    fetchRepairById 
+export default function RepairForm({
+  repairToEdit,
+  onSuccess,
+}: RepairFormProps) {
+  const { t } = useTranslation();
+  const {
+    createRepair,
+    updateRepair,
+    addUsedPart,
+    deleteUsedPart,
+    addPayment,
+    fetchRepairById,
   } = useRepairContext();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,40 +112,46 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
   const [paymentMethod, setPaymentMethod] = useState("Cash");
 
   const form = useForm<FormData>({
-    defaultValues: repairToEdit ? {
-      customerName: repairToEdit.customerName,
-      phoneNumber: repairToEdit.customerPhone || "",
-      deviceBrand: repairToEdit.deviceBrand,
-      deviceModel: repairToEdit.deviceModel,
-      issueDescription: repairToEdit.issueDescription,
-      estimatedCost: repairToEdit.estimatedCost,
-      repairStatus: repairToEdit.status,
-      usedParts: repairToEdit.usedParts?.map(p => ({
-        recordId: p.id,
-        partId: p.part_id || p.id,
-        name: p.partName || "",
-        quantity: p.quantity,
-        unitCost: p.cost || 0
-      })) || []
-    } : {
-      customerName: "",
-      phoneNumber: "",
-      deviceBrand: "",
-      deviceModel: "",
-      issueDescription: "",
-      estimatedCost: 0,
-      repairStatus: "Pending",
-      usedParts: []
-    }
+    defaultValues: repairToEdit
+      ? {
+          customerName: repairToEdit.customerName,
+          phoneNumber: repairToEdit.customerPhone || "",
+          deviceBrand: repairToEdit.deviceBrand,
+          deviceModel: repairToEdit.deviceModel,
+          issueDescription: repairToEdit.issueDescription,
+          estimatedCost: repairToEdit.estimatedCost,
+          repairStatus: repairToEdit.status,
+          usedParts:
+            repairToEdit.usedParts?.map((p) => ({
+              recordId: p.id,
+              partId: p.part_id || p.id,
+              name: p.partName || "",
+              quantity: p.quantity,
+              unitCost: p.cost || 0,
+            })) || [],
+        }
+      : {
+          customerName: "",
+          phoneNumber: "",
+          deviceBrand: "",
+          deviceModel: "",
+          issueDescription: "",
+          estimatedCost: 0,
+          repairStatus: "Pending",
+          usedParts: [],
+        },
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "usedParts"
+    name: "usedParts",
   });
 
   const partsTotal = useMemo(() => {
-    return fields.reduce((sum, part) => sum + (part.quantity * (part.unitCost || 0)), 0);
+    return fields.reduce(
+      (sum, part) => sum + part.quantity * (part.unitCost || 0),
+      0
+    );
   }, [fields]);
 
   // Sync form when repairToEdit changes (highly important for modals)
@@ -136,13 +165,14 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
         issueDescription: repairToEdit.issueDescription,
         estimatedCost: repairToEdit.estimatedCost,
         repairStatus: repairToEdit.status,
-        usedParts: repairToEdit.usedParts?.map(p => ({
+        usedParts:
+          repairToEdit.usedParts?.map((p) => ({
             recordId: p.id,
             partId: p.part_id || p.id,
             name: p.partName || "",
             quantity: p.quantity,
-            unitCost: p.cost || 0
-          })) || []
+            unitCost: p.cost || 0,
+          })) || [],
       });
     }
   }, [repairToEdit, form]);
@@ -158,7 +188,7 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
           deviceModel: values.deviceModel,
           issueDescription: values.issueDescription,
           estimatedCost: Number(values.estimatedCost),
-          status: values.repairStatus
+          status: values.repairStatus,
         });
 
         // Parts diff
@@ -166,21 +196,21 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
         const currentParts = values.usedParts;
 
         for (const p of existingParts) {
-            if (!currentParts.find(cp => cp.recordId === p.id)) {
-                await deleteUsedPart(repairToEdit.id, p.id);
-            }
+          if (!currentParts.find((cp) => cp.recordId === p.id)) {
+            await deleteUsedPart(repairToEdit.id, p.id);
+          }
         }
 
         for (const p of currentParts) {
-            if (!p.recordId) {
-                await addUsedPart(repairToEdit.id, {
-                    repair_id: repairToEdit.id,
-                    part_name: p.name,
-                    cost: p.unitCost,
-                    quantity: p.quantity,
-                    part_id: p.partId
-                });
-            }
+          if (!p.recordId) {
+            await addUsedPart(repairToEdit.id, {
+              repair_id: repairToEdit.id,
+              part_name: p.name,
+              cost: p.unitCost,
+              quantity: p.quantity,
+              part_id: p.partId,
+            });
+          }
         }
       } else {
         const newRepair = await createRepair({
@@ -194,54 +224,60 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
           payment_status: "Unpaid",
           used_parts: [],
           payments: [],
-          history: []
+          history: [],
         });
 
         if (newRepair) {
-            for (const p of values.usedParts) {
-                await addUsedPart(newRepair.id, {
-                    repair_id: newRepair.id,
-                    part_name: p.name,
-                    cost: p.unitCost,
-                    quantity: p.quantity,
-                    part_id: p.partId
-                });
-            }
+          for (const p of values.usedParts) {
+            await addUsedPart(newRepair.id, {
+              repair_id: newRepair.id,
+              part_name: p.name,
+              cost: p.unitCost,
+              quantity: p.quantity,
+              part_id: p.partId,
+            });
+          }
         }
       }
-      toast.success(repairToEdit ? "Repair updated" : "Repair created");
+      toast.success(
+        repairToEdit ? t("repairs.repairUpdated") : t("repairs.repairCreated")
+      );
       onSuccess();
     } catch (error) {
       console.error(error);
-      toast.error("An error occurred while saving");
+      toast.error(t("repairs.saveError"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleAddPayment = async () => {
-    if (!repairToEdit || !paymentAmount || parseFloat(paymentAmount) <= 0) return;
+    if (!repairToEdit || !paymentAmount || parseFloat(paymentAmount) <= 0)
+      return;
     setIsAddingPayment(true);
     try {
-        await addPayment(repairToEdit.id, {
-            repair_id: repairToEdit.id,
-            amount: parseFloat(paymentAmount),
-            method: paymentMethod as any
-        });
-        setPaymentAmount("");
-        toast.success("Payment recorded");
-        await fetchRepairById(repairToEdit.id);
+      await addPayment(repairToEdit.id, {
+        repair_id: repairToEdit.id,
+        amount: parseFloat(paymentAmount),
+        method: paymentMethod as any,
+      });
+      setPaymentAmount("");
+      toast.success(t("repairs.paymentRecorded"));
+      await fetchRepairById(repairToEdit.id);
     } catch (error) {
-        console.error(error);
-        toast.error("Failed to add payment");
+      console.error(error);
+      toast.error(t("repairs.paymentFailed"));
     } finally {
-        setIsAddingPayment(false);
+      setIsAddingPayment(false);
     }
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-6"
+      >
         {/* Left Column - Form Details */}
         <div className="lg:col-span-8 space-y-6">
           {/* Customer & Device */}
@@ -249,7 +285,9 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
             <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between bg-muted/5">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
-                <h2 className="text-[10px] font-black uppercase tracking-widest text-foreground">Customer & Device</h2>
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-foreground">
+                  {t("repairs.customerDevice")}
+                </h2>
               </div>
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,9 +296,15 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
                 name="customerName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">Customer Name</FormLabel>
+                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                      {t("repairs.customerName")}
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter name" {...field} className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold" />
+                      <Input
+                        placeholder={t("common.searchPlaceholder")}
+                        {...field}
+                        className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -271,9 +315,15 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
                 name="phoneNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">Phone Number</FormLabel>
+                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                      {t("repairs.customerPhone")}
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="+1..." {...field} className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold" />
+                      <Input
+                        placeholder="+..."
+                        {...field}
+                        className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -284,16 +334,26 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
                 name="deviceBrand"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">Brand</FormLabel>
+                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                      {t("inventory.form.brand")}
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold">
-                          <SelectValue placeholder="Brand" />
+                          <SelectValue
+                            placeholder={t("inventory.form.brand")}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-2xl border-none shadow-2xl">
-                        {PHONE_BRANDS.map(brand => (
-                          <SelectItem key={brand} value={brand} className="rounded-xl font-bold uppercase text-[10px] tracking-widest">{brand}</SelectItem>
+                        {PHONE_BRANDS.map((brand) => (
+                          <SelectItem
+                            key={brand}
+                            value={brand}
+                            className="rounded-xl font-bold uppercase text-[10px] tracking-widest"
+                          >
+                            {brand}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -306,9 +366,15 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
                 name="deviceModel"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">Model</FormLabel>
+                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                      {t("repairs.model")}
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. iPhone 15" {...field} className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold" />
+                      <Input
+                        placeholder={t("repairs.modelPlaceholder")}
+                        {...field}
+                        className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -321,7 +387,9 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-50 bg-muted/5 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-orange-500" />
-              <h2 className="text-[10px] font-black uppercase tracking-widest text-foreground">Diagnosis</h2>
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-foreground">
+                {t("repairs.diagnosis")}
+              </h2>
             </div>
             <div className="p-6">
               <FormField
@@ -330,10 +398,10 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Describe the issue..." 
-                        className="min-h-[80px] rounded-xl bg-gray-50/50 border-gray-100 font-medium text-xs p-3" 
-                        {...field} 
+                      <Textarea
+                        placeholder={t("repairs.issuePlaceholder")}
+                        className="min-h-[80px] rounded-xl bg-gray-50/50 border-gray-100 font-medium text-xs p-3"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -348,20 +416,45 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
             <div className="px-6 py-4 border-b border-gray-50 bg-muted/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Smartphone className="h-4 w-4 text-blue-500" />
-                <h2 className="text-[10px] font-black uppercase tracking-widest text-foreground">Parts Used</h2>
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-foreground">
+                  {t("repairs.partsUsed")}
+                </h2>
               </div>
-              <span className="text-[10px] font-black text-primary">${partsTotal.toFixed(2)}</span>
+              <span className="text-[10px] font-black text-primary">
+                {t("repairs.price", {
+                  symbol: t("settings.languageCurrency.samplePrice").charAt(0),
+                  amount: partsTotal.toFixed(2),
+                }).replace(/[^\d.]/g, "")}
+              </span>
             </div>
             <div className="p-6 space-y-4">
               {fields.length > 0 && (
                 <div className="space-y-2">
                   {fields.map((field, index) => (
-                    <div key={field.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50/50 border border-gray-100 group transition-all hover:bg-white hover:shadow-sm">
+                    <div
+                      key={field.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50/50 border border-gray-100 group transition-all hover:bg-white hover:shadow-sm"
+                    >
                       <div className="flex-1">
-                        <p className="text-[10px] font-black text-foreground uppercase tracking-tight">{field.name || "Custom Part"}</p>
-                        <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">{field.quantity}x @ ${field.unitCost?.toFixed(2)}</p>
+                        <p className="text-[10px] font-black text-foreground uppercase tracking-tight">
+                          {field.name || t("repairs.customPart")}
+                        </p>
+                        <p className="text-[9px] font-bold text-muted-foreground uppercase opacity-60">
+                          {field.quantity}x @{" "}
+                          {t("repairs.price", {
+                            symbol: "",
+                            amount: field.unitCost?.toFixed(2),
+                          }).trim()}
+                        </p>
                       </div>
-                      <span className="text-xs font-black text-foreground">${(field.quantity * (field.unitCost || 0)).toFixed(2)}</span>
+                      <span className="text-xs font-black text-foreground">
+                        {t("repairs.price", {
+                          symbol: "",
+                          amount: (
+                            field.quantity * (field.unitCost || 0)
+                          ).toFixed(2),
+                        }).trim()}
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -383,7 +476,7 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
                         partId: item.id,
                         name: item.itemName,
                         quantity: 1,
-                        unitCost: (item as any).sellingPrice || 0
+                        unitCost: (item as any).sellingPrice || 0,
                       });
                     }
                   }}
@@ -392,11 +485,18 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => append({ partId: Date.now().toString(), name: "", quantity: 1, unitCost: 0 })}
+                onClick={() =>
+                  append({
+                    partId: Date.now().toString(),
+                    name: "",
+                    quantity: 1,
+                    unitCost: 0,
+                  })
+                }
                 className="w-full text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-all"
               >
                 <Plus className="h-3 w-3 mr-1" />
-                Manual Entry
+                {t("repairs.manualEntry")}
               </Button>
             </div>
           </div>
@@ -412,7 +512,9 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
                 name="repairStatus"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">Status</FormLabel>
+                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                      {t("repairs.status")}
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest">
@@ -420,10 +522,30 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-2xl border-none shadow-2xl">
-                        <SelectItem value="Pending" className="rounded-xl font-black uppercase text-[10px] tracking-widest">Pending</SelectItem>
-                        <SelectItem value="In Progress" className="rounded-xl font-black uppercase text-[10px] tracking-widest">In Progress</SelectItem>
-                        <SelectItem value="Completed" className="rounded-xl font-black uppercase text-[10px] tracking-widest">Completed</SelectItem>
-                        <SelectItem value="Delivered" className="rounded-xl font-black uppercase text-[10px] tracking-widest">Delivered</SelectItem>
+                        <SelectItem
+                          value="Pending"
+                          className="rounded-xl font-black uppercase text-[10px] tracking-widest"
+                        >
+                          {t("repairs.pending")}
+                        </SelectItem>
+                        <SelectItem
+                          value="In Progress"
+                          className="rounded-xl font-black uppercase text-[10px] tracking-widest"
+                        >
+                          {t("repairs.inprogress")}
+                        </SelectItem>
+                        <SelectItem
+                          value="Completed"
+                          className="rounded-xl font-black uppercase text-[10px] tracking-widest"
+                        >
+                          {t("repairs.completed")}
+                        </SelectItem>
+                        <SelectItem
+                          value="Delivered"
+                          className="rounded-xl font-black uppercase text-[10px] tracking-widest"
+                        >
+                          {t("repairs.delivered")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItem>
@@ -440,15 +562,19 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
                 name="estimatedCost"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">Total Cost</FormLabel>
+                    <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
+                      {t("repairs.totalEstimated")}
+                    </FormLabel>
                     <FormControl>
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                          type="number" 
+                        <Input
+                          type="number"
                           {...field}
-                          onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                          className="h-10 pl-8 rounded-xl bg-gray-50/50 border-gray-100 font-black text-lg" 
+                          onChange={(e) =>
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }
+                          className="h-10 pl-8 rounded-xl bg-gray-50/50 border-gray-100 font-black text-lg"
                         />
                       </div>
                     </FormControl>
@@ -457,12 +583,24 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
               />
               <div className="pt-4 border-t border-gray-50 space-y-2">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  <span>Parts</span>
-                  <span>${partsTotal.toFixed(2)}</span>
+                  <span>{t("repairs.parts")}</span>
+                  <span>
+                    {t("repairs.price", {
+                      symbol: "",
+                      amount: partsTotal.toFixed(2),
+                    }).trim()}
+                  </span>
                 </div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  <span>Labor</span>
-                  <span>${(form.watch("estimatedCost") - partsTotal).toFixed(2)}</span>
+                  <span>{t("repairs.labor")}</span>
+                  <span>
+                    {t("repairs.price", {
+                      symbol: "",
+                      amount: (
+                        form.watch("estimatedCost") - partsTotal
+                      ).toFixed(2),
+                    }).trim()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -473,76 +611,115 @@ export default function RepairForm({ repairToEdit, onSuccess }: RepairFormProps)
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="p-6 space-y-4">
                 <div className="p-3 rounded-xl bg-green-50/50 border border-green-100">
-                    <div className="flex justify-between items-baseline">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-green-600">Paid</span>
-                        <span className="text-lg font-black text-green-700">${(repairToEdit.totalPaid || 0).toFixed(2)}</span>
-                    </div>
+                  <div className="flex justify-between items-baseline">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-green-600">
+                      {t("repairs.paid")}
+                    </span>
+                    <span className="text-lg font-black text-green-700">
+                      {t("repairs.price", {
+                        symbol: "",
+                        amount: (repairToEdit.totalPaid || 0).toFixed(2),
+                      }).trim()}
+                    </span>
+                  </div>
                 </div>
                 {(repairToEdit.remainingBalance || 0) > 0 && (
-                    <div className="p-3 rounded-xl bg-red-50/50 border border-red-100">
-                        <div className="flex justify-between items-baseline">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-red-600">Balance</span>
-                            <span className="text-lg font-black text-red-700">${(repairToEdit.remainingBalance || 0).toFixed(2)}</span>
-                        </div>
+                  <div className="p-3 rounded-xl bg-red-50/50 border border-red-100">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-red-600">
+                        {t("repairs.balance")}
+                      </span>
+                      <span className="text-lg font-black text-red-700">
+                        {t("repairs.price", {
+                          symbol: "",
+                          amount: (repairToEdit.remainingBalance || 0).toFixed(
+                            2
+                          ),
+                        }).trim()}
+                      </span>
                     </div>
+                  </div>
                 )}
 
                 <div className="pt-4 border-t border-gray-50 space-y-3">
-                   <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground text-center">Quick Payment</p>
-                   <div className="relative">
-                      <DollarSign className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                      <Input 
-                        placeholder="Amount" 
-                        value={paymentAmount}
-                        onChange={e => setPaymentAmount(e.target.value)}
-                        className="h-9 pl-8 rounded-xl bg-gray-50 border-gray-100 font-bold text-xs" 
-                      />
-                   </div>
-                   <div className="grid grid-cols-3 gap-2">
-                      {paymentMethods.map(m => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => setPaymentMethod(m.id)}
-                          className={cn(
-                            "flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1",
-                            paymentMethod === m.id ? "border-primary bg-primary/5 text-primary" : "border-transparent bg-gray-50 text-muted-foreground opacity-60"
-                          )}
-                        >
-                          <m.icon className="h-3 w-3" />
-                          <span className="text-[7px] font-black uppercase tracking-widest">{m.label}</span>
-                        </button>
-                      ))}
-                   </div>
-                   <Button 
-                    type="button" 
+                  <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground text-center">
+                    {t("repairs.quickPayment")}
+                  </p>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder={t("repairs.amount")}
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      className="h-9 pl-8 rounded-xl bg-gray-50 border-gray-100 font-bold text-xs"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {paymentMethods.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setPaymentMethod(m.id)}
+                        className={cn(
+                          "flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1",
+                          paymentMethod === m.id
+                            ? "border-primary bg-primary/5 text-primary"
+                            : "border-transparent bg-gray-50 text-muted-foreground opacity-60"
+                        )}
+                      >
+                        <m.icon className="h-3 w-3" />
+                        <span className="text-[7px] font-black uppercase tracking-widest">
+                          {t(m.label)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <Button
+                    type="button"
                     onClick={handleAddPayment}
                     disabled={isAddingPayment || !paymentAmount}
                     className="w-full h-9 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black text-[9px] uppercase tracking-widest"
-                   >
-                    Add Payment
-                   </Button>
+                  >
+                    {t("repairs.addPayment")}
+                  </Button>
                 </div>
 
                 {repairToEdit.payments && repairToEdit.payments.length > 0 && (
-                    <div className="pt-4 border-t border-gray-50 space-y-2">
-                        {repairToEdit.payments.slice(0, 2).map((p, i) => (
-                            <div key={i} className="flex items-center justify-between text-[9px] text-muted-foreground font-bold uppercase tracking-wider">
-                                <span>{p.method} • {new Date(p.date).toLocaleDateString()}</span>
-                                <span className="text-green-600">${p.amount.toFixed(2)}</span>
-                            </div>
-                        ))}
-                    </div>
+                  <div className="pt-4 border-t border-gray-50 space-y-2">
+                    {repairToEdit.payments.slice(0, 2).map((p, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between text-[9px] text-muted-foreground font-bold uppercase tracking-wider"
+                      >
+                        <span>
+                          {t(
+                            "repairs." + p.method.toLowerCase().replace(" ", "")
+                          )}{" "}
+                          • {new Date(p.date).toLocaleDateString()}
+                        </span>
+                        <span className="text-green-600">
+                          {t("repairs.price", {
+                            symbol: "",
+                            amount: p.amount.toFixed(2),
+                          }).trim()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
           )}
 
-          <Button 
-            disabled={isSubmitting} 
+          <Button
+            disabled={isSubmitting}
             className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20"
           >
-            {isSubmitting ? "Processing..." : (repairToEdit ? "Update Order" : "Crate Repair")}
+            {isSubmitting
+              ? t("repairs.processing")
+              : repairToEdit
+              ? t("repairs.updateOrder")
+              : t("repairs.createRepair")}
           </Button>
         </div>
       </form>

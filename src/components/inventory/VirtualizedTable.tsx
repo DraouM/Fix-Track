@@ -32,6 +32,7 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronDown,
+  Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -45,6 +46,7 @@ interface VirtualizedTableProps {
   onDelete: (id: string) => void;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
+  onPrint?: (item: InventoryItem) => void;
 }
 
 const ROW_HEIGHT = 64;
@@ -119,6 +121,7 @@ const InventoryRow = memo(function InventoryRow({
   onDelete,
   selectedIds,
   onSelectionChange,
+  onPrint,
 }: {
   item: InventoryItem;
   virtualRow: import("@tanstack/react-virtual").VirtualItem;
@@ -127,6 +130,7 @@ const InventoryRow = memo(function InventoryRow({
   onDelete: (id: string) => void;
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
+  onPrint?: (item: InventoryItem) => void;
 }) {
   const { t } = useTranslation();
   const profit = (item.sellingPrice ?? 0) - (item.buyingPrice ?? 0);
@@ -177,7 +181,7 @@ const InventoryRow = memo(function InventoryRow({
               {item.itemName}
             </span>
             <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-40">
-              {t('common.sku')}: {item.id.split("-")[0]}
+              {t('inventory.sku')}: {item.id.split("-")[0]}
             </span>
           </div>
         </div>
@@ -252,7 +256,7 @@ const InventoryRow = memo(function InventoryRow({
                   isOutOfStock ? "text-red-500" : "text-orange-500"
                 )}
               >
-                {isOutOfStock ? "EMPTY" : "LOW"}
+                {t(isOutOfStock ? 'inventory.table.stockLabels.empty' : 'inventory.table.stockLabels.low')}
               </span>
             )}
           </div>
@@ -292,6 +296,13 @@ const InventoryRow = memo(function InventoryRow({
               <Info className="h-4 w-4 mr-3 opacity-70" /> {t('common.view')} {t('common.history')}
             </DropdownMenuItem>
             <DropdownMenuItem
+              onClick={() => onPrint?.(item)}
+              className="rounded-xl font-bold text-xs uppercase tracking-wider py-2"
+              disabled={!item.barcode}
+            >
+               <Printer className="h-4 w-4 mr-3 opacity-70" /> {t('inventory.printSticker')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={() => onEdit(item)}
               className="rounded-xl font-bold text-xs uppercase tracking-wider py-2 text-primary focus:text-primary focus:bg-primary/5"
             >
@@ -321,6 +332,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
   onDelete,
   selectedIds,
   onSelectionChange,
+  onPrint,
 }: VirtualizedTableProps) {
   const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
@@ -344,72 +356,72 @@ export const VirtualizedTable = memo(function VirtualizedTable({
             <div className="flex-[3] pl-2 min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  {t('common.product')}
+                  {t('inventory.table.product')}
                 </span>
               </div>
             </div>
             <div className="flex-1">
               <SortableHeader
                 columnKey="phoneBrand"
-                tooltip="Sort by brand"
+                tooltip={t('inventory.table.tooltips.brand')}
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                {t('common.brand')}
+                {t('inventory.table.brand')}
               </SortableHeader>
             </div>
             <div className="flex-1">
               <SortableHeader
                 columnKey="itemType"
-                tooltip="Sort by category"
+                tooltip={t('inventory.table.tooltips.category')}
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                {t('common.category')}
+                {t('inventory.table.category')}
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
               <SortableHeader
                 columnKey="buyingPrice"
-                tooltip="Sort by cost"
+                tooltip={t('inventory.table.tooltips.cost')}
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                {t('common.cost')}
+                {t('inventory.table.cost')}
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
               <SortableHeader
                 columnKey="sellingPrice"
-                tooltip="Sort by price"
+                tooltip={t('inventory.table.tooltips.price')}
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                {t('common.price')}
+                {t('inventory.table.price')}
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
               <SortableHeader
                 columnKey="profit"
-                tooltip="Sort by profit"
+                tooltip={t('inventory.table.tooltips.profit')}
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                {t('common.profit')}
+                {t('inventory.table.profit')}
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
               <SortableHeader
                 columnKey="quantityInStock"
-                tooltip="Sort by stock"
+                tooltip={t('inventory.table.tooltips.stock')}
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                {t('common.stock')}
+                {t('inventory.table.stock')}
               </SortableHeader>
             </div>
             <div className="w-24 text-center pr-4 text-muted-foreground/60 text-[10px] font-black uppercase tracking-widest">
-              Actions
+              {t('inventory.table.actions')}
             </div>
           </div>
         </div>
@@ -441,6 +453,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                     onDelete={onDelete}
                     selectedIds={selectedIds}
                     onSelectionChange={onSelectionChange}
+                    onPrint={onPrint}
                   />
                 );
               })
@@ -451,11 +464,10 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                   <Package className="w-10 h-10 text-muted-foreground/20" />
                 </div>
                 <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">
-                  Inventory is empty
+                  {t('inventory.table.empty')}
                 </h3>
                 <p className="text-muted-foreground max-w-sm text-xs font-bold opacity-60 uppercase tracking-wider">
-                  Add items to your catalog to start tracking stock levels and
-                  potential profits.
+                  {t('inventory.table.emptyDesc')}
                 </p>
               </div>
             ) : null}
@@ -469,11 +481,14 @@ export const VirtualizedTable = memo(function VirtualizedTable({
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-              Showing {items.length} Catalog Item{items.length !== 1 ? "s" : ""}
+              {t('inventory.table.footer', { 
+                count: items.length, 
+                plural: items.length !== 1 ? (t('common.items') === 'Articles' ? 's' : 's') : '' // Simple pluralization logic for now
+              })}
             </span>
           </div>
           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
-            Optimized Virtualized View
+            {t('inventory.table.view')}
           </span>
         </div>
       )}

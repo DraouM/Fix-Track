@@ -79,6 +79,9 @@ export function LanguageCurrencyCard() {
               <SelectItem value="MAD">
                 {CURRENCY_SYMBOLS.MAD} MAD - Moroccan Dirham
               </SelectItem>
+              <SelectItem value="DZD">
+                {CURRENCY_SYMBOLS.DZD} DZD - Algerian Dinar
+              </SelectItem>
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">

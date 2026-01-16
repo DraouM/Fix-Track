@@ -5,6 +5,7 @@ import { InventoryItem } from "@/types/inventory";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { toast } from "sonner";
 import { Printer, RotateCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface InventoryBulkActionsProps {
   items: InventoryItem[];
@@ -17,6 +18,7 @@ export function InventoryBulkActions({
   selectedIds,
   onSelectionChange,
 }: InventoryBulkActionsProps) {
+  const { t } = useTranslation();
   const { printStickersBulk } = usePrintUtils();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -32,7 +34,7 @@ export function InventoryBulkActions({
 
   const handlePrintSelected = async () => {
     if (selectedItems.length === 0) {
-      toast.warning("Please select at least one item to print");
+      toast.warning(t('inventory.bulkActions.printError'));
       return;
     }
 
@@ -59,7 +61,7 @@ export function InventoryBulkActions({
           onCheckedChange={handleSelectAll}
         />
         <label htmlFor="select-all" className="text-sm font-medium">
-          {selectedIds.length === items.length ? "Deselect All" : "Select All"}
+          {selectedIds.length === items.length ? t('inventory.bulkActions.deselectAll') : t('inventory.bulkActions.selectAll')}
         </label>
       </div>
 
@@ -71,7 +73,7 @@ export function InventoryBulkActions({
           disabled={selectedIds.length === 0}
         >
           <RotateCcw className="h-4 w-4 mr-2" />
-          Clear
+          {t('inventory.bulkActions.clear')}
         </Button>
 
         <Button
@@ -81,14 +83,16 @@ export function InventoryBulkActions({
           disabled={selectedIds.length === 0 || isProcessing}
         >
           <Printer className="h-4 w-4 mr-2" />
-          `Print ${selectedIds.length} Sticker$
-          {selectedIds.length !== 1 ? "s" : ""}`
+          {t('inventory.bulkActions.printStickers', { 
+            count: selectedIds.length, 
+            plural: selectedIds.length !== 1 ? 's' : '' 
+          })}
         </Button>
       </div>
 
       {selectedIds.length > 0 && (
         <div className="text-sm text-muted-foreground">
-          {selectedIds.length} of {items.length} selected
+          {t('inventory.bulkActions.selected', { count: selectedIds.length, total: items.length })}
         </div>
       )}
     </div>

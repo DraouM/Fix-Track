@@ -56,7 +56,7 @@ export const getLocaleForIntl = (appLocale: string): string => {
     const map: Record<string, string> = {
         en: 'en-US',
         fr: 'fr-FR',
-        ar: 'ar-MA',
+        ar: 'ar-DZ',
     };
     return map[appLocale] || 'en-US';
 };

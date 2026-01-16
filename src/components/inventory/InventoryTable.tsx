@@ -40,6 +40,7 @@ export interface InventoryTableProps {
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { StickerPreviewDialog } from "@/components/helpers/StickerPreviewDialog";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export const InventoryTable = React.memo(function InventoryTable({
   items,
@@ -49,6 +50,7 @@ export const InventoryTable = React.memo(function InventoryTable({
   onViewHistory,
   onDelete,
 }: InventoryTableProps) {
+  const { t } = useTranslation();
   const { printSticker } = usePrintUtils();
   const [previewItem, setPreviewItem] = useState<InventoryItem | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -104,43 +106,46 @@ export const InventoryTable = React.memo(function InventoryTable({
               <TableHead>
                 <SortableHeader
                   columnKey="itemName"
-                  tooltip="Sort by item name"
+                  tooltip={t('inventory.table.tooltips.name')}
                 >
-                  Name
+                  {t('common.name')}
                 </SortableHeader>
               </TableHead>
-              <TableHead>Brand</TableHead>
-              <TableHead>Type</TableHead>
+              <TableHead>{t('inventory.table.brand')}</TableHead>
+              <TableHead>{t('inventory.table.category')}</TableHead>
               <TableHead className="text-right">
                 <SortableHeader
                   columnKey="buyingPrice"
-                  tooltip="Sort by buying price"
+                  tooltip={t('inventory.table.tooltips.cost')}
                 >
-                  Buying
+                  {t('inventory.table.cost')}
                 </SortableHeader>
               </TableHead>
               <TableHead className="text-right">
                 <SortableHeader
                   columnKey="sellingPrice"
-                  tooltip="Sort by selling price"
+                  tooltip={t('inventory.table.tooltips.price')}
                 >
-                  Selling
+                  {t('inventory.table.price')}
                 </SortableHeader>
               </TableHead>
               <TableHead className="text-right">
-                <SortableHeader columnKey="profit" tooltip="Sort by profit">
-                  Profit
+                <SortableHeader 
+                  columnKey="profit" 
+                  tooltip={t('inventory.table.tooltips.profit')}
+                >
+                  {t('inventory.table.profit')}
                 </SortableHeader>
               </TableHead>
               <TableHead className="text-right">
                 <SortableHeader
                   columnKey="quantityInStock"
-                  tooltip="Sort by stock quantity"
+                  tooltip={t('inventory.table.tooltips.stock')}
                 >
-                  Stock
+                  {t('inventory.table.stock')}
                 </SortableHeader>
               </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">{t('inventory.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           {/* --- Table Body --- */}
@@ -209,7 +214,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                           }}
                           disabled={!item.barcode}
                         >
-                          Print Sticker
+                          {t('inventory.printSticker')}
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -221,16 +226,16 @@ export const InventoryTable = React.memo(function InventoryTable({
                             <DropdownMenuItem
                               onClick={() => onViewHistory(item)}
                             >
-                              View History
+                              {t('common.view')} {t('common.history')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onEdit(item)}>
-                              Edit
+                              {t('common.edit')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => onDelete(item.id)}
                               className="text-destructive"
                             >
-                              Delete
+                              {t('common.delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -242,7 +247,7 @@ export const InventoryTable = React.memo(function InventoryTable({
             ) : (
               <TableRow>
                 <TableCell colSpan={8} className="text-center h-24">
-                  No items found.
+                  {t('inventory.table.empty')}
                 </TableCell>
               </TableRow>
             )}

@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -83,6 +84,7 @@ export function InventoryForm({
   itemToEdit: InventoryItem | null;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const { printSticker } = usePrintUtils();
   const [itemToPrint, setItemToPrint] = useState<InventoryItem | null>(null);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
@@ -170,12 +172,12 @@ export function InventoryForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                Barcode (Scan or Generate)
+                {t('inventory.form.barcode')}
               </FormLabel>
               <div className="flex gap-2">
                 <FormControl>
                   <Input
-                    placeholder="Scan barcode or enter manually..."
+                    placeholder={t('inventory.form.barcodePlaceholder')}
                     className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
                     {...field}
                   />
@@ -186,7 +188,7 @@ export function InventoryForm({
                   className="h-10 px-3 rounded-xl border-2 font-bold text-[10px] uppercase"
                   onClick={() => form.setValue("barcode", generateBarcode())}
                 >
-                  Generate
+                  {t('inventory.form.generate')}
                 </Button>
               </div>
               <FormMessage className="font-bold text-[9px] uppercase tracking-wider ml-1" />
@@ -201,11 +203,11 @@ export function InventoryForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                Product Name
+                {t('inventory.form.productName')}
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="e.g. iPhone 13 Pro Screen"
+                  placeholder={t('inventory.form.productNamePlaceholder')}
                   className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
                   {...field}
                 />
@@ -224,7 +226,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1">
-                  Brand
+                  {t('inventory.form.brand')}
                 </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -237,7 +239,7 @@ export function InventoryForm({
                           !field.value && "text-muted-foreground font-medium"
                         )}
                       >
-                        {field.value || "Select brand"}
+                        {field.value || t('inventory.form.selectBrand')}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
                       </Button>
                     </FormControl>
@@ -245,11 +247,11 @@ export function InventoryForm({
                   <PopoverContent className="w-[240px] p-2 rounded-2xl border-none shadow-2xl">
                     <Command className="rounded-xl">
                       <CommandInput
-                        placeholder="Search brand..."
+                        placeholder={t('inventory.form.searchBrand')}
                         className="h-9 font-bold text-xs"
                       />
                       <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">
-                        No brand found.
+                        {t('inventory.form.noBrand')}
                       </CommandEmpty>
                       <CommandGroup className="max-h-[160px] overflow-auto">
                         {PHONE_BRANDS.map((brand) => (
@@ -288,7 +290,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1">
-                  Category
+                  {t('inventory.form.category')}
                 </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -301,7 +303,7 @@ export function InventoryForm({
                           !field.value && "text-muted-foreground font-medium"
                         )}
                       >
-                        {field.value || "Select type"}
+                        {field.value || t('inventory.form.selectType')}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
                       </Button>
                     </FormControl>
@@ -309,11 +311,11 @@ export function InventoryForm({
                   <PopoverContent className="w-[240px] p-2 rounded-2xl border-none shadow-2xl">
                     <Command className="rounded-xl">
                       <CommandInput
-                        placeholder="Search type..."
+                        placeholder={t('inventory.form.searchType')}
                         className="h-9 font-bold text-xs"
                       />
                       <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">
-                        No type found.
+                        {t('inventory.form.noType')}
                       </CommandEmpty>
                       <CommandGroup className="max-h-[160px] overflow-auto">
                         {ITEM_TYPES.map((type) => (
@@ -354,7 +356,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                  Cost Price ($)
+                  {t('inventory.form.costPrice', { symbol: '$' })}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -374,7 +376,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                  Selling Price ($)
+                  {t('inventory.form.sellingPrice', { symbol: '$' })}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -398,7 +400,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                  Quantity
+                  {t('inventory.form.quantity')}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -417,7 +419,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                  Alert At
+                  {t('inventory.form.alertAt')}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -439,11 +441,11 @@ export function InventoryForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                Supplier & Notes
+                {t('inventory.form.supplierNotes')}
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="e.g. Shenzhen Electronics"
+                  placeholder={t('inventory.form.supplierPlaceholder')}
                   className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
                   {...field}
                   value={field.value ?? ""}
@@ -460,7 +462,7 @@ export function InventoryForm({
             disabled={form.formState.isSubmitting}
             className="w-full h-11 rounded-2xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-[11px] font-black uppercase tracking-[0.2em] transition-all active:scale-95"
           >
-            {itemToEdit ? "Update Item" : "Create Item"}
+            {itemToEdit ? t('inventory.form.update') : t('inventory.form.create')}
           </Button>
         </div>
       </form>

@@ -136,10 +136,10 @@ export function TransactionScanner({
               <ScanLine className="h-6 w-6 text-muted-foreground animate-pulse" />
               <div className="hidden lg:block">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-50">
-                  Barcode
+                  {t("transactions_module.scanner.barcode")}
                 </p>
                 <p className="text-[10px] font-medium text-muted-foreground">
-                  Ready to scan...
+                  {t("transactions_module.scanner.ready")}
                 </p>
               </div>
             </div>
@@ -191,7 +191,7 @@ export function TransactionScanner({
                               : "text-muted-foreground opacity-50"
                           )}
                         >
-                          Stock: {item.quantityInStock ?? 0}
+                          {t("transactions_module.scanner.stock", { count: item.quantityInStock ?? 0 })}
                         </p>
                       </div>
                     </button>

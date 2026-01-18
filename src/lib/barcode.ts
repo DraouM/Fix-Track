@@ -25,9 +25,13 @@ export function getBarcodeData(data: Repair | InventoryItem): BarcodePrintData {
       : item?.barcode || item?.id || "",
     title: isRepair
       ? `${repair?.deviceBrand} ${repair?.deviceModel}`
-      : item?.phoneBrand || "",
-    mainText: isRepair ? repair?.issueDescription || "" : item?.itemName || "",
-    subText: isRepair ? repair?.customerPhone || "" : "", // Removed price from sticker to comply with request
+      : `${item?.phoneBrand} - ${item?.itemType}`,
+    mainText: isRepair
+      ? repair?.customerName || ""
+      : item?.itemName || "",
+    subText: isRepair
+      ? repair?.customerPhone || ""
+      : item?.sellingPrice ? `$${item.sellingPrice.toFixed(2)}` : "",
   };
 }
 

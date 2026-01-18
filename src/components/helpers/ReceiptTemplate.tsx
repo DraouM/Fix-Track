@@ -11,8 +11,9 @@ Connection: USB, Bluetooth, or Network
 */
 
 import { Repair } from "@/types/repair";
-import { getShopInfo } from "@/lib/shopInfo";
 import { useSettings } from "@/context/SettingsContext";
+import { PrintHeader } from "./PrintHeader";
+import { PrintFooter } from "./PrintFooter";
 
 interface ReceiptTemplateProps {
   repair: Repair;
@@ -43,11 +44,6 @@ export function ReceiptTemplate({
     });
   };
 
-  // Get shop information
-  const shopInfo = getShopInfo();
-  // Prefer explicit prop, then shop settings, then test logo fallback for previewing
-  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/logo_shop.svg";
-
   const totalPaid = repair.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const balance = repair.estimatedCost - totalPaid;
 
@@ -64,44 +60,7 @@ export function ReceiptTemplate({
         backgroundColor: "#fff",
       }}
     >
-      {/* Header - Shop Information */}
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: "4px",
-          borderBottom: "1px dashed #000",
-          paddingBottom: "4px",
-        }}
-      >
-        {/* Logo */}
-        {logoSrc && (
-          <div style={{ marginBottom: "2px", textAlign: "center" }}>
-            <img
-              src={logoSrc}
-              alt="Shop Logo"
-              style={{
-                maxWidth: "60mm",
-                maxHeight: "50mm",
-                width: "auto",
-                height: "auto",
-                objectFit: "contain",
-              }}
-            />
-          </div>
-        )}
-
-        {/* Shop Name */}
-        <div
-          style={{ fontSize: "11px", fontWeight: "bold", marginBottom: "1px" }}
-        >
-          {shopInfo.shopName}
-        </div>
-
-        {/* Contact Information */}
-        <div style={{ fontSize: "7px" }}>{shopInfo.address}</div>
-        <div style={{ fontSize: "7px" }}>Tel: {shopInfo.phoneNumber}</div>
-        {/* Email and website hidden to save space */}
-      </div>
+      <PrintHeader logoUrl={logoUrl} />
 
       {/* Receipt Type - Hidden to save space */}
 
@@ -196,21 +155,6 @@ export function ReceiptTemplate({
             <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
               PAYMENTS:
             </div>
-            {/* 
-            {repair.payments.map((payment) => (
-              <div
-                key={payment.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "1px",
-                }}
-              >
-                <span>{formatDate(payment.date)}</span>
-                <span>${payment.amount.toFixed(2)}</span>
-              </div>
-            ))}
-            */}
             <div
               style={{
                 borderTop: "1px solid #000",
@@ -254,15 +198,9 @@ export function ReceiptTemplate({
         </div>
       </div>
 
-      <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
+      <PrintFooter />
 
-      {/* Footer */}
-      <div style={{ textAlign: "center", fontSize: "6px", marginTop: "2px" }}>
-        <div style={{ marginBottom: "1px" }}>Thank you for your business!</div>
-        <div style={{ fontWeight: "bold" }}>Keep this receipt for warranty</div>
-      </div>
-
-      {/* Barcode placeholder - you can add actual barcode library */}
+      {/* Barcode placeholder */}
       <div style={{ textAlign: "center", marginTop: "6px", fontSize: "7px" }}>
         <div
           style={{

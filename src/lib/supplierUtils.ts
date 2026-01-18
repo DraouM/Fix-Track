@@ -421,10 +421,21 @@ const isValidEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-export const formatCurrency = (amount: number): string =>
+// Hardcoded USD currency formatter (deprecated)
+// export const formatCurrency = (amount: number): string =>
+//   new Intl.NumberFormat("en-US", {
+//     style: "currency",
+//     currency: "USD",
+//   }).format(amount);
+
+// Generic currency formatter function
+export const formatCurrency = (
+  amount: number,
+  currencyCode: string = "USD"
+): string =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: currencyCode,
   }).format(amount);
 
 export const formatDate = (date: string | Date): string => {

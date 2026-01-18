@@ -120,3 +120,56 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom Scrollbar Styling for Dark Mode */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.4 0 0); /* Dark gray thumb */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.5 0 0); /* Slightly lighter on hover */
+}
+
+/* Dark mode specific styling */
+.dark ::-webkit-scrollbar-track {
+  background: oklch(0.2 0 0); /* Dark track */
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.5 0 0); /* Lighter thumb for dark mode */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0 0); /* Even lighter on hover in dark mode */
+}
+
+/* For sidebar specifically */
+.sidebar::-webkit-scrollbar-track,
+.sidebar-container::-webkit-scrollbar-track {
+  background: oklch(0.25 0 0);
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.sidebar-container::-webkit-scrollbar-thumb {
+  background: oklch(0.45 0 0);
+}
+
+.dark .sidebar::-webkit-scrollbar-track,
+.dark .sidebar-container::-webkit-scrollbar-track {
+  background: oklch(0.15 0 0);
+}
+
+.dark .sidebar::-webkit-scrollbar-thumb,
+.dark .sidebar-container::-webkit-scrollbar-thumb {
+  background: oklch(0.55 0 0);
+}

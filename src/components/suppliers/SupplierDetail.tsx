@@ -55,6 +55,7 @@ import {
   useSupplierState,
   useSupplierActions,
 } from "@/context/SupplierContext";
+import { useSettings } from "@/context/SettingsContext";
 import { SupplierForm } from "./SupplierForm";
 import { SupplierPaymentModal } from "./SupplierPaymentModal";
 import { getOrdersBySupplier } from "@/lib/api/orders";
@@ -72,6 +73,7 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
   const { suppliers } = useSupplierState();
   const { getSupplierHistory, getSupplierById, initialize } =
     useSupplierActions();
+  const { settings } = useSettings();
 
   const supplier = getSupplierById(supplierId);
 
@@ -411,7 +413,10 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                             : "text-emerald-600 dark:text-emerald-500"
                         )}
                       >
-                        {formatCurrency(supplier.outstandingBalance || 0)}
+                        {formatCurrency(
+                          supplier.outstandingBalance || 0,
+                          settings.currency
+                        )}
                       </h2>
                     </div>
                     <p className="text-[10px] font-bold text-muted-foreground mt-4 uppercase tracking-widest">
@@ -521,7 +526,10 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                             </Badge>
                             {event.amount && (
                               <span className="text-sm font-black text-foreground dark:text-slate-200">
-                                {formatCurrency(event.amount)}
+                                {formatCurrency(
+                                  event.amount,
+                                  settings.currency
+                                )}
                               </span>
                             )}
                           </div>
@@ -599,16 +607,26 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                             </div>
                           </TableCell>
                           <TableCell className="py-5 font-black text-sm text-foreground dark:text-slate-200">
-                            {formatCurrency(order.total_amount)}
+                            {formatCurrency(
+                              order.total_amount,
+                              settings.currency
+                            )}
                           </TableCell>
                           <TableCell className="py-5">
                             <div className="flex flex-col gap-1.5">
                               <div className="flex items-center gap-2 font-black text-[11px] text-foreground/80 dark:text-slate-300">
                                 <span className="text-emerald-600 dark:text-emerald-500">
-                                  {formatCurrency(order.paid_amount)}
+                                  {formatCurrency(
+                                    order.paid_amount,
+                                    settings.currency
+                                  )}
                                 </span>
                                 <span className="text-muted-foreground/30 dark:text-muted-foreground/20">
-                                  / {formatCurrency(order.total_amount)}
+                                  /{" "}
+                                  {formatCurrency(
+                                    order.total_amount,
+                                    settings.currency
+                                  )}
                                 </span>
                               </div>
                             </div>

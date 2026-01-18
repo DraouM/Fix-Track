@@ -28,13 +28,21 @@ export function StickerTemplate({ data, type }: StickerTemplateProps) {
   const barcodeData = getBarcodeData(data);
 
   return (
-    <BarcodeVisual 
-      data={barcodeData} 
-      className="sticker-container"
-      style={{
-        width: `${width}mm`,
-        height: `${height}mm`,
-      }}
-    />
+    <div className="sticker-wrapper">
+      <BarcodeVisual 
+        data={barcodeData} 
+        className="sticker-container"
+        style={{
+          width: `${width}mm`,
+          height: `${height}mm`,
+          padding: "1mm",
+          border: "none", // Stickers usually don't need borders
+        }}
+      />
+      {/* 
+        The BarcodeVisual already handles title (Brand/Model), 
+        mainText (Name/Issue), barcode, and subtext (Price/Phone)
+      */}
+    </div>
   );
 }

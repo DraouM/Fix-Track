@@ -1,11 +1,15 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Repair } from "@/types/repair";
+import { Payment, Repair } from "@/types/repair";
 import { InventoryItem } from "@/types/inventory";
 import { toast } from "sonner";
 import { getShopInfo } from "@/lib/shopInfo";
 import { renderStickerHTML } from "@/lib/barcode";
+import {
+  renderRepairReceiptHTML,
+  renderPaymentReceiptHTML,
+} from "@/lib/printTemplates";
 
 interface PrintOptions {
   includePayments?: boolean;
@@ -49,9 +53,14 @@ export const usePrintUtils = () => {
         return renderStickerHTML(data);
       }
 
-      // Basic Receipt HTML (Placeholder for now to avoid total breakage)
+      if (format === "receipt" && isRepair) {
+        return renderRepairReceiptHTML(repair as Repair, options);
+      }
+
+      // Fallback Receipt HTML
       return `
-        <html><body><h1>Receipt for ${isRepair ? repair?.customerName : item?.itemName
+        <html><body><h1>Receipt for ${
+          isRepair ? repair?.customerName : item?.itemName
         }</h1>
         <script>window.onload = () => { window.print(); window.close(); };</script>
         </body></html>
@@ -114,7 +123,8 @@ export const usePrintUtils = () => {
                 // Success notification after a brief delay
                 setTimeout(() => {
                   toast.success(
-                    `${type === "sticker" ? "Sticker" : "Receipt"
+                    `${
+                      type === "sticker" ? "Sticker" : "Receipt"
                     } sent to printer!`
                   );
                   addToPrintHistory(item, type, true);
@@ -158,7 +168,8 @@ export const usePrintUtils = () => {
                 printWindow.onload = () => {
                   setTimeout(() => {
                     toast.success(
-                      `${type === "sticker" ? "Sticker" : "Receipt"
+                      `${
+                        type === "sticker" ? "Sticker" : "Receipt"
                       } sent to printer!`
                     );
                     addToPrintHistory(item, type, true);
@@ -250,7 +261,10 @@ export const usePrintUtils = () => {
   const printReceipt = useCallback(
     async (repair: Repair, options: PrintOptions = {}) => {
       try {
-        const content = generatePrintContent(repair, { ...options, format: "receipt" });
+        const content = generatePrintContent(repair, {
+          ...options,
+          format: "receipt",
+        });
         return printDocument(content, repair, "receipt");
       } catch (error) {
         const errorMsg =
@@ -261,6 +275,25 @@ export const usePrintUtils = () => {
       }
     },
     [generatePrintContent, printDocument, addToPrintHistory]
+  );
+
+  const printPaymentReceipt = useCallback(
+    async (payment: Payment, customerName?: string, referenceCode?: string) => {
+      try {
+        const content = renderPaymentReceiptHTML(
+          payment,
+          customerName,
+          referenceCode
+        );
+        return printDocument(content, { id: payment.id } as any, "receipt");
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        toast.error(`Failed to generate payment receipt: ${errorMsg}`);
+        return false;
+      }
+    },
+    [printDocument]
   );
 
   const printStickersBulk = useCallback(
@@ -380,6 +413,7 @@ export const usePrintUtils = () => {
 
   return {
     printReceipt,
+    printPaymentReceipt,
     printSticker,
     printStickersBulk,
     printAllStickers,

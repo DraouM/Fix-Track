@@ -71,7 +71,7 @@ export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] dark:bg-slate-900 dark:border-slate-800">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Record Client Payment
@@ -82,9 +82,9 @@ export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentM
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-muted/50 p-4 rounded-lg mb-4 flex justify-between items-center">
+        <div className="bg-muted/50 dark:bg-slate-800/50 p-4 rounded-lg mb-4 flex justify-between items-center border dark:border-slate-800">
           <span className="text-sm font-medium">Current Balance:</span>
-          <span className="text-lg font-bold text-destructive">
+          <span className="text-lg font-bold text-destructive dark:text-red-400">
             {formatCurrency(client.outstandingBalance)}
           </span>
         </div>
@@ -102,6 +102,7 @@ export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentM
                       type="number"
                       step="0.01"
                       placeholder="0.00"
+                      className="rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 focus:bg-white dark:focus:bg-slate-950 font-bold"
                       {...field}
                       onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                     />
@@ -119,11 +120,11 @@ export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentM
                   <FormLabel>Payment Method</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 font-bold">
                         <SelectValue placeholder="Select method" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="dark:bg-slate-900 border-none shadow-2xl">
                       <SelectItem value="Cash">Cash</SelectItem>
                       <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                       <SelectItem value="Check">Check</SelectItem>
@@ -143,7 +144,11 @@ export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentM
                 <FormItem>
                   <FormLabel>Notes (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Receipt number, check number, etc." {...field} />
+                    <Input 
+                      placeholder="Receipt number, check number, etc." 
+                      className="rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 font-bold"
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -151,7 +156,7 @@ export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentM
             />
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="rounded-xl border-2 dark:border-slate-800 font-bold">
                 Cancel
               </Button>
               <Button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700">

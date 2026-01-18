@@ -66,7 +66,7 @@ export function PrintDimensionsCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("common.print.title")}</CardTitle>
+        <CardTitle>{t("settings.print.title")}</CardTitle>
         <CardDescription>
           {t("settings.print.description") ||
             "Configure thermal printer dimensions for receipts and stickers"}
@@ -77,7 +77,7 @@ export function PrintDimensionsCard() {
         <div className="space-y-3">
           <Label className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-purple-500" />
-            {t("common.print.receipt")} {t("common.print.width")} (mm)
+            {t("settings.print.receipt")} {t("settings.print.width")} (mm)
           </Label>
           <div className="flex gap-2">
             {RECEIPT_WIDTH_PRESETS.map((preset) => (
@@ -113,7 +113,7 @@ export function PrintDimensionsCard() {
         <div className="space-y-3">
           <Label className="flex items-center gap-2">
             <Printer className="h-4 w-4 text-orange-500" />
-            {t("common.print.sticker")} {t("common.dimensions")} (mm)
+            {t("settings.print.sticker")} {t("settings.print.dimensions") || "Dimensions"} (mm)
           </Label>
           <div className="flex flex-wrap gap-2">
             {STICKER_PRESETS.map((preset) => (
@@ -140,7 +140,7 @@ export function PrintDimensionsCard() {
                 htmlFor="sticker-width"
                 className="text-sm whitespace-nowrap"
               >
-                {t("common.print.width")}:
+                {t("settings.print.width")}:
               </Label>
               <Input
                 id="sticker-width"
@@ -165,7 +165,7 @@ export function PrintDimensionsCard() {
                 htmlFor="sticker-height"
                 className="text-sm whitespace-nowrap"
               >
-                {t("common.print.height")}:
+                {t("settings.print.height")}:
               </Label>
               <Input
                 id="sticker-height"
@@ -199,13 +199,13 @@ export function PrintDimensionsCard() {
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">
-                {t("common.print.receipt")} {t("common.print.width")}:
+                {t("settings.print.receipt")} {t("settings.print.width")}:
               </span>
               <span className="font-mono font-medium">{receiptWidth}mm</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">
-                {t("common.print.sticker")} {t("common.size")}:
+                {t("settings.print.sticker")} {t("settings.print.size") || "Size"}:
               </span>
               <span className="font-mono font-medium">
                 {stickerWidth}mm × {stickerHeight}mm

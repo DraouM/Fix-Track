@@ -51,7 +51,7 @@ export function InventoryBulkActions({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/50 rounded-lg border">
+    <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/50 dark:bg-slate-900/50 rounded-lg border dark:border-slate-800">
       <div className="flex items-center gap-2">
         <Checkbox
           id="select-all"
@@ -60,7 +60,7 @@ export function InventoryBulkActions({
           }
           onCheckedChange={handleSelectAll}
         />
-        <label htmlFor="select-all" className="text-sm font-medium">
+        <label htmlFor="select-all" className="text-sm font-medium dark:text-slate-300">
           {selectedIds.length === items.length ? t('inventory.bulkActions.deselectAll') : t('inventory.bulkActions.selectAll')}
         </label>
       </div>
@@ -71,6 +71,7 @@ export function InventoryBulkActions({
           size="sm"
           onClick={handleClearSelection}
           disabled={selectedIds.length === 0}
+          className="dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 hover:dark:bg-slate-800 hover:dark:text-slate-100 transition-colors"
         >
           <RotateCcw className="h-4 w-4 mr-2" />
           {t('inventory.bulkActions.clear')}
@@ -81,6 +82,7 @@ export function InventoryBulkActions({
           size="sm"
           onClick={handlePrintSelected}
           disabled={selectedIds.length === 0 || isProcessing}
+          className="dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 hover:dark:bg-slate-800 hover:dark:text-slate-100 transition-colors"
         >
           <Printer className="h-4 w-4 mr-2" />
           {t('inventory.bulkActions.printStickers', { 
@@ -91,7 +93,7 @@ export function InventoryBulkActions({
       </div>
 
       {selectedIds.length > 0 && (
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground dark:text-slate-400">
           {t('inventory.bulkActions.selected', { count: selectedIds.length, total: items.length })}
         </div>
       )}

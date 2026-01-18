@@ -92,9 +92,9 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
   }
 
   const labelStyles =
-    "text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 mb-1 flex items-center gap-2";
+    "text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 dark:text-muted-foreground/50 mb-1 flex items-center gap-2";
   const inputStyles =
-    "h-10 rounded-xl border-2 border-gray-100 bg-white/50 focus:bg-white focus:border-primary/20 focus:ring-0 transition-all font-bold text-sm placeholder:font-medium placeholder:text-muted-foreground/30";
+    "h-10 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 focus:bg-white dark:focus:bg-slate-950 focus:border-primary/20 focus:ring-0 transition-all font-bold text-sm placeholder:font-medium placeholder:text-muted-foreground/30 dark:placeholder:text-muted-foreground/20";
 
   return (
     <Form {...form}>
@@ -244,7 +244,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
                 <FormLabel className={labelStyles}>Account Status</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger
@@ -253,7 +253,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent className="rounded-xl border-none shadow-2xl z-[1001]">
+                  <SelectContent className="rounded-xl border-none shadow-2xl z-[1001] dark:bg-slate-900">
                     {CLIENT_STATUSES.map((status) => (
                       <SelectItem
                         key={status}
@@ -291,14 +291,14 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
           )}
         />
 
-        <div className="flex justify-end gap-4 pt-4 border-t border-gray-100 mt-4">
+        <div className="flex justify-end gap-4 pt-4 border-t border-gray-100 dark:border-slate-800 mt-4">
           {onCancel && (
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
               disabled={loading}
-              className="h-10 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50"
+              className="h-10 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
               Cancel
             </Button>

@@ -98,7 +98,7 @@ export function TransactionScanner({
 
   return (
     <div className="relative w-full" ref={searchRef}>
-      <Card className="border shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+      <Card className="border dark:border-slate-800 shadow-sm overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
         <CardContent className="p-3">
           <div className="relative flex items-center gap-3">
             <div className="relative flex-1 group">
@@ -125,20 +125,20 @@ export function TransactionScanner({
               {query && (
                 <button
                   onClick={() => setQuery("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded-full transition-all"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-muted dark:hover:bg-slate-800 rounded-full transition-all"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4 dark:text-slate-400" />
                 </button>
               )}
             </div>
-            <div className="w-px h-8 bg-muted-foreground/10 hidden sm:block"></div>
+            <div className="w-px h-8 bg-muted-foreground/10 dark:bg-slate-800 hidden sm:block"></div>
             <div className="flex items-center gap-2 px-2">
-              <ScanLine className="h-6 w-6 text-muted-foreground animate-pulse" />
+              <ScanLine className="h-6 w-6 text-muted-foreground dark:text-slate-500 animate-pulse" />
               <div className="hidden lg:block">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-50">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-500 opacity-50">
                   {t("transactions_module.scanner.barcode")}
                 </p>
-                <p className="text-[10px] font-medium text-muted-foreground">
+                <p className="text-[10px] font-medium text-muted-foreground dark:text-slate-400">
                   {t("transactions_module.scanner.ready")}
                 </p>
               </div>
@@ -150,25 +150,25 @@ export function TransactionScanner({
       {/* Results Dropdown */}
       {showResults && (
         <div className="absolute top-full left-0 right-0 mt-2 z-50 animate-in fade-in slide-in-from-top-2">
-          <Card className="border shadow-xl max-h-[400px] overflow-auto">
+          <Card className="border dark:border-slate-800 shadow-xl max-h-[400px] overflow-auto dark:bg-slate-900">
             <CardContent className="p-2">
               {results.length > 0 ? (
                 <div className="space-y-1">
                   {results.map((item) => (
                     <button
                       key={item.id}
-                      className="w-full text-left p-3 hover:bg-muted rounded-lg transition-colors flex items-center justify-between group"
+                      className="w-full text-left p-3 hover:bg-muted dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-between group"
                       onClick={() => handleSelect(item)}
                     >
                       <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                        <div className="h-10 w-10 rounded-lg bg-muted dark:bg-slate-800 flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all">
                           <Package className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="font-bold text-sm text-foreground">
+                          <p className="font-bold text-sm text-foreground dark:text-slate-100">
                             {item.itemName}
                           </p>
-                          <p className="text-[10px] text-muted-foreground uppercase font-medium tracking-tight">
+                          <p className="text-[10px] text-muted-foreground dark:text-slate-400 uppercase font-medium tracking-tight">
                             {item.phoneBrand} • {item.itemType}
                           </p>
                         </div>
@@ -188,7 +188,7 @@ export function TransactionScanner({
                               item.quantityInStock <=
                                 (item.lowStockThreshold || 5)
                               ? "text-destructive"
-                              : "text-muted-foreground opacity-50"
+                              : "text-muted-foreground dark:text-slate-500 opacity-50"
                           )}
                         >
                           {t("transactions_module.scanner.stock", { count: item.quantityInStock ?? 0 })}
@@ -198,12 +198,12 @@ export function TransactionScanner({
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center text-muted-foreground">
+                <div className="py-12 text-center text-muted-foreground dark:text-slate-500">
                   <Package className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                  <p className="text-sm font-medium">
+                  <p className="text-sm font-medium dark:text-slate-400">
                     {t("transactions_module.scanner.noItems")}
                   </p>
-                  <p className="text-xs opacity-60">
+                  <p className="text-xs opacity-60 dark:opacity-40">
                     {t("transactions_module.scanner.noItemsDesc")}
                   </p>
                 </div>

@@ -376,19 +376,19 @@ Carry Forward: ${formatCurrency(carryForward)}`);
     onClick?: React.MouseEventHandler<HTMLDivElement>;
   }) => {
     const colorClasses = {
-      blue: "bg-blue-100 text-blue-600 border-blue-200 hover:border-blue-300",
+      blue: "bg-blue-100 text-blue-600 border-blue-200 hover:border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
       green:
-        "bg-green-100 text-green-600 border-green-200 hover:border-green-300",
+        "bg-green-100 text-green-600 border-green-200 hover:border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
       orange:
-        "bg-orange-100 text-orange-600 border-orange-200 hover:border-orange-300",
-      red: "bg-red-100 text-red-600 border-red-200 hover:border-red-300",
+        "bg-orange-100 text-orange-600 border-orange-200 hover:border-orange-300 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800",
+      red: "bg-red-100 text-red-600 border-red-200 hover:border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
     };
 
     const bgClasses = {
-      blue: "bg-blue-50",
-      green: "bg-green-50",
-      orange: "bg-orange-50",
-      red: "bg-red-50",
+      blue: "bg-blue-50 dark:bg-slate-900/50",
+      green: "bg-green-50 dark:bg-slate-900/50",
+      orange: "bg-orange-50 dark:bg-slate-900/50",
+      red: "bg-red-50 dark:bg-slate-900/50",
     };
 
     return (
@@ -404,7 +404,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
               <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
                 <Icon className="h-5 w-5" />
               </div>
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-gray-600 dark:text-slate-400">
                 {title}
               </CardTitle>
             </div>
@@ -412,8 +412,8 @@ Carry Forward: ${formatCurrency(carryForward)}`);
               <div
                 className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                   trendUp
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                    : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
                 }`}
               >
                 {trendUp ? (
@@ -434,7 +434,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
           >
             {value}
           </div>
-          {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">{subtitle}</p>}
         </CardContent>
       </Card>
     );
@@ -443,9 +443,9 @@ Carry Forward: ${formatCurrency(carryForward)}`);
   const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white dark:bg-slate-900 shadow-sm border-b dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -453,10 +453,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 <Wallet className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                   {t("dashboard.title")}
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   {t("dashboard.subtitle")}
                 </p>
               </div>
@@ -467,13 +467,14 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 size="sm"
                 onClick={handleRefresh}
                 disabled={loading}
+                className="dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 hover:dark:text-slate-100 transition-colors"
               >
                 <RefreshCw
                   className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
                 />
                 {t("dashboard.refresh")}
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 hover:dark:text-slate-100 transition-colors">
                 <FileText className="h-4 w-4 mr-2" />
                 {t("dashboard.reports")}
               </Button>
@@ -484,22 +485,22 @@ Carry Forward: ${formatCurrency(carryForward)}`);
 
       <main className="flex-1 py-6 relative">
         {!currentSession && !loading ? (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-900/10 backdrop-blur-sm px-4">
-            <Card className="w-full max-w-md shadow-2xl border-2 border-blue-500">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-900/10 dark:bg-black/40 backdrop-blur-sm px-4">
+            <Card className="w-full max-w-md shadow-2xl border-2 border-blue-500 dark:bg-slate-900 dark:border-blue-600">
               <CardHeader className="text-center">
-                <div className="mx-auto bg-blue-100 p-3 rounded-full w-fit mb-4">
-                  <Wallet className="h-8 w-8 text-blue-600" />
+                <div className="mx-auto bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full w-fit mb-4">
+                  <Wallet className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                <CardTitle className="text-2xl font-bold">
+                <CardTitle className="text-2xl font-bold dark:text-slate-100">
                   {t("dashboard.startDay.title")}
                 </CardTitle>
-                <p className="text-gray-500">
+                <p className="text-gray-500 dark:text-slate-400">
                   {t("dashboard.startDay.description")}
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">
+                  <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
                     {t("dashboard.startDay.openingBalance")}
                   </label>
                   <div className="relative mt-1">
@@ -509,7 +510,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                       value={openingBalanceInput}
                       onChange={(e) => setOpeningBalanceInput(e.target.value)}
                       placeholder="0.00"
-                      className="pl-10 text-lg h-12"
+                      className="pl-10 text-lg h-12 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                     />
                   </div>
                 </div>
@@ -602,16 +603,18 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={monthlyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis dataKey="date" stroke="#6b7280" />
-                        <YAxis stroke="#6b7280" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" className="dark:stroke-slate-800" />
+                        <XAxis dataKey="date" stroke="#6b7280" className="dark:fill-slate-400" />
+                        <YAxis stroke="#6b7280" className="dark:fill-slate-400" />
                         <Tooltip
                           formatter={(value: any) => formatCurrency(value)}
                           contentStyle={{
-                            backgroundColor: "#fff",
-                            border: "1px solid #e5e7eb",
+                            backgroundColor: "var(--background)",
+                            borderColor: "var(--border)",
                             borderRadius: "8px",
+                            color: "var(--foreground)",
                           }}
+                          itemStyle={{ color: "inherit" }}
                         />
                         <Legend />
                         <Line
@@ -670,6 +673,11 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                             </Pie>
                             <Tooltip
                               formatter={(value: any) => formatCurrency(value)}
+                              contentStyle={{
+                                backgroundColor: "var(--background)",
+                                borderColor: "var(--border)",
+                                borderRadius: "8px",
+                              }}
                             />
                             <Legend />
                           </PieChart>
@@ -707,30 +715,30 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                         .map((repair) => (
                           <div
                             key={repair.id}
-                            className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                            className="flex items-center gap-3 p-3 border border-gray-200 dark:border-slate-800 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/50"
                           >
                             <div
                               className={`p-2 rounded-lg ${
                                 repair.status === "Completed"
-                                  ? "bg-green-100"
+                                  ? "bg-green-100 dark:bg-green-900/30"
                                   : repair.status === "In Progress"
-                                  ? "bg-blue-100"
-                                  : "bg-gray-100"
+                                  ? "bg-blue-100 dark:bg-blue-900/30"
+                                  : "bg-gray-100 dark:bg-slate-800"
                               }`}
                             >
                               {repair.status === "Completed" ? (
-                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                               ) : repair.status === "In Progress" ? (
-                                <Clock className="w-4 h-4 text-blue-600" />
+                                <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                               ) : (
-                                <Clock className="w-4 h-4 text-gray-600" />
+                                <Clock className="w-4 h-4 text-gray-600 dark:text-slate-400" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium text-gray-900 truncate">
+                              <div className="font-medium text-gray-900 dark:text-slate-100 truncate">
                                 {repair.customer}
                               </div>
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-gray-600 dark:text-slate-400">
                                 {repair.device} - {repair.issue}
                               </div>
                             </div>
@@ -772,14 +780,14 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                     {outOfStockItems.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg"
+                        className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg"
                       >
-                        <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                        <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate">
+                          <div className="font-medium text-gray-900 dark:text-slate-100 truncate">
                             {item.name}
                           </div>
-                          <div className="text-sm text-red-600">
+                          <div className="text-sm text-red-600 dark:text-red-400">
                             {t("dashboard.inventory.outOfStock")}
                           </div>
                         </div>
@@ -791,14 +799,14 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                     {lowStockItems.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg"
+                        className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 rounded-lg"
                       >
-                        <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate">
+                          <div className="font-medium text-gray-900 dark:text-slate-100 truncate">
                             {item.name}
                           </div>
-                          <div className="text-sm text-amber-600">
+                          <div className="text-sm text-amber-600 dark:text-amber-400">
                             {t("dashboard.inventory.lowStock", { count: item.stock })}
                           </div>
                         </div>
@@ -840,32 +848,32 @@ Carry Forward: ${formatCurrency(carryForward)}`);
               </div>
 
               {/* Quick Actions */}
-              <Card className="bg-blue-600 text-white border-none shadow-lg mb-6">
+              <Card className="bg-blue-600 dark:bg-blue-700 text-white border-none shadow-lg mb-6">
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                     <div>
                       <h2 className="text-xl font-bold">{t("dashboard.cashier.quickActions")}</h2>
-                      <p className="text-blue-100 italic">
+                      <p className="text-blue-100 dark:text-blue-200 italic">
                         {t("dashboard.cashier.quickActionsDesc")}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <Button
-                        className="bg-white text-blue-600 hover:bg-blue-50"
+                        className="bg-white text-blue-600 hover:bg-blue-50 dark:bg-slate-100 dark:text-blue-700 dark:hover:bg-slate-200"
                         onClick={() => router.push("/transactions?mode=sale")}
                       >
                         <DollarSign className="w-4 h-4 mr-2" />
                         {t("dashboard.cashier.newSale")}
                       </Button>
                       <Button
-                        className="bg-white text-blue-600 hover:bg-blue-50"
+                        className="bg-white text-blue-600 hover:bg-blue-50 dark:bg-slate-100 dark:text-blue-700 dark:hover:bg-slate-200"
                         onClick={() => router.push("/repairs?action=new")}
                       >
                         <Wrench className="w-4 h-4 mr-2" />
                         {t("dashboard.cashier.newRepair")}
                       </Button>
                       <Button
-                        className="bg-white text-blue-600 hover:bg-blue-50"
+                        className="bg-white text-blue-600 hover:bg-blue-50 dark:bg-slate-100 dark:text-blue-700 dark:hover:bg-slate-200"
                         onClick={() => router.push("/inventory?action=add")}
                       >
                         <Package className="w-4 h-4 mr-2" />
@@ -887,7 +895,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium">{t("dashboard.cashier.amount")}</label>
+                      <label className="text-sm font-medium dark:text-slate-300">{t("dashboard.cashier.amount")}</label>
                       <div className="relative mt-1">
                         <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -895,17 +903,17 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           value={expenseAmount}
                           onChange={(e) => setExpenseAmount(e.target.value)}
                           placeholder="0.00"
-                          className="pl-10"
+                          className="pl-10 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">{t("dashboard.cashier.reason")}</label>
+                      <label className="text-sm font-medium dark:text-slate-300">{t("dashboard.cashier.reason")}</label>
                       <Input
                         value={expenseReason}
                         onChange={(e) => setExpenseReason(e.target.value)}
                         placeholder={t("dashboard.cashier.reasonPlaceholder")}
-                        className="mt-1"
+                        className="mt-1 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                       />
                     </div>
                     <Button onClick={handleAddExpense} className="w-full">
@@ -924,7 +932,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium">
+                      <label className="text-sm font-medium dark:text-slate-300">
                         {t("dashboard.cashier.countedAmount")}
                       </label>
                       <div className="relative mt-1">
@@ -934,30 +942,30 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           value={countedAmount}
                           onChange={(e) => setCountedAmount(e.target.value)}
                           placeholder="0.00"
-                          className="pl-10"
+                          className="pl-10 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                         />
                       </div>
                       <div className="text-xs text-muted-foreground mt-2 space-y-1">
                         <div className="flex justify-between">
                           <span>{t("dashboard.cashier.openingBalance")}:</span>
-                          <span>{formatCurrency(openingBalance)}</span>
+                          <span className="dark:text-slate-300">{formatCurrency(openingBalance)}</span>
                         </div>
-                        <div className="flex justify-between text-green-600">
+                        <div className="flex justify-between text-green-600 dark:text-green-400">
                           <span>{t("dashboard.cashier.totalRevenue")}:</span>
                           <span>{formatCurrency(totalIn)}</span>
                         </div>
-                        <div className="flex justify-between text-red-600">
+                        <div className="flex justify-between text-red-600 dark:text-red-400">
                           <span>{t("dashboard.cashier.totalExpenses")}:</span>
                           <span>{formatCurrency(totalOut)}</span>
                         </div>
-                        <div className="flex justify-between font-bold pt-1 border-t">
+                        <div className="flex justify-between font-bold pt-1 border-t dark:border-slate-700 dark:text-slate-100">
                           <span>{t("dashboard.cashier.expectedCash")}:</span>
                           <span>{formatCurrency(expectedCash)}</span>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">
+                      <label className="text-sm font-medium dark:text-slate-300">
                         {t("dashboard.cashier.withdrawalAmount")}
                       </label>
                       <div className="relative mt-1">
@@ -967,7 +975,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                           value={withdrawalAmount}
                           onChange={(e) => setWithdrawalAmount(e.target.value)}
                           placeholder="0.00"
-                          className="pl-10"
+                          className="pl-10 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                         />
                       </div>
                     </div>
@@ -1020,20 +1028,20 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                       <span className="ml-2">{t("dashboard.transactions.loading")}</span>
                     </div>
                   ) : (
-                    <div className="rounded-md border overflow-hidden">
+                    <div className="rounded-md border dark:border-slate-800 overflow-hidden">
                       <table className="w-full">
-                        <thead className="bg-muted/50">
+                        <thead className="bg-muted/50 dark:bg-slate-800/50">
                           <tr>
-                            <th className="text-left p-3 text-sm font-medium">
+                            <th className="text-left p-3 text-sm font-medium dark:text-slate-300">
                               {t("dashboard.transactions.time")}
                             </th>
-                            <th className="text-left p-3 text-sm font-medium">
+                            <th className="text-left p-3 text-sm font-medium dark:text-slate-300">
                               {t("dashboard.transactions.category")}
                             </th>
-                            <th className="text-left p-3 text-sm font-medium">
+                            <th className="text-left p-3 text-sm font-medium dark:text-slate-300">
                               {t("dashboard.transactions.description")}
                             </th>
-                            <th className="text-right p-3 text-sm font-medium">
+                            <th className="text-right p-3 text-sm font-medium dark:text-slate-300">
                               {t("dashboard.transactions.amount")}
                             </th>
                           </tr>
@@ -1043,9 +1051,9 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                             transactions.map((transaction) => (
                               <tr
                                 key={transaction.id}
-                                className="border-b hover:bg-muted/30"
+                                className="border-b dark:border-slate-800 hover:bg-muted/30 dark:hover:bg-slate-800/30"
                               >
-                                <td className="p-3 text-sm">
+                                <td className="p-3 text-sm dark:text-slate-300">
                                   <div className="flex items-center gap-1">
                                     <Calendar className="h-3 w-3 text-muted-foreground" />
                                     {transaction.time}
@@ -1058,18 +1066,19 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                                         ? "default"
                                         : "destructive"
                                     }
+                                    className={transaction.type === "credit" ? "dark:bg-blue-900/40 dark:text-blue-400" : ""}
                                   >
                                     {transaction.category}
                                   </Badge>
                                 </td>
-                                <td className="p-3 text-sm">
+                                <td className="p-3 text-sm dark:text-slate-300">
                                   {transaction.description}
                                 </td>
                                 <td
                                   className={`p-3 text-right font-bold ${
                                     transaction.type === "credit"
-                                      ? "text-green-600"
-                                      : "text-red-600"
+                                      ? "text-green-600 dark:text-green-400"
+                                      : "text-red-600 dark:text-red-400"
                                   }`}
                                 >
                                   {transaction.type === "credit" ? "+" : "-"}

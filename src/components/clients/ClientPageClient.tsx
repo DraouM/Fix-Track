@@ -70,15 +70,15 @@ export default function ClientPageClient() {
     color?: "blue" | "green" | "orange" | "red" | "purple";
   }) => {
     const colorClasses = {
-      blue: "bg-blue-50 text-blue-600",
-      green: "bg-green-50 text-green-600",
-      orange: "bg-orange-50 text-orange-600",
-      red: "bg-red-50 text-red-600",
-      purple: "bg-purple-50 text-purple-600",
+      blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+      green: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+      orange: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+      red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+      purple: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
     };
 
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2.5">
             <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
@@ -101,12 +101,12 @@ export default function ClientPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-8">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <div className="p-2 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary">
               <Users className="h-6 w-6" />
             </div>
             <div className="flex items-baseline gap-3">
@@ -123,7 +123,7 @@ export default function ClientPageClient() {
               variant="outline"
               onClick={() => fetchClients()}
               disabled={loading}
-              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
+              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
               <RefreshCcw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Sync
@@ -135,8 +135,8 @@ export default function ClientPageClient() {
                   Add Client
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-lg max-h-[90vh] rounded-3xl border-none shadow-2xl flex flex-col overflow-hidden p-0">
-                <DialogHeader className="p-6 pb-4 border-b">
+              <DialogContent className="sm:max-w-lg max-h-[90vh] rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden p-0 dark:bg-slate-900">
+                <DialogHeader className="p-6 pb-4 border-b dark:border-slate-800">
                   <DialogTitle className="text-xl font-black">Add New Client</DialogTitle>
                   <DialogDescription className="font-medium text-muted-foreground">
                     Enter the details for the new client record.
@@ -152,8 +152,8 @@ export default function ClientPageClient() {
             </Dialog>
 
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-              <DialogContent className="sm:max-w-lg max-h-[90vh] rounded-3xl border-none shadow-2xl flex flex-col overflow-hidden p-0">
-                <DialogHeader className="p-6 pb-4 border-b">
+              <DialogContent className="sm:max-w-lg max-h-[90vh] rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden p-0 dark:bg-slate-900">
+                <DialogHeader className="p-6 pb-4 border-b dark:border-slate-800">
                   <DialogTitle className="text-xl font-black">Edit Client</DialogTitle>
                   <DialogDescription className="font-medium text-muted-foreground">
                     Update the client's information.
@@ -212,7 +212,7 @@ export default function ClientPageClient() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
           <div className="flex flex-col md:flex-row gap-4 items-end">
             {/* Search */}
             <div className="flex-1 relative w-full">
@@ -224,7 +224,7 @@ export default function ClientPageClient() {
                   placeholder="Filter clients..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-11 pl-10 pr-4 bg-white border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium"
+                  className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-950 border-2 border-gray-100 dark:border-slate-800 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium"
                 />
               </div>
             </div>
@@ -236,10 +236,10 @@ export default function ClientPageClient() {
                 value={activeFilter === "All" ? "all" : activeFilter ? "active" : "inactive"}
                 onValueChange={(v) => setActiveFilter(v === "all" ? "All" : v === "active")}
               >
-                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 bg-white font-bold text-sm">
+                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-sm">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-2xl">
+                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900">
                   <SelectItem value="all" className="font-bold text-xs uppercase py-2.5">All Accounts</SelectItem>
                   <SelectItem value="active" className="font-bold text-xs uppercase py-2.5">Active Only</SelectItem>
                   <SelectItem value="inactive" className="font-bold text-xs uppercase py-2.5">Inactive Only</SelectItem>
@@ -252,7 +252,7 @@ export default function ClientPageClient() {
               <Button
                 variant="ghost"
                 onClick={clearFilters}
-                className="h-11 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-all"
+                className="h-11 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Reset
@@ -262,7 +262,7 @@ export default function ClientPageClient() {
         </div>
 
         {/* Clients Table */}
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
           <ClientTable 
             clients={filteredAndSortedClients} 
             loading={loading}

@@ -227,9 +227,9 @@ export function TransactionForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] pb-24">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 pb-24">
       {/* Top Header Navigation */}
-      <div className="bg-white border-b sticky top-0 z-40 shadow-sm px-6 py-3">
+      <div className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 sticky top-0 z-40 shadow-sm px-6 py-3">
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Button
@@ -248,7 +248,7 @@ export function TransactionForm() {
             <Button
               variant="outline"
               size="sm"
-              className="rounded-lg h-9 font-bold bg-white text-xs uppercase tracking-wider"
+              className="rounded-lg h-9 font-bold bg-white dark:bg-slate-800 text-xs uppercase tracking-wider dark:border-slate-700 dark:text-slate-200 hover:dark:text-slate-100"
               onClick={() => setActiveWorkspaceId("")}
             >
               <History className="h-4 w-4 mr-2 opacity-50" />
@@ -257,17 +257,17 @@ export function TransactionForm() {
             <Button
               variant="outline"
               size="icon"
-              className="rounded-lg h-9 w-9 bg-white"
+              className="rounded-lg h-9 w-9 bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:dark:text-slate-100"
             >
               <Settings className="h-4 w-4" />
             </Button>
-            <div className="h-8 w-px bg-muted-foreground/10 mx-1"></div>
+            <div className="h-8 w-px bg-muted-foreground/10 dark:bg-slate-700 mx-1"></div>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full h-9 w-9 overflow-hidden border p-0"
+              className="rounded-full h-9 w-9 overflow-hidden border dark:border-slate-700 p-0"
             >
-              <div className="h-full w-full bg-primary/10 flex items-center justify-center text-[10px] font-bold">
+              <div className="h-full w-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-[10px] font-bold dark:text-primary-foreground">
                 {t("common.userInitial") || "JD"}
               </div>
             </Button>
@@ -281,7 +281,7 @@ export function TransactionForm() {
           {/* Left Column: Transaction Details (8/12) */}
           <div className="xl:col-span-8 space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
             {/* Context Breadcrumb */}
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground/60 px-1">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400 px-1">
               <LayoutGrid className="h-3 w-3" />
               <span>{t("transactions_module.title")}</span>
               <ChevronRight className="h-3 w-3" />
@@ -289,8 +289,8 @@ export function TransactionForm() {
                 className={cn(
                   "px-2 py-0.5 rounded-md",
                   type === "Sale"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-blue-100 text-blue-700"
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
+                    : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
                 )}
               >
                 {t("transactions_module.form.module", {
@@ -310,9 +310,9 @@ export function TransactionForm() {
             />
 
             {/* Internal Notes Card */}
-            <Card className="border shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+            <Card className="border dark:border-slate-800 shadow-sm overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
               <CardContent className="p-4 flex gap-4 items-center">
-                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground flex-shrink-0">
+                <div className="h-10 w-10 rounded-xl bg-muted dark:bg-slate-800 flex items-center justify-center text-muted-foreground dark:text-slate-400 flex-shrink-0">
                   <MoreHorizontal className="h-5 w-5" />
                 </div>
                 <Input

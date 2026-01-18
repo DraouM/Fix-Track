@@ -116,13 +116,13 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       const updated = {
         ...existing,
-        name: data.name || existing.name,
-        contactName: data.contactName || existing.contactName,
-        email: data.email || existing.email,
-        phone: data.phone || existing.phone,
-        address: data.address || existing.address,
-        notes: data.notes || existing.notes,
-        status: data.status || (existing.status as any),
+        name: data.name ?? existing.name,
+        contactName: data.contactName ?? existing.contactName,
+        email: data.email ?? existing.email,
+        phone: data.phone ?? existing.phone,
+        address: data.address ?? existing.address,
+        notes: data.notes ?? existing.notes,
+        status: data.status ?? (existing.status as any),
         updatedAt: new Date().toISOString(),
       };
 

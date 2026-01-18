@@ -25,7 +25,7 @@ export function ThemeSettingsCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("common.theme.title")}</CardTitle>
+        <CardTitle>{t("settings.theme.title")}</CardTitle>
         <CardDescription>
           {t("settings.languageCurrency.description")}
         </CardDescription>
@@ -41,7 +41,7 @@ export function ThemeSettingsCard() {
               >
                 <Sun className="h-5 w-5 text-yellow-500" />
                 <div>
-                  <div className="font-medium">{t("common.theme.light")}</div>
+                  <div className="font-medium">{t("settings.theme.light")}</div>
                   <div className="text-sm text-muted-foreground">
                     {t("settings.appearance.light.description") ||
                       "Bright and clean interface"}
@@ -57,7 +57,7 @@ export function ThemeSettingsCard() {
               >
                 <Moon className="h-5 w-5 text-blue-500" />
                 <div>
-                  <div className="font-medium">{t("common.theme.dark")}</div>
+                  <div className="font-medium">{t("settings.theme.dark")}</div>
                   <div className="text-sm text-muted-foreground">
                     {t("settings.appearance.dark.description") ||
                       "Easy on the eyes"}
@@ -71,7 +71,7 @@ export function ThemeSettingsCard() {
         {/* Theme Preview */}
         <div className="mt-6 p-4 border rounded-lg bg-muted/30">
           <h4 className="text-sm font-semibold mb-3">
-            {t("common.theme.preview") || "Preview"}
+            {t("settings.theme.preview") || "Preview"}
           </h4>
           <div className="grid grid-cols-3 gap-2">
             <div className="h-8 rounded bg-background border"></div>
@@ -82,9 +82,9 @@ export function ThemeSettingsCard() {
             <div className="h-8 rounded bg-card border"></div>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            {t("common.theme.current") || "Current theme:"}{" "}
+            {t("settings.theme.current") || "Current theme:"}{" "}
             <span className="font-medium capitalize">
-              {t(`common.theme.${settings.theme}`) || settings.theme}
+              {t(`settings.theme.${settings.theme}`) || settings.theme}
             </span>
           </p>
         </div>

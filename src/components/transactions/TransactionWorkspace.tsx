@@ -26,8 +26,8 @@ export function TransactionWorkspace() {
           className={cn(
             "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border whitespace-nowrap group relative",
             activeWorkspaceId === ws.id
-              ? "bg-white border-primary/20 shadow-sm text-primary"
-              : "bg-transparent border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              ? "bg-white dark:bg-slate-800 border-primary/20 dark:border-primary/40 shadow-sm text-primary dark:text-slate-100"
+              : "bg-transparent border-transparent text-muted-foreground dark:text-slate-400 dark:hover:text-slate-100 hover:bg-muted/50 dark:hover:bg-slate-800/50 hover:text-foreground"
           )}
         >
           <div className={cn(
@@ -50,7 +50,7 @@ export function TransactionWorkspace() {
               removeWorkspace(ws.id);
             }}
             className={cn(
-              "p-1 rounded-lg hover:bg-muted transition-all",
+              "p-1 rounded-lg hover:bg-muted dark:hover:bg-slate-700 transition-all",
               activeWorkspaceId === ws.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}
           >
@@ -63,18 +63,18 @@ export function TransactionWorkspace() {
         </button>
       ))}
 
-      <div className="flex items-center gap-1 bg-muted/30 rounded-xl p-1 ml-2 border border-muted-foreground/5">
+      <div className="flex items-center gap-1 bg-muted/30 dark:bg-slate-800/50 rounded-xl p-1 ml-2 border border-muted-foreground/5 dark:border-slate-700">
         <button
           onClick={() => addWorkspace("Sale")}
-          className="p-1.5 hover:bg-green-500 hover:text-white text-green-600 rounded-lg transition-all"
+          className="p-1.5 hover:bg-green-500 hover:text-white text-green-600 dark:text-green-500 rounded-lg transition-all"
           title={t("transactions_module.newSale")}
         >
           <Plus className="h-5 w-5" />
         </button>
-        <div className="w-px h-4 bg-muted-foreground/10 mx-1"></div>
+        <div className="w-px h-4 bg-muted-foreground/10 dark:bg-slate-700 mx-1"></div>
         <button
           onClick={() => addWorkspace("Purchase")}
-          className="p-1.5 hover:bg-blue-500 hover:text-white text-blue-600 rounded-lg transition-all"
+          className="p-1.5 hover:bg-blue-500 hover:text-white text-blue-600 dark:text-blue-500 rounded-lg transition-all"
           title={t("transactions_module.newPurchase")}
         >
           <Plus className="h-5 w-5" />

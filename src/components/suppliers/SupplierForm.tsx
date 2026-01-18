@@ -101,9 +101,9 @@ export function SupplierForm({
   }
 
   const labelStyles =
-    "text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 mb-1 flex items-center gap-2";
+    "text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 dark:text-muted-foreground/50 mb-1 flex items-center gap-2";
   const inputStyles =
-    "h-10 rounded-xl border-2 border-gray-100 bg-white/50 focus:bg-white focus:border-primary/20 focus:ring-0 transition-all font-bold text-sm placeholder:font-medium placeholder:text-muted-foreground/30";
+    "h-10 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white/50 dark:bg-slate-950/50 focus:bg-white dark:focus:bg-slate-950 focus:border-primary/20 focus:ring-0 transition-all font-bold text-sm placeholder:font-medium placeholder:text-muted-foreground/30 dark:placeholder:text-muted-foreground/10";
 
   return (
     <Form {...form}>
@@ -259,7 +259,7 @@ export function SupplierForm({
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent className="rounded-xl border-none shadow-2xl z-[1001]">
+                  <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900 z-[1001]">
                     <SelectItem
                       value="active"
                       className="capitalize font-bold text-xs py-2.5"
@@ -294,7 +294,7 @@ export function SupplierForm({
                     <SelectValue placeholder="Select payment method" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent className="rounded-xl border-none shadow-2xl z-[1001]">
+                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900 z-[1001]">
                   <SelectItem
                     value="Bank Transfer"
                     className="font-bold text-xs py-2.5"
@@ -349,14 +349,14 @@ export function SupplierForm({
           )}
         />
 
-        <div className="flex justify-end gap-4 pt-4 border-t border-gray-100 mt-4">
+        <div className="flex justify-end gap-4 pt-4 border-t border-gray-100 dark:border-slate-800 mt-4">
           {onCancel && (
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
               disabled={loading}
-              className="h-10 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50"
+              className="h-10 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
               Cancel
             </Button>

@@ -191,15 +191,15 @@ export function RepairsPageInner() {
     trend?: number;
   }) => {
     const colorClasses = {
-      blue: "bg-blue-50 text-blue-600",
-      green: "bg-green-50 text-green-600",
-      orange: "bg-orange-50 text-orange-600",
-      red: "bg-red-50 text-red-600",
-      purple: "bg-purple-50 text-purple-600",
+      blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+      green: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+      orange: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+      red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+      purple: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
     };
 
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2.5">
             <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
@@ -229,7 +229,7 @@ export function RepairsPageInner() {
 
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-8">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -249,7 +249,7 @@ export function RepairsPageInner() {
           <div className="flex gap-3">
              <Button
                 variant="outline"
-                className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
+                className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
               >
                 <Download className="w-4 h-4 mr-2" />
                 {t('common.export')}
@@ -264,8 +264,8 @@ export function RepairsPageInner() {
                   {t('repairs.addRepair')}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[950px] max-h-[90vh] overflow-y-auto rounded-3xl border-none shadow-2xl">
-                <DialogHeader className="pb-6 border-b">
+              <DialogContent className="sm:max-w-[950px] max-h-[90vh] overflow-y-auto rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
+                <DialogHeader className="pb-6 border-b dark:border-slate-800">
                   <DialogTitle className="text-2xl font-black">
                     {repairToEdit ? t('repairs.editRepair') : t('repairs.newRepair')}
                   </DialogTitle>
@@ -329,7 +329,7 @@ export function RepairsPageInner() {
                  <div className="h-2 w-2 rounded-full bg-primary"></div>
                  <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t('repairs.historyLogs')}</h2>
              </div>
-             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
                 <RepairTable onEditRepair={openEditForm} />
              </div>
         </div>

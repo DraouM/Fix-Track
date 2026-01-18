@@ -198,7 +198,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
           if (!isOpen) setPaymentDialogRepair(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[450px] rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
           <DialogHeader>
             <DialogTitle>{t('repairs.addPayment')}</DialogTitle>
             <DialogDescription>

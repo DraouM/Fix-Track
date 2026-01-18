@@ -171,21 +171,21 @@ export function InventoryForm({
           name="barcode"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1">
                 {t('inventory.form.barcode')}
               </FormLabel>
               <div className="flex gap-2">
                 <FormControl>
                   <Input
                     placeholder={t('inventory.form.barcodePlaceholder')}
-                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
+                    className="h-10 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium dark:text-slate-100"
                     {...field}
                   />
                 </FormControl>
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-10 px-3 rounded-xl border-2 font-bold text-[10px] uppercase"
+                  className="h-10 px-3 rounded-xl border-2 dark:border-slate-700 dark:bg-slate-900 font-bold text-[10px] uppercase dark:text-slate-300 dark:hover:bg-slate-800"
                   onClick={() => form.setValue("barcode", generateBarcode())}
                 >
                   {t('inventory.form.generate')}
@@ -202,13 +202,13 @@ export function InventoryForm({
           name="itemName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1">
                 {t('inventory.form.productName')}
               </FormLabel>
               <FormControl>
                 <Input
                   placeholder={t('inventory.form.productNamePlaceholder')}
-                  className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
+                  className="h-10 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium dark:text-slate-100"
                   {...field}
                 />
               </FormControl>
@@ -225,7 +225,7 @@ export function InventoryForm({
             name="phoneBrand"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1">
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1 mb-1">
                   {t('inventory.form.brand')}
                 </FormLabel>
                 <Popover>
@@ -235,7 +235,7 @@ export function InventoryForm({
                         variant="outline"
                         role="combobox"
                         className={cn(
-                          "h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs justify-between hover:bg-gray-50",
+                          "h-10 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-xs justify-between hover:bg-gray-50 dark:hover:bg-slate-800 dark:text-slate-200",
                           !field.value && "text-muted-foreground font-medium"
                         )}
                       >
@@ -244,13 +244,13 @@ export function InventoryForm({
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[240px] p-2 rounded-2xl border-none shadow-2xl">
-                    <Command className="rounded-xl">
+                  <PopoverContent className="w-[240px] p-2 rounded-2xl border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
+                    <Command className="rounded-xl dark:bg-slate-900">
                       <CommandInput
                         placeholder={t('inventory.form.searchBrand')}
-                        className="h-9 font-bold text-xs"
+                        className="h-9 font-bold text-xs dark:text-slate-100"
                       />
-                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">
+                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40 dark:text-slate-500">
                         {t('inventory.form.noBrand')}
                       </CommandEmpty>
                       <CommandGroup className="max-h-[160px] overflow-auto">
@@ -261,7 +261,7 @@ export function InventoryForm({
                             onSelect={() =>
                               form.setValue("phoneBrand", brand as PhoneBrand)
                             }
-                            className="rounded-lg font-bold text-xs uppercase tracking-wider py-1.5"
+                            className="rounded-lg font-bold text-xs uppercase tracking-wider py-1.5 focus:bg-primary/5 dark:focus:bg-slate-800"
                           >
                             <Check
                               className={cn(
@@ -289,7 +289,7 @@ export function InventoryForm({
             name="itemType"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1">
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1 mb-1">
                   {t('inventory.form.category')}
                 </FormLabel>
                 <Popover>
@@ -299,7 +299,7 @@ export function InventoryForm({
                         variant="outline"
                         role="combobox"
                         className={cn(
-                          "h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs justify-between hover:bg-gray-50",
+                          "h-10 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-xs justify-between hover:bg-gray-50 dark:hover:bg-slate-800 dark:text-slate-200",
                           !field.value && "text-muted-foreground font-medium"
                         )}
                       >
@@ -308,13 +308,13 @@ export function InventoryForm({
                       </Button>
                     </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[240px] p-2 rounded-2xl border-none shadow-2xl">
-                    <Command className="rounded-xl">
+                  <PopoverContent className="w-[240px] p-2 rounded-2xl border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
+                    <Command className="rounded-xl dark:bg-slate-900">
                       <CommandInput
                         placeholder={t('inventory.form.searchType')}
-                        className="h-9 font-bold text-xs"
+                        className="h-9 font-bold text-xs dark:text-slate-100"
                       />
-                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40">
+                      <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40 dark:text-slate-500">
                         {t('inventory.form.noType')}
                       </CommandEmpty>
                       <CommandGroup className="max-h-[160px] overflow-auto">
@@ -325,7 +325,7 @@ export function InventoryForm({
                             onSelect={() =>
                               form.setValue("itemType", type as ItemType)
                             }
-                            className="rounded-lg font-bold text-xs uppercase tracking-wider py-1.5"
+                            className="rounded-lg font-bold text-xs uppercase tracking-wider py-1.5 focus:bg-primary/5 dark:focus:bg-slate-800"
                           >
                             <Check
                               className={cn(
@@ -349,20 +349,20 @@ export function InventoryForm({
         </div>
 
         {/* Prices */}
-        <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-2xl border border-gray-100/50">
+        <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 dark:bg-slate-800/20 rounded-2xl border border-gray-100/50 dark:border-slate-800/80">
           <FormField
             control={form.control}
             name="buyingPrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1">
                   {t('inventory.form.costPrice', { symbol: '$' })}
                 </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
                     step="0.01"
-                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm focus-visible:ring-primary/20 transition-all"
+                    className="h-10 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-black text-sm focus-visible:ring-primary/20 transition-all dark:text-slate-100"
                     {...field}
                   />
                 </FormControl>
@@ -375,14 +375,14 @@ export function InventoryForm({
             name="sellingPrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1">
                   {t('inventory.form.sellingPrice', { symbol: '$' })}
                 </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
                     step="0.01"
-                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm text-primary focus-visible:ring-primary/20 transition-all"
+                    className="h-10 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-black text-sm text-primary dark:text-primary focus-visible:ring-primary/20 transition-all"
                     {...field}
                   />
                 </FormControl>
@@ -399,13 +399,13 @@ export function InventoryForm({
             name="quantityInStock"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1">
                   {t('inventory.form.quantity')}
                 </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm focus-visible:ring-primary/20 transition-all"
+                    className="h-10 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-black text-sm focus-visible:ring-primary/20 transition-all dark:text-slate-100"
                     {...field}
                   />
                 </FormControl>
@@ -418,13 +418,13 @@ export function InventoryForm({
             name="lowStockThreshold"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1">
                   {t('inventory.form.alertAt')}
                 </FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    className="h-10 rounded-xl border-2 border-gray-100 bg-white font-black text-sm text-orange-600 focus-visible:ring-primary/20 transition-all"
+                    className="h-10 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-black text-sm text-orange-600 dark:text-orange-400 focus-visible:ring-primary/20 transition-all"
                     {...field}
                   />
                 </FormControl>
@@ -440,13 +440,13 @@ export function InventoryForm({
           name="supplierInfo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
+              <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1">
                 {t('inventory.form.supplierNotes')}
               </FormLabel>
               <FormControl>
                 <Input
                   placeholder={t('inventory.form.supplierPlaceholder')}
-                  className="h-10 rounded-xl border-2 border-gray-100 bg-white font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium"
+                  className="h-10 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium dark:text-slate-100"
                   {...field}
                   value={field.value ?? ""}
                 />

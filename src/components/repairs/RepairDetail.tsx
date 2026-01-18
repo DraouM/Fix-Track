@@ -59,16 +59,16 @@ const statusConfig: Record<
   RepairStatus,
   { color: string; bg: string; icon: any }
 > = {
-  Pending: { color: "text-amber-600", bg: "bg-amber-50", icon: Clock },
+  Pending: { color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/40", icon: Clock },
   "In Progress": {
-    color: "text-blue-600",
-    bg: "bg-blue-50",
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50 dark:bg-blue-950/40",
     icon: SmartphoneNfc,
   },
-  Completed: { color: "text-green-600", bg: "bg-green-50", icon: CheckCircle2 },
+  Completed: { color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-950/40", icon: CheckCircle2 },
   Delivered: {
-    color: "text-purple-600",
-    bg: "bg-purple-50",
+    color: "text-purple-600 dark:text-purple-400",
+    bg: "bg-purple-50 dark:bg-purple-950/40",
     icon: ShieldCheck,
   },
 };
@@ -192,9 +192,9 @@ export function RepairDetail({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] p-0 flex flex-col border-none shadow-2xl rounded-3xl overflow-hidden">
+        <DialogContent className="max-w-5xl max-h-[90vh] p-0 flex flex-col border-none dark:border dark:border-slate-800 shadow-2xl rounded-3xl overflow-hidden dark:bg-slate-900">
           {/* Top Branding Section */}
-          <div className="bg-primary px-8 py-6 text-white flex items-center justify-between">
+          <div className="bg-primary dark:bg-slate-900 px-8 py-6 text-white flex items-center justify-between border-b border-white/5 dark:border-slate-800">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-white/10 rounded-lg">
@@ -236,7 +236,7 @@ export function RepairDetail({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-[#fdfdfd]">
+          <div className="flex-1 overflow-y-auto bg-[#fdfdfd] dark:bg-slate-950">
             <div className="grid grid-cols-1 lg:grid-cols-12">
               {/* Main Content Area */}
               <div className="lg:col-span-8 p-8 space-y-8">
@@ -250,8 +250,8 @@ export function RepairDetail({
                         {t("repairs.customerDevice")}
                       </span>
                     </div>
-                    <div className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 hover:border-primary/20 transition-all">
-                      <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary font-black text-lg">
+                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-4 hover:border-primary/20 dark:hover:border-primary/40 transition-all">
+                      <div className="h-12 w-12 rounded-xl bg-primary/5 dark:bg-primary/10 flex items-center justify-center text-primary font-black text-lg">
                         {currentRepair.customerName.charAt(0)}
                       </div>
                       <div>
@@ -274,8 +274,8 @@ export function RepairDetail({
                         {t("repairs.deviceDetails")}
                       </span>
                     </div>
-                    <div className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 hover:border-primary/20 transition-all">
-                      <div className="h-12 w-12 rounded-xl bg-orange-500/5 flex items-center justify-center text-orange-600">
+                    <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-4 hover:border-primary/20 dark:hover:border-primary/40 transition-all">
+                      <div className="h-12 w-12 rounded-xl bg-orange-500/5 dark:bg-orange-500/10 flex items-center justify-center text-orange-600">
                         <Smartphone className="h-6 w-6" />
                       </div>
                       <div>
@@ -283,7 +283,7 @@ export function RepairDetail({
                           {currentRepair.deviceBrand}{" "}
                           {currentRepair.deviceModel}
                         </p>
-                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 uppercase tracking-widest">
+                        <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 uppercase tracking-widest">
                           {t("repairs.warrantyActive")}
                         </span>
                       </div>
@@ -299,7 +299,7 @@ export function RepairDetail({
                       {t("repairs.diagnosisAndReport")}
                     </span>
                   </div>
-                  <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm relative overflow-hidden group">
+                  <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm relative overflow-hidden group">
                     <div className="absolute start-0 top-0 bottom-0 w-1 bg-orange-500/40" />
                     <p className="text-xs font-medium text-gray-700 leading-relaxed italic">
                       "{currentRepair.issueDescription}"
@@ -315,10 +315,10 @@ export function RepairDetail({
                       {t("repairs.partsAndServices")}
                     </span>
                   </div>
-                  <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
                     <table className="w-full text-start border-collapse">
                       <thead>
-                        <tr className="bg-muted/5 border-b border-gray-50">
+                        <tr className="bg-muted/5 dark:bg-slate-800/50 border-b border-gray-50 dark:border-slate-800">
                           <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                             {t("repairs.itemDescription")}
                           </th>
@@ -333,7 +333,7 @@ export function RepairDetail({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-50">
+                      <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
                         {currentRepair.usedParts &&
                         currentRepair.usedParts.length > 0 ? (
                           currentRepair.usedParts.map((part, idx) => {
@@ -353,23 +353,23 @@ export function RepairDetail({
                               0;
 
                             return (
-                              <tr
-                                key={idx}
-                                className="hover:bg-muted/5 transition-colors"
-                              >
-                                <td className="px-5 py-3 text-xs font-bold text-gray-700 uppercase tracking-tight">
-                                  {partName}
-                                </td>
-                                <td className="px-5 py-3 text-xs font-bold text-center text-gray-500">
-                                  {quantity}
-                                </td>
-                                <td className="px-5 py-3 text-xs font-bold text-end text-gray-500">
-                                  {currencySymbol}{cost.toFixed(2)}
-                                </td>
-                                <td className="px-5 py-3 text-xs font-black text-end text-foreground">
-                                  {currencySymbol}{(quantity * cost).toFixed(2)}
-                                </td>
-                              </tr>
+                                <tr
+                                  key={idx}
+                                  className="hover:bg-muted/5 dark:hover:bg-slate-800/30 transition-colors"
+                                >
+                                  <td className="px-5 py-3 text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-tight">
+                                    {partName}
+                                  </td>
+                                  <td className="px-5 py-3 text-xs font-bold text-center text-gray-500">
+                                    {quantity}
+                                  </td>
+                                  <td className="px-5 py-3 text-xs font-bold text-end text-gray-500">
+                                    {currencySymbol}{cost.toFixed(2)}
+                                  </td>
+                                  <td className="px-5 py-3 text-xs font-black text-end text-foreground dark:text-slate-200">
+                                    {currencySymbol}{(quantity * cost).toFixed(2)}
+                                  </td>
+                                </tr>
                             );
                           })
                         ) : (
@@ -384,14 +384,14 @@ export function RepairDetail({
                         )}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-muted/5">
+                        <tr className="bg-muted/5 dark:bg-slate-800/50">
                           <td
                             colSpan={3}
-                            className="px-5 py-3 text-[10px] font-black text-end uppercase tracking-widest text-muted-foreground"
+                            className="px-5 py-3 text-[10px] font-black text-end uppercase tracking-widest text-muted-foreground dark:text-slate-400"
                           >
                             {t("repairs.subtotal")} ({t("repairs.parts")})
                           </td>
-                          <td className="px-5 py-3 text-sm font-black text-end text-primary">
+                          <td className="px-5 py-3 text-sm font-black text-end text-primary dark:text-blue-400">
                             {currencySymbol}
                             {(
                               currentRepair.usedParts?.reduce((sum, p) => {
@@ -428,7 +428,7 @@ export function RepairDetail({
                       })}
                     </div>
                   </div>
-                  <div className="space-y-3 ps-4 border-s-2 border-gray-100 ms-1">
+                  <div className="space-y-3 ps-4 border-s-2 border-gray-100 dark:border-slate-800 ms-1">
                     {currentRepairHistory && currentRepairHistory.length > 0 ? (
                       (() => {
                         const allHistory = [...currentRepairHistory].reverse();
@@ -596,9 +596,9 @@ export function RepairDetail({
                                   <div className="absolute -start-[1.25rem] top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-primary flex items-center justify-center">
                                     <div className="h-1 w-1 rounded-full bg-white" />
                                   </div>
-                                  <div className="p-2.5 rounded-lg bg-white border border-gray-100 shadow-sm hover:border-primary/20 transition-all">
+                                  <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm hover:border-primary/20 dark:hover:border-primary/40 transition-all">
                                     <div className="flex items-center justify-between mb-0.5">
-                                      <p className="text-[8px] font-black text-primary uppercase tracking-wider">
+                                      <p className="text-[8px] font-black text-primary dark:text-blue-400 uppercase tracking-wider">
                                         {formatDate(
                                           log.timestamp ||
                                             (log as any).date ||
@@ -607,7 +607,7 @@ export function RepairDetail({
                                       </p>
                                       <div className="opacity-60">{icon}</div>
                                     </div>
-                                    <p className="text-[10px] font-bold text-gray-700 truncate">
+                                    <p className="text-[10px] font-bold text-gray-700 dark:text-slate-300 truncate">
                                       {content}
                                     </p>
                                   </div>
@@ -619,7 +619,7 @@ export function RepairDetail({
                                 <div className="absolute -left-[1.25rem] top-4 h-2.5 w-2.5 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center">
                                   <div className="h-1 w-1 rounded-full bg-gray-500" />
                                 </div>
-                                <div className="p-2.5 rounded-lg bg-gray-50 border border-gray-200">
+                                <div className="p-2.5 rounded-lg bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-800">
                                   <button
                                     className="text-[10px] font-bold text-gray-500 text-center w-full hover:text-gray-700"
                                     onClick={() =>
@@ -654,7 +654,7 @@ export function RepairDetail({
               </div>
 
               {/* Action Sidebar Area */}
-              <div className="lg:col-span-4 border-s border-gray-100 bg-white p-8 space-y-8 flex flex-col">
+              <div className="lg:col-span-4 border-s border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 space-y-8 flex flex-col">
                 {/* Status Quick Control */}
                 <div className="space-y-3">
                   <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
@@ -680,7 +680,7 @@ export function RepairDetail({
                           "px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-1.5",
                           currentRepair.status === s
                             ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
-                            : "border-gray-100 bg-gray-50/50 text-muted-foreground hover:border-primary/20 hover:text-primary"
+                            : "border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-muted-foreground hover:border-primary/20 hover:text-primary dark:hover:text-blue-400"
                         )}
                       >
                         {currentRepair.status === s && (
@@ -694,33 +694,33 @@ export function RepairDetail({
                 </div>
 
                 {/* Financial Summary Premium UI */}
-                <div className="space-y-3 pt-4 border-t border-gray-50">
+                <div className="space-y-3 pt-4 border-t border-gray-50 dark:border-slate-800">
                   <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                     {t("repairs.financialOverview")}
                   </p>
                   <div className="space-y-3">
-                    <div className="p-5 rounded-3xl bg-primary/5 border border-primary/10 flex flex-col items-center justify-center relative shadow-inner">
-                      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-primary mb-1">
+                    <div className="p-5 rounded-3xl bg-primary/5 dark:bg-blue-900/10 border border-primary/10 dark:border-blue-900/20 flex flex-col items-center justify-center relative shadow-inner">
+                      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-primary dark:text-blue-400 mb-1">
                         {t("repairs.totalEstimated")}
                       </p>
-                      <p className="text-4xl font-black text-primary tracking-tighter">
+                      <p className="text-4xl font-black text-primary dark:text-blue-500 tracking-tighter">
                         {currencySymbol}{currentRepair.estimatedCost.toFixed(2)}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-4 rounded-2xl bg-green-500/5 border border-green-500/10 flex flex-col">
-                        <span className="text-[8px] font-black text-green-600 uppercase tracking-widest mb-1">
+                      <div className="p-4 rounded-2xl bg-green-500/5 dark:bg-green-900/10 border border-green-500/10 dark:border-green-900/20 flex flex-col">
+                        <span className="text-[8px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">
                           {t("repairs.paidAmount")}
                         </span>
-                        <span className="text-lg font-black text-green-700">
+                        <span className="text-lg font-black text-green-700 dark:text-green-300">
                           {currencySymbol}{totalPaid.toFixed(2)}
                         </span>
                       </div>
-                      <div className="p-4 rounded-2xl bg-red-500/5 border border-red-500/10 flex flex-col">
-                        <span className="text-[8px] font-black text-red-600 uppercase tracking-widest mb-1">
+                      <div className="p-4 rounded-2xl bg-red-500/5 dark:bg-red-900/10 border border-red-500/10 dark:border-red-900/20 flex flex-col">
+                        <span className="text-[8px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-1">
                           {t("repairs.totalBalance")}
                         </span>
-                        <span className="text-lg font-black text-red-700">
+                        <span className="text-lg font-black text-red-700 dark:text-red-300">
                           {currencySymbol}{remainingBalance.toFixed(2)}
                         </span>
                       </div>
@@ -733,7 +733,7 @@ export function RepairDetail({
                   <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-4">
                     {t("repairs.recordNewTransaction")}
                   </p>
-                  <div className="p-2 rounded-2xl border border-gray-100/50 bg-gray-50/30">
+                  <div className="p-2 rounded-2xl border border-gray-100/50 dark:border-slate-800/50 bg-gray-50/30 dark:bg-slate-950/30">
                     <RepairPaymentForm
                       repair={currentRepair}
                       onSuccess={() => {
@@ -758,7 +758,7 @@ export function RepairDetail({
                       setIsPrintingReceipt(false);
                     }}
                     disabled={isPrintingReceipt}
-                    className="h-12 rounded-xl bg-white border-2 border-primary text-primary hover:bg-primary/5 shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-wider"
+                    className="h-12 rounded-xl bg-white dark:bg-slate-900 border-2 border-primary text-primary hover:bg-primary/5 dark:hover:bg-primary/10 shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-wider"
                   >
                     {isPrintingReceipt ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -774,7 +774,7 @@ export function RepairDetail({
                       setIsPrintingSticker(false);
                     }}
                     disabled={isPrintingSticker}
-                    className="h-12 rounded-xl bg-slate-900 border-none text-white hover:bg-slate-800 shadow-lg shadow-slate-200/20 font-black text-xs uppercase tracking-wider"
+                    className="h-12 rounded-xl bg-slate-900 dark:bg-slate-950 border-none text-white hover:bg-slate-800 dark:hover:bg-slate-900 shadow-lg shadow-slate-200/20 font-black text-xs uppercase tracking-wider"
                   >
                     {isPrintingSticker ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

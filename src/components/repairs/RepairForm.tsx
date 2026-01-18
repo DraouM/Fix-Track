@@ -87,7 +87,7 @@ interface FormData {
   deviceBrand: string;
   deviceModel: string;
   issueDescription: string;
-  estimatedCost: number;
+  estimatedCost?: number;
   repairStatus: RepairStatus;
   usedParts: UsedPartForm[];
 }
@@ -119,7 +119,7 @@ export default function RepairForm({
           deviceBrand: repairToEdit.deviceBrand,
           deviceModel: repairToEdit.deviceModel,
           issueDescription: repairToEdit.issueDescription,
-          estimatedCost: repairToEdit.estimatedCost,
+          estimatedCost: repairToEdit.estimatedCost || undefined,
           repairStatus: repairToEdit.status,
           usedParts:
             repairToEdit.usedParts?.map((p) => ({
@@ -136,7 +136,7 @@ export default function RepairForm({
           deviceBrand: "",
           deviceModel: "",
           issueDescription: "",
-          estimatedCost: 0,
+          estimatedCost: undefined,
           repairStatus: "Pending",
           usedParts: [],
         },
@@ -163,7 +163,7 @@ export default function RepairForm({
         deviceBrand: repairToEdit.deviceBrand,
         deviceModel: repairToEdit.deviceModel,
         issueDescription: repairToEdit.issueDescription,
-        estimatedCost: repairToEdit.estimatedCost,
+        estimatedCost: repairToEdit.estimatedCost || undefined,
         repairStatus: repairToEdit.status,
         usedParts:
           repairToEdit.usedParts?.map((p) => ({
@@ -281,8 +281,8 @@ export default function RepairForm({
         {/* Left Column - Form Details */}
         <div className="lg:col-span-8 space-y-6">
           {/* Customer & Device */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between bg-muted/5">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50 dark:border-slate-800 flex items-center justify-between bg-muted/5 dark:bg-slate-800/40">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
                 <h2 className="text-[10px] font-black uppercase tracking-widest text-foreground">
@@ -303,7 +303,7 @@ export default function RepairForm({
                       <Input
                         placeholder={t("common.searchPlaceholder")}
                         {...field}
-                        className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold"
+                        className="h-10 rounded-xl bg-gray-50/50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-bold"
                       />
                     </FormControl>
                     <FormMessage />
@@ -322,7 +322,7 @@ export default function RepairForm({
                       <Input
                         placeholder="+..."
                         {...field}
-                        className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold"
+                        className="h-10 rounded-xl bg-gray-50/50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-bold"
                       />
                     </FormControl>
                     <FormMessage />
@@ -339,13 +339,13 @@ export default function RepairForm({
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold">
+                        <SelectTrigger className="h-10 rounded-xl bg-gray-50/50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-bold">
                           <SelectValue
                             placeholder={t("inventory.form.brand")}
                           />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="rounded-2xl border-none shadow-2xl">
+                      <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
                         {PHONE_BRANDS.map((brand) => (
                           <SelectItem
                             key={brand}
@@ -373,7 +373,7 @@ export default function RepairForm({
                       <Input
                         placeholder={t("repairs.modelPlaceholder")}
                         {...field}
-                        className="h-10 rounded-xl bg-gray-50/50 border-gray-100 font-bold"
+                        className="h-10 rounded-xl bg-gray-50/50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-bold"
                       />
                     </FormControl>
                     <FormMessage />
@@ -384,8 +384,8 @@ export default function RepairForm({
           </div>
 
           {/* Issue Description */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-50 bg-muted/5 flex items-center gap-2">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50 dark:border-slate-800 bg-muted/5 dark:bg-slate-800/40 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-orange-500" />
               <h2 className="text-[10px] font-black uppercase tracking-widest text-foreground">
                 {t("repairs.diagnosis")}
@@ -400,7 +400,7 @@ export default function RepairForm({
                     <FormControl>
                       <Textarea
                         placeholder={t("repairs.issuePlaceholder")}
-                        className="min-h-[80px] rounded-xl bg-gray-50/50 border-gray-100 font-medium text-xs p-3"
+                        className="min-h-[80px] rounded-xl bg-gray-50/50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-medium text-xs p-3"
                         {...field}
                       />
                     </FormControl>
@@ -412,8 +412,8 @@ export default function RepairForm({
           </div>
 
           {/* Used Parts */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-50 bg-muted/5 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50 dark:border-slate-800 bg-muted/5 dark:bg-slate-800/40 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Smartphone className="h-4 w-4 text-blue-500" />
                 <h2 className="text-[10px] font-black uppercase tracking-widest text-foreground">
@@ -433,7 +433,7 @@ export default function RepairForm({
                   {fields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50/50 border border-gray-100 group transition-all hover:bg-white hover:shadow-sm"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50/50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-800 group transition-all hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm"
                     >
                       <div className="flex-1">
                         <p className="text-[10px] font-black text-foreground uppercase tracking-tight">
@@ -468,7 +468,7 @@ export default function RepairForm({
                   ))}
                 </div>
               )}
-              <div className="p-2 bg-muted/5 rounded-xl border border-dashed border-gray-200">
+              <div className="p-2 bg-muted/5 dark:bg-slate-800/40 rounded-xl border border-dashed border-gray-200 dark:border-slate-800">
                 <InventoryPartSelector
                   onSelect={(item: InventoryItem | null) => {
                     if (item) {
@@ -505,7 +505,7 @@ export default function RepairForm({
         {/* Right Column - Financials & Status */}
         <div className="lg:col-span-4 space-y-6">
           {/* Status */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="p-6 space-y-4">
               <FormField
                 control={form.control}
@@ -517,11 +517,11 @@ export default function RepairForm({
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest">
+                        <SelectTrigger className="h-10 rounded-xl font-black uppercase text-[10px] tracking-widest bg-white dark:bg-slate-950 border-gray-100 dark:border-slate-800">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="rounded-2xl border-none shadow-2xl">
+                      <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
                         <SelectItem
                           value="Pending"
                           className="rounded-xl font-black uppercase text-[10px] tracking-widest"
@@ -555,7 +555,7 @@ export default function RepairForm({
           </div>
 
           {/* Costs */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
             <div className="p-6 space-y-4">
               <FormField
                 control={form.control}
@@ -571,10 +571,16 @@ export default function RepairForm({
                         <Input
                           type="number"
                           {...field}
+                          value={field.value ?? ""}
+                          placeholder="0"
                           onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
+                            field.onChange(
+                              e.target.value === ""
+                                ? undefined
+                                : parseFloat(e.target.value)
+                            )
                           }
-                          className="h-10 pl-8 rounded-xl bg-gray-50/50 border-gray-100 font-black text-lg"
+                          className="h-10 pl-8 rounded-xl bg-gray-50/50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-black text-lg"
                         />
                       </div>
                     </FormControl>
@@ -597,7 +603,7 @@ export default function RepairForm({
                     {t("repairs.price", {
                       symbol: "",
                       amount: (
-                        form.watch("estimatedCost") - partsTotal
+                        (form.watch("estimatedCost") || 0) - partsTotal
                       ).toFixed(2),
                     }).trim()}
                   </span>
@@ -608,14 +614,14 @@ export default function RepairForm({
 
           {/* Payments Sidebar integration */}
           {repairToEdit && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
               <div className="p-6 space-y-4">
-                <div className="p-3 rounded-xl bg-green-50/50 border border-green-100">
+                <div className="p-3 rounded-xl bg-green-50/50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-green-600">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-green-600 dark:text-green-400">
                       {t("repairs.paid")}
                     </span>
-                    <span className="text-lg font-black text-green-700">
+                    <span className="text-lg font-black text-green-700 dark:text-green-300">
                       {t("repairs.price", {
                         symbol: "",
                         amount: (repairToEdit.totalPaid || 0).toFixed(2),
@@ -624,12 +630,12 @@ export default function RepairForm({
                   </div>
                 </div>
                 {(repairToEdit.remainingBalance || 0) > 0 && (
-                  <div className="p-3 rounded-xl bg-red-50/50 border border-red-100">
+                  <div className="p-3 rounded-xl bg-red-50/50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50">
                     <div className="flex justify-between items-baseline">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-red-600">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-red-600 dark:text-red-400">
                         {t("repairs.balance")}
                       </span>
-                      <span className="text-lg font-black text-red-700">
+                      <span className="text-lg font-black text-red-700 dark:text-red-300">
                         {t("repairs.price", {
                           symbol: "",
                           amount: (repairToEdit.remainingBalance || 0).toFixed(
@@ -641,17 +647,17 @@ export default function RepairForm({
                   </div>
                 )}
 
-                <div className="pt-4 border-t border-gray-50 space-y-3">
+                <div className="pt-4 border-t border-gray-50 dark:border-slate-800 space-y-3">
                   <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground text-center">
                     {t("repairs.quickPayment")}
                   </p>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                     <Input
-                      placeholder={t("repairs.amount")}
+                      placeholder="0"
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(e.target.value)}
-                      className="h-9 pl-8 rounded-xl bg-gray-50 border-gray-100 font-bold text-xs"
+                      className="h-9 pl-8 rounded-xl bg-gray-50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-bold text-xs"
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-2">
@@ -663,8 +669,8 @@ export default function RepairForm({
                         className={cn(
                           "flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1",
                           paymentMethod === m.id
-                            ? "border-primary bg-primary/5 text-primary"
-                            : "border-transparent bg-gray-50 text-muted-foreground opacity-60"
+                            ? "border-primary bg-primary/5 text-primary dark:bg-primary/20 dark:border-primary dark:text-primary-foreground"
+                            : "border-transparent bg-gray-50 dark:bg-slate-800 text-muted-foreground opacity-60"
                         )}
                       >
                         <m.icon className="h-3 w-3" />
@@ -685,7 +691,7 @@ export default function RepairForm({
                 </div>
 
                 {repairToEdit.payments && repairToEdit.payments.length > 0 && (
-                  <div className="pt-4 border-t border-gray-50 space-y-2">
+                  <div className="pt-4 border-t border-gray-50 dark:border-slate-800 space-y-2">
                     {repairToEdit.payments.slice(0, 2).map((p, i) => (
                       <div
                         key={i}

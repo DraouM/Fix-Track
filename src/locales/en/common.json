@@ -101,19 +101,32 @@
             "samplePrice": "Sample Price",
             "columnHeader": "Column Header"
         },
+        "appearance": {
+            "light": {
+                "description": "Bright and clean interface"
+            },
+            "dark": {
+                "description": "Easy on the eyes"
+            }
+        },
         "theme": {
             "title": "Theme",
             "light": "Light",
             "dark": "Dark",
-            "system": "System"
+            "system": "System",
+            "preview": "Preview",
+            "current": "Current theme:"
         },
         "print": {
             "title": "Print Dimensions",
             "receipt": "Receipt",
             "sticker": "Sticker",
             "width": "Width",
-            "height": "Height"
-        }
+            "height": "Height",
+            "dimensions": "Dimensions",
+            "size": "Size"
+        },
+        "current": "Current Settings"
     },
     "app": {
         "name": "FixTrack",

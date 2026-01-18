@@ -21,7 +21,9 @@ import { Wallet, CreditCard, ArrowRightLeft, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const paymentSchema = z.object({
-  amount: z.number().min(0.01, { message: "Amount must be greater than 0" }),
+  amount: z.coerce
+    .number()
+    .min(0.01, { message: "Amount must be greater than 0" }),
   method: z.enum(["Cash", "Card", "Transfer"]),
 });
 
@@ -47,9 +49,9 @@ export function RepairPaymentForm({
   const [loading, setLoading] = useState(false);
 
   const form = useForm<PaymentFormValues>({
-    resolver: zodResolver(paymentSchema),
+    resolver: zodResolver(paymentSchema) as any,
     defaultValues: {
-      amount: 0,
+      amount: undefined as any,
       method: "Cash",
     },
   });
@@ -59,11 +61,11 @@ export function RepairPaymentForm({
     try {
       await addPayment(repair.id, {
         repair_id: repair.id,
-        amount: values.amount,
+        amount: values.amount as number,
         method: values.method,
       });
 
-      form.reset({ amount: 0, method: values.method });
+      form.reset({ amount: undefined as any, method: values.method });
       // Refresh context data to reflect new payment/balance
       await fetchRepairById(repair.id);
       onSuccess?.();
@@ -92,10 +94,14 @@ export function RepairPaymentForm({
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    className="h-10 pl-9 rounded-xl bg-white border-gray-100 font-black text-sm shadow-sm focus:ring-primary/20 transition-all"
-                    value={field.value || ""}
+                    className="h-10 pl-9 rounded-xl bg-white dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-black text-sm shadow-sm focus:ring-primary/20 transition-all"
+                    value={field.value ?? ""}
                     onChange={(e) =>
-                      field.onChange(parseFloat(e.target.value) || 0)
+                      field.onChange(
+                        e.target.value === ""
+                          ? undefined
+                          : parseFloat(e.target.value)
+                      )
                     }
                   />
                 </div>
@@ -110,7 +116,7 @@ export function RepairPaymentForm({
           name="method"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-70 border-t border-gray-50 pt-3 block mt-2">
+              <FormLabel className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-70 border-t border-gray-50 dark:border-slate-800 pt-3 block mt-2">
                 {t("repairs.method") || "Method"}
               </FormLabel>
               <div className="grid grid-cols-3 gap-2">
@@ -123,7 +129,7 @@ export function RepairPaymentForm({
                       "flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all gap-1.5",
                       field.value === m.id
                         ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105"
-                        : "bg-white border-gray-100 text-muted-foreground hover:border-primary/20 hover:bg-gray-50 opacity-80"
+                        : "bg-white dark:bg-slate-950 border-gray-100 dark:border-slate-800 text-muted-foreground hover:border-primary/20 hover:bg-gray-50 dark:hover:bg-slate-900 opacity-80"
                     )}
                   >
                     <m.icon
@@ -145,7 +151,7 @@ export function RepairPaymentForm({
 
         <Button
           type="submit"
-          disabled={loading || form.watch("amount") <= 0}
+          disabled={loading || !form.watch("amount") || form.watch("amount")! <= 0}
           className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-black text-[9px] uppercase tracking-widest shadow-xl shadow-primary/10 transition-all active:scale-95"
         >
           {loading ? t("repairs.processing") : t("repairs.addPayment")}

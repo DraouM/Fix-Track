@@ -51,7 +51,7 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
 
   if (loading && clients.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 bg-white/40 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-gray-100 italic">
+      <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-gray-100 dark:border-slate-800 italic">
         <div className="h-12 w-12 bg-primary/10 rounded-2xl flex items-center justify-center animate-pulse mb-4">
           <History className="h-6 w-6 text-primary" />
         </div>
@@ -62,8 +62,8 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
 
   if (clients.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 bg-white/40 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-gray-100">
-        <div className="p-5 rounded-[2rem] bg-gray-50 mb-6 flex items-center justify-center shadow-inner">
+      <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-gray-100 dark:border-slate-800">
+        <div className="p-5 rounded-[2rem] bg-gray-50 dark:bg-slate-950 mb-6 flex items-center justify-center shadow-inner dark:shadow-slate-950/50">
           <Users className="h-10 w-10 text-muted-foreground/20 font-light" />
         </div>
         <p className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground/40">No Accounts Detected</p>
@@ -72,12 +72,12 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
     );
   }
 
-  const headerStyles = "text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 h-16 py-0 border-none select-none";
+  const headerStyles = "text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 h-16 py-0 border-none select-none";
 
   return (
-    <div className="relative overflow-hidden w-full rounded-[2.5rem] bg-white border border-gray-100 shadow-xl shadow-gray-200/50">
+    <div className="relative overflow-hidden w-full rounded-[2.5rem] bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-xl shadow-gray-200/50 dark:shadow-none">
       <Table>
-        <TableHeader className="bg-white/90 sticky top-0 z-20 backdrop-blur-md border-b-2 border-gray-50 shadow-sm">
+        <TableHeader className="bg-white/90 dark:bg-slate-900/90 sticky top-0 z-20 backdrop-blur-md border-b-2 border-gray-50 dark:border-slate-800 shadow-sm">
           <TableRow className="hover:bg-transparent border-none">
             <TableHead className={cn(headerStyles, "pl-8")}>Account Identity</TableHead>
             <TableHead className={headerStyles}>Operational Channels</TableHead>
@@ -90,7 +90,7 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
           {clients.map((client, idx) => (
             <TableRow 
               key={client.id} 
-              className="group cursor-default border-b border-gray-50 hover:bg-muted/30 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
+              className="group cursor-default border-b border-gray-50 dark:border-slate-800 hover:bg-muted/30 dark:hover:bg-slate-800/30 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
               style={{ animationDelay: `${idx * 40}ms` }}
             >
               <TableCell className="py-6 pl-8">
@@ -99,7 +99,7 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
                   onClick={() => router.push(`/clients/${client.id}`)}
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="font-black text-sm tracking-tight text-foreground group-hover:text-primary transition-colors">
+                    <span className="font-black text-sm tracking-tight text-foreground dark:text-slate-200 group-hover:text-primary transition-colors">
                       {client.name}
                     </span>
                     <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-all text-primary" />
@@ -107,7 +107,7 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
                   {client.contactName && (
                     <div className="flex items-center gap-1.5 mt-1.5 opacity-40">
                        <ShieldCheck className="w-3 h-3 text-primary" />
-                       <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">
+                       <span className="text-[9px] text-muted-foreground/60 dark:text-muted-foreground/40 font-black uppercase tracking-widest">
                          {client.contactName}
                        </span>
                     </div>
@@ -117,17 +117,17 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
               <TableCell className="py-6">
                 <div className="flex flex-col gap-2.5">
                   {client.phone && (
-                    <div className="flex items-center text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                      <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center mr-2.5 border border-gray-100 group-hover:bg-white group-hover:border-primary/20 transition-all">
-                        <Phone className="h-3 w-3 opacity-40" />
+                    <div className="flex items-center text-[10px] font-black text-muted-foreground dark:text-muted-foreground/60 uppercase tracking-widest">
+                      <div className="w-6 h-6 rounded-lg bg-gray-50 dark:bg-slate-950 flex items-center justify-center mr-2.5 border border-gray-100 dark:border-slate-800 group-hover:bg-white dark:group-hover:bg-slate-900 group-hover:border-primary/20 transition-all">
+                        <Phone className="h-3 w-3 opacity-40 dark:opacity-60" />
                       </div> 
                       {client.phone}
                     </div>
                   )}
                   {client.email && (
-                    <div className="flex items-center text-[10px] font-black text-muted-foreground/80 uppercase tracking-widest">
-                      <div className="w-6 h-6 rounded-lg bg-primary/5 flex items-center justify-center mr-2.5 border border-primary/5 group-hover:bg-white group-hover:border-primary/20 transition-all">
-                        <Mail className="h-3 w-3 opacity-40 text-primary" />
+                    <div className="flex items-center text-[10px] font-black text-muted-foreground/80 dark:text-muted-foreground/50 uppercase tracking-widest">
+                      <div className="w-6 h-6 rounded-lg bg-primary/5 dark:bg-primary/10 flex items-center justify-center mr-2.5 border border-primary/5 dark:border-primary/20 group-hover:bg-white dark:group-hover:bg-slate-900 group-hover:border-primary/20 transition-all">
+                        <Mail className="h-3 w-3 opacity-40 dark:opacity-60 text-primary" />
                       </div> 
                       <span className="truncate max-w-[180px]">{client.email}</span>
                     </div>
@@ -139,8 +139,8 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
                   <div className={cn(
                     "px-3 py-1.5 rounded-xl text-[11px] font-black shadow-sm flex items-center gap-2",
                     client.outstandingBalance > 0 
-                      ? "bg-red-50 text-red-600 border border-red-100" 
-                      : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                      ? "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/40" 
+                      : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40"
                   )}>
                     <CreditCard className="w-3.5 h-3.5 opacity-60" />
                     {formatCurrency(client.outstandingBalance)}
@@ -157,8 +157,8 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
                     className={cn(
                       "rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-[0.15em] shadow-none border transition-all",
                       client.status === "active" 
-                        ? "bg-green-50 text-green-600 border-green-100 group-hover:bg-green-100" 
-                        : "bg-gray-100 text-gray-400 border-gray-200 group-hover:bg-gray-200"
+                        ? "bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40 group-hover:bg-green-100 dark:group-hover:bg-green-900/50" 
+                        : "bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-700 group-hover:bg-gray-200 dark:group-hover:bg-slate-700"
                     )}
                   >
                     {getClientStatusDisplayText(client.status)}
@@ -170,7 +170,7 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="h-10 px-4 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm"
+                    className="h-10 px-4 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest dark:border-slate-800 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm"
                     onClick={() => onRecordPayment(client.id)}
                   >
                     Settlement
@@ -178,31 +178,28 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-gray-100 transition-colors">
-                        <MoreHorizontal className="h-4 w-4 text-muted-foreground/60" />
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground/60 dark:text-muted-foreground/40" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 rounded-[1.5rem] border-none shadow-2xl p-2 bg-white/95 backdrop-blur-md">
-                      <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 px-3 py-2">
+                    <DropdownMenuContent align="end" className="w-56 rounded-[1.5rem] border-none shadow-2xl p-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md">
+                      <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 dark:text-muted-foreground/50 px-3 py-2">
                         Account Terminal
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator className="bg-gray-50 my-1" />
-                      <DropdownMenuItem 
-                        className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
-                        onClick={() => router.push(`/clients/${client.id}`)}
-                      >
-                        <ExternalLink className="mr-3 h-4 w-4 opacity-40 text-primary" /> Core Profile
-                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-gray-50 dark:bg-slate-800 my-1" />
                       <DropdownMenuItem 
                         className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
                         onClick={() => onEditClient(client.id)}
                       >
                         <Edit2 className="mr-3 h-4 w-4 opacity-40 text-primary" /> Modify Credentials
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer">
+                      <DropdownMenuItem 
+                        className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
+                        onClick={() => router.push(`/clients/${client.id}?tab=history`)}
+                      >
                         <History className="mr-3 h-4 w-4 opacity-40 text-primary" /> Financial Audit
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-gray-50 my-1" />
+                      <DropdownMenuSeparator className="bg-gray-50 dark:bg-slate-800 my-1" />
                       <DropdownMenuItem 
                         className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
                         onClick={(e) => {

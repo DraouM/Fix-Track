@@ -74,10 +74,10 @@ const SortableHeader = ({
         variant="ghost"
         onClick={() => onSort(columnKey)}
         className={cn(
-          "h-auto p-0 text-[10px] font-black uppercase tracking-widest hover:bg-transparent hover:text-primary transition-colors",
+          "h-auto p-0 text-[10px] font-black uppercase tracking-widest hover:bg-transparent hover:text-primary dark:hover:text-primary transition-colors",
           sortConfig?.key === columnKey
             ? "text-primary"
-            : "text-muted-foreground/60",
+            : "text-muted-foreground/60 dark:text-slate-400/60",
           className
         )}
       >
@@ -158,7 +158,7 @@ const InventoryRow = memo(function InventoryRow({
     <div
       key={item.id}
       role="row"
-      className="absolute top-0 left-0 w-full flex items-center border-b border-gray-100 hover:bg-muted/30 transition-all duration-200 group cursor-pointer"
+      className="absolute top-0 left-0 w-full flex items-center border-b border-gray-100 dark:border-slate-800 hover:bg-muted/30 dark:hover:bg-slate-800/30 transition-all duration-200 group cursor-pointer"
       style={{
         height: `${virtualRow.size}px`,
         transform: `translateY(${virtualRow.start}px)`,
@@ -177,10 +177,10 @@ const InventoryRow = memo(function InventoryRow({
             onClick={(e) => e.stopPropagation()}
           />
           <div className="flex flex-col min-w-0">
-            <span className="font-black text-sm text-foreground truncate uppercase tracking-tight">
+            <span className="font-black text-sm text-foreground dark:text-slate-200 truncate uppercase tracking-tight">
               {item.itemName}
             </span>
-            <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-40">
+            <span className="text-[10px] font-bold text-muted-foreground dark:text-slate-500 uppercase opacity-40">
               {t('inventory.sku')}: {item.id.split("-")[0]}
             </span>
           </div>
@@ -198,7 +198,7 @@ const InventoryRow = memo(function InventoryRow({
       <div className="flex-1">
         <Badge
           variant="secondary"
-          className="bg-muted px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest"
+          className="bg-muted dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest dark:text-slate-300"
         >
           {item.itemType}
         </Badge>
@@ -213,7 +213,7 @@ const InventoryRow = memo(function InventoryRow({
 
       {/* Price */}
       <div className="flex-1 text-right pr-6">
-        <span className="text-sm font-black text-foreground tracking-tight">
+        <span className="text-sm font-black text-foreground dark:text-slate-200 tracking-tight">
           ${(item.sellingPrice ?? 0).toFixed(2)}
         </span>
       </div>
@@ -224,9 +224,9 @@ const InventoryRow = memo(function InventoryRow({
           <span
             className={cn(
               "text-xs font-black tracking-tight",
-              isPositive && "text-green-600",
-              isNegative && "text-red-600",
-              !isPositive && !isNegative && "text-muted-foreground/40"
+              isPositive && "text-green-600 dark:text-green-400",
+              isNegative && "text-red-600 dark:text-red-400",
+              !isPositive && !isNegative && "text-muted-foreground dark:text-slate-500 opacity-40"
             )}
           >
             {isPositive ? "+" : ""}
@@ -242,9 +242,9 @@ const InventoryRow = memo(function InventoryRow({
             <span
               className={cn(
                 "text-sm font-black tracking-tight",
-                isOutOfStock && "text-red-600",
-                isLowStock && "text-orange-600",
-                !isOutOfStock && !isLowStock && "text-foreground"
+                isOutOfStock && "text-red-600 dark:text-red-400",
+                isLowStock && "text-orange-600 dark:text-orange-400",
+                !isOutOfStock && !isLowStock && "text-foreground dark:text-slate-200"
               )}
             >
               {quantity}
@@ -280,14 +280,14 @@ const InventoryRow = memo(function InventoryRow({
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 p-0 rounded-xl hover:bg-white border-transparent hover:border-gray-100 hover:shadow-sm transition-all opacity-40 group-hover:opacity-100"
+              className="h-9 w-9 p-0 rounded-xl hover:bg-white dark:hover:bg-slate-800 border-transparent hover:border-gray-100 dark:hover:border-slate-700 hover:shadow-sm transition-all opacity-40 group-hover:opacity-100"
             >
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreHorizontal className="h-4 w-4 dark:text-slate-400" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="rounded-2xl border-none shadow-2xl p-2 min-w-[160px]"
+            className="rounded-2xl border dark:border-slate-800 shadow-2xl p-2 min-w-[160px] dark:bg-slate-900"
           >
             <DropdownMenuItem
               onClick={() => onViewHistory(item)}
@@ -308,7 +308,7 @@ const InventoryRow = memo(function InventoryRow({
             >
               <Pencil className="h-4 w-4 mr-3 opacity-70" /> {t('common.edit')} {t('common.item')}
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="my-1 mx-1 bg-muted" />
+            <DropdownMenuSeparator className="my-1 mx-1 bg-muted dark:bg-slate-800" />
             <DropdownMenuItem
               onClick={() => onDelete(item.id)}
               className="rounded-xl font-bold text-xs uppercase tracking-wider py-2 text-red-600 focus:text-red-600 focus:bg-red-50"
@@ -345,17 +345,17 @@ export const VirtualizedTable = memo(function VirtualizedTable({
   });
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col h-full">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-full">
       <TooltipProvider>
         {/* Header */}
         <div
-          className="bg-muted/10 backdrop-blur-sm border-b border-gray-100 z-10 shrink-0"
+          className="bg-muted/10 dark:bg-slate-800/10 backdrop-blur-sm border-b border-gray-100 dark:border-slate-800 z-10 shrink-0"
           style={{ height: HEADER_HEIGHT }}
         >
           <div className="flex w-full h-full items-center">
             <div className="flex-[3] pl-2 min-w-0">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-500 opacity-60">
                   {t('inventory.table.product')}
                 </span>
               </div>
@@ -429,7 +429,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
         {/* Rows */}
         <div
           ref={parentRef}
-          className="overflow-auto relative bg-[#fdfdfd]"
+          className="overflow-auto relative bg-[#fdfdfd] dark:bg-slate-950/20"
           style={{ height: "calc(100vh - 420px)", minHeight: "350px" }}
         >
           <div
@@ -460,13 +460,13 @@ export const VirtualizedTable = memo(function VirtualizedTable({
             ) : items.length === 0 ? (
               /* Empty State */
               <div className="flex flex-col items-center justify-center py-24 px-8 text-center h-full">
-                <div className="w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mb-6">
-                  <Package className="w-10 h-10 text-muted-foreground/20" />
+                <div className="w-20 h-20 bg-muted/30 dark:bg-slate-800/50 rounded-full flex items-center justify-center mb-6">
+                  <Package className="w-10 h-10 text-muted-foreground dark:text-slate-600 opacity-20" />
                 </div>
-                <h3 className="text-lg font-black text-foreground uppercase tracking-tight mb-2">
+                <h3 className="text-lg font-black text-foreground dark:text-slate-100 uppercase tracking-tight mb-2">
                   {t('inventory.table.empty')}
                 </h3>
-                <p className="text-muted-foreground max-w-sm text-xs font-bold opacity-60 uppercase tracking-wider">
+                <p className="text-muted-foreground dark:text-slate-500 max-w-sm text-xs font-bold opacity-60 uppercase tracking-wider">
                   {t('inventory.table.emptyDesc')}
                 </p>
               </div>
@@ -477,7 +477,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
 
       {/* Footer Stats */}
       {items.length > 0 && (
-        <div className="border-t border-gray-100 px-6 py-4 bg-muted/5 flex items-center justify-between shrink-0">
+        <div className="border-t border-gray-100 dark:border-slate-800 px-6 py-4 bg-muted/5 dark:bg-slate-900 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-primary"></div>
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">

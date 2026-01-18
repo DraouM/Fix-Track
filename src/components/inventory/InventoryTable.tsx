@@ -98,7 +98,7 @@ export const InventoryTable = React.memo(function InventoryTable({
 
   return (
     <TooltipProvider>
-      <div className="border rounded-md">
+      <div className="border dark:border-slate-800 rounded-md">
         <Table>
           {/* --- Table Header --- */}
           <TableHeader>
@@ -161,7 +161,10 @@ export const InventoryTable = React.memo(function InventoryTable({
                 return (
                   <TableRow
                     key={item.id}
-                    className={cn(lowStock && "bg-red-50")}
+                    className={cn(
+                      "dark:border-slate-800",
+                      lowStock && "bg-red-50 dark:bg-red-950/30"
+                    )}
                   >
                     <TableCell className="font-medium">
                       <Tooltip>
@@ -190,7 +193,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                     <TableCell
                       className={cn(
                         "text-right font-mono",
-                        profit >= 0 ? "text-green-600" : "text-destructive"
+                        profit >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive dark:text-red-400"
                       )}
                     >
                       ${profit.toFixed(2)}
@@ -198,7 +201,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                     <TableCell
                       className={cn(
                         "text-right font-mono",
-                        lowStock && "font-bold text-destructive"
+                        lowStock && "font-bold text-destructive dark:text-red-400"
                       )}
                     >
                       {item.quantityInStock ?? 0}
@@ -222,7 +225,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="dark:bg-slate-900 dark:border-slate-800">
                             <DropdownMenuItem
                               onClick={() => onViewHistory(item)}
                             >
@@ -233,7 +236,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => onDelete(item.id)}
-                              className="text-destructive"
+                              className="text-destructive dark:text-red-400 focus:text-destructive focus:bg-destructive/10"
                             >
                               {t('common.delete')}
                             </DropdownMenuItem>

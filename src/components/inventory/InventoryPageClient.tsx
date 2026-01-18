@@ -49,6 +49,7 @@ import {
   Search,
   RotateCcw,
 } from "lucide-react";
+import { cn } from "@/lib";
 
 export function InventoryPageInner() {
   const {
@@ -171,26 +172,26 @@ export function InventoryPageInner() {
     };
 
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
+            <div className={cn("p-2 rounded-xl", colorClasses[color])}>
               <Icon className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60">
               {title}
             </span>
           </div>
         </div>
         <div className="flex items-baseline justify-between">
-          <div className="text-2xl font-black text-foreground">{value}</div>
+          <div className="text-2xl font-black text-foreground dark:text-slate-100">{value}</div>
           {subtitle && (
-            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
+            <div className="text-[10px] font-bold text-muted-foreground dark:text-slate-500 flex items-center gap-1 opacity-70">
               <div
-                className={`h-1 w-1 rounded-full ${colorClasses[color].replace(
-                  "text-",
-                  "bg-"
-                )}`}
+                className={cn(
+                  "h-1 w-1 rounded-full",
+                  colorClasses[color].replace("text-", "bg-")
+                )}
               ></div>
               {subtitle}
             </div>
@@ -201,19 +202,19 @@ export function InventoryPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-8">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <div className="p-2 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary">
               <Package className="h-6 w-6" />
             </div>
             <div className="flex items-baseline gap-3">
               <h1 className="text-2xl font-black tracking-tight text-foreground">
                 {t('inventory.title')}
               </h1>
-              <p className="hidden md:block text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-60">
+              <p className="hidden md:block text-[10px] text-muted-foreground dark:text-slate-500 font-bold uppercase tracking-wider opacity-60">
                 {t('inventory.subtitle')}
               </p>
             </div>
@@ -221,14 +222,14 @@ export function InventoryPageInner() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
+              className="h-11 px-4 rounded-xl border-2 dark:border-slate-800 dark:bg-slate-900 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:text-slate-200 hover:dark:text-slate-100 transition-colors"
             >
               <Download className="w-4 h-4 mr-2" />
               {t('common.export')}
             </Button>
             <Button
               variant="outline"
-              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50"
+              className="h-11 px-4 rounded-xl border-2 dark:border-slate-800 dark:bg-slate-900 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:text-slate-200 hover:dark:text-slate-100 transition-colors"
             >
               <Upload className="w-4 h-4 mr-2" />
               {t('common.import')}
@@ -279,11 +280,11 @@ export function InventoryPageInner() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
           <div className="flex flex-col md:flex-row gap-4 items-end">
             {/* Search */}
             <div className="flex-1 relative w-full">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1 mb-1.5 block">
                 {t('common.search')}
               </span>
               <div className="relative">
@@ -293,29 +294,29 @@ export function InventoryPageInner() {
                   placeholder={t('common.filter')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-11 pl-10 pr-4 bg-white border-2 border-gray-100 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium"
+                  className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-800 border-2 border-gray-100 dark:border-slate-700 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium dark:text-slate-100"
                 />
               </div>
             </div>
 
             {/* Brand Filter */}
             <div className="w-full md:w-[180px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1 mb-1.5 block">
                 {t('inventory.table.brand')}
               </span>
               <Select
                 value={selectedBrand}
                 onValueChange={(value) => setSelectedBrand(value as PhoneBrand)}
               >
-                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 bg-white font-bold text-sm">
+                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-sm dark:text-slate-200">
                   <SelectValue placeholder="All Brands" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-2xl">
+                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900 dark:text-slate-200">
                   {PHONE_BRANDS.map((brand) => (
                     <SelectItem
                       key={brand}
                       value={brand}
-                      className="font-bold text-xs uppercase py-2.5"
+                      className="font-bold text-xs uppercase py-2.5 focus:bg-primary/10 dark:focus:bg-slate-800"
                     >
                       {brand}
                     </SelectItem>
@@ -326,22 +327,22 @@ export function InventoryPageInner() {
 
             {/* Type Filter */}
             <div className="w-full md:w-[180px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1 mb-1.5 block">
                 {t('inventory.table.category')}
               </span>
               <Select
                 value={selectedType}
                 onValueChange={(value) => setSelectedType(value as ItemType)}
               >
-                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 bg-white font-bold text-sm">
+                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-sm dark:text-slate-200">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-2xl">
+                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900 dark:text-slate-200">
                   {ITEM_TYPES.map((type) => (
                     <SelectItem
                       key={type}
                       value={type}
-                      className="font-bold text-xs uppercase py-2.5"
+                      className="font-bold text-xs uppercase py-2.5 focus:bg-primary/10 dark:focus:bg-slate-800"
                     >
                       {type}
                     </SelectItem>
@@ -375,8 +376,8 @@ export function InventoryPageInner() {
 
         {/* Inventory Table */}
         {loading ? (
-          <div className="flex items-center justify-center h-64 bg-white rounded-lg border border-gray-200">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : (
           <VirtualizedTable

@@ -48,7 +48,7 @@ export function InventoryPartSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+          className="w-full justify-between h-10 rounded-xl border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-xs font-bold text-muted-foreground hover:text-foreground transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
         >
           {selectedItem
             ? selectedItem.itemName

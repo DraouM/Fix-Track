@@ -149,7 +149,7 @@ export function RepairDataTable<TData, TValue>({
   return (
     <div className="w-full space-y-4">
       {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center px-6 py-4 border-b bg-white/50">
+      <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center px-6 py-4 border-b dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
         {/* Search Bar */}
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -157,25 +157,25 @@ export function RepairDataTable<TData, TValue>({
             placeholder={searchPlaceholder || t('common.filter')}
             value={globalFilter ?? ""}
             onChange={(event) => setGlobalFilter(event.target.value)}
-            className="pl-10 rounded-xl h-11 border-gray-200 focus:ring-primary/20 bg-white"
+            className="pl-10 rounded-xl h-11 border-gray-200 dark:border-slate-800 focus:ring-primary/20 bg-white dark:bg-slate-950"
           />
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-1">
-            <Filter className="h-4 w-4 text-gray-500" />
-            <span className="text-sm text-gray-600 hidden sm:block">
+            <Filter className="h-4 w-4 text-gray-500 dark:text-slate-400" />
+            <span className="text-sm text-gray-600 dark:text-slate-400 hidden sm:block">
               {t('common.filters')}
             </span>
           </div>
 
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 bg-white font-bold text-xs uppercase tracking-wider">
+            <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
               <SelectValue placeholder={t('repairs.status')} />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border-none shadow-2xl">
+            <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
               <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">{t('common.all')} {t('repairs.status')}</SelectItem>
               <SelectItem value="Pending" className="font-bold text-xs uppercase tracking-wider">
                 <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export function RepairDataTable<TData, TValue>({
             value={paymentStatusFilter}
             onValueChange={setPaymentStatusFilter}
           >
-            <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 bg-white font-bold text-xs uppercase tracking-wider">
+            <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
               <SelectValue placeholder={t('transactions_module.payment')} />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -246,14 +246,14 @@ export function RepairDataTable<TData, TValue>({
             date={dateRange}
             onDateChange={setDateRange}
             placeholder={t('common.pickDates')}
-            className="w-[180px] h-11 rounded-xl border-gray-200 bg-white"
+            className="w-[180px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950"
             showPresets={true}
           />
 
           <Button 
             variant="outline" 
             size="icon" 
-            className="rounded-xl h-11 w-11 bg-white border-gray-200"
+            className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800"
             onClick={() => {
                 setGlobalFilter("");
                 setStatusFilter("All");
@@ -272,7 +272,7 @@ export function RepairDataTable<TData, TValue>({
         paymentStatusFilter !== "All" ||
         dateRange?.from) && (
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-gray-600">{t('common.activeFilters')}:</span>
+          <span className="text-sm text-gray-600 dark:text-slate-400">{t('common.activeFilters')}:</span>
           {globalFilter && (
             <Badge
               variant="secondary"
@@ -319,7 +319,7 @@ export function RepairDataTable<TData, TValue>({
               setPaymentStatusFilter("All");
               setDateRange(undefined);
             }}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-7"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/50 h-7"
           >
             <X className="mr-1 h-3 w-3" />
             {t('common.clearAll')}
@@ -332,7 +332,7 @@ export function RepairDataTable<TData, TValue>({
         <Table className="w-full text-left border-collapse">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="bg-muted/10 border-b hover:bg-muted/10">
+              <TableRow key={headerGroup.id} className="bg-muted/10 dark:bg-slate-800/50 border-b dark:border-slate-800 hover:bg-muted/10 dark:hover:bg-slate-800/50">
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead key={header.id} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -354,7 +354,7 @@ export function RepairDataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-muted/5 border-b transition-colors group cursor-pointer"
+                  className="hover:bg-muted/5 dark:hover:bg-slate-800/30 border-b dark:border-slate-800 transition-colors group cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="px-6 py-4">
@@ -381,7 +381,7 @@ export function RepairDataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-6 py-4 bg-muted/5 border-t">
+      <div className="flex items-center justify-between px-6 py-4 bg-muted/5 dark:bg-slate-900/50 border-t dark:border-slate-800">
         <div className="text-sm font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">
           {t('common.showingCount', { 
             count: table.getRowModel().rows.length, 
@@ -398,12 +398,12 @@ export function RepairDataTable<TData, TValue>({
                 table.setPageSize(Number(value));
               }}
             >
-              <SelectTrigger className="h-8 w-[70px] rounded-lg border-gray-200 text-xs font-bold">
+              <SelectTrigger className="h-8 w-[70px] rounded-lg border-gray-200 dark:border-slate-800 text-xs font-bold dark:bg-slate-950">
                 <SelectValue
                   placeholder={table.getState().pagination.pageSize}
                 />
               </SelectTrigger>
-              <SelectContent side="top" className="rounded-xl border-none shadow-xl">
+              <SelectContent side="top" className="rounded-xl border-none shadow-xl dark:bg-slate-900">
                 {[10, 20, 30, 40, 50].map((pageSize) => (
                   <SelectItem key={pageSize} value={`${pageSize}`} className="text-xs font-bold">
                     {pageSize}
@@ -422,7 +422,7 @@ export function RepairDataTable<TData, TValue>({
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-lg border-gray-200"
+              className="h-8 w-8 rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-950"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
@@ -431,7 +431,7 @@ export function RepairDataTable<TData, TValue>({
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-lg border-gray-200"
+              className="h-8 w-8 rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-950"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >

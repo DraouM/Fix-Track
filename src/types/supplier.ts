@@ -104,6 +104,7 @@ export type SupplierHistoryEventType =
   | "Payment Made"
   | "Credit Balance Adjusted"
   | "Purchase Order Created"
+  | "Purchase Order Completed"
   | "Other";
 
 // Interface for supplier history events

@@ -5,8 +5,8 @@ export async function createTransaction(transaction: Transaction): Promise<Trans
     return await invoke("create_transaction", { transaction });
 }
 
-export async function getTransactions(typeFilter?: string, statusFilter?: string): Promise<Transaction[]> {
-    return await invoke("get_transactions", { typeFilter, statusFilter });
+export async function getTransactions(typeFilter?: string | null, statusFilter?: string | null, partyFilter?: string | null): Promise<Transaction[]> {
+    return await invoke("get_transactions", { typeFilter, statusFilter, partyFilter });
 }
 
 export async function getTransactionById(txId: string): Promise<TransactionWithDetails | null> {

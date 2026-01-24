@@ -1,6 +1,5 @@
 export * from "./use-mobile";
 export * from "./useDebouncedSearch";
-export * from "./useEscPosPrinter";
 export * from "./useInventoryFilters";
 export * from "./usePrintUtils";
 export * from "./usePrintWindow";

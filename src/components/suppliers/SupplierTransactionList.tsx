@@ -1,66 +1,52 @@
-"use client";
 
 import React, { useState, useEffect } from "react";
 import { 
-  Search, 
-  Filter, 
   ArrowUpRight, 
   ArrowDownLeft, 
   Clock, 
-  CheckCircle2, 
   AlertCircle,
-  MoreVertical,
-  ChevronRight,
   Eye,
   Printer
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate } from "@/lib/clientUtils";
+import { formatCurrency, formatDate } from "@/lib/supplierUtils";
 import { getTransactions, getTransactionById } from "@/lib/api/transactions";
-import { getClientById } from "@/lib/api/clients";
-
-import { Transaction, TransactionType, TransactionWithDetails } from "@/types/transaction";
-import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
+import { Transaction, TransactionWithDetails } from "@/types/transaction";
+import { TransactionDetailsDialog } from "../transactions/TransactionDetailsDialog";
 import { cn } from "@/lib/utils";
 import { useTransactions } from "@/context/TransactionContext";
 import { toast } from "sonner";
-
-import { useInventory } from "@/context/InventoryContext";
 import { useTranslation } from "react-i18next";
-import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { useSettings } from "@/context/SettingsContext";
 
+interface SupplierTransactionListProps {
+  supplierId: string;
+}
 
-export function TransactionHistory() {
+export function SupplierTransactionList({ supplierId }: SupplierTransactionListProps) {
   const { editTransaction } = useTransactions();
-  const { initialized } = useInventory();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("All");
   const [viewLoading, setViewLoading] = useState<string | null>(null);
-  const [printLoading, setPrintLoading] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithDetails | null>(null);
-  const { t, i18n } = useTranslation();
-  const { printTransactionReceipt } = usePrintUtils();
+  const { t } = useTranslation();
   const { settings } = useSettings();
 
-
   useEffect(() => {
-    if (initialized) {
+    if (supplierId) {
       loadTransactions();
     }
-  }, [initialized]);
+  }, [supplierId]);
 
   const loadTransactions = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getTransactions();
+      // Fetch transactions for this supplier
+      const data = await getTransactions(null, null, supplierId);
       setTransactions(data);
     } catch (err) {
       console.error("Failed to load transactions:", err);
@@ -87,96 +73,14 @@ export function TransactionHistory() {
     }
   };
 
-  const handlePrint = async (txId: string) => {
-    setPrintLoading(txId);
-    try {
-      const details = await getTransactionById(txId);
-      if (details) {
-        const { transaction, items, payments } = details;
-        let client = null;
-        let previousBalance = 0;
-
-        if (transaction.party_type === 'Client' && transaction.party_id) {
-          try {
-            client = await getClientById(transaction.party_id);
-            // Ideally we'd calculate balance at the time of transaction, but using current balance is acceptable for now
-            // as per previous implementation logic.
-            previousBalance = client ? client.outstandingBalance : 0;
-          } catch (e) {
-            console.error("Failed to fetch client for print:", e);
-          }
-        }
-
-        await printTransactionReceipt(
-          transaction,
-          items,
-          payments,
-          client,
-          previousBalance,
-          i18n.language,
-          settings.currency as any
-        );
-      } else {
-        toast.error(t('common.error'));
-      }
-    } catch (err) {
-      console.error("Failed to fetch transaction for print:", err);
-      toast.error(t('common.error'));
-    } finally {
-      setPrintLoading(null);
-    }
-  };
-
   const handleEdit = (details: TransactionWithDetails) => {
     editTransaction(details);
     setSelectedTransaction(null);
   };
 
-  const filteredTransactions = transactions.filter(tx => {
-    const matchesSearch = tx.transaction_number.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         tx.party_id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === "All" || tx.transaction_type === typeFilter;
-    return matchesSearch && matchesType;
-  });
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder={t('common.searchPlaceholder')} 
-            className="pl-10 rounded-xl dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex bg-muted dark:bg-slate-900 p-1 rounded-xl">
-            {["All", "Sale", "Purchase"].map((type) => (
-              <Button
-                key={type}
-                variant={typeFilter === type ? "default" : "ghost"}
-                size="sm"
-                className={cn(
-                  "rounded-lg text-xs font-bold uppercase tracking-wider h-8",
-                  typeFilter === type 
-                    ? (type === "Sale" ? "bg-green-600 dark:bg-green-700" : type === "Purchase" ? "bg-blue-600 dark:bg-blue-700" : "")
-                    : "dark:text-slate-400 dark:hover:bg-slate-800"
-                )}
-                onClick={() => setTypeFilter(type)}
-              >
-                {type === "All" ? t('common.all') : t(`transactions_module.${type.toLowerCase()}`)}
-              </Button>
-            ))}
-          </div>
-          <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 dark:bg-slate-900 dark:border-slate-800">
-            <Filter className="h-4 w-4 dark:text-slate-400" />
-          </Button>
-        </div>
-      </div>
-
-      <Card className="border dark:border-slate-800 shadow-md rounded-2xl overflow-hidden dark:bg-slate-900">
+      <Card className="border dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden dark:bg-slate-900 bg-white">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -191,7 +95,7 @@ export function TransactionHistory() {
             </thead>
             <tbody className="divide-y">
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => (
+                Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     <td colSpan={6} className="px-6 py-4 bg-muted/5 dark:bg-slate-800/20"></td>
                   </tr>
@@ -209,7 +113,7 @@ export function TransactionHistory() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredTransactions.length === 0 ? (
+              ) : transactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground dark:text-slate-500">
                     <div className="flex flex-col items-center gap-2">
@@ -218,7 +122,7 @@ export function TransactionHistory() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredTransactions.map((tx) => (
+              ) : transactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-muted/5 dark:hover:bg-slate-800/30 transition-colors group border-b dark:border-slate-800">
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
@@ -255,7 +159,7 @@ export function TransactionHistory() {
                     </Badge>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <span className="font-black text-sm text-foreground dark:text-slate-200">{formatCurrency(tx.total_amount)}</span>
+                    <span className="font-black text-sm text-foreground dark:text-slate-200">{formatCurrency(tx.total_amount, settings.currency)}</span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Button 
@@ -271,22 +175,6 @@ export function TransactionHistory() {
                         <Eye className="h-4 w-4 dark:text-slate-400" />
                       )}
                     </Button>
-                    {tx.transaction_type === "Sale" && (
-                         <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          disabled={printLoading === tx.id}
-                          onClick={() => handlePrint(tx.id)}
-                          className="rounded-xl group-hover:bg-background dark:group-hover:bg-slate-800 shadow-sm border dark:border-slate-700 opacity-0 group-hover:opacity-100 transition-all ml-1"
-                        >
-                          {printLoading === tx.id ? (
-                            <Clock className="h-4 w-4 animate-spin dark:text-slate-400" />
-                          ) : (
-                            <Printer className="h-4 w-4 dark:text-slate-400" />
-                          )}
-                        </Button>
-                    )}
-
                   </td>
                 </tr>
               ))}

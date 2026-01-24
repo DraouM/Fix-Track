@@ -9,7 +9,12 @@ import { renderStickerHTML } from "@/lib/barcode";
 import {
   renderRepairReceiptHTML,
   renderPaymentReceiptHTML,
+  renderTransactionReceiptHTML,
 } from "@/lib/printTemplates";
+import { Transaction, TransactionItem, TransactionPayment } from "@/types/transaction";
+import { clientSchema } from "@/types/client"; // Import for type usage if needed, or just rely on 'any' for now as in template
+
+import { useSettings } from "@/context/SettingsContext";
 
 interface PrintOptions {
   includePayments?: boolean;
@@ -32,7 +37,12 @@ export const usePrintUtils = () => {
   const [printHistory, setPrintHistory] = useState<PrintHistoryEntry[]>([]);
 
   const generatePrintContent = useCallback(
-    (data: Repair | InventoryItem, options: PrintOptions = {}) => {
+    (
+      data: Repair | InventoryItem,
+      options: PrintOptions = {},
+      language: string = "en",
+      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+    ) => {
       const { format = "receipt" } = options;
       const isRepair = "deviceBrand" in data;
       const repair = isRepair ? (data as Repair) : null;
@@ -54,13 +64,18 @@ export const usePrintUtils = () => {
       }
 
       if (format === "receipt" && isRepair) {
-        return renderRepairReceiptHTML(repair as Repair, options);
+        return renderRepairReceiptHTML(
+          repair as Repair,
+          options,
+          language,
+          currency,
+          "/logo_shop.svg"
+        );
       }
 
       // Fallback Receipt HTML
       return `
-        <html><body><h1>Receipt for ${
-          isRepair ? repair?.customerName : item?.itemName
+        <html><body><h1>Receipt for ${isRepair ? repair?.customerName : item?.itemName
         }</h1>
         <script>window.onload = () => { window.print(); window.close(); };</script>
         </body></html>
@@ -123,8 +138,7 @@ export const usePrintUtils = () => {
                 // Success notification after a brief delay
                 setTimeout(() => {
                   toast.success(
-                    `${
-                      type === "sticker" ? "Sticker" : "Receipt"
+                    `${type === "sticker" ? "Sticker" : "Receipt"
                     } sent to printer!`
                   );
                   addToPrintHistory(item, type, true);
@@ -168,8 +182,7 @@ export const usePrintUtils = () => {
                 printWindow.onload = () => {
                   setTimeout(() => {
                     toast.success(
-                      `${
-                        type === "sticker" ? "Sticker" : "Receipt"
+                      `${type === "sticker" ? "Sticker" : "Receipt"
                       } sent to printer!`
                     );
                     addToPrintHistory(item, type, true);
@@ -243,9 +256,18 @@ export const usePrintUtils = () => {
   );
 
   const printSticker = useCallback(
-    async (data: Repair | InventoryItem) => {
+    async (
+      data: Repair | InventoryItem,
+      language: string = "en",
+      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+    ) => {
       try {
-        const content = generatePrintContent(data, { format: "sticker" });
+        const content = generatePrintContent(
+          data,
+          { format: "sticker" },
+          language,
+          currency
+        );
         return printDocument(content, data, "sticker");
       } catch (error) {
         const errorMsg =
@@ -259,12 +281,22 @@ export const usePrintUtils = () => {
   );
 
   const printReceipt = useCallback(
-    async (repair: Repair, options: PrintOptions = {}) => {
+    async (
+      repair: Repair,
+      options: PrintOptions = {},
+      language: string = "en",
+      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+    ) => {
       try {
-        const content = generatePrintContent(repair, {
-          ...options,
-          format: "receipt",
-        });
+        const content = generatePrintContent(
+          repair,
+          {
+            ...options,
+            format: "receipt",
+          },
+          language,
+          currency
+        );
         return printDocument(content, repair, "receipt");
       } catch (error) {
         const errorMsg =
@@ -278,12 +310,21 @@ export const usePrintUtils = () => {
   );
 
   const printPaymentReceipt = useCallback(
-    async (payment: Payment, customerName?: string, referenceCode?: string) => {
+    async (
+      payment: Payment,
+      customerName?: string,
+      referenceCode?: string,
+      language: string = "en",
+      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+    ) => {
       try {
         const content = renderPaymentReceiptHTML(
           payment,
           customerName,
-          referenceCode
+          referenceCode,
+          language,
+          currency,
+          "/logo_shop2.svg"
         );
         return printDocument(content, { id: payment.id } as any, "receipt");
       } catch (error) {
@@ -296,8 +337,46 @@ export const usePrintUtils = () => {
     [printDocument]
   );
 
+  const printTransactionReceipt = useCallback(
+    async (
+      transaction: Transaction,
+      items: TransactionItem[],
+      payments: TransactionPayment[],
+      client: any,
+      previousBalance: number,
+      language: string = "en",
+      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+    ) => {
+      try {
+        const content = renderTransactionReceiptHTML(
+          transaction,
+          items,
+          payments,
+          client,
+          previousBalance,
+          language,
+          currency,
+          "/logo_shop.svg"
+        );
+        // Casting transaction to any to satisfy the minimal interface required by printDocument/addToPrintHistory
+        // effectively treating it as an item with an id.
+        return printDocument(content, transaction as any, "receipt");
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        toast.error(`Failed to generate transaction receipt: ${errorMsg}`);
+        return false;
+      }
+    },
+    [printDocument]
+  );
+
   const printStickersBulk = useCallback(
-    async (items: (Repair | InventoryItem)[]) => {
+    async (
+      items: (Repair | InventoryItem)[],
+      language: string = "en",
+      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+    ) => {
       if (items.length === 0) {
         toast.warning("No items selected for printing");
         return false;
@@ -305,7 +384,12 @@ export const usePrintUtils = () => {
 
       const results = await Promise.allSettled(
         items.map((item) => {
-          const content = generatePrintContent(item, { format: "sticker" });
+          const content = generatePrintContent(
+            item,
+            { format: "sticker" },
+            language,
+            currency
+          );
           return printDocument(content, item, "sticker");
         })
       );
@@ -329,7 +413,11 @@ export const usePrintUtils = () => {
   );
 
   const printAllStickers = useCallback(
-    async (allItems: (Repair | InventoryItem)[]) => {
+    async (
+      allItems: (Repair | InventoryItem)[],
+      language: string = "en",
+      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+    ) => {
       if (allItems.length === 0) {
         toast.warning("No items available to print");
         return false;
@@ -352,9 +440,14 @@ export const usePrintUtils = () => {
 
             Promise.allSettled(
               batch.map((item) => {
-                const content = generatePrintContent(item, {
-                  format: "sticker",
-                });
+                const content = generatePrintContent(
+                  item,
+                  {
+                    format: "sticker",
+                  },
+                  language,
+                  currency
+                );
                 return printDocument(content, item, "sticker");
               })
             ).then((results) => {
@@ -387,10 +480,17 @@ export const usePrintUtils = () => {
   const downloadAsHTML = useCallback(
     (
       data: Repair | InventoryItem,
-      format: "receipt" | "sticker" = "receipt"
+      format: "receipt" | "sticker" = "receipt",
+      language: string = "en",
+      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
     ) => {
       try {
-        const content = generatePrintContent(data, { format });
+        const content = generatePrintContent(
+          data,
+          { format },
+          language,
+          currency
+        );
         const blob = new Blob([content], { type: "text/html" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -414,6 +514,7 @@ export const usePrintUtils = () => {
   return {
     printReceipt,
     printPaymentReceipt,
+    printTransactionReceipt,
     printSticker,
     printStickersBulk,
     printAllStickers,

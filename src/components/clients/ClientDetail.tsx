@@ -39,6 +39,7 @@ import { ClientForm } from "./ClientForm";
 import { ClientPaymentModal } from "./ClientPaymentModal";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ClientHistoryList } from "./ClientHistoryList";
 
 interface ClientDetailProps {
   clientId: string;
@@ -469,78 +470,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
             </div>
 
             <TabsContent value="history" className="p-8 mt-0 outline-none">
-              <ScrollArea className="h-[500px] pr-4">
-                <div className="relative pl-12 space-y-8 pb-8">
-                  {/* Timeline track */}
-                  <div className="absolute left-[23px] top-2 bottom-6 w-0.5 bg-gray-100 dark:bg-slate-800" />
-
-                  {history.length > 0 ? (
-                    history.map((event, idx) => (
-                      <div
-                        key={event.id}
-                        className="relative group animate-in fade-in slide-in-from-left-4 duration-300"
-                        style={{ animationDelay: `${idx * 50}ms` }}
-                      >
-                        {/* Event indicator */}
-                        <div className="absolute -left-[45px] top-1.5 w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                          <Clock className="w-4 h-4 opacity-50 dark:opacity-60 group-hover:opacity-100" />
-                        </div>
-
-                        <div className="flex flex-col gap-1 italic mb-2 px-6">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 dark:text-muted-foreground/50">
-                            {formatDate(event.date)}
-                          </span>
-                        </div>
-
-                        <div className="p-5 rounded-2xl bg-gray-50/50 dark:bg-slate-950/50 border border-gray-100 dark:border-slate-800 group-hover:bg-white dark:group-hover:bg-slate-900 group-hover:shadow-md transition-all duration-300">
-                          <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "rounded-lg px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider shadow-none border",
-                                getEventBadgeStyles(event.event_type)
-                              )}
-                            >
-                              {event.event_type}
-                            </Badge>
-                            {event.amount !== undefined && (
-                              <span
-                                className={cn(
-                                  "text-sm font-black",
-                                  event.amount > 0
-                                    ? "text-red-500 dark:text-red-400"
-                                    : "text-green-600 dark:text-green-400"
-                                )}
-                              >
-                                {event.amount > 0 ? "+" : "-"}
-                                {formatCurrency(Math.abs(event.amount))}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-bold text-foreground/70 dark:text-slate-300 leading-relaxed mb-4">
-                            {event.notes}
-                          </p>
-                          <div className="flex items-center gap-2 pt-3 border-t border-gray-100/50 dark:border-slate-800/50">
-                            <FileText className="w-3 h-3 text-primary opacity-50" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/40">
-                              REF: {event.id.slice(0, 8)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                      <div className="w-16 h-16 bg-gray-50 dark:bg-slate-950 rounded-full flex items-center justify-center mb-4">
-                        <Activity className="w-8 h-8 text-muted-foreground/10 dark:text-muted-foreground/5" />
-                      </div>
-                      <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/40">
-                        No operations documented.
-                      </h3>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
+              <ClientHistoryList history={history} isLoading={loading} />
             </TabsContent>
 
             <TabsContent value="sales" className="p-8 mt-0 outline-none">

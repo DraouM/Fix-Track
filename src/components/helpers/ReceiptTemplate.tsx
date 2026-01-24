@@ -12,6 +12,8 @@ Connection: USB, Bluetooth, or Network
 
 import { Repair } from "@/types/repair";
 import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
+import { useTranslation } from "react-i18next";
 import { PrintHeader } from "./PrintHeader";
 import { PrintFooter } from "./PrintFooter";
 
@@ -32,10 +34,17 @@ export function ReceiptTemplate({
   logoUrl,
 }: ReceiptTemplateProps) {
   const { settings } = useSettings();
+  const { t, i18n } = useTranslation();
   const receiptWidth = settings.printDimensions.receipt.width;
-  
+
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const locale =
+      i18n.language === "ar"
+        ? "ar-SA"
+        : i18n.language === "fr"
+        ? "fr-FR"
+        : "en-US";
+    return new Date(dateString).toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -67,18 +76,26 @@ export function ReceiptTemplate({
       {/* Order Info */}
       <div style={{ marginBottom: "3px", fontSize: "7px" }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>Order #:</span>
+          <span>
+            {i18n.language === "ar"
+              ? "رقم الطلب:"
+              : i18n.language === "fr"
+              ? "Numéro de commande:"
+              : "Order #:"}
+          </span>
           <span style={{ fontWeight: "bold", fontSize: "8px" }}>
             {repair.code || repair.id}
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>Date:</span>
+          <span>
+            {i18n.language === "ar"
+              ? "التاريخ:"
+              : i18n.language === "fr"
+              ? "Date:"
+              : "Date:"}
+          </span>
           <span>{formatDate(repair.createdAt)}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>Status:</span>
-          <span style={{ fontWeight: "bold" }}>{repair.status}</span>
         </div>
       </div>
 
@@ -86,7 +103,13 @@ export function ReceiptTemplate({
 
       {/* Customer Info */}
       <div style={{ marginBottom: "4px", fontSize: "8px" }}>
-        <div style={{ fontWeight: "bold", marginBottom: "2px" }}>CUSTOMER:</div>
+        <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
+          {i18n.language === "ar"
+            ? "العميل:"
+            : i18n.language === "fr"
+            ? "CLIENT:"
+            : "CUSTOMER:"}
+        </div>
         <div>{repair.customerName}</div>
         <div>{repair.customerPhone}</div>
       </div>
@@ -95,12 +118,24 @@ export function ReceiptTemplate({
 
       {/* Device Info */}
       <div style={{ marginBottom: "4px", fontSize: "8px" }}>
-        <div style={{ fontWeight: "bold", marginBottom: "2px" }}>DEVICE:</div>
+        <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
+          {i18n.language === "ar"
+            ? "الجهاز:"
+            : i18n.language === "fr"
+            ? "DISPOSITIF:"
+            : "DEVICE:"}
+        </div>
         <div>
           {repair.deviceBrand} {repair.deviceModel}
         </div>
         <div style={{ marginTop: "2px" }}>
-          <div style={{ fontWeight: "bold" }}>Issue:</div>
+          <div style={{ fontWeight: "bold" }}>
+            {i18n.language === "ar"
+              ? "المشكلة:"
+              : i18n.language === "fr"
+              ? "PROBLÈME:"
+              : "Issue:"}
+          </div>
           <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
             {repair.issueDescription}
           </div>
@@ -114,7 +149,11 @@ export function ReceiptTemplate({
         <>
           <div style={{ marginBottom: "4px", fontSize: "8px" }}>
             <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-              PARTS USED:
+              {i18n.language === "ar"
+                ? "قطع الغيار المستخدمة:"
+                : i18n.language === "fr"
+                ? "PIÈCES UTILISÉES:"
+                : "PARTS USED:"}
             </div>
             {repair.usedParts.map((part, index) => (
               <div
@@ -146,15 +185,18 @@ export function ReceiptTemplate({
             fontSize: "11px",
           }}
         >
-          <span>REPAIR COST:</span>
+          <span>
+            {i18n.language === "ar"
+              ? "تكلفة الإصلاح:"
+              : i18n.language === "fr"
+              ? "COUT DE RÉPARATION:"
+              : "REPAIR COST:"}
+          </span>
           <span>${repair.estimatedCost.toFixed(2)}</span>
         </div>
 
         {includePayments && repair.payments && repair.payments.length > 0 && (
           <div style={{ marginTop: "4px", fontSize: "8px" }}>
-            <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-              PAYMENTS:
-            </div>
             <div
               style={{
                 borderTop: "1px solid #000",
@@ -169,7 +211,13 @@ export function ReceiptTemplate({
                   fontWeight: "bold",
                 }}
               >
-                <span>TOTAL PAID:</span>
+                <span>
+                  {i18n.language === "ar"
+                    ? "إجمالي المدفوع:"
+                    : i18n.language === "fr"
+                    ? "TOTAL PAYÉ:"
+                    : "TOTAL PAID:"}
+                </span>
                 <span>${totalPaid.toFixed(2)}</span>
               </div>
             </div>
@@ -186,14 +234,14 @@ export function ReceiptTemplate({
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>BALANCE DUE:</span>
+            <span>
+              {i18n.language === "ar"
+                ? "الرصيد المطلوب:"
+                : i18n.language === "fr"
+                ? "SOLDE DÛ:"
+                : "BALANCE DUE:"}
+            </span>
             <span>${balance.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div style={{ marginTop: "3px", fontSize: "8px", textAlign: "center" }}>
-          <div style={{ fontWeight: "bold" }}>
-            Payment Status: {repair.paymentStatus}
           </div>
         </div>
       </div>

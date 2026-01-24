@@ -88,6 +88,21 @@ pub fn create_transaction(mut transaction: Transaction) -> Result<Transaction, S
     )
     .map_err(|e| e.to_string())?;
 
+    // Log party history
+    if transaction.party_type == "Client" {
+        let h_id = Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Sale Created", format!("Sale {} created", transaction.transaction_number), 0.0, transaction.created_by],
+        ).map_err(|e| e.to_string())?;
+    } else {
+        let h_id = Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Purchase Order Created", format!("Order {} created", transaction.transaction_number), 0.0, transaction.created_by],
+        ).map_err(|e| e.to_string())?;
+    }
+
     Ok(transaction)
 }
 
@@ -95,6 +110,7 @@ pub fn create_transaction(mut transaction: Transaction) -> Result<Transaction, S
 pub fn get_transactions(
     type_filter: Option<String>,
     status_filter: Option<String>,
+    party_filter: Option<String>,
 ) -> Result<Vec<Transaction>, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
 
@@ -105,6 +121,9 @@ pub fn get_transactions(
     }
     if let Some(s) = status_filter {
         query.push_str(&format!(" AND status = '{}'", s));
+    }
+    if let Some(p) = party_filter {
+        query.push_str(&format!(" AND party_id = '{}'", p));
     }
 
     query.push_str(" ORDER BY created_at DESC");
@@ -784,5 +803,23 @@ pub fn submit_transaction(
     ).map_err(|e| e.to_string())?;
 
     tx.commit().map_err(|e| e.to_string())?;
+
+    // Log party history (post-commit to ensure transaction exists)
+    let conn = db::get_connection().map_err(|e| e.to_string())?;
+    let history_sql = if transaction.party_type == "Client" {
+        "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+    } else {
+        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"
+    };
+    
+    let party_type_label = if transaction.party_type == "Client" { "Sale" } else { "Order" };
+    let event_type = if transaction.party_type == "Client" { "Sale Created" } else { "Purchase Order Created" };
+
+    let h_id = Uuid::new_v4().to_string();
+    conn.execute(
+        history_sql,
+        params![h_id, transaction.party_id, Utc::now().to_rfc3339(), event_type, format!("{} {} submitted", party_type_label, transaction.transaction_number), 0.0, transaction.created_by],
+    ).ok();
+
     Ok(())
 }

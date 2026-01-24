@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useRepairActions, useRepairContext } from "@/context/RepairContext";
 import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 import {
   Repair,
   RepairStatus,
@@ -59,13 +60,21 @@ const statusConfig: Record<
   RepairStatus,
   { color: string; bg: string; icon: any }
 > = {
-  Pending: { color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950/40", icon: Clock },
+  Pending: {
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    icon: Clock,
+  },
   "In Progress": {
     color: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-50 dark:bg-blue-950/40",
     icon: SmartphoneNfc,
   },
-  Completed: { color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-950/40", icon: CheckCircle2 },
+  Completed: {
+    color: "text-green-600 dark:text-green-400",
+    bg: "bg-green-50 dark:bg-green-950/40",
+    icon: CheckCircle2,
+  },
   Delivered: {
     color: "text-purple-600 dark:text-purple-400",
     bg: "bg-purple-50 dark:bg-purple-950/40",
@@ -78,13 +87,16 @@ export function RepairDetail({
   open,
   onOpenChange,
 }: RepairDetailProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { updateRepairStatus, fetchRepairById } = useRepairActions();
   const { getItemById, repairs } = useRepairContext();
-  const { getCurrencySymbol } = useSettings();
+  const { settings } = useSettings();
   const { printReceipt, printSticker } = usePrintUtils();
-  
-  const currencySymbol = getCurrencySymbol();
+
+  const currencySymbol =
+    settings.currency in CURRENCY_SYMBOLS
+      ? CURRENCY_SYMBOLS[settings.currency]
+      : "$";
 
   const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
   const [isPrintingSticker, setIsPrintingSticker] = useState(false);
@@ -353,23 +365,25 @@ export function RepairDetail({
                               0;
 
                             return (
-                                <tr
-                                  key={idx}
-                                  className="hover:bg-muted/5 dark:hover:bg-slate-800/30 transition-colors"
-                                >
-                                  <td className="px-5 py-3 text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-tight">
-                                    {partName}
-                                  </td>
-                                  <td className="px-5 py-3 text-xs font-bold text-center text-gray-500">
-                                    {quantity}
-                                  </td>
-                                  <td className="px-5 py-3 text-xs font-bold text-end text-gray-500">
-                                    {currencySymbol}{cost.toFixed(2)}
-                                  </td>
-                                  <td className="px-5 py-3 text-xs font-black text-end text-foreground dark:text-slate-200">
-                                    {currencySymbol}{(quantity * cost).toFixed(2)}
-                                  </td>
-                                </tr>
+                              <tr
+                                key={idx}
+                                className="hover:bg-muted/5 dark:hover:bg-slate-800/30 transition-colors"
+                              >
+                                <td className="px-5 py-3 text-xs font-bold text-gray-700 dark:text-slate-300 uppercase tracking-tight">
+                                  {partName}
+                                </td>
+                                <td className="px-5 py-3 text-xs font-bold text-center text-gray-500">
+                                  {quantity}
+                                </td>
+                                <td className="px-5 py-3 text-xs font-bold text-end text-gray-500">
+                                  {currencySymbol}
+                                  {cost.toFixed(2)}
+                                </td>
+                                <td className="px-5 py-3 text-xs font-black text-end text-foreground dark:text-slate-200">
+                                  {currencySymbol}
+                                  {(quantity * cost).toFixed(2)}
+                                </td>
+                              </tr>
                             );
                           })
                         ) : (
@@ -704,7 +718,8 @@ export function RepairDetail({
                         {t("repairs.totalEstimated")}
                       </p>
                       <p className="text-4xl font-black text-primary dark:text-blue-500 tracking-tighter">
-                        {currencySymbol}{currentRepair.estimatedCost.toFixed(2)}
+                        {currencySymbol}
+                        {currentRepair.estimatedCost.toFixed(2)}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -713,7 +728,8 @@ export function RepairDetail({
                           {t("repairs.paidAmount")}
                         </span>
                         <span className="text-lg font-black text-green-700 dark:text-green-300">
-                          {currencySymbol}{totalPaid.toFixed(2)}
+                          {currencySymbol}
+                          {totalPaid.toFixed(2)}
                         </span>
                       </div>
                       <div className="p-4 rounded-2xl bg-red-500/5 dark:bg-red-900/10 border border-red-500/10 dark:border-red-900/20 flex flex-col">
@@ -721,7 +737,8 @@ export function RepairDetail({
                           {t("repairs.totalBalance")}
                         </span>
                         <span className="text-lg font-black text-red-700 dark:text-red-300">
-                          {currencySymbol}{remainingBalance.toFixed(2)}
+                          {currencySymbol}
+                          {remainingBalance.toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -751,10 +768,15 @@ export function RepairDetail({
                   <Button
                     onClick={async () => {
                       setIsPrintingReceipt(true);
-                      await printReceipt(currentRepair, {
-                        includePayments: true,
-                        includeParts: true,
-                      });
+                      await printReceipt(
+                        currentRepair,
+                        {
+                          includePayments: true,
+                          includeParts: true,
+                        },
+                        i18n.language,
+                        settings.currency
+                      );
                       setIsPrintingReceipt(false);
                     }}
                     disabled={isPrintingReceipt}
@@ -770,7 +792,11 @@ export function RepairDetail({
                   <Button
                     onClick={async () => {
                       setIsPrintingSticker(true);
-                      await printSticker(currentRepair);
+                      await printSticker(
+                        currentRepair,
+                        i18n.language,
+                        settings.currency
+                      );
                       setIsPrintingSticker(false);
                     }}
                     disabled={isPrintingSticker}

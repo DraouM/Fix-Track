@@ -51,13 +51,6 @@ export function TransactionProvider({
   const { emit } = useEvents();
   const { t } = useTranslation();
 
-  // Initialize first workspace if empty
-  useEffect(() => {
-    if (workspaces.length === 0) {
-      addWorkspace("Sale");
-    }
-  }, []);
-
   const addWorkspace = (type: TransactionType = "Sale") => {
     const id = uuidv4();
     // We cannot reliably use workspaces.length inside the functional update for naming,
@@ -68,9 +61,9 @@ export function TransactionProvider({
     setWorkspaces((prev) => {
       const newWorkspace: TransactionWorkspace = {
         id,
-        name: t("transactions_module.workspace.new", { 
-          type: t(`transactions_module.${type.toLowerCase()}`), 
-          number: prev.length + 1 
+        name: t("transactions_module.workspace.new", {
+          type: t(`transactions_module.${type.toLowerCase()}`),
+          number: prev.length + 1,
         }),
         type,
         party_id: "",
@@ -94,9 +87,9 @@ export function TransactionProvider({
       const type = "Sale";
       const newWorkspace: TransactionWorkspace = {
         id: newId,
-        name: t("transactions_module.workspace.new", { 
-          type: t(`transactions_module.${type.toLowerCase()}`), 
-          number: 1 
+        name: t("transactions_module.workspace.new", {
+          type: t(`transactions_module.${type.toLowerCase()}`),
+          number: 1,
         }),
         type,
         party_id: "",
@@ -141,8 +134,10 @@ export function TransactionProvider({
       id: transaction.id,
       name:
         transaction.transaction_number ||
-        t("transactions_module.workspace.edit", { 
-          type: t(`transactions_module.${transaction.transaction_type.toLowerCase()}`) 
+        t("transactions_module.workspace.edit", {
+          type: t(
+            `transactions_module.${transaction.transaction_type.toLowerCase()}`
+          ),
         }),
       type: transaction.transaction_type as TransactionType,
       party_id: transaction.party_id,
@@ -164,7 +159,7 @@ export function TransactionProvider({
 
   const clearWorkspaces = () => {
     setWorkspaces([]);
-    addWorkspace("Sale");
+    setActiveWorkspaceId("");
     // Emit event when workspaces are cleared
     emit("financial-data-change");
   };

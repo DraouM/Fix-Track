@@ -33,6 +33,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SupplierHistoryList } from "./SupplierHistoryList";
+import { SupplierTransactionList } from "./SupplierTransactionList";
 import {
   Table,
   TableBody,
@@ -490,185 +492,11 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
             </div>
 
             <TabsContent value="history" className="p-8 mt-0 outline-none">
-              <ScrollArea className="h-[500px] pr-4">
-                <div className="relative pl-12 space-y-8 pb-8">
-                  {/* Timeline track */}
-                  <div className="absolute left-[23px] top-2 bottom-6 w-0.5 bg-gray-100 dark:bg-slate-800" />
-
-                  {history.length > 0 ? (
-                    history.map((event, idx) => (
-                      <div
-                        key={event.id}
-                        className="relative group animate-in fade-in slide-in-from-left-4 duration-300"
-                        style={{ animationDelay: `${idx * 50}ms` }}
-                      >
-                        {/* Event indicator */}
-                        <div className="absolute -left-[45px] top-1.5 w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                          <Clock className="w-4 h-4 opacity-50 dark:opacity-40 group-hover:opacity-100" />
-                        </div>
-
-                        <div className="flex flex-col gap-1 italic mb-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 dark:text-muted-foreground/50">
-                            {formatDate(event.date)}
-                          </span>
-                        </div>
-
-                        <div className="p-5 rounded-2xl bg-gray-50/50 dark:bg-slate-950/50 border border-gray-100 dark:border-slate-800 group-hover:bg-white dark:group-hover:bg-slate-900 group-hover:shadow-md transition-all duration-300">
-                          <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "rounded-lg px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider shadow-none border",
-                                getHistoryEventBadgeVariant(event.type)
-                              )}
-                            >
-                              {event.type}
-                            </Badge>
-                            {event.amount && (
-                              <span className="text-sm font-black text-foreground dark:text-slate-200">
-                                {formatCurrency(
-                                  event.amount,
-                                  settings.currency
-                                )}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm font-bold text-foreground/70 dark:text-slate-400 leading-relaxed mb-4">
-                            {event.notes}
-                          </p>
-                          {event.relatedId && (
-                            <div className="flex items-center gap-2 pt-3 border-t border-gray-100/50 dark:border-slate-800/50">
-                              <FileText className="w-3 h-3 text-primary opacity-50" />
-                              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/40">
-                                Ref: {event.relatedId}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                        <Activity className="w-8 h-8 text-muted-foreground/10" />
-                      </div>
-                      <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/40">
-                        No activity documented.
-                      </h3>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
+              <SupplierHistoryList history={history} isLoading={loadingOrders} /> 
             </TabsContent>
 
             <TabsContent value="orders" className="p-8 mt-0 outline-none">
-              {loadingOrders ? (
-                <div className="py-20 text-center italic">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 animate-pulse">
-                    Fetching procurement history...
-                  </p>
-                </div>
-              ) : orders.length > 0 ? (
-                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xl shadow-gray-200/50 dark:shadow-slate-950/20 overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
-                      <TableRow className="border-b dark:border-slate-800">
-                        <TableHead className="text-[10px] font-black uppercase tracking-widest py-4 pl-6 text-muted-foreground dark:text-muted-foreground/50">
-                          Order Registry
-                        </TableHead>
-                        <TableHead className="text-[10px] font-black uppercase tracking-widest py-4 text-muted-foreground dark:text-muted-foreground/50">
-                          Total Value
-                        </TableHead>
-                        <TableHead className="text-[10px] font-black uppercase tracking-widest py-4 text-muted-foreground dark:text-muted-foreground/50">
-                          Settlement Progress
-                        </TableHead>
-                        <TableHead className="text-[10px] font-black uppercase tracking-widest py-4 text-muted-foreground dark:text-muted-foreground/50">
-                          Fulfillment Status
-                        </TableHead>
-                        <TableHead className="text-right text-[10px] font-black uppercase tracking-widest py-4 pr-6 text-muted-foreground dark:text-muted-foreground/50">
-                          Directives
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody className="dark:border-slate-800">
-                      {orders.map((order) => (
-                        <TableRow
-                          key={order.id}
-                          className="group hover:bg-muted/30 dark:hover:bg-slate-800/30 transition-colors border-b dark:border-slate-800"
-                        >
-                          <TableCell className="py-5 pl-6">
-                            <div className="flex flex-col">
-                              <span className="font-black text-sm text-foreground">
-                                #{order.order_number}
-                              </span>
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 opacity-60">
-                                {order.created_at.split("T")[0]}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-5 font-black text-sm text-foreground dark:text-slate-200">
-                            {formatCurrency(
-                              order.total_amount,
-                              settings.currency
-                            )}
-                          </TableCell>
-                          <TableCell className="py-5">
-                            <div className="flex flex-col gap-1.5">
-                              <div className="flex items-center gap-2 font-black text-[11px] text-foreground/80 dark:text-slate-300">
-                                <span className="text-emerald-600 dark:text-emerald-500">
-                                  {formatCurrency(
-                                    order.paid_amount,
-                                    settings.currency
-                                  )}
-                                </span>
-                                <span className="text-muted-foreground/30 dark:text-muted-foreground/20">
-                                  /{" "}
-                                  {formatCurrency(
-                                    order.total_amount,
-                                    settings.currency
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-5">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "rounded-lg px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider border shadow-none",
-                                order.payment_status === "paid"
-                                  ? "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40"
-                                  : "bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/40"
-                              )}
-                            >
-                              {order.payment_status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right py-5 pr-6">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              asChild
-                              className="h-9 w-9 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-white"
-                            >
-                              <Link href={`/orders`}>
-                                <ChevronRight className="w-4 h-4" />
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="py-24 text-center border-2 border-dashed border-gray-100 dark:border-slate-800 rounded-[2.5rem] bg-gray-50/30 dark:bg-slate-950/30">
-                  <Box className="w-12 h-12 text-muted-foreground/10 dark:text-muted-foreground/5 mx-auto mb-6" />
-                  <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/30 dark:text-muted-foreground/20">
-                    Zero procurement orders documented.
-                  </h3>
-                </div>
-              )}
+              <SupplierTransactionList supplierId={supplierId} />
             </TabsContent>
 
             <TabsContent value="analytics" className="p-8 mt-0 outline-none">

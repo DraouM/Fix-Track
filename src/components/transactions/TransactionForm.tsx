@@ -33,6 +33,9 @@ import {
 import { useInventory } from "@/context/InventoryContext";
 import { useEvents } from "@/context/EventContext";
 import { useTranslation } from "react-i18next";
+import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { useSettings } from "@/context/SettingsContext";
+import { useClientContext } from "@/context/ClientContext";
 
 export function TransactionForm() {
   const router = useRouter();
@@ -43,7 +46,10 @@ export function TransactionForm() {
     setActiveWorkspaceId,
   } = useTransactions();
   const { emit } = useEvents();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { printTransactionReceipt } = usePrintUtils();
+  const { settings } = useSettings();
+  const { fetchClientById, selectedClient } = useClientContext();
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -59,6 +65,13 @@ export function TransactionForm() {
     payment_method,
     notes,
   } = activeWorkspace;
+
+  // Enhance: Fetch client details when party_id changes
+  React.useEffect(() => {
+    if (party_id && party_type === "Client") {
+      fetchClientById(party_id);
+    }
+  }, [party_id, party_type, fetchClientById]);
 
   const totalAmount = items.reduce((sum, item) => sum + item.total_price, 0);
 
@@ -210,7 +223,25 @@ export function TransactionForm() {
         })
       );
 
-      setTimeout(() => {
+      setTimeout(async () => {
+        // Print receipt if it's a completed Sale
+        if (complete && type === "Sale") {
+            const clientToPrint = party_type === 'Client' && selectedClient?.id === party_id ? selectedClient : null;
+            // The client context might be stale or not updated with the latest balance yet, 
+            // but for "Previous Balance" we specifically want the balance BEFORE this transaction.
+            // selectedClient.outstandingBalance holds the current balance from DB.
+            const previousBalance = clientToPrint ? clientToPrint.outstandingBalance : 0;
+
+            await printTransactionReceipt(
+                transactionModel,
+                itemModels,
+                paymentModels,
+                clientToPrint,
+                previousBalance,
+                i18n.language,
+                settings.currency as any
+            );
+        }
         removeWorkspace(id);
       }, 500);
     } catch (err) {
@@ -230,18 +261,20 @@ export function TransactionForm() {
     <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 pb-24">
       {/* Top Header Navigation */}
       <div className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 sticky top-0 z-40 shadow-sm px-6 py-3">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between w-full">
+          <div className="flex items-center gap-6 w-full max-w-full">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => router.back()}
-              className="rounded-xl"
+              onClick={() => setActiveWorkspaceId("")}
+              className="rounded-xl flex-shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="h-8 w-px bg-muted-foreground/10"></div>
-            <TransactionWorkspace />
+            <div className="h-8 w-px bg-muted-foreground/10 flex-shrink-0"></div>
+            <div className="flex-1 w-0">
+              <TransactionWorkspace />
+            </div>
           </div>
 
           <div className="flex items-center gap-3">

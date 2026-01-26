@@ -7,7 +7,7 @@ interface BarcodeVisualProps {
 }
 
 export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
-  const { barcodeValue, title, mainText, subText } = data;
+  const { barcodeValue, title, mainText, subText, showBarcode, barcodeLabel } = data;
 
   return (
     <div
@@ -22,7 +22,8 @@ export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "center",
+        gap: "1.5mm",
         boxSizing: "border-box",
         overflow: "hidden",
         position: "relative", // Ensure it's contained
@@ -30,42 +31,52 @@ export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
       }}
     >
       {/* Title */}
-      <div style={{ fontSize: "10px", fontWeight: "bold", textAlign: "center", width: "100%" }}>
-        {title}
-      </div>
+      {title && (
+        <div style={{ fontSize: "10px", fontWeight: "bold", textAlign: "center", width: "100%", textTransform: "uppercase" }}>
+          {title}
+        </div>
+      )}
 
       {/* Main Desc */}
       <div style={{ 
-        fontSize: "14px", 
+        fontSize: "12px", 
         fontWeight: "900", 
         textAlign: "center", 
         width: "100%",
-        whiteSpace: "nowrap",
+        display: "-webkit-box",
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: "vertical",
         overflow: "hidden",
-        textOverflow: "ellipsis"
+        lineHeight: "1.2"
       }}>
         {mainText}
       </div>
 
-      {/* Barcode Visual */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1px" }}>
-        <div style={{ 
-          fontFamily: "'Libre Barcode 39', cursive", 
-          fontSize: "28px", 
-          lineHeight: "1",
-          margin: "0"
-        }}>
-          *{barcodeValue}*
-        </div>
-        <div style={{ fontSize: "8px", fontWeight: "bold", letterSpacing: "1px" }}>
-          {barcodeValue}
-        </div>
+      {/* Center Content (Barcode or Phone) */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1px", width: "100%" }}>
+        {showBarcode !== false && (
+          <div style={{ 
+            fontFamily: "'Libre Barcode 39', cursive", 
+            fontSize: "28px", 
+            lineHeight: "1",
+            margin: "0"
+          }}>
+            *{barcodeValue}*
+          </div>
+        )}
+        {barcodeLabel && (
+          <div style={{ fontSize: "10px", fontWeight: "900", textAlign: "center" }}>
+            {barcodeLabel}
+          </div>
+        )}
       </div>
 
       {/* Subtext */}
-      <div style={{ fontSize: "10px", fontWeight: "bold" }}>
-        {subText}
-      </div>
+      {subText && (
+        <div style={{ fontSize: "10px", fontWeight: "bold" }}>
+          {subText}
+        </div>
+      )}
       
       {/* Inject Font Style (Scoped) */}
       <style dangerouslySetInnerHTML={{ __html: `

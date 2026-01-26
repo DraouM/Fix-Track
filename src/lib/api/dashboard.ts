@@ -32,3 +32,15 @@ export async function getRevenueBreakdown(days: number = 30): Promise<RevenueBre
 export async function getDashboardStats(): Promise<DashboardStats> {
     return await invoke("get_dashboard_stats");
 }
+
+export async function getRevenueHistoryByRange(startDate: string, endDate: string): Promise<RevenueData[]> {
+    return await invoke("get_revenue_history_by_range", { startDate, endDate });
+}
+
+export async function getDashboardStatsByRange(startDate: string, endDate: string): Promise<DashboardStats> {
+    return await invoke("get_dashboard_stats_by_range", { startDate, endDate });
+}
+
+export async function getDashboardTransactionsByRange(startDate: string, endDate: string): Promise<any[]> {
+    return await invoke("get_dashboard_transactions_by_range", { startDate, endDate });
+}

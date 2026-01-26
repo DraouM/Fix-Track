@@ -107,44 +107,26 @@ export function renderRepairReceiptHTML(
       }" style="max-width: 60mm; max-height: 40mm; object-fit: contain;"></div>`
       : ""
     }
-          <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">${shopInfo.shopName
-    }</div>
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">${shopInfo.shopName}</div>
           <div style="font-size: 7px;">${shopInfo.address}</div>
-          <div style="font-size: 7px;">Tel: ${shopInfo.phoneNumber}</div>
+          <div style="font-size: 7px;">${language === "ar" ? "هاتف" : language === "fr" ? "Tél" : "Tel"}: ${shopInfo.phoneNumber}</div>
         </div>
 
         <div style="margin-bottom: 3px; font-size: 7px;">
           <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar"
-      ? "رقم الطلب:"
-      : language === "fr"
-        ? "Numéro de commande:"
-        : "Order #:"
-    }</span>
-            <span style="font-weight: bold; font-size: 8px;">${repair.code || repair.id
-    }</span>
+            <span>${language === "ar" ? "رقم الطلب" : language === "fr" ? "N° de commande" : "Order #"}:</span>
+            <span style="font-weight: bold; font-size: 8px;">${repair.code || repair.id}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar"
-      ? "التاريخ:"
-      : language === "fr"
-        ? "Date:"
-        : "Date:"
-    }</span>
+            <span>${language === "ar" ? "التاريخ" : language === "fr" ? "Date" : "Date"}:</span>
             <span>${formatDate(repair.createdAt)}</span>
           </div>
-
         </div>
 
         <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
 
         <div style="margin-bottom: 4px; font-size: 8px;">
-          <div style="font-weight: bold; margin-bottom: 2px;">${language === "ar"
-      ? "العميل:"
-      : language === "fr"
-        ? "CLIENT:"
-        : "CUSTOMER:"
-    }</div>
+          <div style="font-weight: bold; margin-bottom: 2px;">${language === "ar" ? "العميل" : language === "fr" ? "Client" : "Customer"}:</div>
           <div>${repair.customerName}</div>
           <div>${repair.customerPhone}</div>
         </div>
@@ -152,22 +134,11 @@ export function renderRepairReceiptHTML(
         <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
 
         <div style="margin-bottom: 4px; font-size: 8px;">
-          <div style="font-weight: bold; margin-bottom: 2px;">${language === "ar"
-      ? "الجهاز:"
-      : language === "fr"
-        ? "DISPOSITIF:"
-        : "DEVICE:"
-    }</div>
+          <div style="font-weight: bold; margin-bottom: 2px;">${language === "ar" ? "الجهاز" : language === "fr" ? "Appareil" : "Device"}:</div>
           <div>${repair.deviceBrand} ${repair.deviceModel}</div>
           <div style="margin-top: 2px;">
-            <div style="font-weight: bold;">${language === "ar"
-      ? "المشكلة:"
-      : language === "fr"
-        ? "PROBLÈME:"
-        : "Issue:"
-    }</div>
-            <div style="white-space: pre-wrap; word-break: break-all;">${repair.issueDescription
-    }</div>
+            <div style="font-weight: bold;">${language === "ar" ? "المشكلة" : language === "fr" ? "Problème" : "Issue"}:</div>
+            <div style="white-space: pre-wrap; word-break: break-all;">${repair.issueDescription}</div>
           </div>
         </div>
 
@@ -175,36 +146,22 @@ export function renderRepairReceiptHTML(
 
         <div style="margin-bottom: 4px; font-size: 9px;">
           <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px;">
-            <span>${language === "ar"
-      ? "تكلفة الإصلاح:"
-      : language === "fr"
-        ? "COUT DE RÉPARATION:"
-        : "REPAIR COST:"
-    }</span>
-            <span>${CURRENCY_SYMBOLS[currency]}${repair.estimatedCost.toFixed(
-      2
-    )}</span>
+            <span>${language === "ar" ? "تكلفة الإصلاح" : language === "fr" ? "Coût réparation" : "Repair Cost"}:</span>
+            <span>${CURRENCY_SYMBOLS[currency]}${repair.estimatedCost.toFixed(2)}</span>
           </div>
           ${paymentsHTML}
           <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; font-size: 10px; font-weight: bold;">
             <div style="display: flex; justify-content: space-between;">
-              <span>${language === "ar"
-      ? "الرصيد المطلوب:"
-      : language === "fr"
-        ? "SOLDE DÛ:"
-        : "BALANCE DUE:"
-    }</span>
+              <span>${language === "ar" ? "الرصيد المطلوب" : language === "fr" ? "Solde dû" : "Balance Due"}:</span>
               <span>${CURRENCY_SYMBOLS[currency]}${balance.toFixed(2)}</span>
             </div>
           </div>
-          
         </div>
 
         <div style="text-align: center; font-size: 7px; margin-top: 4px;">
           <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-          <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter
-    }</div>
-          <div style="font-size: 6px; color: #666;">Generated by Fixary POS</div>
+          <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter}</div>
+          <div style="font-size: 6px; color: #666;">${language === "ar" ? "تم إنشاؤه بواسطة Fixary POS" : language === "fr" ? "Généré par Fixary POS" : "Generated by Fixary POS"}</div>
         </div>
 
         <div style="text-align: center; margin-top: 6px; font-size: 7px;">
@@ -272,49 +229,28 @@ export function renderPaymentReceiptHTML(
       }" style="max-width: 60mm; max-height: 40mm; object-fit: contain;"></div>`
       : ""
     }
-          <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">${shopInfo.shopName
-    }</div>
+          <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">${shopInfo.shopName}</div>
           <div style="font-size: 7px;">${shopInfo.address}</div>
-          <div style="font-size: 7px;">Tel: ${shopInfo.phoneNumber}</div>
+          <div style="font-size: 7px;">${language === "ar" ? "هاتف" : language === "fr" ? "Tél" : "Tel"}: ${shopInfo.phoneNumber}</div>
         </div>
 
         <div style="text-align: center; margin: 4px 0; font-weight: bold; font-size: 10px;">
-          ${language === "ar"
-      ? "إيصال الدفع"
-      : language === "fr"
-        ? "REÇU DE PAIEMENT"
-        : "PAYMENT RECEIPT"
-    }
+          ${language === "ar" ? "إيصال دفع" : language === "fr" ? "REÇU DE PAIEMENT" : "PAYMENT RECEIPT"}
         </div>
 
         <div style="margin-bottom: 4px; font-size: 7px;">
           <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar"
-      ? "معرّف الإيصال:"
-      : language === "fr"
-        ? "ID du reçu:"
-        : "Receipt ID:"
-    }</span>
+            <span>${language === "ar" ? "رقم الإيصال" : language === "fr" ? "ID du reçu" : "Receipt ID"}:</span>
             <span>${payment.id}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar"
-      ? "التاريخ:"
-      : language === "fr"
-        ? "Date:"
-        : "Date:"
-    }</span>
+            <span>${language === "ar" ? "التاريخ" : language === "fr" ? "Date" : "Date"}:</span>
             <span>${formatDate(payment.date)}</span>
           </div>
           ${referenceCode
       ? `
           <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar"
-        ? "مرجع:"
-        : language === "fr"
-          ? "Référence:"
-          : "Reference:"
-      }</span>
+            <span>${language === "ar" ? "المرجع" : language === "fr" ? "Référence" : "Reference"}:</span>
             <span style="font-weight: bold;">${referenceCode}</span>
           </div>
           `
@@ -326,42 +262,21 @@ export function renderPaymentReceiptHTML(
 
         <div style="margin-bottom: 4px;">
           ${customerName
-      ? `<div style="margin-bottom: 2px;"><span style="font-weight: bold;">${language === "ar"
-        ? "تم الاستلام من:"
-        : language === "fr"
-          ? "Reçu de:"
-          : "Received From:"
-      }</span> ${customerName}</div>`
+      ? `<div style="margin-bottom: 2px;"><span style="font-weight: bold;">${language === "ar" ? "استلم من" : language === "fr" ? "Reçu de" : "Received From"}:</span> ${customerName}</div>`
       : ""
     }
           <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 4px;">
-            <span style="font-weight: bold;">${language === "ar"
-      ? "المبلغ المدفوع:"
-      : language === "fr"
-        ? "MONTANT PAYÉ:"
-        : "AMOUNT PAID:"
-    }</span>
-            <span style="font-weight: bold;">${CURRENCY_SYMBOLS[currency]
-    }${payment.amount.toFixed(2)}</span>
+            <span style="font-weight: bold;">${language === "ar" ? "المبلغ المدفوع" : language === "fr" ? "MONTANT PAYÉ" : "AMOUNT PAID"}:</span>
+            <span style="font-weight: bold;">${CURRENCY_SYMBOLS[currency]}${payment.amount.toFixed(2)}</span>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 7px; margin-top: 2px;">
-            <span>${language === "ar"
-      ? "طريقة الدفع:"
-      : language === "fr"
-        ? "Méthode de paiement:"
-        : "Payment Method:"
-    }</span>
+            <span>${language === "ar" ? "طريقة الدفع" : language === "fr" ? "Mode de paiement" : "Payment Method"}:</span>
             <span>${payment.method}</span>
           </div>
           ${payment.received_by
       ? `
           <div style="display: flex; justify-content: space-between; font-size: 7px;">
-            <span>${language === "ar"
-        ? "تم الاستلام بواسطة:"
-        : language === "fr"
-          ? "Reçu par:"
-          : "Received By:"
-      }</span>
+            <span>${language === "ar" ? "استلم بواسطة" : language === "fr" ? "Reçu par" : "Received By"}:</span>
             <span>${payment.received_by}</span>
           </div>
           `
@@ -371,9 +286,8 @@ export function renderPaymentReceiptHTML(
 
         <div style="text-align: center; font-size: 7px; margin-top: 4px;">
           <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-          <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter
-    }</div>
-          <div style="font-size: 6px; color: #666;">Generated by Fixary POS</div>
+          <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter}</div>
+          <div style="font-size: 6px; color: #666;">${language === "ar" ? "تم إنشاؤه بواسطة Fixary POS" : language === "fr" ? "Généré par Fixary POS" : "Generated by Fixary POS"}</div>
         </div>
       </body>
     </html>
@@ -463,17 +377,17 @@ export function renderTransactionReceiptHTML(
     }
           <div style="font-size: 14px; font-weight: bold;">${shopInfo.shopName}</div>
           <div style="font-size: 9px;">${shopInfo.address}</div>
-          <div style="font-size: 9px;">${shopInfo.phoneNumber}</div>
+          <div style="font-size: 9px;">${language === "ar" ? "هاتف" : language === "fr" ? "Tél" : "Tel"}: ${shopInfo.phoneNumber}</div>
         </div>
 
         <!-- Transaction Info -->
         <div style="margin-bottom: 5px;">
            <div class="row">
-            <span>${language === "ar" ? "رقم الفاتورة" : "Receipt #"}:</span>
+            <span>${language === "ar" ? "رقم الفاتورة" : language === "fr" ? "N° de facture" : "Receipt #"}:</span>
             <span class="bold">${transaction.transaction_number || transaction.id.slice(0, 8)}</span>
            </div>
            <div class="row">
-            <span>${language === "ar" ? "التاريخ" : "Date"}:</span>
+            <span>${language === "ar" ? "التاريخ" : language === "fr" ? "Date" : "Date"}:</span>
             <span>${formatDate(transaction.created_at)}</span>
            </div>
         </div>
@@ -482,8 +396,8 @@ export function renderTransactionReceiptHTML(
 
         <!-- Client Info -->
         <div style="margin-bottom: 5px;">
-           <div class="bold" style="margin-bottom: 2px;">${language === "ar" ? "العميل" : "Customer"}:</div>
-           <div>${client?.name || "Walk-in Customer"}</div>
+           <div class="bold" style="margin-bottom: 2px;">${language === "ar" ? "العميل" : language === "fr" ? "Client" : "Customer"}:</div>
+           <div>${client?.name || (language === "ar" ? "عميل عابر" : language === "fr" ? "Client de passage" : "Walk-in Customer")}</div>
            ${client?.phone ? `<div>${client.phone}</div>` : ""}
         </div>
 
@@ -491,7 +405,7 @@ export function renderTransactionReceiptHTML(
 
         <!-- Items -->
         <div style="margin-bottom: 5px;">
-          <div class="bold" style="margin-bottom: 4px;">${language === "ar" ? "مشتريات" : "Items"}:</div>
+          <div class="bold" style="margin-bottom: 4px;">${language === "ar" ? "الأصناف" : language === "fr" ? "Articles" : "Items"}:</div>
           ${itemsHTML}
         </div>
 
@@ -500,14 +414,14 @@ export function renderTransactionReceiptHTML(
         <!-- Totals -->
         <div style="margin-bottom: 5px;">
           <div class="row bold" style="font-size: 12px;">
-            <span>${language === "ar" ? "المجموع" : "TOTAL"}:</span>
+            <span>${language === "ar" ? "المجموع" : language === "fr" ? "TOTAL" : "TOTAL"}:</span>
             <span>${CURRENCY_SYMBOLS[currency]}${transaction.total_amount.toFixed(2)}</span>
           </div>
           
           ${totalPaid > 0
       ? `
             <div class="row">
-              <span>${language === "ar" ? "المدفوع" : "Paid"}:</span>
+              <span>${language === "ar" ? "المدفوع" : language === "fr" ? "Payé" : "Paid"}:</span>
               <span>${CURRENCY_SYMBOLS[currency]}${totalPaid.toFixed(2)}</span>
             </div>
             `
@@ -515,7 +429,7 @@ export function renderTransactionReceiptHTML(
     }
 
           <div class="row">
-            <span>${language === "ar" ? "الباقي" : "Balance Due"}:</span>
+            <span>${language === "ar" ? "الباقي" : language === "fr" ? "Solde dû" : "Balance Due"}:</span>
             <span>${CURRENCY_SYMBOLS[currency]}${balanceDue.toFixed(2)}</span>
           </div>
         </div>
@@ -525,13 +439,13 @@ export function renderTransactionReceiptHTML(
       ? `
             <div class="divider"></div>
             <div style="margin-bottom: 5px; background: #f0f0f0; padding: 4px;">
-              <div class="bold center" style="margin-bottom: 4px; font-size: 11px;">${language === "ar" ? "كشف حساب" : "ACCOUNT SUMMARY"}</div>
+              <div class="bold center" style="margin-bottom: 4px; font-size: 11px;">${language === "ar" ? "ملخص الحساب" : language === "fr" ? "RÉSUMÉ DU COMPTE" : "ACCOUNT SUMMARY"}</div>
               <div class="row">
-                <span>${language === "ar" ? "الرصيد السابق" : "Previous Balance"}:</span>
+                <span>${language === "ar" ? "الرصيد السابق" : language === "fr" ? "Solde précédent" : "Previous Balance"}:</span>
                 <span>${CURRENCY_SYMBOLS[currency]}${previousBalance.toFixed(2)}</span>
               </div>
               <div class="row bold">
-                <span>${language === "ar" ? "الرصيد الحالي" : "New Balance"}:</span>
+                <span>${language === "ar" ? "الرصيد الحالي" : language === "fr" ? "Nouveau solde" : "New Balance"}:</span>
                 <span>${CURRENCY_SYMBOLS[currency]}${newBalance.toFixed(2)}</span>
               </div>
             </div>
@@ -540,7 +454,8 @@ export function renderTransactionReceiptHTML(
     }
 
         <div class="center" style="margin-top: 15px; font-size: 8px;">
-          <div>${shopInfo.receiptFooter || "Thank you for your business!"}</div>
+          <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter || (language === "ar" ? "شكراً لتعاملكم معنا!" : language === "fr" ? "Merci pour votre confiance !" : "Thank you for your business!")}</div>
+          <div style="font-size: 6px; color: #666;">${language === "ar" ? "تم إنشاؤه بواسطة Fixary POS" : language === "fr" ? "Généré par Fixary POS" : "Generated by Fixary POS"}</div>
         </div>
       </body>
     </html>

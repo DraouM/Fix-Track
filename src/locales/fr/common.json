@@ -362,11 +362,11 @@
         },
         "repairs": {
             "recent": "Réparations Récentes",
-            "activeCount": "{{count}} actives"
+            "activeCount": "{{count}} active{{plural}}"
         },
         "inventory": {
             "alerts": "Alertes de Stock",
-            "itemsCount": "{{count}} articles",
+            "itemsCount": "{{count}} article{{plural}}",
             "outOfStock": "Rupture de stock",
             "lowStock": "Stock faible: {{count}} unités",
             "reorder": "Récommander"
@@ -398,13 +398,25 @@
         },
         "transactions": {
             "recent": "Transactions du Jour",
+            "title": "Transactions",
             "lastUpdated": "Dernière mise à jour: {{time}}",
             "loading": "Chargement des transactions...",
             "time": "Heure",
             "category": "Catégorie",
             "description": "Description",
             "amount": "Montant",
-            "noTransactions": "Aucune transaction trouvée"
+            "noTransactions": "Aucune transaction trouvée",
+            "periodView": {
+                "daily": "Quotidien",
+                "weekly": "Hebdomadaire",
+                "monthly": "Mensuel",
+                "totalIn": "Total Entrées",
+                "totalOut": "Total Sorties",
+                "netProfit": "Bénéfice Net",
+                "transactionsCount": "{{count}} transactions",
+                "weekOf": "Semaine du {{start}} - {{end}}",
+                "noTransactionsInPeriod": "Aucune transaction pour cette période"
+            }
         }
     },
     "transactions_module": {
@@ -480,5 +492,25 @@
             "total": "Total",
             "itemsCount": "{{count}} {{label}}"
         }
+    },
+    "receipt": {
+        "orderNumber": "N° de commande",
+        "date": "Date",
+        "customer": "Client",
+        "device": "Appareil",
+        "issue": "Problème",
+        "partsUsed": "Pièces utilisées",
+        "repairCost": "Coût réparation",
+        "totalPaid": "Total payé",
+        "balanceDue": "Solde dû",
+        "paymentReceipt": "Reçu de paiement",
+        "receiptID": "ID du reçu",
+        "reference": "Référence",
+        "receivedFrom": "Reçu de",
+        "amountPaid": "Montant payé",
+        "paymentMethod": "Mode de paiement",
+        "receivedBy": "Reçu par",
+        "telephone": "Tél",
+        "generatedBy": "Généré par Fixary POS"
     }
 }

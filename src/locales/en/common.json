@@ -357,8 +357,13 @@
         },
         "metrics": {
             "monthlyRevenue": "Monthly Revenue",
-            "currentMonth": "Current month",
-            "netCash": "Net Cash",
+            "weeklyRevenue": "Weekly Revenue",
+            "dailyRevenue": "Daily Revenue",
+            "periodRevenue": "{{period}} Revenue",
+            "currentPeriod": "Current period",
+            "forPeriod": "For {{period}}",
+            "fromRange": "From date range",
+            "netCash": "Net Flow",
             "totalCash": "Total Cash: {{amount}}",
             "activeRepairs": "Active Repairs",
             "completedCount": "{{count}} completed",
@@ -411,13 +416,25 @@
         },
         "transactions": {
             "recent": "Today's Transactions",
+            "title": "Transactions",
             "lastUpdated": "Last updated: {{time}}",
             "loading": "Loading transactions...",
             "time": "Time",
             "category": "Category",
             "description": "Description",
             "amount": "Amount",
-            "noTransactions": "No transactions found"
+            "noTransactions": "No transactions found",
+            "periodView": {
+                "daily": "Daily",
+                "weekly": "Weekly",
+                "monthly": "Monthly",
+                "totalIn": "Total In",
+                "totalOut": "Total Out",
+                "netProfit": "Net Profit",
+                "transactionsCount": "{{count}} transactions",
+                "weekOf": "Week of {{start}} - {{end}}",
+                "noTransactionsInPeriod": "No transactions in this period"
+            }
         }
     },
     "transactions_module": {

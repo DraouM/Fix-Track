@@ -2,6 +2,8 @@
 
 import { Payment } from "@/types/repair";
 import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
+import { useTranslation } from "react-i18next";
 import { PrintHeader } from "./PrintHeader";
 import { PrintFooter } from "./PrintFooter";
 
@@ -19,10 +21,17 @@ export function PaymentReceiptTemplate({
   logoUrl,
 }: PaymentReceiptTemplateProps) {
   const { settings } = useSettings();
+  const { t, i18n } = useTranslation();
   const receiptWidth = settings.printDimensions.receipt.width;
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const locale =
+      i18n.language === "ar"
+        ? "ar-SA"
+        : i18n.language === "fr"
+        ? "fr-FR"
+        : "en-US";
+    return new Date(dateString).toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -47,21 +56,21 @@ export function PaymentReceiptTemplate({
       <PrintHeader logoUrl={logoUrl} />
 
       <div style={{ textAlign: "center", margin: "4px 0", fontWeight: "bold", fontSize: "10px" }}>
-        PAYMENT RECEIPT
+        {t("receipt.paymentReceipt")}
       </div>
 
       <div style={{ marginBottom: "4px", fontSize: "7px" }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>Receipt ID:</span>
+          <span>{t("receipt.receiptID")}:</span>
           <span>{payment.id}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>Date:</span>
+          <span>{t("receipt.date")}:</span>
           <span>{formatDate(payment.date)}</span>
         </div>
         {referenceCode && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>Reference:</span>
+            <span>{t("receipt.reference")}:</span>
             <span style={{ fontWeight: "bold" }}>{referenceCode}</span>
           </div>
         )}
@@ -72,20 +81,20 @@ export function PaymentReceiptTemplate({
       <div style={{ marginBottom: "4px" }}>
         {customerName && (
           <div style={{ marginBottom: "2px" }}>
-            <span style={{ fontWeight: "bold" }}>Received From:</span> {customerName}
+            <span style={{ fontWeight: "bold" }}>{t("receipt.receivedFrom")}:</span> {customerName}
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", marginTop: "4px" }}>
-          <span style={{ fontWeight: "bold" }}>AMOUNT PAID:</span>
-          <span style={{ fontWeight: "bold" }}>${payment.amount.toFixed(2)}</span>
+          <span style={{ fontWeight: "bold" }}>{t("receipt.amountPaid")}:</span>
+          <span style={{ fontWeight: "bold" }}>{CURRENCY_SYMBOLS[settings.currency]}{payment.amount.toFixed(2)}</span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "7px", marginTop: "2px" }}>
-          <span>Payment Method:</span>
+          <span>{t("receipt.paymentMethod")}:</span>
           <span>{payment.method}</span>
         </div>
         {payment.received_by && (
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: "7px" }}>
-            <span>Received By:</span>
+            <span>{t("receipt.receivedBy")}:</span>
             <span>{payment.received_by}</span>
           </div>
         )}

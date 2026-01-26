@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useEvents } from "@/context/EventContext";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -21,6 +21,8 @@ import {
   XCircle,
   Clock,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,10 +63,14 @@ import {
   getRevenueHistory,
   getRevenueBreakdown,
   getDashboardStats,
+  getDashboardStatsByRange,
+  getRevenueHistoryByRange,
+  getDashboardTransactionsByRange,
   RevenueData,
   RevenueBreakdown,
   DashboardStats as DashboardStatsType,
 } from "@/lib/api/dashboard";
+import { format, startOfMonth, endOfMonth, subDays, startOfYear, startOfWeek, endOfWeek, parseISO, isWithinInterval } from "date-fns";
 import { useRouter } from "next/navigation";
 
 // Define transaction types
@@ -75,6 +81,7 @@ interface Transaction {
   amount: number;
   description: string;
   time: string;
+  originalTime: string;
   status: string;
 }
 
@@ -105,6 +112,7 @@ export function UnifiedCashierDashboard() {
   const [closingNote, setClosingNote] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [sessionTransactions, setSessionTransactions] = useState<Transaction[]>([]);
   const [inventoryItems, setInventoryItems] = useState<
     DashboardInventoryItem[]
   >([]);
@@ -121,6 +129,52 @@ export function UnifiedCashierDashboard() {
   const [dashboardStats, setDashboardStats] =
     useState<DashboardStatsType | null>(null);
   const router = useRouter();
+
+  // Date Range State
+  const [dateRange, setDateRange] = useState({
+    start: format(new Date(), "yyyy-MM-dd"),
+    end: format(new Date(), "yyyy-MM-dd"),
+  });
+  const [rangeType, setRangeType] = useState<"today" | "week" | "month" | "year" | "custom">("today");
+  
+  // Transaction Period View State
+  const [transactionPeriod, setTransactionPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  const setRange = (type: "today" | "week" | "month" | "year" | "custom") => {
+    setRangeType(type);
+    const today = new Date();
+    switch (type) {
+      case "today":
+        setDateRange({
+          start: format(today, "yyyy-MM-dd"),
+          end: format(today, "yyyy-MM-dd"),
+        });
+        setTransactionPeriod("daily");
+        break;
+      case "week":
+        setDateRange({
+          start: format(subDays(today, 6), "yyyy-MM-dd"), // Last 7 days
+          end: format(today, "yyyy-MM-dd"),
+        });
+        setTransactionPeriod("daily"); // Keep daily grouping for weekly view
+        break;
+      case "month":
+        setDateRange({
+          start: format(startOfMonth(today), "yyyy-MM-dd"),
+          end: format(endOfMonth(today), "yyyy-MM-dd"),
+        });
+        setTransactionPeriod("weekly");
+        break;
+      case "year":
+        setDateRange({
+          start: format(startOfYear(today), "yyyy-MM-dd"),
+          end: format(today, "yyyy-MM-dd"),
+        });
+        setTransactionPeriod("monthly");
+        break;
+    }
+  };
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
@@ -157,10 +211,13 @@ export function UnifiedCashierDashboard() {
       }));
       setRepairs(mappedRepairs);
 
-      // 4. Get All Session Transactions (Unified)
-      const dbTransactions = await invoke<any[]>(
-        "get_current_session_transactions"
-      );
+
+      // 4. Get Transactions by Range
+      // If we are in "today" mode, we might want to stick to session transactions for consistency with the cashier view?
+      // But the user asked for precise date viewing. 
+      // Let's use the range query.
+      const dbTransactions = await getDashboardTransactionsByRange(dateRange.start, dateRange.end);
+      
       const mappedTransactions: Transaction[] = dbTransactions.map((tx) => ({
         id: tx.id,
         type: tx.tx_type as "credit" | "debit",
@@ -171,16 +228,41 @@ export function UnifiedCashierDashboard() {
           hour: "2-digit",
           minute: "2-digit",
         }),
+        originalTime: tx.time,
         status: tx.status,
       }));
 
       setTransactions(mappedTransactions);
 
-      // 5. Get Dashboard Stats & History
+      // 4.5 Get Session Transactions (Today only) for Cashier Tab consistency
+      const today = format(new Date(), "yyyy-MM-dd");
+      let dbSessionTransactions = [];
+      if (dateRange.start === today && dateRange.end === today) {
+        dbSessionTransactions = dbTransactions;
+      } else {
+        dbSessionTransactions = await getDashboardTransactionsByRange(today, today);
+      }
+
+      const mappedSessionTransactions: Transaction[] = dbSessionTransactions.map((tx: any) => ({
+        id: tx.id,
+        type: tx.tx_type as "credit" | "debit",
+        category: tx.category,
+        amount: tx.amount,
+        description: tx.description,
+        time: new Date(tx.time).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        originalTime: tx.time,
+        status: tx.status,
+      }));
+      setSessionTransactions(mappedSessionTransactions);
+
+      // 5. Get Dashboard Stats & History by Range
       const [stats, history, breakdown] = await Promise.all([
-        getDashboardStats(),
-        getRevenueHistory(7),
-        getRevenueBreakdown(30),
+        getDashboardStatsByRange(dateRange.start, dateRange.end),
+        getRevenueHistoryByRange(dateRange.start, dateRange.end),
+        getRevenueBreakdown(30), // Keeps breakdown generic for now or match range? 30 days is fine.
       ]);
       setDashboardStats(stats);
       setHistoryData(history);
@@ -192,18 +274,19 @@ export function UnifiedCashierDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dateRange, t]);
 
   const { subscribe, unsubscribe, emit } = useEvents();
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
 
   // Memoize the handler to prevent recreation on each render
   const handleFinancialUpdate = useCallback(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+    // Fetch on mount and when date range changes
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData, dateRange]);
 
   // Subscribe to financial events to update dashboard automatically
   useEffect(() => {
@@ -228,7 +311,7 @@ export function UnifiedCashierDashboard() {
           { date: "Dec", revenue: 7500, profit: 2800 },
         ];
 
-  // Calculate financial metrics
+  // Calculate financial metrics for the selected period
   const totalIn = transactions
     .filter((t) => t.type === "credit")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -238,8 +321,19 @@ export function UnifiedCashierDashboard() {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const netCash = totalIn - totalOut;
+
+  // Calculate session metrics (always based on today's session)
+  const sessionIn = sessionTransactions
+    .filter((t) => t.type === "credit")
+    .reduce((sum, t) => sum + t.amount, 0);
+  
+  const sessionOut = sessionTransactions
+    .filter((t) => t.type === "debit")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const sessionNet = sessionIn - sessionOut;
   const openingBalance = currentSession?.opening_balance || 0;
-  const expectedCash = openingBalance + netCash;
+  const expectedCash = openingBalance + sessionNet;
 
   // Calculate inventory metrics
   const lowStockItems = inventoryItems.filter(
@@ -260,6 +354,91 @@ export function UnifiedCashierDashboard() {
 
   // Revenue trend
   const revenueChange = dashboardStats?.revenue_change || 0;
+
+  // Interface for grouped transactions
+  interface TransactionGroup {
+    key: string;
+    label: string;
+    transactions: Transaction[];
+    totalIn: number;
+    totalOut: number;
+    netProfit: number;
+  }
+
+  // Group transactions by period
+  const groupedTransactions = useMemo((): TransactionGroup[] => {
+    if (transactions.length === 0) return [];
+
+    const groups: Map<string, TransactionGroup> = new Map();
+    
+    transactions.forEach(t => {
+      let key = "";
+      let label = "";
+      const date = parseISO(t.originalTime);
+      
+      if (transactionPeriod === "daily") {
+        key = format(date, "yyyy-MM-dd");
+        label = format(date, "MMMM d, yyyy");
+      } else if (transactionPeriod === "weekly") {
+        const start = startOfWeek(date, { weekStartsOn: 1 });
+        const end = endOfWeek(date, { weekStartsOn: 1 });
+        key = format(start, "yyyy-'W'ww");
+        label = `${format(start, "MMM d")} - ${format(end, "MMM d, yyyy")}`;
+      } else {
+        key = format(date, "yyyy-MM");
+        label = format(date, "MMMM yyyy");
+      }
+      
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          label,
+          transactions: [],
+          totalIn: 0,
+          totalOut: 0,
+          netProfit: 0,
+        });
+      }
+      
+      const group = groups.get(key)!;
+      group.transactions.push(t);
+      if (t.type === "credit") group.totalIn += t.amount;
+      if (t.type === "debit") group.totalOut += t.amount;
+      group.netProfit = group.totalIn - group.totalOut;
+    });
+
+    // Sort groups by date descending
+    return Array.from(groups.values()).sort((a, b) => b.key.localeCompare(a.key));
+  }, [transactions, transactionPeriod]);
+
+  // Toggle group expansion
+  const toggleGroup = (key: string) => {
+    setExpandedGroups((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
+
+  // Expand all groups by default when transactions change
+  useEffect(() => {
+    if (groupedTransactions.length > 0) {
+      setExpandedGroups(new Set(groupedTransactions.map(g => g.key)));
+    }
+  }, [groupedTransactions.length]);
+
+  // Calculate overall period totals
+  const periodTotals = useMemo(() => {
+    return {
+      totalIn: groupedTransactions.reduce((sum, g) => sum + g.totalIn, 0),
+      totalOut: groupedTransactions.reduce((sum, g) => sum + g.totalOut, 0),
+      netProfit: groupedTransactions.reduce((sum, g) => sum + g.netProfit, 0),
+    };
+  }, [groupedTransactions]);
 
   // Handle adding expense
   const handleAddExpense = async () => {
@@ -285,6 +464,7 @@ export function UnifiedCashierDashboard() {
             hour: "2-digit",
             minute: "2-digit",
           }),
+          originalTime: new Date().toISOString(),
           status: "completed",
         };
 
@@ -461,7 +641,55 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
+              {/* Date Range Selector */}
+              <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
+                {(["today", "week", "month"] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setRange(type)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      rangeType === type
+                        ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400"
+                        : "text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+                 <button
+                    onClick={() => setRangeType("custom")}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      rangeType === "custom"
+                        ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400"
+                        : "text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200"
+                    }`}
+                  >
+                   Custom
+                  </button>
+              </div>
+
+              {/* Custom Date Inputs */}
+              {(rangeType === "custom") && (
+                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                   <Input 
+                      type="date" 
+                      value={dateRange.start} 
+                      onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                      className="w-auto h-9 text-xs"
+                   />
+                   <span className="text-gray-400">-</span>
+                   <Input 
+                      type="date" 
+                      value={dateRange.end} 
+                      onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                      className="w-auto h-9 text-xs"
+                   />
+                </div>
+              )}
+
+              <div className="h-6 w-px bg-gray-200 dark:bg-slate-700 mx-1" />
+
               <Button
                 variant="outline"
                 size="sm"
@@ -474,7 +702,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 />
                 {t("dashboard.refresh")}
               </Button>
-              <Button variant="outline" size="sm" className="dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 hover:dark:text-slate-100 transition-colors">
+              <Button variant="outline" size="sm" className="hidden sm:flex dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 hover:dark:text-slate-100 transition-colors">
                 <FileText className="h-4 w-4 mr-2" />
                 {t("dashboard.reports")}
               </Button>
@@ -552,13 +780,39 @@ Carry Forward: ${formatCurrency(carryForward)}`);
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6 mt-6">
+              {/* Period Selector Toggle */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+                  {t("dashboard.tabs.overview")} Summary
+                </h2>
+                <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg">
+                  {(["today", "week", "month"] as const).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setRange(type)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                        rangeType === type
+                          ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400"
+                          : "text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200"
+                      }`}
+                    >
+                      {t(`dashboard.transactions.periodView.${type === 'today' ? 'daily' : type === 'week' ? 'weekly' : 'monthly'}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                   icon={TrendingUp}
-                  title={t("dashboard.metrics.monthlyRevenue")}
+                  title={t("dashboard.metrics.periodRevenue", { 
+                    period: t(`dashboard.transactions.periodView.${rangeType === 'today' ? 'daily' : rangeType === 'week' ? 'weekly' : 'monthly'}`)
+                  })}
                   value={formatCurrency(dashboardStats?.total_revenue || 0)}
-                  subtitle={t("dashboard.metrics.currentMonth")}
+                  subtitle={t("dashboard.metrics.forPeriod", { 
+                    period: t(`dashboard.transactions.periodView.${rangeType === 'today' ? 'daily' : rangeType === 'week' ? 'weekly' : 'monthly'}`) 
+                  })}
                   trend={Math.abs(revenueChange)}
                   trendUp={revenueChange > 0}
                   color="green"
@@ -568,7 +822,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   icon={DollarSign}
                   title={t("dashboard.metrics.netCash")}
                   value={formatCurrency(netCash)}
-                  subtitle={t("dashboard.metrics.totalCash", { amount: formatCurrency(expectedCash) })}
+                  subtitle={rangeType === 'today' 
+                    ? t("dashboard.metrics.totalCash", { amount: formatCurrency(expectedCash) })
+                    : t("dashboard.metrics.currentPeriod")
+                  }
                   color="blue"
                   onClick={() => setActiveTab("cashier")}
                 />
@@ -576,7 +833,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   icon={Wrench}
                   title={t("dashboard.metrics.activeRepairs")}
                   value={dashboardStats?.active_repairs || 0}
-                  subtitle={t("dashboard.metrics.completedCount", { count: dashboardStats?.completed_repairs || 0 })}
+                  subtitle={t("dashboard.metrics.completedCount", { 
+                    count: dashboardStats?.completed_repairs || 0,
+                    plural: (dashboardStats?.completed_repairs || 0) !== 1 ? 's' : ''
+                  })}
                   color="orange"
                   onClick={() => router.push("/repairs")}
                 />
@@ -700,7 +960,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                         {t("dashboard.repairs.recent")}
                       </CardTitle>
                       <span className="text-sm text-gray-500">
-                        {t("dashboard.repairs.activeCount", { count: activeRepairs })}
+                        {t("dashboard.repairs.activeCount", { 
+                           count: activeRepairs,
+                           plural: activeRepairs !== 1 ? 's' : ''
+                        })}
                       </span>
                     </div>
                   </CardHeader>
@@ -771,7 +1034,10 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                       {t("dashboard.inventory.alerts")}
                     </CardTitle>
                     <span className="text-sm text-gray-500">
-                      {t("dashboard.inventory.itemsCount", { count: outOfStockItems.length + lowStockItems.length })}
+                      {t("dashboard.inventory.itemsCount", {
+                        count: lowStockItems.length + outOfStockItems.length,
+                        plural: (lowStockItems.length + outOfStockItems.length) !== 1 ? 's' : ''
+                      })}
                     </span>
                   </div>
                 </CardHeader>
@@ -827,21 +1093,21 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 <StatCard
                   icon={TrendingUp}
                   title={t("dashboard.cashier.totalIn")}
-                  value={formatCurrency(totalIn)}
+                  value={formatCurrency(sessionIn)}
                   subtitle={t("dashboard.cashier.allRevenue")}
                   color="green"
                 />
                 <StatCard
                   icon={TrendingDown}
                   title={t("dashboard.cashier.totalOut")}
-                  value={formatCurrency(totalOut)}
+                  value={formatCurrency(sessionOut)}
                   subtitle={t("dashboard.cashier.expenses")}
                   color="red"
                 />
                 <StatCard
                   icon={DollarSign}
                   title={t("dashboard.cashier.netCash")}
-                  value={formatCurrency(netCash)}
+                  value={formatCurrency(sessionNet)}
                   subtitle={t("dashboard.cashier.balance", { amount: formatCurrency(expectedCash) })}
                   color="blue"
                 />
@@ -952,11 +1218,11 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                         </div>
                         <div className="flex justify-between text-green-600 dark:text-green-400">
                           <span>{t("dashboard.cashier.totalRevenue")}:</span>
-                          <span>{formatCurrency(totalIn)}</span>
+                          <span>{formatCurrency(sessionIn)}</span>
                         </div>
                         <div className="flex justify-between text-red-600 dark:text-red-400">
                           <span>{t("dashboard.cashier.totalExpenses")}:</span>
-                          <span>{formatCurrency(totalOut)}</span>
+                          <span>{formatCurrency(sessionOut)}</span>
                         </div>
                         <div className="flex justify-between font-bold pt-1 border-t dark:border-slate-700 dark:text-slate-100">
                           <span>{t("dashboard.cashier.expectedCash")}:</span>
@@ -994,114 +1260,228 @@ Carry Forward: ${formatCurrency(carryForward)}`);
             </TabsContent>
 
             {/* Transactions Tab */}
-            <TabsContent value="transactions" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-blue-600" />
-                      {t("dashboard.transactions.recent")}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {lastUpdated && (
-                        <span>
-                          {t("dashboard.transactions.lastUpdated", { time: lastUpdated.toLocaleTimeString() })}
-                        </span>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleRefresh}
-                        disabled={loading}
+            <TabsContent value="transactions" className="mt-6 space-y-6">
+              {/* Period Selection & Summary Cards */}
+              <div className="space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 p-1 rounded-lg w-fit">
+                    {(["daily", "weekly", "monthly"] as const).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setTransactionPeriod(p)}
+                        className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                          transactionPeriod === p
+                            ? "bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400"
+                            : "text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200"
+                        }`}
                       >
-                        <RefreshCw
-                          className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-                        />
-                      </Button>
+                        {t(`dashboard.transactions.periodView.${p}`)}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border dark:border-slate-800 shadow-sm">
+                    {lastUpdated && (
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        {t("dashboard.transactions.lastUpdated", {
+                          time: lastUpdated.toLocaleTimeString(),
+                        })}
+                      </span>
+                    )}
+                    <div className="h-4 w-px bg-gray-200 dark:bg-slate-700 mx-1" />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRefresh}
+                      disabled={loading}
+                      className="h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    >
+                      <RefreshCw
+                        className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+                      />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Summary Charts for the selected period */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border-2 border-green-100 dark:border-green-900/30 shadow-sm">
+                    <div className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">
+                      {t("dashboard.transactions.periodView.totalIn")}
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mt-1">
+                      {formatCurrency(periodTotals.totalIn)}
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="flex items-center justify-center py-12">
+                  <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border-2 border-red-100 dark:border-red-900/30 shadow-sm">
+                    <div className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">
+                      {t("dashboard.transactions.periodView.totalOut")}
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mt-1">
+                      {formatCurrency(periodTotals.totalOut)}
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border-2 border-blue-100 dark:border-blue-900/30 shadow-sm">
+                    <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                      {t("dashboard.transactions.periodView.netProfit")}
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mt-1">
+                      {formatCurrency(periodTotals.netProfit)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grouped Transactions List */}
+              <div className="space-y-4">
+                {loading ? (
+                  <Card>
+                    <CardContent className="flex items-center justify-center py-12">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      <span className="ml-2">{t("dashboard.transactions.loading")}</span>
-                    </div>
-                  ) : (
-                    <div className="rounded-md border dark:border-slate-800 overflow-hidden">
-                      <table className="w-full">
-                        <thead className="bg-muted/50 dark:bg-slate-800/50">
-                          <tr>
-                            <th className="text-left p-3 text-sm font-medium dark:text-slate-300">
-                              {t("dashboard.transactions.time")}
-                            </th>
-                            <th className="text-left p-3 text-sm font-medium dark:text-slate-300">
-                              {t("dashboard.transactions.category")}
-                            </th>
-                            <th className="text-left p-3 text-sm font-medium dark:text-slate-300">
-                              {t("dashboard.transactions.description")}
-                            </th>
-                            <th className="text-right p-3 text-sm font-medium dark:text-slate-300">
-                              {t("dashboard.transactions.amount")}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {transactions.length > 0 ? (
-                            transactions.map((transaction) => (
-                              <tr
-                                key={transaction.id}
-                                className="border-b dark:border-slate-800 hover:bg-muted/30 dark:hover:bg-slate-800/30"
-                              >
-                                <td className="p-3 text-sm dark:text-slate-300">
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3 text-muted-foreground" />
-                                    {transaction.time}
-                                  </div>
-                                </td>
-                                <td className="p-3">
-                                  <Badge
-                                    variant={
-                                      transaction.type === "credit"
-                                        ? "default"
-                                        : "destructive"
-                                    }
-                                    className={transaction.type === "credit" ? "dark:bg-blue-900/40 dark:text-blue-400" : ""}
+                      <span className="ml-2">
+                        {t("dashboard.transactions.loading")}
+                      </span>
+                    </CardContent>
+                  </Card>
+                ) : groupedTransactions.length > 0 ? (
+                  groupedTransactions.map((group) => (
+                    <Card
+                      key={group.key}
+                      className="overflow-hidden border-gray-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow duration-200"
+                    >
+                      <div
+                        className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${
+                          expandedGroups.has(group.key)
+                            ? "bg-gray-50 dark:bg-slate-800/50"
+                            : "hover:bg-gray-50 dark:hover:bg-slate-800/50"
+                        }`}
+                        onClick={() => toggleGroup(group.key)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-1.5 rounded-md bg-white dark:bg-slate-700 shadow-sm border dark:border-slate-600">
+                            {expandedGroups.has(group.key) ? (
+                              <ChevronDown className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-gray-500" />
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-gray-900 dark:text-slate-100">
+                              {group.label}
+                            </h3>
+                            <p className="text-xs text-muted-foreground font-medium">
+                              {t(
+                                "dashboard.transactions.periodView.transactionsCount",
+                                { count: group.transactions.length }
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-6">
+                          <div className="hidden sm:block">
+                            <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-slate-500 block">
+                              {t("dashboard.transactions.periodView.netProfit")}
+                            </span>
+                            <span
+                              className={`font-bold ${
+                                group.netProfit >= 0
+                                  ? "text-green-600 dark:text-green-400"
+                                  : "text-red-600 dark:text-red-400"
+                              }`}
+                            >
+                              {group.netProfit >= 0 ? "+" : ""}
+                              {formatCurrency(group.netProfit)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {expandedGroups.has(group.key) && (
+                        <div className="border-t dark:border-slate-800">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead className="bg-muted/30 dark:bg-slate-900/50 border-b dark:border-slate-800">
+                                <tr>
+                                  <th className="text-left p-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    {t("dashboard.transactions.time")}
+                                  </th>
+                                  <th className="text-left p-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    {t("dashboard.transactions.category")}
+                                  </th>
+                                  <th className="text-left p-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    {t("dashboard.transactions.description")}
+                                  </th>
+                                  <th className="text-right p-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                                    {t("dashboard.transactions.amount")}
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.transactions.map((transaction) => (
+                                  <tr
+                                    key={transaction.id}
+                                    className="border-b dark:border-slate-800/50 hover:bg-muted/20 dark:hover:bg-slate-800/20 last:border-0"
                                   >
-                                    {transaction.category}
-                                  </Badge>
-                                </td>
-                                <td className="p-3 text-sm dark:text-slate-300">
-                                  {transaction.description}
-                                </td>
-                                <td
-                                  className={`p-3 text-right font-bold ${
-                                    transaction.type === "credit"
-                                      ? "text-green-600 dark:text-green-400"
-                                      : "text-red-600 dark:text-red-400"
-                                  }`}
-                                >
-                                  {transaction.type === "credit" ? "+" : "-"}
-                                  {formatCurrency(transaction.amount)}
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td
-                                colSpan={4}
-                                className="p-8 text-center text-muted-foreground"
-                              >
-                                {t("dashboard.transactions.noTransactions")}
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                                    <td className="p-3 text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap">
+                                      {transaction.time}
+                                    </td>
+                                    <td className="p-3">
+                                      <Badge
+                                        variant={
+                                          transaction.type === "credit"
+                                            ? "default"
+                                            : "destructive"
+                                        }
+                                        className={`font-semibold text-[10px] ${
+                                          transaction.type === "credit"
+                                            ? "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 border-none"
+                                            : "border-none"
+                                        }`}
+                                      >
+                                        {transaction.category}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-3 text-sm text-gray-700 dark:text-slate-300 max-w-md truncate">
+                                      {transaction.description}
+                                    </td>
+                                    <td
+                                      className={`p-3 text-right font-bold text-sm ${
+                                        transaction.type === "credit"
+                                          ? "text-green-600 dark:text-green-400"
+                                          : "text-red-600 dark:text-red-400"
+                                      }`}
+                                    >
+                                      {transaction.type === "credit"
+                                        ? "+"
+                                        : "-"}
+                                      {formatCurrency(transaction.amount)}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-900 rounded-xl border-2 border-dashed border-gray-200 dark:border-slate-800">
+                    <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-full mb-4">
+                      <FileText className="h-10 w-10 text-gray-300 dark:text-slate-600" />
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">
+                      {t("dashboard.transactions.noTransactions")}
+                    </h3>
+                    <p className="text-muted-foreground text-sm mt-1">
+                      {t(
+                        "dashboard.transactions.periodView.noTransactionsInPeriod"
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>

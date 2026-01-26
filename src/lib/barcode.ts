@@ -12,6 +12,8 @@ export interface BarcodePrintData {
   title: string;
   mainText: string;
   subText: string;
+  showBarcode?: boolean;
+  barcodeLabel?: string;
 }
 
 export function getBarcodeData(data: Repair | InventoryItem): BarcodePrintData {
@@ -23,21 +25,26 @@ export function getBarcodeData(data: Repair | InventoryItem): BarcodePrintData {
     barcodeValue: isRepair
       ? repair?.code || repair?.id || ""
       : item?.barcode || item?.id || "",
+    // Repair: Show Code at top. Inventory: None.
     title: isRepair
-      ? `${repair?.deviceBrand} ${repair?.deviceModel}`
-      : `${item?.phoneBrand} - ${item?.itemType}`,
+      ? `${repair?.code || "REPAIR"}`
+      : "",
+    // Repair: Show Issue. Inventory: Item Name.
     mainText: isRepair
-      ? repair?.customerName || ""
+      ? repair?.issueDescription || ""
       : item?.itemName || "",
+    // Repair: Replace Barcode with Phone. Inventory: Keep barcode.
     subText: isRepair
-      ? repair?.customerPhone || ""
-      : item?.sellingPrice ? `$${item.sellingPrice.toFixed(2)}` : "",
+      ? "" // Moved to center
+      : "",
+    showBarcode: !isRepair,
+    barcodeLabel: isRepair ? `${repair?.customerName || ""} - ${repair?.customerPhone || ""}` : undefined,
   };
 }
 
 // 3. Generate HTML for sticker printing
 export function renderStickerHTML(data: Repair | InventoryItem): string {
-  const { barcodeValue, title, mainText, subText } = getBarcodeData(data);
+  const { barcodeValue, title, mainText, subText, showBarcode, barcodeLabel } = getBarcodeData(data);
 
   return `
     <!DOCTYPE html>
@@ -61,34 +68,35 @@ export function renderStickerHTML(data: Repair | InventoryItem): string {
           .sticker {
             width: 2in;
             height: 1in;
-            padding: 0.5mm;
+            padding: 1.5mm 0.5mm;
             font-family: 'Inter', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0.2mm;
+            gap: 1.2mm;
             text-align: center;
             color: #000;
             box-sizing: border-box;
             overflow: hidden;
           }
-          .sticker.has-subtext {
-            justify-content: space-between;
-          }
-          .title { font-size: 7px; font-weight: 700; text-transform: uppercase; }
-          .main { font-size: 9px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-          .barcode-container { display: flex; flex-direction: column; align-items: center; gap: 0; }
-          .barcode { font-family: 'Libre Barcode 39', cursive; font-size: 22px; line-height: 1; }
+          .title { font-size: 8px; font-weight: 700; text-transform: uppercase; }
+          .main { font-size: 11px; font-weight: 900; width: 100%; white-space: normal; line-clamp: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+          .barcode-container { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; }
+          .barcode { font-family: 'Libre Barcode 39', cursive; font-size: 26px; line-height: 1.2; }
+          .barcode-raw { font-size: 10px; font-weight: 900; }
           .subtext { font-size: 8px; font-weight: 700; }
         </style>
       </head>
       <body>
-        <div class="sticker ${subText ? "has-subtext" : ""}">
-          <div class="title">${title}</div>
+        <div class="sticker">
+          ${title ? `<div class="title">${title}</div>` : ""}
           <div class="main">${mainText}</div>
           <div class="barcode-container">
-            <div class="barcode">*${barcodeValue}*</div>
+            ${showBarcode !== false ? `
+              <div class="barcode">*${barcodeValue}*</div>
+            ` : ""}
+            ${barcodeLabel ? `<div class="barcode-raw">${barcodeLabel}</div>` : ""}
           </div>
           ${subText ? `<div class="subtext">${subText}</div>` : ""}
         </div>

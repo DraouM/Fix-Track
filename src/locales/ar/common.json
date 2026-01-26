@@ -398,13 +398,25 @@
         },
         "transactions": {
             "recent": "معاملات اليوم",
+            "title": "المعاملات",
             "lastUpdated": "آخر تحديث: {{time}}",
             "loading": "جاري تحميل المعاملات...",
             "time": "الوقت",
             "category": "الفئة",
             "description": "الوصف",
             "amount": "المبلغ",
-            "noTransactions": "لم يتم العثور على معاملات"
+            "noTransactions": "لم يتم العثور على معاملات",
+            "periodView": {
+                "daily": "يومي",
+                "weekly": "أسبوعي",
+                "monthly": "شهري",
+                "totalIn": "إجمالي الداخل",
+                "totalOut": "إجمالي الخارج",
+                "netProfit": "صافي الربح",
+                "transactionsCount": "{{count}} معاملات",
+                "weekOf": "الأسبوع من {{start}} إلى {{end}}",
+                "noTransactionsInPeriod": "لا توجد معاملات في هذه الفترة"
+            }
         }
     },
     "transactions_module": {
@@ -480,5 +492,25 @@
             "total": "الإجمالي",
             "itemsCount": "{{count}} {{label}}"
         }
+    },
+    "receipt": {
+        "orderNumber": "رقم الطلب",
+        "date": "التاريخ",
+        "customer": "العميل",
+        "device": "الجهاز",
+        "issue": "المشكلة",
+        "partsUsed": "قطع الغيار",
+        "repairCost": "تكلفة الإصلاح",
+        "totalPaid": "إجمالي المدفوع",
+        "balanceDue": "الرصيد المستحق",
+        "paymentReceipt": "إيصال دفع",
+        "receiptID": "رقم الإيصال",
+        "reference": "المرجع",
+        "receivedFrom": "استلم من",
+        "amountPaid": "المبلغ المدفوع",
+        "paymentMethod": "طريقة الدفع",
+        "receivedBy": "استلم بواسطة",
+        "telephone": "هاتف",
+        "generatedBy": "تم إنشاؤه بواسطة Fixary POS"
     }
 }

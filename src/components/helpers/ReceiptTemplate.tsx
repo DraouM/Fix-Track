@@ -76,25 +76,13 @@ export function ReceiptTemplate({
       {/* Order Info */}
       <div style={{ marginBottom: "3px", fontSize: "7px" }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>
-            {i18n.language === "ar"
-              ? "رقم الطلب:"
-              : i18n.language === "fr"
-              ? "Numéro de commande:"
-              : "Order #:"}
-          </span>
+          <span>{t("receipt.orderNumber")}:</span>
           <span style={{ fontWeight: "bold", fontSize: "8px" }}>
             {repair.code || repair.id}
           </span>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span>
-            {i18n.language === "ar"
-              ? "التاريخ:"
-              : i18n.language === "fr"
-              ? "Date:"
-              : "Date:"}
-          </span>
+          <span>{t("receipt.date")}:</span>
           <span>{formatDate(repair.createdAt)}</span>
         </div>
       </div>
@@ -104,11 +92,7 @@ export function ReceiptTemplate({
       {/* Customer Info */}
       <div style={{ marginBottom: "4px", fontSize: "8px" }}>
         <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-          {i18n.language === "ar"
-            ? "العميل:"
-            : i18n.language === "fr"
-            ? "CLIENT:"
-            : "CUSTOMER:"}
+          {t("receipt.customer")}:
         </div>
         <div>{repair.customerName}</div>
         <div>{repair.customerPhone}</div>
@@ -119,22 +103,14 @@ export function ReceiptTemplate({
       {/* Device Info */}
       <div style={{ marginBottom: "4px", fontSize: "8px" }}>
         <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-          {i18n.language === "ar"
-            ? "الجهاز:"
-            : i18n.language === "fr"
-            ? "DISPOSITIF:"
-            : "DEVICE:"}
+          {t("receipt.device")}:
         </div>
         <div>
           {repair.deviceBrand} {repair.deviceModel}
         </div>
         <div style={{ marginTop: "2px" }}>
           <div style={{ fontWeight: "bold" }}>
-            {i18n.language === "ar"
-              ? "المشكلة:"
-              : i18n.language === "fr"
-              ? "PROBLÈME:"
-              : "Issue:"}
+             {t("receipt.issue")}:
           </div>
           <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
             {repair.issueDescription}
@@ -149,11 +125,7 @@ export function ReceiptTemplate({
         <>
           <div style={{ marginBottom: "4px", fontSize: "8px" }}>
             <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-              {i18n.language === "ar"
-                ? "قطع الغيار المستخدمة:"
-                : i18n.language === "fr"
-                ? "PIÈCES UTILISÉES:"
-                : "PARTS USED:"}
+              {t("receipt.partsUsed")}:
             </div>
             {repair.usedParts.map((part, index) => (
               <div
@@ -167,7 +139,7 @@ export function ReceiptTemplate({
                 <span>
                   {part.partName} x{part.quantity}
                 </span>
-                <span>${(part.cost || 0).toFixed(2)}</span>
+                <span>{CURRENCY_SYMBOLS[settings.currency]}{(part.cost || 0).toFixed(2)}</span>
               </div>
             ))}
           </div>
@@ -186,13 +158,9 @@ export function ReceiptTemplate({
           }}
         >
           <span>
-            {i18n.language === "ar"
-              ? "تكلفة الإصلاح:"
-              : i18n.language === "fr"
-              ? "COUT DE RÉPARATION:"
-              : "REPAIR COST:"}
+            {t("receipt.repairCost")}:
           </span>
-          <span>${repair.estimatedCost.toFixed(2)}</span>
+          <span>{CURRENCY_SYMBOLS[settings.currency]}{repair.estimatedCost.toFixed(2)}</span>
         </div>
 
         {includePayments && repair.payments && repair.payments.length > 0 && (
@@ -212,13 +180,9 @@ export function ReceiptTemplate({
                 }}
               >
                 <span>
-                  {i18n.language === "ar"
-                    ? "إجمالي المدفوع:"
-                    : i18n.language === "fr"
-                    ? "TOTAL PAYÉ:"
-                    : "TOTAL PAID:"}
+                  {t("receipt.totalPaid")}:
                 </span>
-                <span>${totalPaid.toFixed(2)}</span>
+                <span>{CURRENCY_SYMBOLS[settings.currency]}{totalPaid.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -235,13 +199,9 @@ export function ReceiptTemplate({
         >
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>
-              {i18n.language === "ar"
-                ? "الرصيد المطلوب:"
-                : i18n.language === "fr"
-                ? "SOLDE DÛ:"
-                : "BALANCE DUE:"}
+              {t("receipt.balanceDue")}:
             </span>
-            <span>${balance.toFixed(2)}</span>
+            <span>{CURRENCY_SYMBOLS[settings.currency]}{balance.toFixed(2)}</span>
           </div>
         </div>
       </div>

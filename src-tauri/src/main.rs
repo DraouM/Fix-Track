@@ -31,7 +31,10 @@ use db::session::{
     close_session, get_current_session, get_current_session_transactions,
     get_last_session_closing_balance, start_session,
 };
-use db::dashboard::{get_dashboard_stats, get_revenue_breakdown, get_revenue_history};
+use db::dashboard::{
+    get_dashboard_stats, get_dashboard_stats_by_range, get_dashboard_transactions_by_range,
+    get_revenue_breakdown, get_revenue_history, get_revenue_history_by_range,
+};
 use db::supplier::{
     add_supplier_payment, adjust_supplier_credit, delete_supplier, get_supplier_by_id,
     get_supplier_history, get_suppliers, insert_supplier, insert_supplier_history, update_supplier,
@@ -149,6 +152,9 @@ fn main() {
             get_revenue_history,
             get_revenue_breakdown,
             get_dashboard_stats,
+            get_revenue_history_by_range,
+            get_dashboard_transactions_by_range,
+            get_dashboard_stats_by_range,
         ])
         .build(tauri::generate_context!())
     {

@@ -1,6 +1,7 @@
 "use client";
 
 import { getShopInfo } from "@/lib/shopInfo";
+import { useTranslation } from "react-i18next";
 
 interface PrintHeaderProps {
   logoUrl?: string;
@@ -9,6 +10,7 @@ interface PrintHeaderProps {
 
 export function PrintHeader({ logoUrl, fontSize = "11px" }: PrintHeaderProps) {
   const shopInfo = getShopInfo();
+  const { t } = useTranslation();
   const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/logo_shop.svg";
 
   return (
@@ -46,7 +48,7 @@ export function PrintHeader({ logoUrl, fontSize = "11px" }: PrintHeaderProps) {
 
       {/* Contact Information */}
       <div style={{ fontSize: "7px" }}>{shopInfo.address}</div>
-      <div style={{ fontSize: "7px" }}>Tel: {shopInfo.phoneNumber}</div>
+      <div style={{ fontSize: "7px" }}>{t("receipt.telephone")}: {shopInfo.phoneNumber}</div>
     </div>
   );
 }

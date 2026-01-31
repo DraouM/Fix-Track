@@ -5,6 +5,7 @@ import "../styles/print.css";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SettingsProvider } from "@/context/SettingsContext";
 import { I18nProvider } from "@/components/providers/I18nProvider";
+import { LicenseProvider } from "@/context/LicenseContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,9 @@ export default function RootLayout({
       <body suppressHydrationWarning={true}>
         <SettingsProvider>
           <I18nProvider>
-            <AppLayout>{children}</AppLayout>
+            <LicenseProvider>
+              <AppLayout>{children}</AppLayout>
+            </LicenseProvider>
           </I18nProvider>
         </SettingsProvider>
       </body>

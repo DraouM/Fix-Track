@@ -12,6 +12,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppLoader } from "@/components/helpers/AppLoader";
 import { ErrorBoundary } from "@/components/helpers/ErrorBoundary";
 import { LazyContextProvider } from "@/components/helpers/LazyContextProvider";
+import { useLicense } from "@/context/LicenseContext";
+import { ActivationScreen } from "@/components/license/ActivationScreen";
+import { SplashScreen } from "@/components/layout/SplashScreen";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -41,6 +44,24 @@ function LayoutContent({ children }: AppLayoutProps) {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const { isActivated, isLoading, setActivated } = useLicense();
+  // const [showSplash, setShowSplash] = useState(true);
+
+  if (isLoading) {
+      return null; // Or a minimal loader, but context loads fast
+  }
+
+  // If not activated, we must show ActivationScreen.
+  // However, we might want to show SplashScreen first?
+  // If we want to show SplashScreen on EVERY launch, regardless of auth:
+  // We can handle it here or leave it in page.tsx.
+  // But if we are in Activation mode, page.tsx is NOT rendered.
+  // So we lose SplashScreen for non-activated users if we block here.
+  
+  if (!isActivated) {
+    return <ActivationScreen onActivated={() => setActivated(true)} />;
+  }
+
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />

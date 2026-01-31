@@ -486,6 +486,21 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     let _ = conn.execute("ALTER TABLE client_payments ADD COLUMN session_id TEXT", []);
     let _ = conn.execute("ALTER TABLE supplier_payments ADD COLUMN session_id TEXT", []);
 
+    // Tasks & Reminders table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS tasks (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT,
+            priority TEXT NOT NULL CHECK(priority IN ('Low','Medium','High')),
+            status TEXT NOT NULL CHECK(status IN ('Pending','Completed')),
+            due_date TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
+
     Ok(())
 }
 

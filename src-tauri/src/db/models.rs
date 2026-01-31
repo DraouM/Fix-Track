@@ -338,3 +338,16 @@ pub struct DashboardStats {
     pub out_of_stock: i32,
     pub revenue_change: f64,
 }
+
+/// TASKS
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Task {
+    pub id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub priority: String, // "Low", "Medium", "High"
+    pub status: String,   // "Pending", "Completed"
+    pub due_date: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}

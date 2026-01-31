@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod db;
+mod system;
 
 use db::client::{
     add_client_payment, adjust_client_balance, delete_client, get_client_by_id, get_client_history,
@@ -44,6 +45,7 @@ use db::transaction::{
     get_transaction_by_id, get_transactions, remove_transaction_item, submit_transaction,
     update_transaction,
 };
+use db::task::{delete_task, get_tasks, insert_task, update_task};
 use std::panic;
 
 fn main() {
@@ -155,6 +157,12 @@ fn main() {
             get_revenue_history_by_range,
             get_dashboard_transactions_by_range,
             get_dashboard_stats_by_range,
+            system::get_device_id,
+            // TASKS
+            get_tasks,
+            insert_task,
+            update_task,
+            delete_task,
         ])
         .build(tauri::generate_context!())
     {

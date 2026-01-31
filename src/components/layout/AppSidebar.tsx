@@ -93,6 +93,11 @@ export function AppSidebar() {
       icon: Building2,
       href: "/suppliers",
     },
+    {
+      titleKey: "nav.tasks",
+      icon: Calendar,
+      href: "/tasks",
+    },
   ];
 
   const secondaryItems: NavItem[] = [
@@ -117,7 +122,7 @@ export function AppSidebar() {
   ];
 
   // Keys for filtering navigation items
-  const operationsKeys = ["nav.dashboard", "nav.transactions", "nav.inventory", "nav.repairs"];
+  const operationsKeys = ["nav.dashboard", "nav.transactions", "nav.inventory", "nav.repairs", "nav.tasks"];
   const managementKeys = ["nav.clients", "nav.suppliers"];
 
   const isActive = (href: string) => {

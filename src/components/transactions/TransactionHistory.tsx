@@ -12,15 +12,18 @@ import {
   MoreVertical,
   ChevronRight,
   Eye,
-  Printer
+  Printer,
+  Calendar as CalendarIcon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { DateRangePicker, useDateRange } from "@/components/ui/date-range-picker";
 import { formatCurrency, formatDate } from "@/lib/clientUtils";
 import { getTransactions, getTransactionById } from "@/lib/api/transactions";
 import { getClientById } from "@/lib/api/clients";
+import { isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
 
 import { Transaction, TransactionType, TransactionWithDetails } from "@/types/transaction";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
@@ -48,6 +51,7 @@ export function TransactionHistory() {
   const { t, i18n } = useTranslation();
   const { printTransactionReceipt } = usePrintUtils();
   const { settings } = useSettings();
+  const { dateRange, setDateRange } = useDateRange();
 
 
   useEffect(() => {
@@ -136,7 +140,16 @@ export function TransactionHistory() {
     const matchesSearch = tx.transaction_number.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          tx.party_id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === "All" || tx.transaction_type === typeFilter;
-    return matchesSearch && matchesType;
+    
+    let matchesDate = true;
+    if (dateRange?.from) {
+      const txDate = parseISO(tx.created_at);
+      const start = startOfDay(dateRange.from);
+      const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+      matchesDate = isWithinInterval(txDate, { start, end });
+    }
+    
+    return matchesSearch && matchesType && matchesDate;
   });
 
   return (
@@ -151,7 +164,13 @@ export function TransactionHistory() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <DateRangePicker 
+            date={dateRange}
+            onDateChange={setDateRange}
+            placeholder={t('common.filterByDate') || "Filter by date"}
+            className="w-full md:w-[240px] rounded-xl h-10 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
+          />
           <div className="flex bg-muted dark:bg-slate-900 p-1 rounded-xl">
             {["All", "Sale", "Purchase"].map((type) => (
               <Button
@@ -159,9 +178,9 @@ export function TransactionHistory() {
                 variant={typeFilter === type ? "default" : "ghost"}
                 size="sm"
                 className={cn(
-                  "rounded-lg text-xs font-bold uppercase tracking-wider h-8",
+                  "rounded-lg text-xs font-bold uppercase tracking-wider h-8 px-3",
                   typeFilter === type 
-                    ? (type === "Sale" ? "bg-green-600 dark:bg-green-700" : type === "Purchase" ? "bg-blue-600 dark:bg-blue-700" : "")
+                    ? (type === "Sale" ? "bg-green-600 dark:bg-green-700 hover:bg-green-700" : type === "Purchase" ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700" : "")
                     : "dark:text-slate-400 dark:hover:bg-slate-800"
                 )}
                 onClick={() => setTypeFilter(type)}

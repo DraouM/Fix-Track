@@ -57,6 +57,7 @@
         "completedCount": "{{count}} terminé{{plural}}",
         "filters": "Filtres",
         "pickDates": "Choisir des dates",
+        "filterByDate": "Filtrer par date",
         "activeFilters": "Filtres actifs",
         "clearAll": "Tout effacer",
         "showingCount": "Affichage de {{count}} sur {{total}} {{label}}",

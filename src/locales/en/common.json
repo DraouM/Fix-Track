@@ -58,6 +58,7 @@
         "completedCount": "{{count}} completed",
         "filters": "Filters",
         "pickDates": "Pick dates",
+        "filterByDate": "Filter by date",
         "activeFilters": "Active filters",
         "clearAll": "Clear all",
         "showingCount": "Showing {{count}} of {{total}} {{label}}",

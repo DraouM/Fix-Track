@@ -57,6 +57,7 @@
         "completedCount": "{{count}} مكتمل",
         "filters": "الفلاتر",
         "pickDates": "اختر التواريخ",
+        "filterByDate": "تصفية حسب التاريخ",
         "activeFilters": "الفلاتر النشطة",
         "clearAll": "مسح الكل",
         "showingCount": "عرض {{count}} من أصل {{total}} {{label}}",

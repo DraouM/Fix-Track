@@ -15,6 +15,7 @@ import { Transaction, TransactionItem, TransactionPayment } from "@/types/transa
 import { clientSchema } from "@/types/client"; // Import for type usage if needed, or just rely on 'any' for now as in template
 
 import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 interface PrintOptions {
   includePayments?: boolean;
@@ -33,6 +34,7 @@ interface PrintHistoryEntry {
 }
 
 export const usePrintUtils = () => {
+  const { settings } = useSettings();
   const shopInfo = getShopInfo();
   const [printHistory, setPrintHistory] = useState<PrintHistoryEntry[]>([]);
 
@@ -40,9 +42,11 @@ export const usePrintUtils = () => {
     (
       data: Repair | InventoryItem,
       options: PrintOptions = {},
-      language: string = "en",
-      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+      language?: string,
+      currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD"
     ) => {
+      const lang = language || settings.language;
+      const curr = currency || settings.currency;
       const { format = "receipt" } = options;
       const isRepair = "deviceBrand" in data;
       const repair = isRepair ? (data as Repair) : null;
@@ -57,7 +61,7 @@ export const usePrintUtils = () => {
       const mainText = isRepair ? repair?.issueDescription : item?.itemName;
       const subText = isRepair
         ? repair?.customerPhone
-        : `$${item?.sellingPrice.toFixed(2)}`;
+        : `${CURRENCY_SYMBOLS[curr]}${item?.sellingPrice.toFixed(2)}`;
 
       if (format === "sticker") {
         return renderStickerHTML(data);
@@ -67,8 +71,8 @@ export const usePrintUtils = () => {
         return renderRepairReceiptHTML(
           repair as Repair,
           options,
-          language,
-          currency,
+          lang,
+          curr,
           "/logo_shop.svg"
         );
       }
@@ -81,7 +85,7 @@ export const usePrintUtils = () => {
         </body></html>
       `;
     },
-    []
+    [settings]
   );
 
   const addToPrintHistory = useCallback(
@@ -258,15 +262,15 @@ export const usePrintUtils = () => {
   const printSticker = useCallback(
     async (
       data: Repair | InventoryItem,
-      language: string = "en",
-      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+      language?: string,
+      currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD"
     ) => {
       try {
         const content = generatePrintContent(
           data,
           { format: "sticker" },
-          language,
-          currency
+          language || settings.language,
+          currency || settings.currency
         );
         return printDocument(content, data, "sticker");
       } catch (error) {
@@ -277,15 +281,15 @@ export const usePrintUtils = () => {
         return false;
       }
     },
-    [generatePrintContent, printDocument, addToPrintHistory]
+    [generatePrintContent, printDocument, addToPrintHistory, settings]
   );
 
   const printReceipt = useCallback(
     async (
       repair: Repair,
       options: PrintOptions = {},
-      language: string = "en",
-      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+      language?: string,
+      currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD"
     ) => {
       try {
         const content = generatePrintContent(
@@ -294,8 +298,8 @@ export const usePrintUtils = () => {
             ...options,
             format: "receipt",
           },
-          language,
-          currency
+          language || settings.language,
+          currency || settings.currency
         );
         return printDocument(content, repair, "receipt");
       } catch (error) {
@@ -306,7 +310,7 @@ export const usePrintUtils = () => {
         return false;
       }
     },
-    [generatePrintContent, printDocument, addToPrintHistory]
+    [generatePrintContent, printDocument, addToPrintHistory, settings]
   );
 
   const printPaymentReceipt = useCallback(
@@ -314,17 +318,19 @@ export const usePrintUtils = () => {
       payment: Payment,
       customerName?: string,
       referenceCode?: string,
-      language: string = "en",
-      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+      language?: string,
+      currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD",
+      previousBalance?: number
     ) => {
       try {
         const content = renderPaymentReceiptHTML(
           payment,
           customerName,
           referenceCode,
-          language,
-          currency,
-          "/logo_shop2.svg"
+          language || settings.language,
+          currency || settings.currency,
+          "/logo_shop.svg",
+          previousBalance
         );
         return printDocument(content, { id: payment.id } as any, "receipt");
       } catch (error) {
@@ -334,7 +340,7 @@ export const usePrintUtils = () => {
         return false;
       }
     },
-    [printDocument]
+    [printDocument, settings]
   );
 
   const printTransactionReceipt = useCallback(
@@ -344,8 +350,8 @@ export const usePrintUtils = () => {
       payments: TransactionPayment[],
       client: any,
       previousBalance: number,
-      language: string = "en",
-      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+      language?: string,
+      currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD"
     ) => {
       try {
         const content = renderTransactionReceiptHTML(
@@ -354,8 +360,8 @@ export const usePrintUtils = () => {
           payments,
           client,
           previousBalance,
-          language,
-          currency,
+          language || settings.language,
+          currency || settings.currency,
           "/logo_shop.svg"
         );
         // Casting transaction to any to satisfy the minimal interface required by printDocument/addToPrintHistory
@@ -368,14 +374,14 @@ export const usePrintUtils = () => {
         return false;
       }
     },
-    [printDocument]
+    [printDocument, settings]
   );
 
   const printStickersBulk = useCallback(
     async (
       items: (Repair | InventoryItem)[],
-      language: string = "en",
-      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+      language?: string,
+      currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD"
     ) => {
       if (items.length === 0) {
         toast.warning("No items selected for printing");
@@ -387,8 +393,8 @@ export const usePrintUtils = () => {
           const content = generatePrintContent(
             item,
             { format: "sticker" },
-            language,
-            currency
+            language || settings.language,
+            currency || settings.currency
           );
           return printDocument(content, item, "sticker");
         })
@@ -409,14 +415,14 @@ export const usePrintUtils = () => {
 
       return succeeded > 0;
     },
-    [generatePrintContent, printDocument]
+    [generatePrintContent, printDocument, settings]
   );
 
   const printAllStickers = useCallback(
     async (
       allItems: (Repair | InventoryItem)[],
-      language: string = "en",
-      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+      language?: string,
+      currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD"
     ) => {
       if (allItems.length === 0) {
         toast.warning("No items available to print");
@@ -445,8 +451,8 @@ export const usePrintUtils = () => {
                   {
                     format: "sticker",
                   },
-                  language,
-                  currency
+                  language || settings.language,
+                  currency || settings.currency
                 );
                 return printDocument(content, item, "sticker");
               })
@@ -474,22 +480,22 @@ export const usePrintUtils = () => {
 
       return true;
     },
-    [generatePrintContent, printDocument]
+    [generatePrintContent, printDocument, settings]
   );
 
   const downloadAsHTML = useCallback(
     (
       data: Repair | InventoryItem,
       format: "receipt" | "sticker" = "receipt",
-      language: string = "en",
-      currency: "USD" | "EUR" | "MAD" | "GBP" | "DZD" = "USD"
+      language?: string,
+      currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD"
     ) => {
       try {
         const content = generatePrintContent(
           data,
           { format },
-          language,
-          currency
+          language || settings.language,
+          currency || settings.currency
         );
         const blob = new Blob([content], { type: "text/html" });
         const url = URL.createObjectURL(blob);
@@ -508,7 +514,7 @@ export const usePrintUtils = () => {
         return false;
       }
     },
-    [generatePrintContent]
+    [generatePrintContent, settings]
   );
 
   return {

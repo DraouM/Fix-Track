@@ -11,7 +11,8 @@
         "settings": "Paramètres",
         "operations": "Opérations",
         "management": "Gestion",
-        "tools": "Outils"
+        "tools": "Outils",
+        "tasks": "Tâches et Rappels"
     },
     "common": {
         "locale": "fr-FR",
@@ -117,8 +118,8 @@
         }
     },
     "app": {
-        "name": "FixTrack",
-        "tagline": "Système de gestion des réparations"
+        "name": "Fixary POS",
+        "tagline": "Gestion de Magasin Avancée"
     },
     "transactions": {
         "title": "Transactions",
@@ -494,6 +495,31 @@
             "itemsCount": "{{count}} {{label}}"
         }
     },
+    "tasks": {
+        "title": "Tâches et Rappels",
+        "subtitle": "Gérez vos opérations quotidiennes du magasin",
+        "addTask": "Ajouter une Nouvelle Tâche",
+        "newTask": "Nouvelle Tâche",
+        "editTask": "Modifier la Tâche",
+        "updateTask": "Mettre à Jour la Tâche",
+        "pending": "En attente",
+        "completed": "Terminée",
+        "urgent": "Urgent",
+        "priority": "Priorité",
+        "dueDate": "Date d'échéance",
+        "noTasks": "Tout est prêt ! Détendez-vous.",
+        "noTasksSearch": "Aucune tâche ne correspond à votre recherche",
+        "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette tâche ?",
+        "placeholder": "Rechercher des tâches...",
+        "titleLabel": "Titre",
+        "descriptionLabel": "Description",
+        "placeholderTitle": "Titre de la tâche...",
+        "placeholderDescription": "Détails supplémentaires...",
+        "low": "Faible",
+        "medium": "Moyen",
+        "high": "Élevé",
+        "due": "Échéance"
+    },
     "receipt": {
         "orderNumber": "N° de commande",
         "date": "Date",
@@ -512,6 +538,9 @@
         "paymentMethod": "Mode de paiement",
         "receivedBy": "Reçu par",
         "telephone": "Tél",
-        "generatedBy": "Généré par Fixary POS"
+        "generatedBy": "Généré par Fixary POS",
+        "accountSummary": "RÉSUMÉ DU COMPTE",
+        "previousBalance": "Solde précédent",
+        "newBalance": "Nouveau solde"
     }
 }

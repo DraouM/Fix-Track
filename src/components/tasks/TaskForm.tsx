@@ -89,11 +89,11 @@ export default function TaskForm({ taskToEdit, onSuccess }: TaskFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs font-black uppercase tracking-widest opacity-60">
-                {t("common.title") || "Title"}
+                {t("tasks.titleLabel")}
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Task title..."
+                  placeholder={t("tasks.placeholderTitle")}
                   {...field}
                   className="h-10 rounded-xl bg-gray-50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-bold"
                 />
@@ -110,7 +110,7 @@ export default function TaskForm({ taskToEdit, onSuccess }: TaskFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs font-black uppercase tracking-widest opacity-60">
-                  Priority
+                  {t("tasks.priority")}
                 </FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
@@ -119,9 +119,9 @@ export default function TaskForm({ taskToEdit, onSuccess }: TaskFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
-                    <SelectItem value="Low" className="font-bold">Low</SelectItem>
-                    <SelectItem value="Medium" className="font-bold">Medium</SelectItem>
-                    <SelectItem value="High" className="font-bold text-red-500">High</SelectItem>
+                    <SelectItem value="Low" className="font-bold">{t("tasks.low")}</SelectItem>
+                    <SelectItem value="Medium" className="font-bold">{t("tasks.medium")}</SelectItem>
+                    <SelectItem value="High" className="font-bold text-red-500">{t("tasks.high")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -135,7 +135,7 @@ export default function TaskForm({ taskToEdit, onSuccess }: TaskFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs font-black uppercase tracking-widest opacity-60">
-                  Due Date
+                  {t("tasks.dueDate")}
                 </FormLabel>
                 <FormControl>
                     <Input
@@ -156,11 +156,11 @@ export default function TaskForm({ taskToEdit, onSuccess }: TaskFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-xs font-black uppercase tracking-widest opacity-60">
-                Description
+                {t("tasks.descriptionLabel")}
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Additional details..."
+                  placeholder={t("tasks.placeholderDescription")}
                   className="min-h-[100px] rounded-xl bg-gray-50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-medium"
                   {...field}
                 />
@@ -177,10 +177,10 @@ export default function TaskForm({ taskToEdit, onSuccess }: TaskFormProps) {
           {isSubmitting ? (
               t("common.processing") || "Processing..."
           ) : (
-             <>
-                <Save className="w-4 h-4 mr-2" />
-                {taskToEdit ? "Update Task" : "Add Task"}
-             </>
+              <>
+                 <Save className="w-4 h-4 mr-2" />
+                 {taskToEdit ? t("tasks.updateTask") : t("tasks.addTask")}
+              </>
           )}
         </Button>
       </form>

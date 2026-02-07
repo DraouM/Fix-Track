@@ -13,15 +13,15 @@ export const testRepairData: Repair = {
   paymentStatus: "Paid",
   usedParts: [
     {
-      id: 1,
-      repairId: 1,
+      id: "1",
+      repairId: "TEST-001",
       partName: "OLED Display",
       cost: 189.99,
       quantity: 1,
     },
     {
-      id: 2,
-      repairId: 1,
+      id: "2",
+      repairId: "TEST-001",
       partName: "Battery",
       cost: 49.99,
       quantity: 1,

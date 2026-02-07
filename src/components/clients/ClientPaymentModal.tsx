@@ -31,6 +31,9 @@ import {
 import { useClientContext } from "@/context/ClientContext";
 import { Loader2, DollarSign } from "lucide-react";
 import { formatCurrency } from "@/lib/clientUtils";
+import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { v4 as uuidv4 } from "uuid";
+import { Payment } from "@/types/repair";
 
 const paymentSchema = z.object({
   amount: z.number().min(0.01, "Amount must be at least 0.01"),
@@ -48,6 +51,7 @@ interface ClientPaymentModalProps {
 
 export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentModalProps) {
   const { clients, addPayment, loading } = useClientContext();
+  const { printPaymentReceipt } = usePrintUtils();
   
   const client = clientId ? clients.find(c => c.id === clientId) : null;
 
@@ -61,8 +65,26 @@ export function ClientPaymentModal({ isOpen, onClose, clientId }: ClientPaymentM
   });
 
   const onSubmit = async (data: PaymentFormValues) => {
-    if (!clientId) return;
+    if (!clientId || !client) return;
+    
+    const previousBalance = client.outstandingBalance;
+    const paymentId = uuidv4();
+    const paymentDate = new Date().toISOString();
+
     await addPayment(clientId, data.amount, data.method, data.notes);
+    
+    // Construct payment object for printing
+    const payment: Payment = {
+      id: paymentId,
+      repair_id: "", // Direct client payment
+      amount: data.amount,
+      method: data.method,
+      date: paymentDate
+    };
+
+    // Print the receipt
+    await printPaymentReceipt(payment, client.name, data.notes, undefined, undefined, previousBalance);
+    
     form.reset();
     onClose();
   };

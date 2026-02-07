@@ -448,8 +448,20 @@ export default function ProfilePage() {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     usedParts: [
-      { id: 1, repairId: 1, partName: "OLED Screen", cost: 89.99, quantity: 1 },
-      { id: 2, repairId: 1, partName: "Battery", cost: 39.99, quantity: 1 },
+      {
+        id: "1",
+        repairId: "PREVIEW-001",
+        partName: "OLED Screen",
+        cost: 89.99,
+        quantity: 1,
+      },
+      {
+        id: "2",
+        repairId: "PREVIEW-001",
+        partName: "Battery",
+        cost: 39.99,
+        quantity: 1,
+      },
     ],
     payments: [
       {

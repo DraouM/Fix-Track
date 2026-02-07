@@ -63,4 +63,5 @@ export const getCurrentLanguage = (): string => {
     return i18n.language;
 };
 
+export { i18n };
 export default i18n;

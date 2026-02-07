@@ -132,7 +132,10 @@ export function TransactionScanner({
               )}
             </div>
             <div className="w-px h-8 bg-muted-foreground/10 dark:bg-slate-800 hidden sm:block"></div>
-            <div className="flex items-center gap-2 px-2">
+            <div 
+              className="flex items-center gap-2 px-2 cursor-pointer hover:bg-muted dark:hover:bg-slate-800 rounded-lg transition-colors py-1"
+              onClick={() => inputRef.current?.focus()}
+            >
               <ScanLine className="h-6 w-6 text-muted-foreground dark:text-slate-500 animate-pulse" />
               <div className="hidden lg:block">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-500 opacity-50">

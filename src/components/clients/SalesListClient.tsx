@@ -231,7 +231,7 @@ export function SalesListClient() {
                         {formatCurrency(sale.total_amount)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => router.push(`/sales/${sale.id}`)}>
+                        <Button variant="ghost" size="icon" onClick={() => router.push(`/sales/detail?id=${sale.id}`)}>
                           <Eye className="h-4 w-4" />
                         </Button>
                       </TableCell>

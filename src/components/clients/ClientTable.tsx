@@ -96,7 +96,7 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
               <TableCell className="py-6 pl-8">
                 <div 
                   className="flex flex-col cursor-pointer group-hover:translate-x-1.5 transition-transform duration-300"
-                  onClick={() => router.push(`/clients/${client.id}`)}
+                  onClick={() => router.push(`/clients/detail?id=${client.id}`)}
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="font-black text-sm tracking-tight text-foreground dark:text-slate-200 group-hover:text-primary transition-colors">
@@ -195,7 +195,7 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
-                        onClick={() => router.push(`/clients/${client.id}?tab=history`)}
+                        onClick={() => router.push(`/clients/detail?id=${client.id}&tab=history`)}
                       >
                         <History className="mr-3 h-4 w-4 opacity-40 text-primary" /> Financial Audit
                       </DropdownMenuItem>

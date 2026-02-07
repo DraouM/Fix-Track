@@ -7,19 +7,9 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 
 const nextConfig: NextConfig = {
   /* config options here */
-  output:
-    process.env.NODE_ENV === "production" &&
-    process.env.NEXT_PUBLIC_BUILD_MODE === "export"
-      ? "export"
-      : undefined,
-  trailingSlash:
-    process.env.NODE_ENV === "production" &&
-    process.env.NEXT_PUBLIC_BUILD_MODE === "export",
-  distDir:
-    process.env.NODE_ENV === "production" &&
-    process.env.NEXT_PUBLIC_BUILD_MODE === "export"
-      ? "out"
-      : ".next",
+  output: "export",
+  trailingSlash: true,
+  distDir: "out",
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -43,16 +33,6 @@ const nextConfig: NextConfig = {
   // Experimental optimizations
   experimental: {
     scrollRestoration: true,
-    optimizePackageImports: [
-      "@tauri-apps/api",
-      "@tanstack/react-query",
-      "@tanstack/react-table",
-      "@tanstack/react-virtual",
-      "sonner",
-      "uuid",
-      "date-fns",
-      "recharts",
-    ],
   },
 
   // Bundle optimization

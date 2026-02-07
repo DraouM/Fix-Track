@@ -171,7 +171,7 @@ export const supplierColumns = ({
               <DropdownMenuSeparator className="bg-gray-50 dark:bg-slate-800 my-1" />
               <DropdownMenuItem 
                 className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
-                onSelect={() => window.location.href = `/suppliers/${supplier.id}`}
+                onSelect={() => window.location.href = `/suppliers/detail?id=${supplier.id}`}
               >
                 <ExternalLink className="mr-3 h-4 w-4 opacity-40 text-primary" /> Profile View
               </DropdownMenuItem>

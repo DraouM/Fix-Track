@@ -1,6 +1,7 @@
 import { Repair, Payment } from "@/types/repair";
 import { getShopInfo } from "./shopInfo";
 import { CURRENCY_SYMBOLS, type Currency } from "@/types/settings";
+import { i18n } from "./i18n";
 
 /**
  * Generates the HTML for a thermal repair receipt.
@@ -32,21 +33,19 @@ export function renderRepairReceiptHTML(
   const totalPaid = repair.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const balance = repair.estimatedCost - totalPaid;
 
+  const isRTL = language === "ar";
+  const direction = isRTL ? "rtl" : "ltr";
+
   const partsHTML =
     includeParts && repair.usedParts && repair.usedParts.length > 0
       ? `
       <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
       <div style="margin-bottom: 4px; font-size: 8px;">
-        <div style="font-weight: bold; margin-bottom: 2px;">${language === "ar"
-        ? "قطع الغيار المستخدمة:"
-        : language === "fr"
-          ? "PIÈCES UTILISÉES:"
-          : "PARTS USED:"
-      }</div>
+        <div style="font-weight: bold; margin-bottom: 2px;">${i18n.t("receipt.partsUsed", { lng: language })}:</div>
         ${repair.usedParts
         .map(
           (part) => `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 1px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
             <span>${part.partName} x${part.quantity}</span>
             <span>${CURRENCY_SYMBOLS[currency]}${(part.cost || 0).toFixed(
             2
@@ -64,13 +63,8 @@ export function renderRepairReceiptHTML(
       ? `
       <div style="margin-top: 4px; font-size: 8px;">
         <div style="border-top: 1px solid #000; margin-top: 3px; padding-top: 3px;">
-          <div style="display: flex; justify-content: space-between; font-weight: bold;">
-            <span>${language === "ar"
-        ? "إجمالي المدفوع:"
-        : language === "fr"
-          ? "TOTAL PAYÉ:"
-          : "TOTAL PAID:"
-      }</span>
+          <div style="display: flex; justify-content: space-between; font-weight: bold; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("receipt.totalPaid", { lng: language })}:</span>
             <span>${CURRENCY_SYMBOLS[currency]}${totalPaid.toFixed(2)}</span>
           </div>
         </div>
@@ -100,7 +94,7 @@ export function renderRepairReceiptHTML(
           }
         </style>
       </head>
-      <body>
+      <body dir="${direction}">
         <div style="text-align: center; margin-bottom: 4px; border-bottom: 1px dashed #000; padding-bottom: 4px;">
           ${logoUrl || shopInfo.logoUrl
       ? `<div style="margin-bottom: 2px;"><img src="${logoUrl || shopInfo.logoUrl
@@ -109,35 +103,35 @@ export function renderRepairReceiptHTML(
     }
           <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">${shopInfo.shopName}</div>
           <div style="font-size: 7px;">${shopInfo.address}</div>
-          <div style="font-size: 7px;">${language === "ar" ? "هاتف" : language === "fr" ? "Tél" : "Tel"}: ${shopInfo.phoneNumber}</div>
+          <div style="font-size: 7px;">${i18n.t("receipt.telephone", { lng: language })}: ${shopInfo.phoneNumber}</div>
         </div>
 
         <div style="margin-bottom: 3px; font-size: 7px;">
-          <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar" ? "رقم الطلب" : language === "fr" ? "N° de commande" : "Order #"}:</span>
+          <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("receipt.orderNumber", { lng: language })}:</span>
             <span style="font-weight: bold; font-size: 8px;">${repair.code || repair.id}</span>
           </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar" ? "التاريخ" : language === "fr" ? "Date" : "Date"}:</span>
+          <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("receipt.date", { lng: language })}:</span>
             <span>${formatDate(repair.createdAt)}</span>
           </div>
         </div>
 
         <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
 
-        <div style="margin-bottom: 4px; font-size: 8px;">
-          <div style="font-weight: bold; margin-bottom: 2px;">${language === "ar" ? "العميل" : language === "fr" ? "Client" : "Customer"}:</div>
+        <div style="margin-bottom: 4px; font-size: 8px; ${isRTL ? "text-align: right;" : ""}">
+          <div style="font-weight: bold; margin-bottom: 2px;">${i18n.t("receipt.customer", { lng: language })}:</div>
           <div>${repair.customerName}</div>
           <div>${repair.customerPhone}</div>
         </div>
 
         <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
 
-        <div style="margin-bottom: 4px; font-size: 8px;">
-          <div style="font-weight: bold; margin-bottom: 2px;">${language === "ar" ? "الجهاز" : language === "fr" ? "Appareil" : "Device"}:</div>
+        <div style="margin-bottom: 4px; font-size: 8px; ${isRTL ? "text-align: right;" : ""}">
+          <div style="font-weight: bold; margin-bottom: 2px;">${i18n.t("receipt.device", { lng: language })}:</div>
           <div>${repair.deviceBrand} ${repair.deviceModel}</div>
           <div style="margin-top: 2px;">
-            <div style="font-weight: bold;">${language === "ar" ? "المشكلة" : language === "fr" ? "Problème" : "Issue"}:</div>
+            <div style="font-weight: bold;">${i18n.t("receipt.issue", { lng: language })}:</div>
             <div style="white-space: pre-wrap; word-break: break-all;">${repair.issueDescription}</div>
           </div>
         </div>
@@ -145,14 +139,14 @@ export function renderRepairReceiptHTML(
         ${partsHTML}
 
         <div style="margin-bottom: 4px; font-size: 9px;">
-          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px;">
-            <span>${language === "ar" ? "تكلفة الإصلاح" : language === "fr" ? "Coût réparation" : "Repair Cost"}:</span>
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("receipt.repairCost", { lng: language })}:</span>
             <span>${CURRENCY_SYMBOLS[currency]}${repair.estimatedCost.toFixed(2)}</span>
           </div>
           ${paymentsHTML}
           <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; font-size: 10px; font-weight: bold;">
-            <div style="display: flex; justify-content: space-between;">
-              <span>${language === "ar" ? "الرصيد المطلوب" : language === "fr" ? "Solde dû" : "Balance Due"}:</span>
+            <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+              <span>${i18n.t("receipt.balanceDue", { lng: language })}:</span>
               <span>${CURRENCY_SYMBOLS[currency]}${balance.toFixed(2)}</span>
             </div>
           </div>
@@ -161,7 +155,7 @@ export function renderRepairReceiptHTML(
         <div style="text-align: center; font-size: 7px; margin-top: 4px;">
           <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
           <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter}</div>
-          <div style="font-size: 6px; color: #666;">${language === "ar" ? "تم إنشاؤه بواسطة Fixary POS" : language === "fr" ? "Généré par Fixary POS" : "Generated by Fixary POS"}</div>
+          <div style="font-size: 6px; color: #666;">${i18n.t("receipt.generatedBy", { lng: language })}</div>
         </div>
 
         <div style="text-align: center; margin-top: 6px; font-size: 7px;">
@@ -183,7 +177,8 @@ export function renderPaymentReceiptHTML(
   referenceCode?: string,
   language: string = "en",
   currency: Currency = "USD",
-  logoUrl?: string
+  logoUrl?: string,
+  previousBalance?: number
 ): string {
   const shopInfo = getShopInfo();
 
@@ -200,9 +195,12 @@ export function renderPaymentReceiptHTML(
     });
   };
 
+  const isRTL = language === "ar";
+  const direction = isRTL ? "rtl" : "ltr";
+
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="${language}" dir="${direction}">
       <head>
         <meta charset="UTF-8">
         <style>
@@ -231,26 +229,26 @@ export function renderPaymentReceiptHTML(
     }
           <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">${shopInfo.shopName}</div>
           <div style="font-size: 7px;">${shopInfo.address}</div>
-          <div style="font-size: 7px;">${language === "ar" ? "هاتف" : language === "fr" ? "Tél" : "Tel"}: ${shopInfo.phoneNumber}</div>
+          <div style="font-size: 7px;">${i18n.t("receipt.telephone", { lng: language })}: ${shopInfo.phoneNumber}</div>
         </div>
 
         <div style="text-align: center; margin: 4px 0; font-weight: bold; font-size: 10px;">
-          ${language === "ar" ? "إيصال دفع" : language === "fr" ? "REÇU DE PAIEMENT" : "PAYMENT RECEIPT"}
+          ${i18n.t("receipt.paymentReceipt", { lng: language })}
         </div>
 
         <div style="margin-bottom: 4px; font-size: 7px;">
-          <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar" ? "رقم الإيصال" : language === "fr" ? "ID du reçu" : "Receipt ID"}:</span>
+          <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("receipt.receiptID", { lng: language })}:</span>
             <span>${payment.id}</span>
           </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar" ? "التاريخ" : language === "fr" ? "Date" : "Date"}:</span>
+          <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("receipt.date", { lng: language })}:</span>
             <span>${formatDate(payment.date)}</span>
           </div>
           ${referenceCode
       ? `
-          <div style="display: flex; justify-content: space-between;">
-            <span>${language === "ar" ? "المرجع" : language === "fr" ? "Référence" : "Reference"}:</span>
+          <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("receipt.reference", { lng: language })}:</span>
             <span style="font-weight: bold;">${referenceCode}</span>
           </div>
           `
@@ -260,34 +258,58 @@ export function renderPaymentReceiptHTML(
 
         <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
 
-        <div style="margin-bottom: 4px;">
+        <div style="margin-bottom: 4px; ${isRTL ? "text-align: right;" : ""}">
           ${customerName
-      ? `<div style="margin-bottom: 2px;"><span style="font-weight: bold;">${language === "ar" ? "استلم من" : language === "fr" ? "Reçu de" : "Received From"}:</span> ${customerName}</div>`
+      ? `<div style="margin-bottom: 2px;"><span style="font-weight: bold;">${i18n.t("receipt.receivedFrom", { lng: language })}:</span> ${customerName}</div>`
       : ""
     }
-          <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 4px;">
-            <span style="font-weight: bold;">${language === "ar" ? "المبلغ المدفوع" : language === "fr" ? "MONTANT PAYÉ" : "AMOUNT PAID"}:</span>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 4px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span style="font-weight: bold;">${i18n.t("receipt.amountPaid", { lng: language })}:</span>
             <span style="font-weight: bold;">${CURRENCY_SYMBOLS[currency]}${payment.amount.toFixed(2)}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 7px; margin-top: 2px;">
-            <span>${language === "ar" ? "طريقة الدفع" : language === "fr" ? "Mode de paiement" : "Payment Method"}:</span>
-            <span>${payment.method}</span>
+          <div style="display: flex; justify-content: space-between; font-size: 7px; margin-top: 2px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("receipt.paymentMethod", { lng: language })}:</span>
+            <span>${i18n.t(`repairs.${payment.method.toLowerCase()}`, { lng: language })}</span>
           </div>
           ${payment.received_by
       ? `
-          <div style="display: flex; justify-content: space-between; font-size: 7px;">
-            <span>${language === "ar" ? "استلم بواسطة" : language === "fr" ? "Reçu par" : "Received By"}:</span>
+          <div style="display: flex; justify-content: space-between; font-size: 7px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("receipt.receivedBy", { lng: language })}:</span>
             <span>${payment.received_by}</span>
           </div>
           `
       : ""
     }
         </div>
+        
+        ${previousBalance !== undefined
+      ? `
+          <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
+          <div style="margin-bottom: 4px; ${isRTL ? "text-align: right;" : ""}">
+            <div style="font-size: 7px; font-weight: bold; margin-bottom: 2px; text-transform: uppercase; color: #666;">
+              ${i18n.t("receipt.accountSummary", { lng: language })}
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 7px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+              <span>${i18n.t("receipt.previousBalance", { lng: language })}:</span>
+              <span>${CURRENCY_SYMBOLS[currency]}${previousBalance.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 7px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+              <span>${i18n.t("receipt.amountPaid", { lng: language })}:</span>
+              <span>-${CURRENCY_SYMBOLS[currency]}${payment.amount.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 9px; margin-top: 2px; font-weight: bold; border-top: 1px solid #eee; padding-top: 2px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+              <span>${i18n.t("receipt.newBalance", { lng: language })}:</span>
+              <span>${CURRENCY_SYMBOLS[currency]}${(previousBalance - payment.amount).toFixed(2)}</span>
+            </div>
+          </div>
+        `
+      : ""
+    }
 
         <div style="text-align: center; font-size: 7px; margin-top: 4px;">
           <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
           <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter}</div>
-          <div style="font-size: 6px; color: #666;">${language === "ar" ? "تم إنشاؤه بواسطة Fixary POS" : language === "fr" ? "Généré par Fixary POS" : "Generated by Fixary POS"}</div>
+          <div style="font-size: 6px; color: #666;">${i18n.t("receipt.generatedBy", { lng: language })}</div>
         </div>
       </body>
     </html>
@@ -322,6 +344,9 @@ export function renderTransactionReceiptHTML(
     });
   };
 
+  const isRTL = language === "ar";
+  const direction = isRTL ? "rtl" : "ltr";
+
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0) || 0;
   // If the transaction is completed, the new balance is:
   // Previous Balance + (Transaction Total - Paid Amount)
@@ -331,8 +356,10 @@ export function renderTransactionReceiptHTML(
   const itemsHTML = items
     .map(
       (item) => `
-    <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-      <span style="flex: 1;">${item.item_name} <span style="font-size: 8px;">x${item.quantity}</span></span>
+    <div class="row" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
+      <span style="flex: 1; ${isRTL ? "text-align: right;" : ""}">
+        ${item.item_name} <span style="font-size: 8px;">x${item.quantity}</span>
+      </span>
       <span>${CURRENCY_SYMBOLS[currency]}${item.total_price.toFixed(2)}</span>
     </div>
   `
@@ -341,7 +368,7 @@ export function renderTransactionReceiptHTML(
 
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="${language}" dir="${direction}">
       <head>
         <meta charset="UTF-8">
         <style>
@@ -377,17 +404,17 @@ export function renderTransactionReceiptHTML(
     }
           <div style="font-size: 14px; font-weight: bold;">${shopInfo.shopName}</div>
           <div style="font-size: 9px;">${shopInfo.address}</div>
-          <div style="font-size: 9px;">${language === "ar" ? "هاتف" : language === "fr" ? "Tél" : "Tel"}: ${shopInfo.phoneNumber}</div>
+          <div style="font-size: 9px;">${i18n.t("receipt.telephone", { lng: language })}: ${shopInfo.phoneNumber}</div>
         </div>
 
         <!-- Transaction Info -->
         <div style="margin-bottom: 5px;">
-           <div class="row">
-            <span>${language === "ar" ? "رقم الفاتورة" : language === "fr" ? "N° de facture" : "Receipt #"}:</span>
+           <div class="row" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("transactions_module.summary.paymentFor", { type: i18n.t("transactions_module.sale", { lng: language }), lng: language })}:</span>
             <span class="bold">${transaction.transaction_number || transaction.id.slice(0, 8)}</span>
            </div>
-           <div class="row">
-            <span>${language === "ar" ? "التاريخ" : language === "fr" ? "Date" : "Date"}:</span>
+           <div class="row" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("common.date", { lng: language })}:</span>
             <span>${formatDate(transaction.created_at)}</span>
            </div>
         </div>
@@ -395,17 +422,17 @@ export function renderTransactionReceiptHTML(
         <div class="divider"></div>
 
         <!-- Client Info -->
-        <div style="margin-bottom: 5px;">
-           <div class="bold" style="margin-bottom: 2px;">${language === "ar" ? "العميل" : language === "fr" ? "Client" : "Customer"}:</div>
-           <div>${client?.name || (language === "ar" ? "عميل عابر" : language === "fr" ? "Client de passage" : "Walk-in Customer")}</div>
+        <div style="margin-bottom: 5px; ${isRTL ? "text-align: right;" : ""}">
+           <div class="bold" style="margin-bottom: 2px;">${i18n.t("transactions_module.party.client", { lng: language })}:</div>
+           <div>${client?.name || (language === "ar" ? "عميل عابر" : language === "fr" ? "Client de passage" : i18n.t("transactions_module.party.walkInCustomer", { lng: language }))}</div>
            ${client?.phone ? `<div>${client.phone}</div>` : ""}
         </div>
 
         <div class="divider"></div>
 
         <!-- Items -->
-        <div style="margin-bottom: 5px;">
-          <div class="bold" style="margin-bottom: 4px;">${language === "ar" ? "الأصناف" : language === "fr" ? "Articles" : "Items"}:</div>
+        <div style="margin-bottom: 5px; ${isRTL ? "text-align: right;" : ""}">
+          <div class="bold" style="margin-bottom: 4px;">${i18n.t("transactions_module.itemTable.details", { lng: language })}:</div>
           ${itemsHTML}
         </div>
 
@@ -413,23 +440,23 @@ export function renderTransactionReceiptHTML(
 
         <!-- Totals -->
         <div style="margin-bottom: 5px;">
-          <div class="row bold" style="font-size: 12px;">
-            <span>${language === "ar" ? "المجموع" : language === "fr" ? "TOTAL" : "TOTAL"}:</span>
+          <div class="row bold" style="font-size: 12px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("transactions_module.summary.total", { lng: language })}:</span>
             <span>${CURRENCY_SYMBOLS[currency]}${transaction.total_amount.toFixed(2)}</span>
           </div>
           
           ${totalPaid > 0
       ? `
-            <div class="row">
-              <span>${language === "ar" ? "المدفوع" : language === "fr" ? "Payé" : "Paid"}:</span>
+            <div class="row" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
+              <span>${i18n.t("transactions_module.summary.amountPaid", { lng: language })}:</span>
               <span>${CURRENCY_SYMBOLS[currency]}${totalPaid.toFixed(2)}</span>
             </div>
             `
       : ""
     }
 
-          <div class="row">
-            <span>${language === "ar" ? "الباقي" : language === "fr" ? "Solde dû" : "Balance Due"}:</span>
+          <div class="row" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
+            <span>${i18n.t("transactions_module.summary.balanceDue", { lng: language })}:</span>
             <span>${CURRENCY_SYMBOLS[currency]}${balanceDue.toFixed(2)}</span>
           </div>
         </div>
@@ -438,14 +465,14 @@ export function renderTransactionReceiptHTML(
         ${client
       ? `
             <div class="divider"></div>
-            <div style="margin-bottom: 5px; background: #f0f0f0; padding: 4px;">
-              <div class="bold center" style="margin-bottom: 4px; font-size: 11px;">${language === "ar" ? "ملخص الحساب" : language === "fr" ? "RÉSUMÉ DU COMPTE" : "ACCOUNT SUMMARY"}</div>
-              <div class="row">
-                <span>${language === "ar" ? "الرصيد السابق" : language === "fr" ? "Solde précédent" : "Previous Balance"}:</span>
+            <div style="margin-bottom: 5px; background: #f0f0f0; padding: 4px; ${isRTL ? "text-align: right;" : ""}">
+              <div class="bold center" style="margin-bottom: 4px; font-size: 11px;">${i18n.t("receipt.accountSummary", { lng: language })}</div>
+              <div class="row" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
+                <span>${i18n.t("receipt.previousBalance", { lng: language })}:</span>
                 <span>${CURRENCY_SYMBOLS[currency]}${previousBalance.toFixed(2)}</span>
               </div>
-              <div class="row bold">
-                <span>${language === "ar" ? "الرصيد الحالي" : language === "fr" ? "Nouveau solde" : "New Balance"}:</span>
+              <div class="row bold" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
+                <span>${i18n.t("receipt.newBalance", { lng: language })}:</span>
                 <span>${CURRENCY_SYMBOLS[currency]}${newBalance.toFixed(2)}</span>
               </div>
             </div>
@@ -454,8 +481,8 @@ export function renderTransactionReceiptHTML(
     }
 
         <div class="center" style="margin-top: 15px; font-size: 8px;">
-          <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter || (language === "ar" ? "شكراً لتعاملكم معنا!" : language === "fr" ? "Merci pour votre confiance !" : "Thank you for your business!")}</div>
-          <div style="font-size: 6px; color: #666;">${language === "ar" ? "تم إنشاؤه بواسطة Fixary POS" : language === "fr" ? "Généré par Fixary POS" : "Generated by Fixary POS"}</div>
+          <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter || i18n.t("repairs.thankYou", { lng: language })}</div>
+          <div style="font-size: 6px; color: #666;">${i18n.t("receipt.generatedBy", { lng: language })}</div>
         </div>
       </body>
     </html>

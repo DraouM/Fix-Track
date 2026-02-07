@@ -40,8 +40,9 @@ import type { Task, TaskPriority } from "@/types/task";
 import { cn } from "@/lib/utils";
 
 export default function TasksPageClient() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { tasks, loading, deleteTask, toggleTaskStatus } = useTaskContext();
+  const isRTL = i18n.language === "ar";
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -77,7 +78,7 @@ export default function TasksPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8" dir={isRTL ? "rtl" : "ltr"}>
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -87,10 +88,10 @@ export default function TasksPageClient() {
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tight text-foreground">
-                Tasks & Reminders
+                {t("tasks.title")}
               </h1>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-60">
-                Manage your daily shop operations
+                {t("tasks.subtitle")}
               </p>
             </div>
           </div>
@@ -101,14 +102,14 @@ export default function TasksPageClient() {
                 onClick={handleAddNew}
                 className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Add New Task
+                <Plus className={cn("h-4 w-4", isRTL ? "ml-2" : "mr-2")} />
+                {t("tasks.addTask")}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] rounded-3xl border-none shadow-2xl dark:bg-slate-900">
               <DialogHeader>
                 <DialogTitle className="text-xl font-black">
-                  {taskToEdit ? "Edit Task" : "New Task"}
+                  {taskToEdit ? t("tasks.editTask") : t("tasks.newTask")}
                 </DialogTitle>
               </DialogHeader>
               <div className="pt-4">
@@ -128,7 +129,7 @@ export default function TasksPageClient() {
               <div className="p-2 rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400">
                 <Clock className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Pending</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{t("tasks.pending")}</span>
             </div>
             <div className="text-2xl font-black">{stats.pending}</div>
           </div>
@@ -137,7 +138,7 @@ export default function TasksPageClient() {
               <div className="p-2 rounded-xl bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Completed</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{t("tasks.completed")}</span>
             </div>
             <div className="text-2xl font-black">{stats.completed}</div>
           </div>
@@ -146,7 +147,7 @@ export default function TasksPageClient() {
               <div className="p-2 rounded-xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400">
                 <AlertCircle className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Urgent</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{t("tasks.urgent")}</span>
             </div>
             <div className="text-2xl font-black">{stats.highPriority}</div>
           </div>
@@ -155,12 +156,12 @@ export default function TasksPageClient() {
         {/* Toolbar */}
         <div className="flex items-center gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className={cn("absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground", isRTL ? "right-3" : "left-3")} />
             <Input
-              placeholder="Search tasks..."
+              placeholder={t("tasks.placeholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-11 rounded-xl bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
+              className={cn("h-11 rounded-xl bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800", isRTL ? "pr-10" : "pl-10")}
             />
           </div>
         </div>
@@ -197,7 +198,7 @@ export default function TasksPageClient() {
                       {task.title}
                     </h3>
                     <Badge variant="outline" className={cn("text-[8px] font-black uppercase tracking-tighter px-1.5 py-0", priorityColors[task.priority as TaskPriority])}>
-                      {task.priority}
+                      {t(`tasks.${task.priority.toLowerCase()}`)}
                     </Badge>
                   </div>
                   {task.description && (
@@ -208,7 +209,7 @@ export default function TasksPageClient() {
                   {task.due_date && (
                     <div className="flex items-center gap-1.5 mt-2 text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
                       <Calendar className="h-3 w-3" />
-                      Due: {new Date(task.due_date).toLocaleDateString()}
+                      {t("tasks.due")}: {new Date(task.due_date).toLocaleDateString(i18n.language)}
                     </div>
                   )}
                 </div>
@@ -240,9 +241,9 @@ export default function TasksPageClient() {
                <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-full w-fit mx-auto mb-3">
                   <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
                </div>
-               <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-                  {searchTerm ? "No tasks match your search" : "All cleared! Relax."}
-               </p>
+                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                  {searchTerm ? t("tasks.noTasksSearch") : t("tasks.noTasks")}
+                </p>
             </div>
           )}
         </div>

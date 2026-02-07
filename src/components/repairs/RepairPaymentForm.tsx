@@ -19,6 +19,9 @@ import { useRepairContext } from "@/context/RepairContext";
 import type { Repair } from "@/types/repair";
 import { Wallet, CreditCard, ArrowRightLeft, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { v4 as uuidv4 } from "uuid";
+import { Payment } from "@/types/repair";
 
 const paymentSchema = z.object({
   amount: z.coerce
@@ -46,6 +49,7 @@ export function RepairPaymentForm({
 }: RepairPaymentFormProps) {
   const { t } = useTranslation();
   const { addPayment, fetchRepairById } = useRepairContext();
+  const { printPaymentReceipt } = usePrintUtils();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<PaymentFormValues>({
@@ -59,15 +63,29 @@ export function RepairPaymentForm({
   const handleSubmit = async (values: PaymentFormValues) => {
     setLoading(true);
     try {
+      const previousBalance = repair.remainingBalance || 0;
+      const paymentId = uuidv4();
+      const paymentDate = new Date().toISOString();
+
       await addPayment(repair.id, {
         repair_id: repair.id,
         amount: values.amount as number,
         method: values.method,
       });
 
+      // Construct payment object for printing
+      const payment: Payment = {
+        id: paymentId,
+        repair_id: repair.id,
+        amount: values.amount as number,
+        method: values.method,
+        date: paymentDate
+      };
+
+      // Print the receipt
+      await printPaymentReceipt(payment, repair.customerName, undefined, undefined, undefined, previousBalance);
+
       form.reset({ amount: undefined as any, method: values.method });
-      // Refresh context data to reflect new payment/balance
-      await fetchRepairById(repair.id);
       onSuccess?.();
     } catch (err) {
       console.error("Failed to add payment:", err);

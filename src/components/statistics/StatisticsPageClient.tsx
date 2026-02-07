@@ -107,16 +107,28 @@ export default function StatisticsPageClient() {
     const range = DATE_RANGES[selectedRangeKey]();
     return repairs.filter(
       (repair) =>
-        repair.repairStatus === 'Completed' &&
-        isWithinInterval(new Date(repair.dateReceived), { start: range.start, end: range.end })
+        repair.status === "Completed" &&
+        isWithinInterval(new Date(repair.createdAt), {
+          start: range.start,
+          end: range.end,
+        })
     );
   }, [repairs, selectedRangeKey]);
 
   const kpiData = useMemo(() => {
     const totalRepairs = filteredRepairs.length;
-    const totalRevenue = filteredRepairs.reduce((sum, r) => sum + parseFloat(r.estimatedCost), 0);
+    const totalRevenue = filteredRepairs.reduce(
+      (sum, r) => sum + r.estimatedCost,
+      0
+    );
     const totalCostOfParts = filteredRepairs.reduce((sum, r) => {
-      return sum + (r.usedParts?.reduce((partSum, p) => partSum + p.unitCost * p.quantity, 0) || 0);
+      return (
+        sum +
+        (r.usedParts?.reduce(
+          (partSum, p) => partSum + p.cost * p.quantity,
+          0
+        ) || 0)
+      );
     }, 0);
     const totalProfit = totalRevenue - totalCostOfParts;
 
@@ -132,13 +144,22 @@ export default function StatisticsPageClient() {
     const dataByMonth: Record<string, { name: string; repairs: number; revenue: number; cost: number }> = {};
 
     filteredRepairs.forEach((repair) => {
-      const monthYear = format(new Date(repair.dateReceived), 'MMM yyyy');
+      const monthYear = format(new Date(repair.createdAt), "MMM yyyy");
       if (!dataByMonth[monthYear]) {
-        dataByMonth[monthYear] = { name: format(new Date(repair.dateReceived), 'MMM'), repairs: 0, revenue: 0, cost: 0 };
+        dataByMonth[monthYear] = {
+          name: format(new Date(repair.createdAt), "MMM"),
+          repairs: 0,
+          revenue: 0,
+          cost: 0,
+        };
       }
       dataByMonth[monthYear].repairs += 1;
-      dataByMonth[monthYear].revenue += parseFloat(repair.estimatedCost);
-      dataByMonth[monthYear].cost += repair.usedParts?.reduce((sum, p) => sum + p.unitCost * p.quantity, 0) || 0;
+      dataByMonth[monthYear].revenue += repair.estimatedCost;
+      dataByMonth[monthYear].cost +=
+        repair.usedParts?.reduce(
+          (sum, p) => sum + p.cost * p.quantity,
+          0
+        ) || 0;
     });
     
     return Object.values(dataByMonth).sort((a, b) => {
@@ -154,7 +175,9 @@ export default function StatisticsPageClient() {
     const usage: Record<string, number> = {};
     filteredRepairs.forEach((repair) => {
       repair.usedParts?.forEach((part) => {
-        usage[part.itemType] = (usage[part.itemType] || 0) + part.quantity;
+        // Since UsedPart doesn't have itemType, use partName or add it to types
+        const type = part.partName || "Other";
+        usage[type] = (usage[type] || 0) + part.quantity;
       });
     });
     return Object.entries(usage).map(([name, value]) => ({ name, value }));
@@ -164,10 +187,11 @@ export default function StatisticsPageClient() {
     const partsCount: Record<string, { name: string; quantity: number }> = {};
     filteredRepairs.forEach((repair) => {
       repair.usedParts?.forEach((part) => {
-        if (!partsCount[part.partId]) {
-          partsCount[part.partId] = { name: part.name, quantity: 0 };
+        const partId = part.part_id || part.id;
+        if (!partsCount[partId]) {
+          partsCount[partId] = { name: part.partName, quantity: 0 };
         }
-        partsCount[part.partId].quantity += part.quantity;
+        partsCount[partId].quantity += part.quantity;
       });
     });
     return Object.values(partsCount)
@@ -252,7 +276,7 @@ export default function StatisticsPageClient() {
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
                 <YAxis tickLine={false} axisLine={false} tickMargin={8} />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="rectangle" />} />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
                 <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="cost" fill="var(--color-cost)" radius={[4, 4, 0, 0]} />
                 <RechartsLegend />

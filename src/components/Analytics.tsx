@@ -9,9 +9,9 @@ export function Analytics() {
   const { repairs } = useRepairContext();
 
   const totalRepairs = repairs.length;
-  const completedRepairs = repairs.filter(repair => repair.repairStatus === 'Completed').length;
-  const pendingRepairs = repairs.filter(repair => repair.repairStatus === 'Pending').length;
-  const inProgressRepairs = repairs.filter(repair => repair.repairStatus === 'In Progress').length; // Added In Progress count
+  const completedRepairs = repairs.filter((repair) => repair.status === "Completed").length;
+  const pendingRepairs = repairs.filter((repair) => repair.status === "Pending").length;
+  const inProgressRepairs = repairs.filter((repair) => repair.status === "In Progress").length;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

@@ -56,9 +56,12 @@ export function ReceiptTemplate({
   const totalPaid = repair.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const balance = repair.estimatedCost - totalPaid;
 
+  const isRTL = i18n.language === "ar";
+
   return (
     <div
       className="thermal-receipt"
+      dir={isRTL ? "rtl" : "ltr"}
       style={{
         width: `${receiptWidth}mm`,
         padding: "2mm",

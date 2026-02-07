@@ -26,10 +26,11 @@ import { useClientContext } from '@/context/ClientContext';
 import { useInventoryContext } from '@/context/InventoryContext';
 import type { Client } from '@/types/client';
 import type { InventoryItem } from '@/types/inventory';
-import type { Sale, SoldItem } from '@/types/sale'; 
+import type { Sale, SaleItem } from '@/types/sale'; 
 import { PreviousSalesTable } from './PreviousSalesTable'; 
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 
 interface CartItem {
   inventoryItem: InventoryItem;
@@ -50,7 +51,7 @@ const getInitialSalesState = (): Sale[] => {
 
 
 export default function SalesPageClient() {
-  const { clients, increaseClientDebt } = useClientContext();
+  const { clients, adjustBalance } = useClientContext();
   const { inventoryItems, getItemById, updateItemQuantity } = useInventoryContext();
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -148,26 +149,40 @@ export default function SalesPageClient() {
       return;
     }
 
-    const soldItems: SoldItem[] = cartItems.map(cartItem => ({
-      inventoryItemId: cartItem.inventoryItem.id,
-      itemName: cartItem.inventoryItem.itemName,
+    const soldItems: SaleItem[] = cartItems.map((cartItem) => ({
+      id: uuidv4(),
+      sale_id: `sale_${Date.now().toString()}`,
+      item_id: cartItem.inventoryItem.id,
+      item_name: cartItem.inventoryItem.itemName,
       quantity: cartItem.quantity,
-      sellingPriceAtSale: cartItem.sellingPrice,
+      unit_price: cartItem.sellingPrice,
+      total_price: cartItem.sellingPrice * cartItem.quantity,
     }));
 
     const newSale: Sale = {
       id: `sale_${Date.now().toString()}`,
-      clientId: selectedClient.id,
-      clientName: selectedClient.name,
-      items: soldItems,
-      totalAmount: saleTotal,
-      saleDate: new Date().toISOString(),
+      sale_number: `SALE-${Date.now().toString().slice(-6)}`,
+      client_id: selectedClient.id,
+      status: "completed",
+      payment_status: "paid",
+      total_amount: saleTotal,
+      paid_amount: saleTotal,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
-    setPastSales(prevSales => [newSale, ...prevSales]);
-    increaseClientDebt(selectedClient.id, saleTotal);
-    soldItems.forEach(soldItem => {
-      updateItemQuantity(soldItem.inventoryItemId, -soldItem.quantity, 'Sold', `Sale to ${selectedClient.name}`, newSale.id);
+    setPastSales((prevSales) => [newSale, ...prevSales]);
+    adjustBalance(selectedClient.id, saleTotal, `Sale: ${newSale.sale_number}`);
+    soldItems.forEach((soldItem) => {
+      if (soldItem.item_id) {
+        updateItemQuantity(
+          soldItem.item_id,
+          -soldItem.quantity,
+          "Sold",
+          `Sale to ${selectedClient.name}`,
+          newSale.id
+        );
+      }
     });
     
     toast.success(`Sale for ${selectedClient.name} totaling $${saleTotal.toFixed(2)} has been recorded.`);
@@ -229,7 +244,7 @@ export default function SalesPageClient() {
                                 selectedClient?.id === client.id ? "opacity-100" : "opacity-0"
                               )}
                             />
-                            {client.name} ({client.phoneNumber || 'No phone'})
+                            {client.name} ({client.phone || 'No phone'})
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -340,7 +355,7 @@ export default function SalesPageClient() {
               <div className="text-sm">
                 <p className="font-medium">Client:</p>
                 <p>{selectedClient.name}</p>
-                <p>{selectedClient.phoneNumber}</p>
+                <p>{selectedClient.phone}</p>
               </div>
             )}
             {!selectedClient && <p className="text-sm text-muted-foreground">No client selected.</p>}

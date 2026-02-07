@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
   Plus,
@@ -36,6 +36,7 @@ export function SaleScanner({
 }: SaleScannerProps) {
   const { searchItems } = useInventory();
   const [searchResults, setSearchResults] = useState<InventoryItem[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Search Items
   useEffect(() => {
@@ -108,16 +109,27 @@ export function SaleScanner({
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
+            ref={inputRef}
             placeholder="Scan barcode or search items..."
             value={itemSearch}
             onChange={(e) => setItemSearch(e.target.value)}
             className="pl-10 h-10"
           />
           <div className="absolute right-2 top-2 flex gap-1">
-            <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+            <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-6 w-6 p-0 hover:bg-muted dark:hover:bg-slate-800 transition-colors"
+                onClick={() => inputRef.current?.focus()}
+            >
               <Barcode className="h-4 w-4" />
             </Button>
-            <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+            <Button 
+                size="sm" 
+                variant="ghost" 
+                className="h-6 w-6 p-0 hover:bg-muted dark:hover:bg-slate-800 transition-colors"
+                onClick={() => inputRef.current?.focus()}
+            >
               <QrCode className="h-4 w-4" />
             </Button>
           </div>

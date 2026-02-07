@@ -21,13 +21,23 @@ lazy_static::lazy_static! {
 }
 
 /// Initialize the database path.
-/// For a Tauri app, you could use tauri::api::path::app_data_dir to get a platform-safe location.
+/// For a Tauri app, we use platform-safe application data location.
 pub fn init_db_path() {
-    let app_dir = PathBuf::from("../"); // Change to Tauri app_data_dir if needed
-    let db_path = app_dir.join("fixary.db");
+    let db_path = if cfg!(debug_assertions) {
+        // In development, keep it in the project root for easy access
+        PathBuf::from("fixary.db")
+    } else {
+        // In production, use the platform's local data directory
+        let mut path = dirs::data_local_dir().unwrap_or_else(|| PathBuf::from("."));
+        path.push("Fixary");
+        // Ensure the directory exists
+        let _ = std::fs::create_dir_all(&path);
+        path.push("fixary.db");
+        path
+    };
 
-    let mut path = DB_PATH.lock().unwrap();
-    *path = db_path;
+    let mut path_lock = DB_PATH.lock().unwrap();
+    *path_lock = db_path;
 }
 
 /// Get the current DB path.

@@ -11,7 +11,8 @@
         "settings": "الإعدادات",
         "operations": "العمليات",
         "management": "الإدارة",
-        "tools": "الأدوات"
+        "tools": "الأدوات",
+        "tasks": "المهام والتذكيرات"
     },
     "common": {
         "locale": "ar-SA",
@@ -117,8 +118,8 @@
         }
     },
     "app": {
-        "name": "FixTrack",
-        "tagline": "نظام إدارة الإصلاحات"
+        "name": "فيكساري POS",
+        "tagline": "إدارة محلات متقدمة"
     },
     "transactions": {
         "title": "المعاملات",
@@ -462,7 +463,8 @@
             "addNew": "+ إضافة {{type}} جديد",
             "name": "اسم {{type}}",
             "placeholder": "أدخل اسم {{type}}",
-            "add": "إضافة {{type}}"
+            "add": "إضافة {{type}}",
+            "walkInCustomer": "عميل عابر"
         },
         "summary": {
             "title": "ملخص الدفع",
@@ -494,6 +496,31 @@
             "itemsCount": "{{count}} {{label}}"
         }
     },
+    "tasks": {
+        "title": "المهام والتذكيرات",
+        "subtitle": "إدارة عمليات متجرك اليومية",
+        "addTask": "إضافة مهمة جديدة",
+        "newTask": "مهمة جديدة",
+        "editTask": "تعديل المهمة",
+        "updateTask": "تحديث المهمة",
+        "pending": "قيد الانتظار",
+        "completed": "مكتملة",
+        "urgent": "عاجل",
+        "priority": "الأولوية",
+        "dueDate": "تاريخ الاستحقاق",
+        "noTasks": "كل شيء مكتمل! استرخِ.",
+        "noTasksSearch": "لا توجد مهام تطابق بحثك",
+        "deleteConfirm": "هل أنت متأكد أنك تريد حذف هذه المهمة؟",
+        "placeholder": "البحث عن المهام...",
+        "titleLabel": "العنوان",
+        "descriptionLabel": "الوصف",
+        "placeholderTitle": "عنوان المهمة...",
+        "placeholderDescription": "تفاصيل إضافية...",
+        "low": "منخفض",
+        "medium": "متوسط",
+        "high": "عالي",
+        "due": "استحقاق"
+    },
     "receipt": {
         "orderNumber": "رقم الطلب",
         "date": "التاريخ",
@@ -512,6 +539,9 @@
         "paymentMethod": "طريقة الدفع",
         "receivedBy": "استلم بواسطة",
         "telephone": "هاتف",
-        "generatedBy": "تم إنشاؤه بواسطة Fixary POS"
+        "generatedBy": "تم إنشاؤه بواسطة Fixary POS",
+        "accountSummary": "ملخص الحساب",
+        "previousBalance": "الرصيد السابق",
+        "newBalance": "الرصيد الجديد"
     }
 }

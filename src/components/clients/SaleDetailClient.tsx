@@ -154,7 +154,7 @@ export function SaleDetailClient({ saleId }: SaleDetailClientProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="flex flex-col gap-1 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors border border-transparent hover:border-gray-100" onClick={() => router.push(`/clients/${sale.client_id}`)}>
+              <div className="flex flex-col gap-1 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors border border-transparent hover:border-gray-100" onClick={() => router.push(`/clients/detail?id=${sale.client_id}`)}>
                 <span className="font-bold text-base text-gray-900">{client_name}</span>
                 <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Customer Profile</span>
               </div>

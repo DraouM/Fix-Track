@@ -446,7 +446,7 @@ const SupplierPageClient = () => {
                         <div
                           className="flex flex-col cursor-pointer group-hover:translate-x-1.5 transition-transform duration-300"
                           onClick={() =>
-                            router.push(`/suppliers/${supplier.id}`)
+                            router.push(`/suppliers/detail?id=${supplier.id}`)
                           }
                         >
                           <div className="flex items-center gap-2.5">
@@ -556,7 +556,7 @@ const SupplierPageClient = () => {
                               </DropdownMenuLabel>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  router.push(`/suppliers/${supplier.id}`)
+                                  router.push(`/suppliers/detail?id=${supplier.id}`)
                                 }
                                 className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
                               >

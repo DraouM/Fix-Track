@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -13,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { Sale } from '@/types/sale';
 import { format } from 'date-fns';
 import { Icons } from '@/components/icons';
@@ -50,9 +50,9 @@ export function PreviousSalesTable({ sales, onViewDetails }: PreviousSalesTableP
               {sales.map((sale) => (
                 <TableRow key={sale.id}>
                   <TableCell className="font-mono text-xs">{sale.id.slice(0, 8)}...</TableCell>
-                  <TableCell>{sale.clientName}</TableCell>
-                  <TableCell>{format(new Date(sale.saleDate), 'PPp')}</TableCell>
-                  <TableCell className="text-right">${sale.totalAmount.toFixed(2)}</TableCell>
+                  <TableCell className="font-mono text-xs">{sale.client_id.slice(0, 8)}...</TableCell>
+                  <TableCell>{format(new Date(sale.created_at), 'PPp')}</TableCell>
+                  <TableCell className="text-right">${sale.total_amount.toFixed(2)}</TableCell>
                   <TableCell className="text-center">
                     <Button variant="outline" size="sm" onClick={() => onViewDetails(sale)} disabled>
                       <Icons.search className="mr-1 h-3 w-3" />
@@ -69,5 +69,3 @@ export function PreviousSalesTable({ sales, onViewDetails }: PreviousSalesTableP
   );
 }
 
-// Need to import Card components if not already globally available in this scope
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

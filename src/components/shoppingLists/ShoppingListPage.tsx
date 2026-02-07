@@ -863,8 +863,8 @@ const ShoppingListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [groupBy, setGroupBy] = useState("none"); // none, supplier, priority, category
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [expandedGroups, setExpandedGroups] = useState({});
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   // Calculate metrics
   const totalItems = items.length;
@@ -888,7 +888,7 @@ const ShoppingListPage = () => {
     if (groupBy === "none") return { "All Items": filteredItems };
 
     if (groupBy === "supplier") {
-      const grouped = {};
+      const grouped: Record<string, typeof filteredItems> = {};
       filteredItems.forEach((item) => {
         const bestSupplier = item.suggestedSuppliers[0];
         const supplierName = bestSupplier?.name || "No Supplier";
@@ -900,7 +900,7 @@ const ShoppingListPage = () => {
 
     if (groupBy === "priority") {
       const order = ["urgent", "high", "normal", "low"];
-      const grouped = {};
+      const grouped: Record<string, typeof filteredItems> = {};
       order.forEach((priority) => {
         const items = filteredItems.filter((i) => i.priority === priority);
         if (items.length > 0) {
@@ -911,7 +911,7 @@ const ShoppingListPage = () => {
     }
 
     if (groupBy === "category") {
-      const grouped = {};
+      const grouped: Record<string, typeof filteredItems> = {};
       filteredItems.forEach((item) => {
         if (!grouped[item.category]) grouped[item.category] = [];
         grouped[item.category].push(item);
@@ -922,14 +922,14 @@ const ShoppingListPage = () => {
     return { "All Items": filteredItems };
   };
 
-  const toggleGroup = (groupName) => {
+  const toggleGroup = (groupName: string) => {
     setExpandedGroups((prev) => ({
       ...prev,
       [groupName]: !prev[groupName],
     }));
   };
 
-  const toggleSelectItem = (itemId) => {
+  const toggleSelectItem = (itemId: string) => {
     setSelectedItems((prev) =>
       prev.includes(itemId)
         ? prev.filter((id) => id !== itemId)
@@ -945,7 +945,7 @@ const ShoppingListPage = () => {
     setSelectedItems([]);
   };
 
-  const handleDelete = (itemId) => {
+  const handleDelete = (itemId: string) => {
     if (confirm("Remove this item from shopping list?")) {
       setItems(items.filter((i) => i.id !== itemId));
       setSelectedItems(selectedItems.filter((id) => id !== itemId));
@@ -963,8 +963,12 @@ const ShoppingListPage = () => {
     );
   };
 
-  const getPriorityBadge = (priority) => {
-    const badges = {
+  const getPriorityBadge = (priority: string) => {
+    const badges: Record<string, { 
+      color: string; 
+      icon: React.ComponentType<{ className?: string }>; 
+      label: string 
+    }> = {
       urgent: {
         color: "bg-red-100 text-red-700 border-red-300",
         icon: AlertCircle,
@@ -989,8 +993,14 @@ const ShoppingListPage = () => {
     return badges[priority] || badges.normal;
   };
 
-  const StatCard = ({ icon: Icon, title, value, subtitle, color = "blue" }) => {
-    const colorClasses = {
+  const StatCard = ({ icon: Icon, title, value, subtitle, color = "blue" }: { 
+    icon: React.ComponentType<{ className?: string }>;
+    title: string;
+    value: string | number;
+    subtitle?: string;
+    color?: string;
+  }) => {
+    const colorClasses: Record<string, string> = {
       blue: "bg-blue-100 text-blue-600",
       red: "bg-red-100 text-red-600",
       green: "bg-green-100 text-green-600",
@@ -1015,7 +1025,7 @@ const ShoppingListPage = () => {
     );
   };
 
-  const ShoppingListItem = ({ item }) => {
+  const ShoppingListItem = ({ item }: { item: typeof shoppingListData[0] }) => {
     const priorityBadge = getPriorityBadge(item.priority);
     const bestSupplier = item.suggestedSuppliers[0];
     const isSelected = selectedItems.includes(item.id);

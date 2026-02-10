@@ -80,12 +80,12 @@ export function renderStickerHTML(data: Repair | InventoryItem): string {
             box-sizing: border-box;
             overflow: hidden;
           }
-          .title { font-size: 8px; font-weight: 700; text-transform: uppercase; }
-          .main { font-size: 11px; font-weight: 900; width: 100%; white-space: normal; line-clamp: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+          .title { font-size: 10px; font-weight: 700; text-transform: uppercase; }
+          .main { font-size: 14px; font-weight: 900; width: 100%; white-space: normal; line-clamp: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
           .barcode-container { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; }
-          .barcode { font-family: 'Libre Barcode 39', cursive; font-size: 26px; line-height: 1.2; }
-          .barcode-raw { font-size: 10px; font-weight: 900; }
-          .subtext { font-size: 8px; font-weight: 700; }
+          .barcode { font-family: 'Libre Barcode 39', cursive; font-size: 32px; line-height: 1.2; }
+          .barcode-raw { font-size: 12px; font-weight: 900; }
+          .subtext { font-size: 10px; font-weight: 700; }
         </style>
       </head>
       <body>

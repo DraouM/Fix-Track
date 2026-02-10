@@ -32,14 +32,14 @@ export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
     >
       {/* Title */}
       {title && (
-        <div style={{ fontSize: "10px", fontWeight: "bold", textAlign: "center", width: "100%", textTransform: "uppercase" }}>
+        <div style={{ fontSize: "12px", fontWeight: "bold", textAlign: "center", width: "100%", textTransform: "uppercase" }}>
           {title}
         </div>
       )}
 
       {/* Main Desc */}
       <div style={{ 
-        fontSize: "12px", 
+        fontSize: "14px", 
         fontWeight: "900", 
         textAlign: "center", 
         width: "100%",
@@ -57,7 +57,7 @@ export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
         {showBarcode !== false && (
           <div style={{ 
             fontFamily: "'Libre Barcode 39', cursive", 
-            fontSize: "28px", 
+            fontSize: "36px", 
             lineHeight: "1",
             margin: "0"
           }}>
@@ -65,7 +65,7 @@ export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
           </div>
         )}
         {barcodeLabel && (
-          <div style={{ fontSize: "10px", fontWeight: "900", textAlign: "center" }}>
+          <div style={{ fontSize: "12px", fontWeight: "900", textAlign: "center" }}>
             {barcodeLabel}
           </div>
         )}
@@ -73,7 +73,7 @@ export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
 
       {/* Subtext */}
       {subText && (
-        <div style={{ fontSize: "10px", fontWeight: "bold" }}>
+        <div style={{ fontSize: "12px", fontWeight: "bold" }}>
           {subText}
         </div>
       )}

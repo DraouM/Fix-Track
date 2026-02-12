@@ -38,8 +38,6 @@ export interface InventoryTableProps {
 }
 
 import { usePrintUtils } from "@/hooks/usePrintUtils";
-import { StickerPreviewDialog } from "@/components/helpers/StickerPreviewDialog";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 export const InventoryTable = React.memo(function InventoryTable({
@@ -52,8 +50,6 @@ export const InventoryTable = React.memo(function InventoryTable({
 }: InventoryTableProps) {
   const { t } = useTranslation();
   const { printSticker } = usePrintUtils();
-  const [previewItem, setPreviewItem] = useState<InventoryItem | null>(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   // Memoized sort indicator to prevent re-renders
 
   const SortableHeader = ({
@@ -211,10 +207,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            setPreviewItem(item);
-                            setIsPreviewOpen(true);
-                          }}
+                          onClick={() => printSticker(item)}
                           disabled={!item.barcode}
                         >
                           {t('inventory.printSticker')}
@@ -258,19 +251,7 @@ export const InventoryTable = React.memo(function InventoryTable({
         </Table>
       </div>
 
-      {previewItem && (
-        <StickerPreviewDialog
-          open={isPreviewOpen}
-          onOpenChange={setIsPreviewOpen}
-          item={previewItem}
-          onConfirm={() => {
-            printSticker(previewItem);
-          }}
-          onCancel={() => {
-            setPreviewItem(null);
-          }}
-        />
-      )}
+
     </TooltipProvider>
   );
 });

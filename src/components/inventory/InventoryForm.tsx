@@ -46,8 +46,6 @@ import {
 import { useInventoryActions } from "@/context/InventoryContext";
 import { generateBarcode } from "@/lib/barcode";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
-import { StickerPreviewDialog } from "@/components/helpers/StickerPreviewDialog";
-import { useState } from "react";
 
 // Utility: map InventoryItem → form defaults
 function sanitizeItem(item: InventoryItem | null): InventoryFormValues {
@@ -86,8 +84,6 @@ export function InventoryForm({
 }) {
   const { t } = useTranslation();
   const { printSticker } = usePrintUtils();
-  const [itemToPrint, setItemToPrint] = useState<InventoryItem | null>(null);
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const { addInventoryItem, updateInventoryItem } = useInventoryActions();
 
   const form = useForm<InventoryFormValues>({
@@ -104,34 +100,29 @@ export function InventoryForm({
     try {
       if (itemToEdit) {
         await updateInventoryItem(itemToEdit.id, values);
-        // Create a temporary item with updated values
-        const updatedItem: InventoryItem = {
-          id: itemToEdit.id,
-          itemName: values.itemName,
-          phoneBrand: values.phoneBrand,
-          itemType: values.itemType,
-          buyingPrice: values.buyingPrice,
-          sellingPrice: values.sellingPrice,
-          quantityInStock: values.quantityInStock,
-          lowStockThreshold: values.lowStockThreshold,
-          supplierInfo: values.supplierInfo || "",
-          barcode: values.barcode,
-          history: itemToEdit.history,
-        };
 
-        // If the item has a barcode, offer to print it
-        if (updatedItem.barcode) {
-          setItemToPrint(updatedItem);
-          setIsPrintDialogOpen(true);
-        } else {
-          form.reset(sanitizeItem(null)); // reset form
-          onSuccess(); // let parent close dialog
+        // If the item has a barcode, print it directly
+        if (values.barcode) {
+          const updatedItem: InventoryItem = {
+            id: itemToEdit.id,
+            itemName: values.itemName,
+            phoneBrand: values.phoneBrand,
+            itemType: values.itemType,
+            buyingPrice: values.buyingPrice,
+            sellingPrice: values.sellingPrice,
+            quantityInStock: values.quantityInStock,
+            lowStockThreshold: values.lowStockThreshold,
+            supplierInfo: values.supplierInfo || "",
+            barcode: values.barcode,
+            history: itemToEdit.history,
+          };
+          printSticker(updatedItem);
         }
       } else {
-        // Check if we have a barcode before adding the item
+        // Print sticker if barcode exists
         if (values.barcode) {
-          setItemToPrint({
-            id: uuidv4(), // temporary ID
+          printSticker({
+            id: uuidv4(),
             itemName: values.itemName,
             phoneBrand: values.phoneBrand,
             itemType: values.itemType,
@@ -143,20 +134,13 @@ export function InventoryForm({
             barcode: values.barcode,
             history: [],
           });
-          setIsPrintDialogOpen(true);
         }
 
         await addInventoryItem(values);
-
-        // If no barcode was present, we need to reset form and close dialog
-        if (!values.barcode) {
-          form.reset(sanitizeItem(null)); // reset form
-          onSuccess(); // let parent close dialog
-        }
       }
 
-      // Note: Form reset and onSuccess are handled in the respective branches above
-      // to allow for the print dialog to appear before closing the form
+      form.reset(sanitizeItem(null));
+      onSuccess();
     } catch (err) {
       console.error("Form submit error:", err);
     }
@@ -467,19 +451,7 @@ export function InventoryForm({
         </div>
       </form>
 
-      {itemToPrint && (
-        <StickerPreviewDialog
-          open={isPrintDialogOpen}
-          onOpenChange={setIsPrintDialogOpen}
-          item={itemToPrint}
-          onConfirm={() => {
-            printSticker(itemToPrint);
-          }}
-          onCancel={() => {
-            setItemToPrint(null);
-          }}
-        />
-      )}
+
     </Form>
   );
 }

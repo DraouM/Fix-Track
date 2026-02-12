@@ -19,7 +19,6 @@ import {
 } from "@/types/inventory";
 import { useTranslation } from "react-i18next";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
-import { StickerPreviewDialog } from "@/components/helpers/StickerPreviewDialog";
 
 import {
   Dialog,
@@ -80,8 +79,6 @@ export function InventoryPageInner() {
 
   const { t } = useTranslation();
   const { printSticker } = usePrintUtils();
-  const [previewItem, setPreviewItem] = useState<InventoryItem | null>(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -393,8 +390,7 @@ export function InventoryPageInner() {
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
             onPrint={(item) => {
-              setPreviewItem(item);
-              setIsPreviewOpen(true);
+              printSticker(item);
             }}
           />
         )}
@@ -439,19 +435,7 @@ export function InventoryPageInner() {
           historyEvents={historyEvents}
         />
 
-        {previewItem && (
-          <StickerPreviewDialog
-            open={isPreviewOpen}
-            onOpenChange={setIsPreviewOpen}
-            item={previewItem}
-            onConfirm={() => {
-              printSticker(previewItem);
-            }}
-            onCancel={() => {
-              setPreviewItem(null);
-            }}
-          />
-        )}
+
       </div>
     </div>
   );

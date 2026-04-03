@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod db;
+mod printing;
 mod system;
 
 use db::client::{
@@ -163,6 +164,10 @@ fn main() {
             insert_task,
             update_task,
             delete_task,
+            // PRINTING
+            printing::list_printers,
+            printing::print_raw,
+            printing::print_html,
         ])
         .build(tauri::generate_context!())
     {

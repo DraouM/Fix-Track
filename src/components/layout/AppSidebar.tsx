@@ -102,6 +102,12 @@ export function AppSidebar() {
 
   const secondaryItems: NavItem[] = [
     {
+      titleKey: "nav.printTest",
+      icon: PrinterIcon,
+      href: "/print-test",
+      descriptionKey: "nav.printTest",
+    },
+    {
       titleKey: "nav.documentation",
       icon: FileText,
       href: "/docs",

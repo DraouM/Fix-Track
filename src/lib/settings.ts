@@ -1,6 +1,6 @@
 // Settings management utilities for Fixary POS system
 
-import { AppSettings } from "@/types/settings";
+import { AppSettings, DEFAULT_PRINTER_CONFIG } from "@/types/settings";
 
 // Default settings configuration
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
             unit: "mm",
         },
     },
+    printerConfig: { ...DEFAULT_PRINTER_CONFIG },
 };
 
 const SETTINGS_STORAGE_KEY = "appSettings";

@@ -16,11 +16,31 @@ export interface PrintDimensions {
     };
 }
 
+export type PrinterType = "58mm" | "80mm" | "custom";
+
+export interface PrinterConfig {
+    printerType: PrinterType;
+    customWidth?: number;    // mm, used when printerType is "custom"
+    customHeight?: number;   // mm, used when printerType is "custom"
+    offsetTop: number;       // mm, calibration offset
+    offsetLeft: number;      // mm, calibration offset
+    printerName?: string;    // OS printer name for native printing
+    useNativePrint: boolean; // prefer Rust backend over browser print
+}
+
+export const DEFAULT_PRINTER_CONFIG: PrinterConfig = {
+    printerType: "80mm",
+    offsetTop: 0,
+    offsetLeft: 0,
+    useNativePrint: false,
+};
+
 export interface AppSettings {
     theme: ThemeMode;
     language: Language;
     currency: Currency;
     printDimensions: PrintDimensions;
+    printerConfig: PrinterConfig;
 }
 
 // Currency symbol mapping

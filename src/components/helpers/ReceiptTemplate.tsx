@@ -66,8 +66,9 @@ export function ReceiptTemplate({
         width: `${receiptWidth}mm`,
         padding: "2mm",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: "8px",
-        lineHeight: "1.15",
+        fontSize: "12px",
+        fontWeight: "bold",
+        lineHeight: "1.2",
         color: "#000",
         backgroundColor: "#fff",
       }}
@@ -77,10 +78,10 @@ export function ReceiptTemplate({
       {/* Receipt Type - Hidden to save space */}
 
       {/* Order Info */}
-      <div style={{ marginBottom: "3px", fontSize: "7px" }}>
+      <div style={{ marginBottom: "6px", fontSize: "10px" }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>{t("receipt.orderNumber")}:</span>
-          <span style={{ fontWeight: "bold", fontSize: "8px" }}>
+          <span style={{ fontSize: "14px", fontWeight: "900" }}>
             {repair.code || repair.id}
           </span>
         </div>
@@ -93,29 +94,23 @@ export function ReceiptTemplate({
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Customer Info */}
-      <div style={{ marginBottom: "4px", fontSize: "8px" }}>
-        <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-          {t("receipt.customer")}:
-        </div>
-        <div>{repair.customerName}</div>
-        <div>{repair.customerPhone}</div>
+      <div style={{ marginBottom: "6px", fontSize: "11px" }}>
+        <div style={{ fontSize: "14px", fontWeight: "900" }}>{repair.customerName}</div>
+        <div style={{ fontSize: "14px", fontWeight: "900" }}>{repair.customerPhone}</div>
       </div>
 
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
       {/* Device Info */}
-      <div style={{ marginBottom: "4px", fontSize: "8px" }}>
-        <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
-          {t("receipt.device")}:
-        </div>
-        <div>
+      <div style={{ marginBottom: "6px", fontSize: "11px" }}>
+        <div style={{ fontSize: "13px", fontWeight: "bold" }}>
           {repair.deviceBrand} {repair.deviceModel}
         </div>
-        <div style={{ marginTop: "2px" }}>
-          <div style={{ fontWeight: "bold" }}>
+        <div style={{ marginTop: "4px" }}>
+          <div style={{ textDecoration: "underline" }}>
              {t("receipt.issue")}:
           </div>
-          <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+          <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "14px", fontWeight: "900" }}>
             {repair.issueDescription}
           </div>
         </div>
@@ -126,8 +121,8 @@ export function ReceiptTemplate({
       {/* Parts Used */}
       {includeParts && repair.usedParts && repair.usedParts.length > 0 && (
         <>
-          <div style={{ marginBottom: "4px", fontSize: "8px" }}>
-            <div style={{ fontWeight: "bold", marginBottom: "2px" }}>
+          <div style={{ marginBottom: "6px", fontSize: "11px" }}>
+            <div style={{ marginBottom: "2px", textDecoration: "underline" }}>
               {t("receipt.partsUsed")}:
             </div>
             {repair.usedParts.map((part, index) => (
@@ -151,13 +146,12 @@ export function ReceiptTemplate({
       )}
 
       {/* Financial Summary */}
-      <div style={{ marginBottom: "4px", fontSize: "9px" }}>
+      <div style={{ marginBottom: "6px", fontSize: "11px" }}>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            fontWeight: "bold",
-            fontSize: "11px",
+            fontSize: "12px",
           }}
         >
           <span>
@@ -167,7 +161,7 @@ export function ReceiptTemplate({
         </div>
 
         {includePayments && repair.payments && repair.payments.length > 0 && (
-          <div style={{ marginTop: "4px", fontSize: "8px" }}>
+          <div style={{ marginTop: "4px", fontSize: "11px" }}>
             <div
               style={{
                 borderTop: "1px solid #000",
@@ -179,7 +173,6 @@ export function ReceiptTemplate({
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
-                  fontWeight: "bold",
                 }}
               >
                 <span>
@@ -196,15 +189,12 @@ export function ReceiptTemplate({
             borderTop: "1px solid #000",
             marginTop: "4px",
             paddingTop: "4px",
-            fontSize: "10px",
-            fontWeight: "bold",
+            fontSize: "12px",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>
-              {t("receipt.balanceDue")}:
-            </span>
-            <span>{CURRENCY_SYMBOLS[settings.currency]}{balance.toFixed(2)}</span>
+            <span>{t("receipt.balanceDue")}:</span>
+            <span style={{ fontSize: "14px", fontWeight: "900" }}>{CURRENCY_SYMBOLS[settings.currency]}{balance.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -218,6 +208,7 @@ export function ReceiptTemplate({
             border: "1px solid #000",
             padding: "4px",
             fontFamily: "'Courier New', Courier, monospace",
+            fontSize: "10px",
             letterSpacing: "1px",
           }}
         >

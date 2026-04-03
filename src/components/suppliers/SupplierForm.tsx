@@ -38,6 +38,9 @@ import {
   CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 interface SupplierFormProps {
   supplierId?: string;
@@ -54,6 +57,9 @@ export function SupplierForm({
 }: SupplierFormProps) {
   const { suppliers, createSupplier, updateSupplier, loading } =
     useSupplierContext();
+  const { t } = useTranslation();
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || "$";
 
   const existingSupplier =
     supplier ||
@@ -115,7 +121,7 @@ export function SupplierForm({
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormLabel className={labelStyles}>
-                  <User className="w-3 h-3" /> Supplier Name *
+                  <User className="w-3 h-3" /> {t('common.name')} *
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -134,7 +140,7 @@ export function SupplierForm({
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormLabel className={labelStyles}>
-                  <User className="w-3 h-3 opacity-50" /> Liaison Officer
+                  <User className="w-3 h-3 opacity-50" /> {t('suppliers.contact')}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -156,7 +162,7 @@ export function SupplierForm({
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormLabel className={labelStyles}>
-                  <Mail className="w-3 h-3" /> Email Address
+                  <Mail className="w-3 h-3" /> {t('clients.email')}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -176,7 +182,7 @@ export function SupplierForm({
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormLabel className={labelStyles}>
-                  <Phone className="w-3 h-3" /> Phone Number
+                  <Phone className="w-3 h-3" /> {t('clients.phone')}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -197,7 +203,7 @@ export function SupplierForm({
           render={({ field }) => (
             <FormItem className="space-y-0">
               <FormLabel className={labelStyles}>
-                <MapPin className="w-3 h-3" /> Physical Address
+                <MapPin className="w-3 h-3" /> {t('clients.address')}
               </FormLabel>
               <FormControl>
                 <Textarea
@@ -219,7 +225,7 @@ export function SupplierForm({
               render={({ field }) => (
                 <FormItem className="space-y-0">
                   <FormLabel className={labelStyles}>
-                    <DollarSign className="w-3 h-3" /> Opening Balance
+                    <DollarSign className="w-3 h-3" /> {t('dashboard.cashier.openingBalance')}
                   </FormLabel>
                   <FormControl>
                     <div className="relative">
@@ -250,7 +256,7 @@ export function SupplierForm({
             name="status"
             render={({ field }) => (
               <FormItem className="space-y-0">
-                <FormLabel className={labelStyles}>Account Status</FormLabel>
+                <FormLabel className={labelStyles}>{t('common.status')}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger
@@ -286,7 +292,7 @@ export function SupplierForm({
           render={({ field }) => (
             <FormItem className="space-y-0">
               <FormLabel className={labelStyles}>
-                <CreditCard className="w-3 h-3" /> Preferred Payment Method
+                <CreditCard className="w-3 h-3" /> {t('receipt.paymentMethod')}
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ""}>
                 <FormControl>
@@ -335,7 +341,7 @@ export function SupplierForm({
           render={({ field }) => (
             <FormItem className="space-y-0">
               <FormLabel className={labelStyles}>
-                <FileText className="w-3 h-3" /> Internal Records
+                <FileText className="w-3 h-3" /> {t('common.notes')}
               </FormLabel>
               <FormControl>
                 <Textarea
@@ -358,7 +364,7 @@ export function SupplierForm({
               disabled={loading}
               className="h-10 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
           )}
           <Button
@@ -373,7 +379,7 @@ export function SupplierForm({
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />{" "}
-                {supplierId ? "Commit Updates" : "Register Supplier"}
+                {supplierId ? t('common.save') : t('suppliers.addSupplier')}
               </>
             )}
           </Button>

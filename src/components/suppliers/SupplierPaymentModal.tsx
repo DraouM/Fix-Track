@@ -5,6 +5,9 @@ import { X, DollarSign, Calendar, FileText, CheckCircle2 } from "lucide-react";
 import { PaymentMethod } from "@/types/supplier";
 import { useSupplierActions } from "@/context/SupplierContext";
 import { Button } from "@/components/ui/button";
+import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { v4 as uuidv4 } from "uuid";
+import { Payment } from "@/types/repair";
 
 interface SupplierPaymentModalProps {
   supplierId: string;
@@ -20,6 +23,7 @@ export const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
   onClose,
 }) => {
   const { addPayment } = useSupplierActions();
+  const { printPaymentReceipt } = usePrintUtils();
   const [amount, setAmount] = useState<string>("");
   const [method, setMethod] = useState<PaymentMethod>("Bank Transfer");
   const [notes, setNotes] = useState("");
@@ -33,7 +37,31 @@ export const SupplierPaymentModal: React.FC<SupplierPaymentModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await addPayment(supplierId, parseFloat(amount), method, notes);
+      const parsedAmount = parseFloat(amount);
+      await addPayment(supplierId, parsedAmount, method, notes);
+
+      // Create payment object for printing
+      // Note: This uses a different ID than the one generated in addPayment (which is internal)
+      // but that's fine for the receipt.
+      const payment: Payment = {
+        id: uuidv4(),
+        repair_id: "", // Not linked to a repair
+        amount: parsedAmount,
+        method: method,
+        date: new Date().toISOString(),
+      };
+
+      // Print the receipt
+      // We pass the currentBalance (which is now the "previous balance" relative to this payment)
+      await printPaymentReceipt(
+        payment, 
+        supplierName, 
+        notes, 
+        undefined, 
+        undefined, 
+        currentBalance
+      );
+
       onClose();
     } catch (error) {
       console.error("Failed to add payment:", error);

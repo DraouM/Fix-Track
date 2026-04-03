@@ -31,6 +31,8 @@ import { PreviousSalesTable } from './PreviousSalesTable';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
+import { useSettings } from '@/context/SettingsContext';
+import { CURRENCY_SYMBOLS } from '@/types/settings';
 
 interface CartItem {
   inventoryItem: InventoryItem;
@@ -53,6 +55,8 @@ const getInitialSalesState = (): Sale[] => {
 export default function SalesPageClient() {
   const { clients, adjustBalance } = useClientContext();
   const { inventoryItems, getItemById, updateItemQuantity } = useInventoryContext();
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
 
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
@@ -185,7 +189,7 @@ export default function SalesPageClient() {
       }
     });
     
-    toast.success(`Sale for ${selectedClient.name} totaling $${saleTotal.toFixed(2)} has been recorded.`);
+    toast.success(`Sale for ${selectedClient.name} totaling ${currencySymbol}${saleTotal.toFixed(2)} has been recorded.`);
     
     setSelectedClient(null);
     setCartItems([]);
@@ -287,7 +291,7 @@ export default function SalesPageClient() {
                             onSelect={() => handleAddInventoryItemToCart(item)}
                             disabled={(item.quantityInStock ?? 0) <= 0}
                           >
-                            {item.itemName} (Stock: {item.quantityInStock ?? 0}) - ${item.sellingPrice.toFixed(2)}
+                            {item.itemName} (Stock: {item.quantityInStock ?? 0}) - {currencySymbol}{item.sellingPrice.toFixed(2)}
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -329,8 +333,8 @@ export default function SalesPageClient() {
                               className="w-16 h-8 text-center"
                             />
                           </TableCell>
-                          <TableCell className="text-right">${cartItem.sellingPrice.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">${(cartItem.sellingPrice * cartItem.quantity).toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{currencySymbol}{cartItem.sellingPrice.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{currencySymbol}{(cartItem.sellingPrice * cartItem.quantity).toFixed(2)}</TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" onClick={() => handleRemoveItemFromCart(cartItem.inventoryItem.id)} className="h-8 w-8">
                               <Icons.trash className="h-4 w-4 text-destructive" />
@@ -364,7 +368,7 @@ export default function SalesPageClient() {
             
             <div className="flex justify-between items-center text-lg font-semibold">
               <span>Total:</span>
-              <span>${saleTotal.toFixed(2)}</span>
+              <span>{currencySymbol}{saleTotal.toFixed(2)}</span>
             </div>
           </CardContent>
           <CardFooter>

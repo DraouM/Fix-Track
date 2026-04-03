@@ -35,6 +35,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/clientUtils";
 import { getSales } from "@/lib/api/sales";
 import type { Sale } from "@/types/sale";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 // Define transaction types
 interface Transaction {
@@ -59,6 +61,8 @@ export function CashierPageClient() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
 
   // Fetch real transaction data
   useEffect(() => {
@@ -183,11 +187,11 @@ export function CashierPageClient() {
       const carryForward = actualCash - payout;
 
       alert(`Day closed!
-Expected: $${expectedCash.toFixed(2)}
-Actual: $${actualCash.toFixed(2)}
-Discrepancy: $${discrepancy.toFixed(2)}
-Payout: $${payout.toFixed(2)}
-Carry Forward: $${carryForward.toFixed(2)}`);
+Expected: ${currencySymbol}${expectedCash.toFixed(2)}
+Actual: ${currencySymbol}${actualCash.toFixed(2)}
+Discrepancy: ${currencySymbol}${discrepancy.toFixed(2)}
+Payout: ${currencySymbol}${payout.toFixed(2)}
+Carry Forward: ${currencySymbol}${carryForward.toFixed(2)}`);
     }
   };
 

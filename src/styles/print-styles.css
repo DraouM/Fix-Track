@@ -8,8 +8,9 @@
 
 /* Print Media Queries */
 @media print {
+
   /* Hide everything except the active print template */
-  body > *:not(#receipt-print-template):not(#sticker-print-template) {
+  body>*:not(#receipt-print-template):not(#sticker-print-template) {
     display: none !important;
   }
 
@@ -26,8 +27,10 @@
 
   /* Thermal Receipt Page Setup - 76mm width, continuous paper */
   @page receipt {
-    size: 76mm auto; /* Width fixed, height auto for continuous paper */
-    margin: 0; /* No margins for thermal printers */
+    size: 76mm auto;
+    /* Width fixed, height auto for continuous paper */
+    margin: 0;
+    /* No margins for thermal printers */
   }
 
   /* Alternative for 58mm thermal printers (uncomment if needed) */
@@ -38,8 +41,10 @@
 
   /* Small Phone Sticker Page Setup - 2" x 1" label */
   @page sticker {
-    size: 2in 1in; /* Small label size */
-    margin: 0; /* No margins for precise label printing */
+    size: 2in 1in;
+    /* Small label size */
+    margin: 0;
+    /* No margins for precise label printing */
     /* Added: Force single page */
     page-break-after: avoid;
   }
@@ -95,11 +100,12 @@
     color: black !important;
   }
 
-  /* Ensure thermal receipt uses only black ink */
+  /* Ensure thermal receipt uses only black ink and bold text */
   .thermal-receipt * {
     color: black !important;
     background: white !important;
     border-color: black !important;
+    font-weight: bold !important;
   }
 
   /* Phone sticker specific styles */
@@ -119,8 +125,8 @@
   }
 
   /* Prevent page breaks inside elements */
-  .thermal-receipt > *,
-  .phone-sticker > * {
+  .thermal-receipt>*,
+  .phone-sticker>* {
     page-break-inside: avoid;
     break-inside: avoid;
   }
@@ -172,7 +178,7 @@
   .phone-sticker * {
     flex-shrink: 0;
   }
-  
+
   /* Added: Explicitly prevent any content from spanning multiple pages */
   @page {
     page-break-after: avoid;
@@ -182,6 +188,7 @@
 
 /* Screen display - for testing print layouts */
 @media screen {
+
   /* Optional: Add a class to preview print layouts */
   .print-preview #receipt-print-template,
   .print-preview #sticker-print-template {

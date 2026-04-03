@@ -47,7 +47,8 @@ export function PaymentReceiptTemplate({
         width: `${receiptWidth}mm`,
         padding: "2mm",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: "8px",
+        fontSize: "12px",
+        fontWeight: "bold",
         lineHeight: "1.2",
         color: "#000",
         backgroundColor: "#fff",
@@ -55,11 +56,11 @@ export function PaymentReceiptTemplate({
     >
       <PrintHeader logoUrl={logoUrl} />
 
-      <div style={{ textAlign: "center", margin: "4px 0", fontWeight: "bold", fontSize: "10px" }}>
+      <div style={{ textAlign: "center", margin: "6px 0", textDecoration: "underline", fontSize: "14px" }}>
         {t("receipt.paymentReceipt")}
       </div>
 
-      <div style={{ marginBottom: "4px", fontSize: "7px" }}>
+      <div style={{ marginBottom: "6px", fontSize: "10px" }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span>{t("receipt.receiptID")}:</span>
           <span>{payment.id}</span>
@@ -71,7 +72,7 @@ export function PaymentReceiptTemplate({
         {referenceCode && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>{t("receipt.reference")}:</span>
-            <span style={{ fontWeight: "bold" }}>{referenceCode}</span>
+            <span>{referenceCode}</span>
           </div>
         )}
       </div>
@@ -81,19 +82,19 @@ export function PaymentReceiptTemplate({
       <div style={{ marginBottom: "4px" }}>
         {customerName && (
           <div style={{ marginBottom: "2px" }}>
-            <span style={{ fontWeight: "bold" }}>{t("receipt.receivedFrom")}:</span> {customerName}
+            <span>{t("receipt.receivedFrom")}:</span> <span style={{ fontSize: "14px", fontWeight: "900" }}>{customerName}</span>
           </div>
         )}
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", marginTop: "4px" }}>
-          <span style={{ fontWeight: "bold" }}>{t("receipt.amountPaid")}:</span>
-          <span style={{ fontWeight: "bold" }}>{CURRENCY_SYMBOLS[settings.currency]}{payment.amount.toFixed(2)}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginTop: "4px" }}>
+          <span>{t("receipt.amountPaid")}:</span>
+          <span style={{ fontSize: "14px", fontWeight: "900" }}>{CURRENCY_SYMBOLS[settings.currency]}{payment.amount.toFixed(2)}</span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "7px", marginTop: "2px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", marginTop: "2px" }}>
           <span>{t("receipt.paymentMethod")}:</span>
           <span>{payment.method}</span>
         </div>
         {payment.received_by && (
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "7px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px" }}>
             <span>{t("receipt.receivedBy")}:</span>
             <span>{payment.received_by}</span>
           </div>

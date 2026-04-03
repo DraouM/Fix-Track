@@ -20,6 +20,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "FixTrack - Inventory & Repair Management",
   description: "Comprehensive inventory and repair management system",
+  icons: {
+    icon: "/images/logo_1.png",
+    shortcut: "/images/logo_1.png",
+    apple: "/images/logo_1.png",
+  },
 };
 
 export default function RootLayout({

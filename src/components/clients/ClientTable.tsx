@@ -37,6 +37,9 @@ import { formatCurrency, getClientStatusDisplayText } from "@/lib/clientUtils";
 import { useRouter } from "next/navigation";
 import { useClientContext } from "@/context/ClientContext";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 interface ClientTableProps {
   clients: Client[];
@@ -48,6 +51,9 @@ interface ClientTableProps {
 export function ClientTable({ clients, loading, onRecordPayment, onEditClient }: ClientTableProps) {
   const router = useRouter();
   const { deleteClient } = useClientContext();
+  const { t } = useTranslation();
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
 
   if (loading && clients.length === 0) {
     return (
@@ -79,11 +85,11 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
       <Table>
         <TableHeader className="bg-white/90 dark:bg-slate-900/90 sticky top-0 z-20 backdrop-blur-md border-b-2 border-gray-50 dark:border-slate-800 shadow-sm">
           <TableRow className="hover:bg-transparent border-none">
-            <TableHead className={cn(headerStyles, "pl-8")}>Account Identity</TableHead>
-            <TableHead className={headerStyles}>Operational Channels</TableHead>
-            <TableHead className={cn(headerStyles, "text-right")}>Financial Position</TableHead>
-            <TableHead className={cn(headerStyles, "text-center")}>System Status</TableHead>
-            <TableHead className={cn(headerStyles, "text-right pr-8")}>Directives</TableHead>
+            <TableHead className={cn(headerStyles, "pl-8")}>{t('common.name')}</TableHead>
+            <TableHead className={headerStyles}>{t('suppliers.contact')}</TableHead>
+            <TableHead className={cn(headerStyles, "text-right")}>{t('repairs.financialOverview')} ({currencySymbol})</TableHead>
+            <TableHead className={cn(headerStyles, "text-center")}>{t('common.status')}</TableHead>
+            <TableHead className={cn(headerStyles, "text-right pr-8")}>{t('common.actions')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -173,7 +179,7 @@ export function ClientTable({ clients, loading, onRecordPayment, onEditClient }:
                     className="h-10 px-4 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest dark:border-slate-800 hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm"
                     onClick={() => onRecordPayment(client.id)}
                   >
-                    Settlement
+                    {t('transactions_module.payment')}
                   </Button>
                   
                   <DropdownMenu>

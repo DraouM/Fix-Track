@@ -1,4 +1,5 @@
-// src/utils/supplierUtils.ts
+import i18n from "@/lib/i18n";
+import { Currency } from "@/types/settings";
 import type {
   Supplier,
   PaymentMethod,
@@ -431,11 +432,14 @@ const isValidEmail = (email: string): boolean => {
 // Generic currency formatter function
 export const formatCurrency = (
   amount: number,
-  currencyCode: string = "USD"
+  currencyCode: string = "USD",
+  showSymbol: boolean = true
 ): string =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
+  new Intl.NumberFormat(i18n.language || "en-US", {
+    style: showSymbol ? "currency" : "decimal",
     currency: currencyCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 
 export const formatDate = (date: string | Date): string => {

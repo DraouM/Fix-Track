@@ -21,7 +21,7 @@ export function ShopPrintTemplate({
   logoUrl,
 }: ShopPrintTemplateProps) {
   const shopInfo = getShopInfo();
-  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/logo_shop.svg";
+  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/images/logo_1.png";
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";

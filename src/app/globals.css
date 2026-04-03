@@ -45,6 +45,8 @@
 
 :root {
   --radius: 0.625rem;
+  color-scheme: light;
+  forced-color-adjust: none;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -116,6 +118,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -132,25 +135,30 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.4 0 0); /* Dark gray thumb */
+  background: oklch(0.4 0 0);
+  /* Dark gray thumb */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0 0); /* Slightly lighter on hover */
+  background: oklch(0.5 0 0);
+  /* Slightly lighter on hover */
 }
 
 /* Dark mode specific styling */
 .dark ::-webkit-scrollbar-track {
-  background: oklch(0.2 0 0); /* Dark track */
+  background: oklch(0.2 0 0);
+  /* Dark track */
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: oklch(0.5 0 0); /* Lighter thumb for dark mode */
+  background: oklch(0.5 0 0);
+  /* Lighter thumb for dark mode */
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.6 0 0); /* Even lighter on hover in dark mode */
+  background: oklch(0.6 0 0);
+  /* Even lighter on hover in dark mode */
 }
 
 /* For sidebar specifically */

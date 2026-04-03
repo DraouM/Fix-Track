@@ -39,6 +39,8 @@ export interface InventoryTableProps {
 
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { useTranslation } from "react-i18next";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 export const InventoryTable = React.memo(function InventoryTable({
   items,
@@ -50,6 +52,8 @@ export const InventoryTable = React.memo(function InventoryTable({
 }: InventoryTableProps) {
   const { t } = useTranslation();
   const { printSticker } = usePrintUtils();
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
   // Memoized sort indicator to prevent re-renders
 
   const SortableHeader = ({
@@ -114,7 +118,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                   columnKey="buyingPrice"
                   tooltip={t('inventory.table.tooltips.cost')}
                 >
-                  {t('inventory.table.cost')}
+                  {t('inventory.table.cost')} ({currencySymbol})
                 </SortableHeader>
               </TableHead>
               <TableHead className="text-right">
@@ -122,7 +126,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                   columnKey="sellingPrice"
                   tooltip={t('inventory.table.tooltips.price')}
                 >
-                  {t('inventory.table.price')}
+                  {t('inventory.table.price')} ({currencySymbol})
                 </SortableHeader>
               </TableHead>
               <TableHead className="text-right">
@@ -130,7 +134,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                   columnKey="profit" 
                   tooltip={t('inventory.table.tooltips.profit')}
                 >
-                  {t('inventory.table.profit')}
+                  {t('inventory.table.profit')} ({currencySymbol})
                 </SortableHeader>
               </TableHead>
               <TableHead className="text-right">
@@ -181,10 +185,10 @@ export const InventoryTable = React.memo(function InventoryTable({
                       <Badge>{item.itemType}</Badge>
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      ${item.buyingPrice.toFixed(2)}
+                      {item.buyingPrice.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      ${item.sellingPrice.toFixed(2)}
+                      {item.sellingPrice.toFixed(2)}
                     </TableCell>
                     <TableCell
                       className={cn(
@@ -192,7 +196,7 @@ export const InventoryTable = React.memo(function InventoryTable({
                         profit >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive dark:text-red-400"
                       )}
                     >
-                      ${profit.toFixed(2)}
+                      {profit.toFixed(2)}
                     </TableCell>
                     <TableCell
                       className={cn(

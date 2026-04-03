@@ -36,6 +36,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 interface VirtualizedTableProps {
   items: InventoryItem[];
@@ -131,6 +133,7 @@ const InventoryRow = memo(function InventoryRow({
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   onPrint?: (item: InventoryItem) => void;
+  currencySymbol: string;
 }) {
   const { t } = useTranslation();
   const profit = (item.sellingPrice ?? 0) - (item.buyingPrice ?? 0);
@@ -207,14 +210,14 @@ const InventoryRow = memo(function InventoryRow({
       {/* Cost */}
       <div className="flex-1 text-right pr-6">
         <span className="text-xs font-bold text-muted-foreground/60 tracking-tight">
-          ${(item.buyingPrice ?? 0).toFixed(2)}
+          {(item.buyingPrice ?? 0).toFixed(2)}
         </span>
       </div>
 
       {/* Price */}
       <div className="flex-1 text-right pr-6">
         <span className="text-sm font-black text-foreground dark:text-slate-200 tracking-tight">
-          ${(item.sellingPrice ?? 0).toFixed(2)}
+          {(item.sellingPrice ?? 0).toFixed(2)}
         </span>
       </div>
 
@@ -335,6 +338,8 @@ export const VirtualizedTable = memo(function VirtualizedTable({
   onPrint,
 }: VirtualizedTableProps) {
   const { t } = useTranslation();
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -387,7 +392,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                {t('inventory.table.cost')}
+                {t('inventory.table.cost')} ({currencySymbol})
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
@@ -397,7 +402,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                {t('inventory.table.price')}
+                {t('inventory.table.price')} ({currencySymbol})
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
@@ -407,7 +412,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 sortConfig={sortConfig}
                 onSort={onSort}
               >
-                {t('inventory.table.profit')}
+                {t('inventory.table.profit')} ({currencySymbol})
               </SortableHeader>
             </div>
             <div className="flex-1 text-right pr-6">
@@ -454,6 +459,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                     selectedIds={selectedIds}
                     onSelectionChange={onSelectionChange}
                     onPrint={onPrint}
+                    currencySymbol={currencySymbol}
                   />
                 );
               })

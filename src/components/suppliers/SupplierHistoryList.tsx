@@ -125,7 +125,7 @@ export function SupplierHistoryList({ history, isLoading }: SupplierHistoryListP
                       <span className={cn(
                         (event.amount || 0) > 0 ? "text-orange-600 dark:text-orange-400" : "text-green-600 dark:text-green-400"
                       )}>
-                        {(event.amount || 0) > 0 ? "+" : ""}{formatCurrency(event.amount || 0, settings?.currency)}
+                        {(event.amount || 0) > 0 ? "+" : ""}{formatCurrency(event.amount || 0, settings.currency)}
                       </span>
                     )}
                   </TableCell>

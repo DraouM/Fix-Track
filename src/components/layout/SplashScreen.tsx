@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 export function SplashScreen({ finishLoading }: { finishLoading: () => void }) {
   const [showLogo, setShowLogo] = useState(false);
@@ -50,10 +51,13 @@ export function SplashScreen({ finishLoading }: { finishLoading: () => void }) {
                 }}
                 className="w-24 h-24 mb-6 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-2xl flex items-center justify-center overflow-hidden border border-white/20"
               >
-                {/* Visual substitute for a logo icon - can be replaced with actual image */}
-                <div className="text-white text-5xl font-black italic tracking-tighter">
-                  F
-                </div>
+                <Image
+                  src="/images/logo_1.png"
+                  alt="Fixary Logo"
+                  width={80}
+                  height={80}
+                  className="object-contain"
+                />
                 
                 {/* Shine effect animation */}
                 <motion.div

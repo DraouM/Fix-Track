@@ -297,14 +297,14 @@ export function RepairsPageInner() {
             icon={Wrench}
             title={t('repairs.totalRepairs')}
             value={statistics.total}
-            subtitle={t('common.completedCount', { count: statistics.completed }) || `${statistics.completed} completed`}
+            subtitle={t('common.completedCount', { count: statistics.completed, plural: statistics.completed !== 1 ? 's' : '' }) || `${statistics.completed} completed`}
             color="blue"
           />
           <StatCard
             icon={Clock}
             title={t('repairs.inprogress')}
             value={statistics.inProgress}
-            subtitle={t('common.pendingCount', { count: statistics.pending }) || `${statistics.pending} pending`}
+            subtitle={t('common.pendingCount', { count: statistics.pending, plural: statistics.pending !== 1 ? 's' : '' }) || `${statistics.pending} pending`}
             color="orange"
           />
           <StatCard
@@ -318,7 +318,7 @@ export function RepairsPageInner() {
             icon={AlertCircle}
             title={t('repairs.outstanding')}
             value={formatCurrency(statistics.pendingRevenue)}
-            subtitle={t('repairs.unpaidCount', { count: statistics.unpaidCount }) || `${statistics.unpaidCount} unpaid`}
+            subtitle={t('repairs.unpaidCount', { count: statistics.unpaidCount, plural: statistics.unpaidCount !== 1 ? 's' : '' }) || `${statistics.unpaidCount} unpaid`}
             color="red"
           />
         </div>

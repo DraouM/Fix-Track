@@ -46,6 +46,8 @@ import {
   parseISO,
 } from 'date-fns';
 import { Icons } from '@/components/icons';
+import { useSettings } from '@/context/SettingsContext';
+import { CURRENCY_SYMBOLS } from '@/types/settings';
 
 type DateRangeKey = 'today' | 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'allTime';
 
@@ -101,6 +103,8 @@ function KpiCard({ title, value, icon, description }: KpiCardProps) {
 
 export default function StatisticsPageClient() {
   const { repairs } = useRepairContext();
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
   const [selectedRangeKey, setSelectedRangeKey] = useState<DateRangeKey>('thisMonth');
 
   const filteredRepairs = useMemo(() => {
@@ -239,9 +243,9 @@ export default function StatisticsPageClient() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard title="Total Completed Repairs" value={kpiData.totalRepairs} icon={<Users className="h-5 w-5 text-muted-foreground" />} />
-        <KpiCard title="Total Revenue" value={`$${kpiData.totalRevenue.toFixed(2)}`} icon={<DollarSign className="h-5 w-5 text-muted-foreground" />} />
-        <KpiCard title="Total Cost of Parts" value={`$${kpiData.totalCostOfParts.toFixed(2)}`} icon={<Package className="h-5 w-5 text-muted-foreground" />} />
-        <KpiCard title="Total Profit" value={`$${kpiData.totalProfit.toFixed(2)}`} icon={<TrendingUp className="h-5 w-5 text-muted-foreground" />} />
+        <KpiCard title="Total Revenue" value={`${currencySymbol}${kpiData.totalRevenue.toFixed(2)}`} icon={<DollarSign className="h-5 w-5 text-muted-foreground" />} />
+        <KpiCard title="Total Cost of Parts" value={`${currencySymbol}${kpiData.totalCostOfParts.toFixed(2)}`} icon={<Package className="h-5 w-5 text-muted-foreground" />} />
+        <KpiCard title="Total Profit" value={`${currencySymbol}${kpiData.totalProfit.toFixed(2)}`} icon={<TrendingUp className="h-5 w-5 text-muted-foreground" />} />
       </div>
 
       {/* Charts */}

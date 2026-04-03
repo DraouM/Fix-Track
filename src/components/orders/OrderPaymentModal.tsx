@@ -5,6 +5,8 @@ import { X, DollarSign, Calendar, FileText, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addOrderPayment } from "@/lib/api/orders";
 import { toast } from "sonner";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 interface OrderPaymentModalProps {
   orderId: string;
@@ -29,6 +31,8 @@ export const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
   const [method, setMethod] = useState<string>("Cash");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
 
   const remainingBalance = totalAmount - paidAmount;
 
@@ -53,7 +57,7 @@ export const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
         received_by: undefined
       });
       
-      toast.success(`Payment of $${paymentAmount.toFixed(2)} recorded for Order ${orderNumber}`);
+      toast.success(`Payment of ${currencySymbol}${paymentAmount.toFixed(2)} recorded for Order ${orderNumber}`);
       onSuccess();
       onClose();
     } catch (error) {
@@ -89,7 +93,7 @@ export const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
           <div className="flex items-center justify-between text-sm">
             <span className="text-blue-700 font-medium">Remaining Balance:</span>
             <span className="font-bold text-blue-800 text-lg">
-              ${remainingBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+              {currencySymbol}{remainingBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </span>
           </div>
         </div>
@@ -102,7 +106,7 @@ export const OrderPaymentModal: React.FC<OrderPaymentModalProps> = ({
               Payment Amount
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">{currencySymbol}</span>
               <input
                 type="number"
                 step="0.01"

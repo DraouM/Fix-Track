@@ -46,6 +46,8 @@ import {
 import { useInventoryActions } from "@/context/InventoryContext";
 import { generateBarcode } from "@/lib/barcode";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 // Utility: map InventoryItem → form defaults
 function sanitizeItem(item: InventoryItem | null): InventoryFormValues {
@@ -84,6 +86,8 @@ export function InventoryForm({
 }) {
   const { t } = useTranslation();
   const { printSticker } = usePrintUtils();
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
   const { addInventoryItem, updateInventoryItem } = useInventoryActions();
 
   const form = useForm<InventoryFormValues>({
@@ -340,7 +344,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1">
-                  {t('inventory.form.costPrice', { symbol: '$' })}
+                  {t('inventory.form.costPrice', { symbol: currencySymbol })}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -360,7 +364,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1">
-                  {t('inventory.form.sellingPrice', { symbol: '$' })}
+                  {t('inventory.form.sellingPrice', { symbol: currencySymbol })}
                 </FormLabel>
                 <FormControl>
                   <Input

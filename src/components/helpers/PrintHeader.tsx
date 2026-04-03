@@ -11,7 +11,7 @@ interface PrintHeaderProps {
 export function PrintHeader({ logoUrl, fontSize = "11px" }: PrintHeaderProps) {
   const shopInfo = getShopInfo();
   const { t } = useTranslation();
-  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/logo_shop.svg";
+  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/images/logo_1.png";
 
   return (
     <div

@@ -39,6 +39,9 @@ import {
   User,
   DollarSign,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 interface ClientFormProps {
   clientId?: string;
@@ -48,6 +51,9 @@ interface ClientFormProps {
 
 export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
   const { clients, createClient, updateClient, loading } = useClientContext();
+  const { t } = useTranslation();
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || "$";
 
   const existingClient = clientId
     ? clients.find((c) => c.id === clientId)
@@ -106,7 +112,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormLabel className={labelStyles}>
-                  <User className="w-3 h-3" /> Client Name *
+                  <User className="w-3 h-3" /> {t('common.name')} *
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -125,7 +131,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormLabel className={labelStyles}>
-                  <User className="w-3 h-3 opacity-50" /> Primary Contact
+                  <User className="w-3 h-3 opacity-50" /> {t('suppliers.contact')}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -147,7 +153,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormLabel className={labelStyles}>
-                  <Mail className="w-3 h-3" /> Email Address
+                  <Mail className="w-3 h-3" /> {t('clients.email')}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -167,7 +173,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             render={({ field }) => (
               <FormItem className="space-y-0">
                 <FormLabel className={labelStyles}>
-                  <Phone className="w-3 h-3" /> Phone Number
+                  <Phone className="w-3 h-3" /> {t('clients.phone')}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -188,7 +194,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
           render={({ field }) => (
             <FormItem className="space-y-0">
               <FormLabel className={labelStyles}>
-                <MapPin className="w-3 h-3" /> Physical Address
+                <MapPin className="w-3 h-3" /> {t('clients.address')}
               </FormLabel>
               <FormControl>
                 <Textarea
@@ -210,7 +216,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
               render={({ field }) => (
                 <FormItem className="space-y-0">
                   <FormLabel className={labelStyles}>
-                    <DollarSign className="w-3 h-3" /> Opening Balance
+                    <DollarSign className="w-3 h-3" /> {t('dashboard.metrics.netCash')}
                   </FormLabel>
                   <FormControl>
                     <div className="relative">
@@ -241,7 +247,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             name="status"
             render={({ field }) => (
               <FormItem className="space-y-0">
-                <FormLabel className={labelStyles}>Account Status</FormLabel>
+                <FormLabel className={labelStyles}>{t('common.status')}</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   value={field.value}
@@ -277,7 +283,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
           render={({ field }) => (
             <FormItem className="space-y-0">
               <FormLabel className={labelStyles}>
-                <FileText className="w-3 h-3" /> Internal Records
+                <FileText className="w-3 h-3" /> {t('common.notes')}
               </FormLabel>
               <FormControl>
                 <Textarea
@@ -300,7 +306,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
               disabled={loading}
               className="h-10 px-6 rounded-xl border-2 font-black text-xs uppercase tracking-widest hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
           )}
           <Button
@@ -315,7 +321,7 @@ export function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps) {
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />{" "}
-                {clientId ? "Commit Updates" : "Register Client"}
+                {clientId ? t('common.save') : t('clients.addClient')}
               </>
             )}
           </Button>

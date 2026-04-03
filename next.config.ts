@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: "export",
   trailingSlash: true,
-  distDir: "out",
+  // distDir: "out", // Removed to avoid conflict with static export folder during internal build
   eslint: {
     ignoreDuringBuilds: true,
   },

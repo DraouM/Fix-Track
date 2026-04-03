@@ -33,6 +33,7 @@ import {
   useSupplierState,
   useSupplierActions,
 } from "@/context/SupplierContext";
+import { useTranslation } from "react-i18next";
 import { SupplierForm } from "./SupplierForm";
 import { SupplierPaymentModal } from "./SupplierPaymentModal";
 import {
@@ -61,6 +62,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 const StatCard = ({
   icon: Icon,
@@ -117,6 +120,9 @@ const SupplierPageClient = () => {
   const router = useRouter();
   const { suppliers, loading, error } = useSupplierState();
   const { deleteSupplier, initialize } = useSupplierActions();
+  const { settings } = useSettings();
+  const { t } = useTranslation();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
 
   const [filters, setFilters] = useState({
     searchTerm: "",
@@ -292,7 +298,7 @@ const SupplierPageClient = () => {
           <StatCard
             icon={DollarSign}
             title="Aggregate Credit"
-            value={formatCurrency(metrics.totalBalance)}
+            value={formatCurrency(metrics.totalBalance, settings.currency)}
             subtitle={`${metrics.suppliersWithBalance} outstanding accounts`}
             color="orange"
           />
@@ -408,29 +414,29 @@ const SupplierPageClient = () => {
                     onClick={() => handleSort("name")}
                   >
                     <div className="flex items-center gap-2">
-                      Supplier Entity
+                      {t('common.name')}
                       {sortConfig.key === "name" &&
                         (sortConfig.direction === "asc" ? " ↑" : " ↓")}
                     </div>
                   </th>
                   <th className="px-6 py-0 h-16 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none">
-                    Technical & Comms
+                    {t('suppliers.contact')}
                   </th>
                   <th
-                    className="px-6 py-0 h-16 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors"
+                    className="px-6 py-0 h-16 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors"
                     onClick={() => handleSort("outstandingBalance")}
                   >
-                    <div className="flex items-center gap-2">
-                      Financial Position
+                    <div className="flex items-center justify-center gap-2">
+                       {t('repairs.financialOverview')} ({currencySymbol})
                       {sortConfig.key === "outstandingBalance" &&
                         (sortConfig.direction === "asc" ? " ↑" : " ↓")}
                     </div>
                   </th>
                   <th className="px-6 py-0 h-16 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none">
-                    System Status
+                    {t('common.status')}
                   </th>
                   <th className="px-8 py-0 h-16 text-right text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none">
-                    Directives
+                    {t('common.actions')}
                   </th>
                 </tr>
               </thead>
@@ -487,8 +493,8 @@ const SupplierPageClient = () => {
                           )}
                         </div>
                       </td>
-                      <td className="text-right py-6">
-                        <div className="flex flex-col items-end gap-1.5">
+                      <td className="text-center py-6">
+                        <div className="flex flex-col items-center gap-1.5">
                           <div
                             className={cn(
                               "px-3 py-1.5 rounded-xl text-[11px] font-black shadow-sm flex items-center gap-2",
@@ -498,7 +504,7 @@ const SupplierPageClient = () => {
                             )}
                           >
                             <CreditCard className="w-3.5 h-3.5 opacity-60" />
-                            {formatCurrency(supplier.outstandingBalance || 0)}
+                            {formatCurrency(supplier.outstandingBalance || 0, settings.currency, false)}
                           </div>
                           <span className="text-[9px] uppercase text-muted-foreground/30 font-black tracking-widest mr-1">
                             Aggregate Credit

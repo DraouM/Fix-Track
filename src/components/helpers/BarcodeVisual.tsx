@@ -1,4 +1,4 @@
-import { BarcodePrintData } from "@/lib/barcode";
+import { BarcodePrintData, generateCode39SVG } from "@/lib/barcode";
 
 interface BarcodeVisualProps {
   data: BarcodePrintData;
@@ -16,7 +16,7 @@ export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
         width: "2in",
         height: "1in",
         padding: "1mm",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         color: "#000",
         backgroundColor: "#fff",
         display: "flex",
@@ -55,14 +55,15 @@ export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
       {/* Center Content (Barcode or Phone) */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1px", width: "100%" }}>
         {showBarcode !== false && (
-          <div style={{ 
-            fontFamily: "'Libre Barcode 39', cursive", 
-            fontSize: "36px", 
-            lineHeight: "1",
-            margin: "0"
-          }}>
-            *{barcodeValue}*
-          </div>
+          <div 
+            style={{ 
+              width: "100%",
+              maxHeight: "36px",
+              display: "flex",
+              justifyContent: "center"
+            }}
+            dangerouslySetInnerHTML={{ __html: generateCode39SVG(barcodeValue, 40) }}
+          />
         )}
         {barcodeLabel && (
           <div style={{ fontSize: "12px", fontWeight: "900", textAlign: "center" }}>
@@ -77,11 +78,6 @@ export function BarcodeVisual({ data, className, style }: BarcodeVisualProps) {
           {subText}
         </div>
       )}
-      
-      {/* Inject Font Style (Scoped) */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39&display=swap');
-      `}} />
     </div>
   );
 }

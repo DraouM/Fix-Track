@@ -689,6 +689,8 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
+import { useSettings } from "@/context/SettingsContext";
+import { CURRENCY_SYMBOLS } from "@/types/settings";
 
 // Sample data
 const shoppingListData = [
@@ -865,6 +867,8 @@ const ShoppingListPage = () => {
   const [groupBy, setGroupBy] = useState("none"); // none, supplier, priority, category
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const { settings } = useSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
 
   // Calculate metrics
   const totalItems = items.length;
@@ -957,7 +961,7 @@ const ShoppingListPage = () => {
     alert(
       `Creating purchase order for ${
         selected.length
-      } items...\nTotal: $${selected
+      } items...\nTotal: ${currencySymbol}${selected
         .reduce((sum, i) => sum + i.estimatedCost, 0)
         .toFixed(2)}`
     );
@@ -1078,7 +1082,7 @@ const ShoppingListPage = () => {
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-gray-900">
-                  ${item.estimatedCost.toFixed(2)}
+                  {currencySymbol}{item.estimatedCost.toFixed(2)}
                 </div>
                 <div className="text-xs text-gray-500">Total cost</div>
               </div>
@@ -1094,7 +1098,7 @@ const ShoppingListPage = () => {
                       {bestSupplier.name}
                     </div>
                     <div className="text-xs text-gray-600">
-                      ${bestSupplier.price.toFixed(2)} each •{" "}
+                      {currencySymbol}{bestSupplier.price.toFixed(2)} each •{" "}
                       {bestSupplier.deliveryDays} days •{" "}
                       {bestSupplier.reliability}% reliable
                     </div>
@@ -1189,7 +1193,7 @@ const ShoppingListPage = () => {
           <StatCard
             icon={DollarSign}
             title="Estimated Cost"
-            value={`$${totalCost.toFixed(2)}`}
+            value={`${currencySymbol}${totalCost.toFixed(2)}`}
             subtitle="Total if ordered now"
             color="green"
           />
@@ -1302,7 +1306,7 @@ const ShoppingListPage = () => {
                     </span>
                   </div>
                   <div className="text-sm text-gray-600">
-                    $
+                    {currencySymbol}
                     {groupItems
                       .reduce((sum, i) => sum + i.estimatedCost, 0)
                       .toFixed(2)}{" "}

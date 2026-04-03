@@ -80,12 +80,14 @@ interface ShoppingListColumnProps {
   onEdit: (item: ShoppingListItem) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: OrderStatus) => void;
+  currencySymbol?: string;
 }
 
 export const shoppingListColumns = ({
   onEdit,
   onDelete,
   onStatusChange,
+  currencySymbol = '$',
 }: ShoppingListColumnProps): ColumnDef<ShoppingListItem>[] => [
   {
     accessorKey: "name",
@@ -114,7 +116,7 @@ export const shoppingListColumns = ({
     header: "Est. Cost",
     cell: ({ row }) => {
       const cost = row.getValue("estimatedCost") as number;
-      return cost ? `$${cost.toFixed(2)}` : "-";
+      return cost ? `${currencySymbol}${cost.toFixed(2)}` : "-";
     },
   },
   {

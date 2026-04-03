@@ -23,8 +23,8 @@ export const DEFAULT_SHOP_INFO: ShopInfo = {
   email: "contact@techfixpro.com",
   website: "www.techfixpro.com",
   businessHours: "Mon-Fri: 9AM-6PM, Sat: 10AM-4PM",
-  logoUrl: "", // Default to empty string
-  ownerName: "John Smith", // Default owner name
+  logoUrl: "/images/logo_1.png", // Default to logo_1.png
+  ownerName: "Mohamed Elamine", // Default owner name
 };
 
 // Function to get shop info from localStorage or return defaults

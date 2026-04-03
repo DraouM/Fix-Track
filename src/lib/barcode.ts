@@ -42,16 +42,62 @@ export function getBarcodeData(data: Repair | InventoryItem): BarcodePrintData {
   };
 }
 
-// 3. Generate HTML for sticker printing
+// 3. Generate SVG for Code 39 Barcode
+// Code 39 pattern: 5 bars and 4 spaces = 9 elements. 3 elements are wide (W), 6 are narrow (N).
+const CODE39_MAP: Record<string, string> = {
+  "0": "NNNwWnWNN", "1": "WNNwNnNNW", "2": "NNWwNnNNW", "3": "WNWwNnNNN",
+  "4": "NNNwWnNNW", "5": "WNNwWnNNN", "6": "NNWwWnNNN", "7": "NNNwNnWNW",
+  "8": "WNNwNnWNN", "9": "NNWwNnWNN", "A": "WNNnNwNNW", "B": "NNWnNwNNW",
+  "C": "WNWnNwNNN", "D": "NNNnWwNNW", "E": "WNNnWwNNN", "F": "NNWnWwNNN",
+  "G": "NNNnNwWNW", "H": "WNNnNwWNN", "I": "NNWnNwWNN", "J": "NNNnWwWNN",
+  "K": "WNNnNNnwW", "L": "NNWnNNnwW", "M": "WNWnNNnwN", "N": "NNNnWNnwW",
+  "O": "WNNnWNnwN", "P": "NNWnWNnwN", "Q": "NNNnNNwwW", "R": "WNNnNNwwN",
+  "S": "NNWnNNwwN", "T": "NNNnWNwwN", "U": "WwNNNnNNW", "V": "NwWNNnNNW",
+  "W": "WwWNNnNNN", "X": "NwNNWnNNW", "Y": "WwNNWnNNN", "Z": "NwWNWnNNN",
+  "-": "NwNNNnWNW", ".": "WwNNNnWNN", " ": "NwWNNnWNN", "*": "NwNNWnWNN",
+  "$": "NwNwNwNNN", "/": "NwNwNNNwN", "+": "NwNNNwNwN", "%": "NNNwNwNwN",
+};
+
+export function generateCode39SVG(data: string, height: number = 40): string {
+  const code = `*${data.toUpperCase()}*`;
+  const narrowWidth = 2;
+  const wideWidth = 5;
+  const interGap = 2;
+
+  let currentX = 0;
+  let paths = "";
+
+  for (let i = 0; i < code.length; i++) {
+    const char = code[i];
+    const pattern = CODE39_MAP[char];
+    if (!pattern) continue;
+
+    for (let j = 0; j < pattern.length; j++) {
+      const type = pattern[j];
+      const isBar = j % 2 === 0;
+      const width = (type === "W" || type === "w") ? wideWidth : narrowWidth;
+
+      if (isBar) {
+        paths += `<rect x="${currentX}" y="0" width="${width}" height="${height}" fill="black" />`;
+      }
+      currentX += width;
+    }
+    currentX += interGap; // Inter-character gap
+  }
+
+  return `<svg width="${currentX}" height="${height}" viewBox="0 0 ${currentX} ${height}" xmlns="http://www.w3.org/2000/svg" style="max-width: 100%; height: auto;">${paths}</svg>`;
+}
+
+// 4. Generate HTML for sticker printing
 export function renderStickerHTML(data: Repair | InventoryItem): string {
   const { barcodeValue, title, mainText, subText, showBarcode, barcodeLabel } = getBarcodeData(data);
+  const barcodeSVG = showBarcode !== false ? generateCode39SVG(barcodeValue, 80) : "";
 
   return `
     <!DOCTYPE html>
     <html>
       <head>
         <title>Sticker - ${barcodeValue}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Libre+Barcode+39&display=swap" rel="stylesheet">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
@@ -60,6 +106,7 @@ export function renderStickerHTML(data: Repair | InventoryItem): string {
             width: 2in;
             height: 1in;
             overflow: hidden;
+            background: white;
           }
           @media print {
             @page { size: 2in 1in !important; margin: 0 !important; padding: 0 !important; }
@@ -69,7 +116,7 @@ export function renderStickerHTML(data: Repair | InventoryItem): string {
             width: 2in;
             height: 1in;
             padding: 1.5mm 0.5mm;
-            font-family: 'Inter', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -82,9 +129,9 @@ export function renderStickerHTML(data: Repair | InventoryItem): string {
           }
           .title { font-size: 10px; font-weight: 700; text-transform: uppercase; }
           .main { font-size: 14px; font-weight: 900; width: 100%; white-space: normal; line-clamp: 2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-          .barcode-container { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; }
-          .barcode { font-family: 'Libre Barcode 39', cursive; font-size: 32px; line-height: 1.2; }
-          .barcode-raw { font-size: 12px; font-weight: 900; }
+          .barcode-container { display: flex; flex-direction: column; align-items: center; gap: 1mm; width: 100%; }
+          .barcode-svg { width: 100%; max-height: 10mm; display: flex; justify-content: center; }
+          .barcode-raw { font-size: 11px; font-weight: 900; }
           .subtext { font-size: 10px; font-weight: 700; }
         </style>
       </head>
@@ -94,7 +141,7 @@ export function renderStickerHTML(data: Repair | InventoryItem): string {
           <div class="main">${mainText}</div>
           <div class="barcode-container">
             ${showBarcode !== false ? `
-              <div class="barcode">*${barcodeValue}*</div>
+              <div class="barcode-svg">${barcodeSVG}</div>
             ` : ""}
             ${barcodeLabel ? `<div class="barcode-raw">${barcodeLabel}</div>` : ""}
           </div>

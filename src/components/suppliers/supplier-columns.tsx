@@ -33,11 +33,15 @@ import { cn } from "@/lib/utils";
 interface SupplierColumnProps {
   onEdit: (supplier: Supplier) => void;
   onDelete: (supplier: Supplier) => void;
+  currencySymbol?: string;
+  currency?: string;
 }
 
 export const supplierColumns = ({
   onEdit,
   onDelete,
+  currencySymbol = '$',
+  currency = 'USD',
 }: SupplierColumnProps): ColumnDef<Supplier>[] => [
   {
     accessorKey: "name",
@@ -97,12 +101,12 @@ export const supplierColumns = ({
   {
     accessorKey: "outstandingBalance",
     header: ({ column }) => (
-      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 dark:text-muted-foreground/40 text-right">Position</div>
+      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 dark:text-muted-foreground/40 text-center">Position ({currencySymbol})</div>
     ),
     cell: ({ row }) => {
       const balance = row.getValue("outstandingBalance") as number || 0;
       return (
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-center gap-1">
           <div className={cn(
             "px-2.5 py-1 rounded-lg text-[11px] font-black shadow-none border flex items-center gap-2",
             balance > 0 
@@ -110,7 +114,7 @@ export const supplierColumns = ({
               : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/40"
           )}>
             <CreditCard className="w-3.5 h-3.5 opacity-60" />
-            {formatCurrency(balance)}
+            {formatCurrency(balance, currency, false)}
           </div>
           <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/30 dark:text-muted-foreground/20 mr-1">Current Due</span>
         </div>

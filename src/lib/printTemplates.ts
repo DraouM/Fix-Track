@@ -83,8 +83,9 @@ export function renderRepairReceiptHTML(
             width: 80mm; 
             padding: 2mm; 
             font-family: 'Courier New', Courier, monospace; 
-            font-size: 8px; 
-            line-height: 1.15; 
+            font-size: 12px; 
+            font-weight: bold;
+            line-height: 1.2; 
             color: #000; 
             background: #fff;
           }
@@ -109,7 +110,7 @@ export function renderRepairReceiptHTML(
         <div style="margin-bottom: 3px; font-size: 7px;">
           <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
             <span>${i18n.t("receipt.orderNumber", { lng: language })}:</span>
-            <span style="font-weight: bold; font-size: 8px;">${repair.code || repair.id}</span>
+            <span style="font-weight: 900; font-size: 14px;">${repair.code || repair.id}</span>
           </div>
           <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
             <span>${i18n.t("receipt.date", { lng: language })}:</span>
@@ -119,20 +120,18 @@ export function renderRepairReceiptHTML(
 
         <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
 
-        <div style="margin-bottom: 4px; font-size: 8px; ${isRTL ? "text-align: right;" : ""}">
-          <div style="font-weight: bold; margin-bottom: 2px;">${i18n.t("receipt.customer", { lng: language })}:</div>
-          <div>${repair.customerName}</div>
-          <div>${repair.customerPhone}</div>
+        <div style="margin-bottom: 4px; font-size: 12px; ${isRTL ? "text-align: right;" : ""}">
+          <div style="font-size: 14px; font-weight: 900;">${repair.customerName}</div>
+          <div style="font-size: 14px; font-weight: 900;">${repair.customerPhone}</div>
         </div>
 
         <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
 
-        <div style="margin-bottom: 4px; font-size: 8px; ${isRTL ? "text-align: right;" : ""}">
-          <div style="font-weight: bold; margin-bottom: 2px;">${i18n.t("receipt.device", { lng: language })}:</div>
-          <div>${repair.deviceBrand} ${repair.deviceModel}</div>
-          <div style="margin-top: 2px;">
-            <div style="font-weight: bold;">${i18n.t("receipt.issue", { lng: language })}:</div>
-            <div style="white-space: pre-wrap; word-break: break-all;">${repair.issueDescription}</div>
+        <div style="margin-bottom: 4px; font-size: 12px; ${isRTL ? "text-align: right;" : ""}">
+          <div style="font-size: 13px; font-weight: bold;">${repair.deviceBrand} ${repair.deviceModel}</div>
+          <div style="margin-top: 4px;">
+            <div style="font-weight: bold; text-decoration: underline;">${i18n.t("receipt.issue", { lng: language })}:</div>
+            <div style="white-space: pre-wrap; word-break: break-all; font-size: 14px; font-weight: 900;">${repair.issueDescription}</div>
           </div>
         </div>
 
@@ -144,10 +143,10 @@ export function renderRepairReceiptHTML(
             <span>${CURRENCY_SYMBOLS[currency]}${repair.estimatedCost.toFixed(2)}</span>
           </div>
           ${paymentsHTML}
-          <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; font-size: 10px; font-weight: bold;">
+          <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; font-size: 12px; font-weight: 900;">
             <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
               <span>${i18n.t("receipt.balanceDue", { lng: language })}:</span>
-              <span>${CURRENCY_SYMBOLS[currency]}${balance.toFixed(2)}</span>
+              <span style="font-size: 14px;">${CURRENCY_SYMBOLS[currency]}${balance.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -209,7 +208,8 @@ export function renderPaymentReceiptHTML(
             width: 80mm; 
             padding: 2mm; 
             font-family: 'Courier New', Courier, monospace; 
-            font-size: 8px; 
+            font-size: 12px; 
+            font-weight: bold;
             line-height: 1.2; 
             color: #000; 
             background: #fff;
@@ -232,7 +232,7 @@ export function renderPaymentReceiptHTML(
           <div style="font-size: 7px;">${i18n.t("receipt.telephone", { lng: language })}: ${shopInfo.phoneNumber}</div>
         </div>
 
-        <div style="text-align: center; margin: 4px 0; font-weight: bold; font-size: 10px;">
+        <div style="text-align: center; margin: 6px 0; font-weight: bold; font-size: 14px; text-decoration: underline;">
           ${i18n.t("receipt.paymentReceipt", { lng: language })}
         </div>
 
@@ -260,12 +260,12 @@ export function renderPaymentReceiptHTML(
 
         <div style="margin-bottom: 4px; ${isRTL ? "text-align: right;" : ""}">
           ${customerName
-      ? `<div style="margin-bottom: 2px;"><span style="font-weight: bold;">${i18n.t("receipt.receivedFrom", { lng: language })}:</span> ${customerName}</div>`
+      ? `<div style="margin-bottom: 2px;"><span>${i18n.t("receipt.receivedFrom", { lng: language })}:</span> <span style="font-weight: 900; font-size: 14px;">${customerName}</span></div>`
       : ""
     }
-          <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 4px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
             <span style="font-weight: bold;">${i18n.t("receipt.amountPaid", { lng: language })}:</span>
-            <span style="font-weight: bold;">${CURRENCY_SYMBOLS[currency]}${payment.amount.toFixed(2)}</span>
+            <span style="font-weight: 900; font-size: 14px;">${CURRENCY_SYMBOLS[currency]}${payment.amount.toFixed(2)}</span>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 7px; margin-top: 2px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
             <span>${i18n.t("receipt.paymentMethod", { lng: language })}:</span>
@@ -377,7 +377,8 @@ export function renderTransactionReceiptHTML(
             width: 80mm; 
             padding: 2mm; 
             font-family: 'Courier New', Courier, monospace; 
-            font-size: 10px; 
+            font-size: 12px; 
+            font-weight: bold;
             line-height: 1.2; 
             color: #000; 
             background: #fff;
@@ -411,7 +412,7 @@ export function renderTransactionReceiptHTML(
         <div style="margin-bottom: 5px;">
            <div class="row" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
             <span>${i18n.t("transactions_module.summary.paymentFor", { type: i18n.t("transactions_module.sale", { lng: language }), lng: language })}:</span>
-            <span class="bold">${transaction.transaction_number || transaction.id.slice(0, 8)}</span>
+            <span style="font-weight: 900; font-size: 14px;">${transaction.transaction_number || transaction.id.slice(0, 8)}</span>
            </div>
            <div class="row" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
             <span>${i18n.t("common.date", { lng: language })}:</span>
@@ -423,16 +424,16 @@ export function renderTransactionReceiptHTML(
 
         <!-- Client Info -->
         <div style="margin-bottom: 5px; ${isRTL ? "text-align: right;" : ""}">
-           <div class="bold" style="margin-bottom: 2px;">${i18n.t("transactions_module.party.client", { lng: language })}:</div>
-           <div>${client?.name || (language === "ar" ? "عميل عابر" : language === "fr" ? "Client de passage" : i18n.t("transactions_module.party.walkInCustomer", { lng: language }))}</div>
-           ${client?.phone ? `<div>${client.phone}</div>` : ""}
+           <div class="bold" style="margin-bottom: 2px; text-decoration: underline;">${i18n.t("transactions_module.party.client", { lng: language })}:</div>
+           <div style="font-size: 14px; font-weight: 900;">${client?.name || (language === "ar" ? "عميل عابر" : language === "fr" ? "Client de passage" : i18n.t("transactions_module.party.walkInCustomer", { lng: language }))}</div>
+           ${client?.phone ? `<div style="font-size: 14px; font-weight: 900;">${client.phone}</div>` : ""}
         </div>
 
         <div class="divider"></div>
 
         <!-- Items -->
         <div style="margin-bottom: 5px; ${isRTL ? "text-align: right;" : ""}">
-          <div class="bold" style="margin-bottom: 4px;">${i18n.t("transactions_module.itemTable.details", { lng: language })}:</div>
+          <div class="bold" style="margin-bottom: 4px; text-decoration: underline;">${i18n.t("transactions_module.itemTable.details", { lng: language })}:</div>
           ${itemsHTML}
         </div>
 
@@ -442,7 +443,7 @@ export function renderTransactionReceiptHTML(
         <div style="margin-bottom: 5px;">
           <div class="row bold" style="font-size: 12px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
             <span>${i18n.t("transactions_module.summary.total", { lng: language })}:</span>
-            <span>${CURRENCY_SYMBOLS[currency]}${transaction.total_amount.toFixed(2)}</span>
+            <span style="font-size: 14px; font-weight: 900;">${CURRENCY_SYMBOLS[currency]}${transaction.total_amount.toFixed(2)}</span>
           </div>
           
           ${totalPaid > 0
@@ -457,7 +458,7 @@ export function renderTransactionReceiptHTML(
 
           <div class="row" style="${isRTL ? "flex-direction: row-reverse;" : ""}">
             <span>${i18n.t("transactions_module.summary.balanceDue", { lng: language })}:</span>
-            <span>${CURRENCY_SYMBOLS[currency]}${balanceDue.toFixed(2)}</span>
+            <span style="font-weight: 900; font-size: 14px;">${CURRENCY_SYMBOLS[currency]}${balanceDue.toFixed(2)}</span>
           </div>
         </div>
 

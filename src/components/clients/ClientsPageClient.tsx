@@ -29,6 +29,9 @@ import { useClientContext } from '@/context/ClientContext';
 import { Icons } from '@/components/icons';
 import type { Client, ClientFormValues } from '@/types/client';
 import { toast } from 'sonner';
+import { useSettings } from '@/context/SettingsContext';
+import { CURRENCY_SYMBOLS } from '@/types/settings';
+import { useTranslation } from 'react-i18next';
 
 function ClientsPageContent() {
   const {
@@ -40,6 +43,9 @@ function ClientsPageContent() {
     addPayment,
     loading,
   } = useClientContext();
+  const { settings } = useSettings();
+  const { t } = useTranslation();
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
@@ -116,7 +122,7 @@ function ClientsPageContent() {
       if (clientForPayment) {
         addPayment(clientForPayment.id, amount, "Cash");
         toast.success(
-          `Payment of $${amount.toFixed(2)} for ${clientForPayment.name} has been recorded.`
+          `Payment of ${currencySymbol}${amount.toFixed(2)} for ${clientForPayment.name} has been recorded.`
         );
         handleClosePaymentDialog();
       }
@@ -135,25 +141,25 @@ function ClientsPageContent() {
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold">Client Management</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">{t('clients.title')}</h1>
         <Dialog
           open={isFormOpen}
           onOpenChange={handleClientFormDialogOpeChange}
         >
           <DialogTrigger asChild>
             <Button onClick={openAddNewForm}>
-              <Icons.plusCircle className="mr-2 h-4 w-4" /> Add New Client
+              <Icons.plusCircle className="mr-2 h-4 w-4" /> {t('clients.addClient')}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[625px] p-0 overflow-hidden border-none shadow-2xl rounded-[2rem]">
             <DialogHeader className="p-8 pb-4 bg-gray-50/50 dark:bg-slate-900/50 backdrop-blur-sm border-b border-gray-100 dark:border-slate-800">
               <DialogTitle className="text-2xl font-black uppercase tracking-tight">
-                {clientToEdit ? "Modify Credentials" : "Register Identity"}
+                {clientToEdit ? t('common.edit') : t('common.add')}
               </DialogTitle>
               <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
                 {clientToEdit
-                  ? "Update the details for this architectural entity."
-                  : "Populate the fields to establish a new client identity."}
+                  ? t('inventory.form.editDesc')
+                  : t('inventory.form.addDesc')}
               </DialogDescription>
             </DialogHeader>
             <ClientForm
@@ -178,7 +184,7 @@ function ClientsPageContent() {
 
       <div className="space-y-4 p-4 border rounded-lg shadow-sm bg-card">
         <Input
-          placeholder="Search by name or phone..."
+          placeholder={t('common.searchPlaceholder')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full md:max-w-sm"

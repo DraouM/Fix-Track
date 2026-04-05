@@ -320,6 +320,22 @@
         "printReceiptError": "Failed to print receipt. Please check your printer settings.",
         "printStickerError": "Failed to print sticker. Please check your printer settings.",
         "printGeneralError": "An error occurred while printing.",
+        "issues": {
+            "brokenScreen": "Broken Screen",
+            "batteryReplacement": "Battery Replacement",
+            "chargingPort": "Charging Port",
+            "chargingCircuit": "Charging Circuit",
+            "backlightCircuit": "Backlight Circuit",
+            "processor": "Processor / CPU",
+            "memory": "Memory / Storage",
+            "simTray": "SIM Tray / Cover",
+            "waterDamage": "Water Damage",
+            "softwareIssue": "Software Issue",
+            "camera": "Camera Issue",
+            "speakerMic": "Speaker / Mic",
+            "backGlass": "Back Glass",
+            "noPower": "Won't Turn On"
+        },
         "history": {
             "statusChanged": "Status: {{to}}",
             "paymentAdded": "Payment: {{symbol}}{{amount}}",

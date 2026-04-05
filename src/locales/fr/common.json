@@ -307,6 +307,22 @@
         "printReceiptError": "Échec de l'impression du reçu. Veuillez vérifier vos paramètres d'imprimante.",
         "printStickerError": "Échec de l'impression de l'étiquette. Veuillez vérifier vos paramètres d'imprimante.",
         "printGeneralError": "Une erreur est survenue lors de l'impression.",
+        "issues": {
+            "brokenScreen": "Écran cassé",
+            "batteryReplacement": "Remplacement batterie",
+            "chargingPort": "Connecteur de charge",
+            "chargingCircuit": "Circuit de charge",
+            "backlightCircuit": "Circuit de lumière",
+            "processor": "Processeur",
+            "memory": "Mémoire",
+            "simTray": "Trappe / Tiroir SIM",
+            "waterDamage": "Oxydation",
+            "softwareIssue": "Problème logiciel",
+            "camera": "Caméra",
+            "speakerMic": "Haut-parleur / Micro",
+            "backGlass": "Vitre arrière",
+            "noPower": "Arrêt / Ne s'allume pas"
+        },
         "history": {
             "statusChanged": "Statut: {{to}}",
             "paymentAdded": "Paiement: {{symbol}}{{amount}}",

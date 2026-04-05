@@ -19,6 +19,7 @@ import {
 } from "@/types/inventory";
 import { useTranslation } from "react-i18next";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
+import { exportInventoryToCSV } from "@/lib/exportUtils";
 
 import {
   Dialog,
@@ -47,6 +48,7 @@ import {
   Plus,
   Search,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib";
 
@@ -76,6 +78,7 @@ export function InventoryPageInner() {
   const [historyEvents, setHistoryEvents] = useState<InventoryHistoryEvent[]>(
     []
   );
+  const [isExporting, setIsExporting] = useState(false);
 
   const { t } = useTranslation();
   const { printSticker } = usePrintUtils();
@@ -219,10 +222,26 @@ export function InventoryPageInner() {
           <div className="flex gap-3">
             <Button
               variant="outline"
+              disabled={isExporting}
+              onClick={async () => {
+                setIsExporting(true);
+                // Artificial delay for premium UX feel
+                setTimeout(() => {
+                  try {
+                    exportInventoryToCSV(filteredAndSortedItems);
+                  } finally {
+                    setIsExporting(false);
+                  }
+                }, 800);
+              }}
               className="h-11 px-4 rounded-xl border-2 dark:border-slate-800 dark:bg-slate-900 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:text-slate-200 hover:dark:text-slate-100 transition-colors"
             >
-              <Download className="w-4 h-4 mr-2" />
-              {t('common.export')}
+              {isExporting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin text-primary" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              {isExporting ? t('common.loading') : t('common.export')}
             </Button>
             <Button
               variant="outline"

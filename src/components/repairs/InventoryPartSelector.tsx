@@ -14,10 +14,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useInventory } from "@/context/InventoryContext";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/clientUtils";
 import type { InventoryItem } from "@/types/inventory";
+import { tokenize } from "@/lib/flexibleSearch";
 
 interface InventoryPartSelectorProps {
   onSelect: (part: InventoryItem | null) => void;
@@ -58,11 +61,20 @@ export function InventoryPartSelector({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
-        <Command>
-          <CommandInput placeholder={t('repairs.searchParts')} />
-          <CommandList>
-            <CommandEmpty>{t('repairs.noPartsFound')}</CommandEmpty>
+      <PopoverContent className="w-full p-0 shadow-lg border-gray-100 dark:border-slate-800 rounded-xl">
+        <Command
+          filter={(value, search) => {
+            const searchTokens = tokenize(search);
+            if (searchTokens.length === 0) return 1;
+            const targetLower = value.toLowerCase();
+            return searchTokens.every(token => targetLower.includes(token)) ? 1 : 0;
+          }}
+        >
+          <CommandInput placeholder={t('repairs.searchParts')} className="text-xs" />
+          <CommandList className="max-h-[250px]">
+            <CommandEmpty className="py-6 text-center text-xs text-muted-foreground">
+              {t('repairs.noPartsFound')}
+            </CommandEmpty>
             <CommandGroup>
               {inventoryItems
                 .filter(
@@ -71,28 +83,39 @@ export function InventoryPartSelector({
                 .map((item) => (
                   <CommandItem
                     key={item.id}
-                    value={item.id}
-                    onSelect={(currentValue) => {
-                      const selectedItem = inventoryItems.find(
-                        (i) => i.id === currentValue
-                      );
-                      handleSelect(selectedItem || null);
+                    value={`${item.itemName} ${item.phoneBrand || ''} ${item.itemType || ''} ${item.barcode || ''} ${item.id}`}
+                    onSelect={() => {
+                      handleSelect(item);
                       setOpen(false);
                     }}
+                    className="flex justify-between items-center py-2 px-3 border-b border-gray-50 dark:border-slate-800/50 last:border-0 hover:bg-muted/50 cursor-pointer"
                   >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedItem?.id === item.id
-                          ? "opacity-100"
-                          : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col">
-                      <span>{item.itemName}</span>
-                      <span className="text-xs text-gray-500">
-                        {t('repairs.inStock', { count: item.quantityInStock })} | {t('repairs.price', { symbol: '$', amount: item.sellingPrice.toFixed(2) })}
-                      </span>
+                    <div className="flex flex-col gap-1 w-full relative">
+                      <div className="flex items-start justify-between">
+                        <p className="font-bold text-xs text-foreground">
+                          {item.phoneBrand && item.phoneBrand !== "All" ? `${item.phoneBrand} - ` : ''}{item.itemName}
+                        </p>
+                        <p className="text-xs font-black text-primary shrink-0 ml-2">
+                          {formatCurrency(item.sellingPrice || 0)}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-3 w-3 text-muted-foreground opacity-50" />
+                          <Badge variant="secondary" className="text-[9px] font-bold tracking-widest uppercase bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-md px-1.5 py-0">
+                            {t('repairs.inStock', { count: item.quantityInStock })}
+                          </Badge>
+                        </div>
+                        <Check
+                          className={cn(
+                            "h-3 w-3 text-primary transition-opacity",
+                            selectedItem?.id === item.id
+                              ? "opacity-100"
+                              : "opacity-0"
+                          )}
+                        />
+                      </div>
                     </div>
                   </CommandItem>
                 ))}

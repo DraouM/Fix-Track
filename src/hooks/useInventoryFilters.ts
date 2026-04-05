@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import type { InventoryItem, PhoneBrand, ItemType } from "@/types/inventory";
+import { prepareSearchableItems, searchSearchableItems } from "@/lib/flexibleSearch";
 
 // Custom hook for debounced search
 function useDebouncedSearch(initialValue: string, delay = 500): [string, string, (value: string) => void] {
@@ -44,15 +45,22 @@ export function useInventoryFilters(items: InventoryItem[]) {
     });
   }, [items, selectedBrand, selectedType]);
 
-  // Then filter by search term
+  // Prepare searchable items exactly once per filtered list (ignores keystrokes)
+  const searchableItems = useMemo(() => {
+    return prepareSearchableItems(filteredByBrandAndType, (item) => [
+      item.itemName,
+      item.phoneBrand,
+      item.itemType,
+      item.barcode,
+      item.id,
+    ]);
+  }, [filteredByBrandAndType]);
+
+  // Then perform flexible tokenized search on the cached metadata
   const filteredItems = useMemo(() => {
-    if (!searchTermLower) return filteredByBrandAndType;
-    
-    return filteredByBrandAndType.filter((item) => {
-      const itemNameLower = item.itemName.toLowerCase();
-      return itemNameLower.includes(searchTermLower);
-    });
-  }, [filteredByBrandAndType, searchTermLower]);
+    if (!debouncedSearchTerm) return filteredByBrandAndType;
+    return searchSearchableItems(debouncedSearchTerm, searchableItems);
+  }, [debouncedSearchTerm, searchableItems, filteredByBrandAndType]);
 
   // Finally, sort the filtered items
   const filteredAndSortedItems = useMemo(() => {

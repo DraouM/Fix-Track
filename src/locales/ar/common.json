@@ -307,6 +307,22 @@
         "printReceiptError": "فشل طباعة الإيصال. يرجى التحقق من إعدادات الطابعة.",
         "printStickerError": "فشل طباعة الملصق. يرجى التحقق من إعدادات الطابعة.",
         "printGeneralError": "حدث خطأ أثناء الطباعة.",
+        "issues": {
+            "brokenScreen": "شاشة مكسورة",
+            "batteryReplacement": "تغيير بطارية",
+            "chargingPort": "منفذ الشحن",
+            "chargingCircuit": "دائرة الشحن / آيسي الشحن",
+            "backlightCircuit": "دائرة الإضاءة",
+            "processor": "المعالج",
+            "memory": "الذاكرة",
+            "simTray": "بيت الشريحة",
+            "waterDamage": "ضرر مائي بالبورد",
+            "softwareIssue": "مشكلة سوفت وير",
+            "camera": "كاميرا",
+            "speakerMic": "سماعة / مايك",
+            "backGlass": "زجاج خلفي",
+            "noPower": "لا يعمل / فاصل باور"
+        },
         "history": {
             "statusChanged": "الحالة: {{to}}",
             "paymentAdded": "دفعة: {{symbol}}{{amount}}",

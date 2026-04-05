@@ -180,9 +180,21 @@ const InventoryRow = memo(function InventoryRow({
             onClick={(e) => e.stopPropagation()}
           />
           <div className="flex flex-col min-w-0">
-            <span className="font-black text-sm text-foreground dark:text-slate-200 truncate uppercase tracking-tight">
-              {item.itemName}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="font-black text-sm text-foreground dark:text-slate-200 truncate uppercase tracking-tight cursor-help">
+                  {item.itemName}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                align="start"
+                sideOffset={4}
+                className="rounded-lg border-none shadow-xl font-black text-[11px] uppercase tracking-wider max-w-[300px] text-wrap bg-foreground text-background dark:bg-slate-800 dark:text-slate-200"
+              >
+                {item.itemName}
+              </TooltipContent>
+            </Tooltip>
             <span className="text-[10px] font-bold text-muted-foreground dark:text-slate-500 uppercase opacity-40">
               {t('inventory.sku')}: {item.id.split("-")[0]}
             </span>

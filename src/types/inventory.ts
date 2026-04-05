@@ -27,6 +27,9 @@ export const PHONE_BRANDS = [
   "Condor",
   "Nokia",
   "Sony",
+  "Ace",
+  "Infinix",
+  "Itel",
   "Other",
 ] as const;
 export type PhoneBrand = (typeof PHONE_BRANDS)[number];

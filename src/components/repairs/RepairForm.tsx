@@ -76,6 +76,23 @@ const paymentMethods = [
   },
 ];
 
+const COMMON_ISSUE_KEYS = [
+  "brokenScreen",
+  "batteryReplacement",
+  "chargingPort",
+  "chargingCircuit",
+  "backlightCircuit",
+  "processor",
+  "memory",
+  "simTray",
+  "waterDamage",
+  "softwareIssue",
+  "camera",
+  "speakerMic",
+  "backGlass",
+  "noPower"
+];
+
 interface RepairFormProps {
   repairToEdit?: Repair | null;
   onSuccess: (repair?: Repair) => void;
@@ -395,18 +412,52 @@ export default function RepairForm({
               <FormField
                 control={form.control}
                 name="issueDescription"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea
-                        placeholder={t("repairs.issuePlaceholder")}
-                        className="min-h-[80px] rounded-xl bg-gray-50/50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-medium text-xs p-3"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const currentValue = field.value || "";
+                  const selectedIssues = currentValue.split(',').map(i => i.trim()).filter(Boolean);
+
+                  const toggleIssue = (issue: string) => {
+                    if (selectedIssues.includes(issue)) {
+                      field.onChange(selectedIssues.filter(i => i !== issue).join(', '));
+                    } else {
+                      field.onChange([...selectedIssues, issue].join(', '));
+                    }
+                  };
+
+                  return (
+                    <FormItem className="space-y-4">
+                      <div className="flex flex-wrap gap-2">
+                        {COMMON_ISSUE_KEYS.map(key => {
+                          const translatedIssue = t(`repairs.issues.${key}`);
+                          const isSelected = selectedIssues.includes(translatedIssue);
+                          return (
+                            <Badge
+                              key={key}
+                              variant={isSelected ? "default" : "outline"}
+                              className={cn(
+                                "cursor-pointer transition-all hover:scale-105 active:scale-95 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest select-none",
+                                isSelected 
+                                  ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90" 
+                                  : "bg-gray-50 dark:bg-slate-800/50 text-muted-foreground border-gray-200 dark:border-slate-700 hover:border-primary/50 hover:text-foreground"
+                              )}
+                              onClick={() => toggleIssue(translatedIssue)}
+                            >
+                              {translatedIssue}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                      <FormControl>
+                        <Textarea
+                          placeholder={t("repairs.issuePlaceholder")}
+                          className="min-h-[80px] rounded-xl bg-gray-50/50 dark:bg-slate-950 border-gray-100 dark:border-slate-800 font-medium text-xs p-3"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             </div>
           </div>

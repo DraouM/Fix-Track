@@ -1,7 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import RepairForm from "@/components/repairs/RepairForm";
 import { RepairTable } from "@/components/repairs/RepairTable";
 import { RepairDetail } from "@/components/repairs/RepairDetail";
 import type { Repair } from "@/types/repair";
+import type { DashboardStats } from "@/lib/api/dashboard";
 import { useRepairContext, RepairProvider } from "@/context/RepairContext";
   
 import {  useSettings } from "@/context/SettingsContext";
@@ -42,6 +43,20 @@ export function RepairsPageInner() {
   const [repairToEdit, setRepairToEdit] = useState<Repair | null>(null);
   const [createdRepair, setCreatedRepair] = useState<Repair | null>(null);
   const [formInstanceKey, setFormInstanceKey] = useState(0);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const stats = await invoke<DashboardStats>("get_dashboard_stats");
+      setDashboardStats(stats);
+    } catch (error) {
+      console.error("Failed to fetch dashboard stats:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats, repairs]); // Re-fetch when repairs change
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -292,7 +307,7 @@ export function RepairsPageInner() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard
             icon={Wrench}
             title={t('repairs.totalRepairs')}
@@ -313,6 +328,13 @@ export function RepairsPageInner() {
             value={formatCurrency(statistics.totalRevenue)}
             subtitle={t('repairs.completed')}
             color="green"
+          />
+          <StatCard
+            icon={TrendingUp}
+            title={t('dashboard.metrics.repairProfit')}
+            value={formatCurrency(dashboardStats?.repair_profit || 0)}
+            subtitle={t('dashboard.metrics.afterParts')}
+            color="purple"
           />
           <StatCard
             icon={AlertCircle}

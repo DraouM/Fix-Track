@@ -363,7 +363,10 @@
         "metrics": {
             "monthlyRevenue": "Chiffre d'Affaires Mensuel",
             "currentMonth": "Mois en cours",
-            "netCash": "Trésorerie Nette",
+            "afterCosts": "Après pièces & dépenses",
+            "afterParts": "Coût Total - Pièces",
+            "repairProfit": "Profit Réparations",
+            "netCash": "Flux de Trésorerie",
             "totalCash": "Total Cash: {{amount}}",
             "activeRepairs": "Réparations Actives",
             "completedCount": "{{count}} terminé{{plural}}",

@@ -332,11 +332,13 @@ pub struct RevenueBreakdown {
 pub struct DashboardStats {
     pub total_revenue: f64,
     pub net_cash: f64,
+    pub net_profit: f64,
     pub active_repairs: i32,
     pub completed_repairs: i32,
     pub stock_alerts: i32,
     pub out_of_stock: i32,
     pub revenue_change: f64,
+    pub repair_profit: f64,
 }
 
 /// TASKS

@@ -95,8 +95,8 @@ export function InventoryPartSelector({
                         <p className="font-bold text-xs text-foreground">
                           {item.phoneBrand && item.phoneBrand !== "All" ? `${item.phoneBrand} - ` : ''}{item.itemName}
                         </p>
-                        <p className="text-xs font-black text-primary shrink-0 ml-2">
-                          {formatCurrency(item.sellingPrice || 0)}
+                        <p className="text-[10px] font-black text-primary shrink-0 ml-2 uppercase tracking-tighter">
+                          {t('inventory.buyingPrice')}: {formatCurrency(item.buyingPrice || 0)}
                         </p>
                       </div>
                       

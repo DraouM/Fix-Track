@@ -363,7 +363,10 @@
         "metrics": {
             "monthlyRevenue": "الإيرادات الشهرية",
             "currentMonth": "الشهر الحالي",
-            "netCash": "صافي النقد",
+            "afterCosts": "بعد التكاليف",
+            "afterParts": "إجمالي التكلفة - القطع",
+            "repairProfit": "أرباح الإصلاح",
+            "netCash": "صافي التدفق النقدي",
             "totalCash": "إجمالي النقد: {{amount}}",
             "activeRepairs": "الإصلاحات النشطة",
             "completedCount": "{{count}} مكتمل",

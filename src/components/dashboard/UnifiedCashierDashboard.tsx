@@ -552,7 +552,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
     subtitle?: string;
     trend?: string | number;
     trendUp?: boolean;
-    color?: "blue" | "green" | "orange" | "red";
+    color?: "blue" | "green" | "orange" | "red" | "indigo";
     onClick?: React.MouseEventHandler<HTMLDivElement>;
   }) => {
     const colorClasses = {
@@ -562,6 +562,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
       orange:
         "bg-orange-100 text-orange-600 border-orange-200 hover:border-orange-300 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800",
       red: "bg-red-100 text-red-600 border-red-200 hover:border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+      indigo: "bg-indigo-100 text-indigo-600 border-indigo-200 hover:border-indigo-300 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800",
     };
 
     const bgClasses = {
@@ -569,13 +570,14 @@ Carry Forward: ${formatCurrency(carryForward)}`);
       green: "bg-green-50 dark:bg-slate-900/50",
       orange: "bg-orange-50 dark:bg-slate-900/50",
       red: "bg-red-50 dark:bg-slate-900/50",
+      indigo: "bg-indigo-50 dark:bg-slate-900/50",
     };
 
     return (
       <Card
         className={`border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-          colorClasses[color].split(" ")[2]
-        } ${bgClasses[color]}`}
+          (colorClasses[color || "blue"] || "").split(" ")[2] || ""
+        } ${bgClasses[color || "blue"] || ""}`}
         onClick={onClick}
       >
         <CardHeader className="pb-2">
@@ -803,7 +805,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
               </div>
 
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <StatCard
                   icon={TrendingUp}
                   title={t("dashboard.metrics.periodRevenue", { 
@@ -820,6 +822,14 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                 />
                 <StatCard
                   icon={DollarSign}
+                  title={t("dashboard.transactions.periodView.netProfit")}
+                  value={formatCurrency(dashboardStats?.net_profit || 0)}
+                  subtitle={t("dashboard.metrics.afterCosts")}
+                  color="green"
+                  onClick={() => setActiveTab("transactions")}
+                />
+                <StatCard
+                  icon={Wallet}
                   title={t("dashboard.metrics.netCash")}
                   value={formatCurrency(netCash)}
                   subtitle={rangeType === 'today' 
@@ -1324,7 +1334,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                   </div>
                   <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border-2 border-blue-100 dark:border-blue-900/30 shadow-sm">
                     <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                      {t("dashboard.transactions.periodView.netProfit")}
+                      {t("dashboard.metrics.netCash")}
                     </div>
                     <div className="text-2xl font-bold text-gray-900 dark:text-slate-100 mt-1">
                       {formatCurrency(periodTotals.netProfit)}
@@ -1381,7 +1391,7 @@ Carry Forward: ${formatCurrency(carryForward)}`);
                         <div className="text-right flex items-center gap-6">
                           <div className="hidden sm:block">
                             <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-slate-500 block">
-                              {t("dashboard.transactions.periodView.netProfit")}
+                              {t("dashboard.metrics.netCash")}
                             </span>
                             <span
                               className={`font-bold ${

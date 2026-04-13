@@ -527,7 +527,7 @@ export default function RepairForm({
                         partId: item.id,
                         name: item.itemName,
                         quantity: 1,
-                        unitCost: (item as any).sellingPrice || 0,
+                        unitCost: item.buyingPrice || 0,
                       });
                     }
                   }}

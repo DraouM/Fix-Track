@@ -14,11 +14,13 @@ export interface RevenueBreakdown {
 export interface DashboardStats {
     total_revenue: number;
     net_cash: number;
+    net_profit: number;
     active_repairs: number;
     completed_repairs: number;
     stock_alerts: number;
     out_of_stock: number;
     revenue_change: number;
+    repair_profit: number;
 }
 
 export async function getRevenueHistory(days: number = 7): Promise<RevenueData[]> {

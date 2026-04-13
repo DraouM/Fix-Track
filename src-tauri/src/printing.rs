@@ -52,7 +52,7 @@ fn list_printers_windows() -> Result<Vec<PrinterInfo>, String> {
         .map_err(|e| format!("Failed to run PowerShell: {}", e))?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
+        // let stderr = String::from_utf8_lossy(&output.stderr);
         // Fallback: try wmic
         return list_printers_wmic();
     }
@@ -172,7 +172,7 @@ pub fn print_raw(printer_name: String, data: Vec<u8>) -> Result<(), String> {
 
 #[cfg(target_os = "windows")]
 fn print_raw_windows(printer_name: &str, data: &[u8]) -> Result<(), String> {
-    use std::io::Write;
+    // use std::io::Write;
 
     // Write data to a temp file, then send via shell
     let temp_dir = std::env::temp_dir();

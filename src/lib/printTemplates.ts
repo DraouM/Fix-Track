@@ -36,27 +36,6 @@ export function renderRepairReceiptHTML(
   const isRTL = language === "ar";
   const direction = isRTL ? "rtl" : "ltr";
 
-  const partsHTML =
-    includeParts && repair.usedParts && repair.usedParts.length > 0
-      ? `
-      <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-      <div style="margin-bottom: 4px; font-size: 8px;">
-        <div style="font-weight: bold; margin-bottom: 2px;">${i18n.t("receipt.partsUsed", { lng: language })}:</div>
-        ${repair.usedParts
-        .map(
-          (part) => `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 1px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
-            <span>${part.partName} x${part.quantity}</span>
-            <span>${CURRENCY_SYMBOLS[currency]}${(part.cost || 0).toFixed(
-            2
-          )}</span>
-          </div>
-        `
-        )
-        .join("")}
-      </div>
-    `
-      : "";
 
   const paymentsHTML =
     includePayments && repair.payments && repair.payments.length > 0
@@ -135,7 +114,6 @@ export function renderRepairReceiptHTML(
           </div>
         </div>
 
-        ${partsHTML}
 
         <div style="margin-bottom: 4px; font-size: 9px;">
           <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; ${isRTL ? "flex-direction: row-reverse;" : ""}">

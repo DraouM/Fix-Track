@@ -65,7 +65,8 @@
         "rowsPerPage": "صفوف لكل صفحة",
         "pageInfo": "صفحة {{current}} من {{total}}",
         "history": "السجل",
-        "printSticker": "طباعة الملصق"
+        "printSticker": "طباعة الملصق",
+        "call": "اتصال"
     },
     "status": {
         "active": "نشط",
@@ -207,6 +208,7 @@
         "subtitle": "إدارة وتتبع",
         "newRepair": "إصلاح جديد",
         "addRepair": "إضافة إصلاح",
+        "addDesc": "معلومات الإصلاح الأساسية وتفاصيل العميل.",
         "editRepair": "تعديل الإصلاح",
         "pending": "قيد الانتظار",
         "inprogress": "قيد التنفيذ",
@@ -251,6 +253,8 @@
         "totalBalance": "إجمالي الرصيد",
         "recordNewTransaction": "تسجيل معاملة جديدة",
         "quickPayment": "دفع سريع",
+        "recordDeposit": "تسجيل دفعة مقدمة",
+        "recordPayment": "تسجيل الدفعة",
         "amount": "المبلغ",
         "addPayment": "إضافة دفعة",
         "method": "الطريقة",
@@ -282,6 +286,7 @@
         "device": "الجهاز",
         "issue": "المشكلة",
         "due": "متبقي",
+        "remaining": "المتبقي",
         "repairReceipt": "إيصال الإصلاح",
         "repairId": "رقم الإصلاح",
         "customer": "العميل",
@@ -329,7 +334,10 @@
             "partAdded": "قطعة: {{name}} (x{{qty}})",
             "note": "ملاحظة: {{text}}",
             "unknown": "حدث غير معروف"
-        }
+        },
+        "remainingBalanceMsg": "المبلغ المتبقي: {{symbol}}{{amount}}",
+        "fullyPaidMsg": "مدفوع بالكامل",
+        "whatsappTemplate": "مرحباً {{name}}، حالة إصلاح جهازك {{device}} هي حالياً {{status}}. {{balance}}"
     },
     "clients": {
         "title": "العملاء",

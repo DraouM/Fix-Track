@@ -23,16 +23,20 @@ import {
   RefreshCw,
   CheckCircle,
   AlertCircle,
+  Receipt,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 import { invoke } from "@tauri-apps/api/core"; // Import Tauri invoke directly
+
+import { useSettings } from "@/context/SettingsContext";
 
 interface PrinterTestComponentProps {
   className?: string;
 }
 
 export function PrinterTestComponent({ className }: PrinterTestComponentProps) {
-  const [printers, setPrinters] = useState<string[]>([]);
+  const { availablePrinters, refreshPrinters, settings } = useSettings();
   const [selectedPrinter, setSelectedPrinter] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isTesting, setIsTesting] = useState<boolean>(false);
@@ -41,33 +45,24 @@ export function PrinterTestComponent({ className }: PrinterTestComponentProps) {
     message: string;
   } | null>(null);
 
-  // Fetch available printers directly using Tauri API
-  const fetchPrinters = async () => {
+  // Fetch available printers
+  const handleRefresh = async () => {
     setIsLoading(true);
-    try {
-      const printerList = await invoke<string[]>("get_available_printers");
-
-      if (Array.isArray(printerList)) {
-        setPrinters(printerList);
-        if (printerList.length > 0 && !selectedPrinter) {
-          setSelectedPrinter(printerList[0]);
-        }
-        toast.success("Printers loaded successfully");
-      } else {
-        toast.error("Failed to load printers");
-      }
-    } catch (error) {
-      console.error("Error fetching printers:", error);
-      toast.error("Failed to fetch printers");
-    } finally {
-      setIsLoading(false);
-    }
+    await refreshPrinters();
+    setIsLoading(false);
+    toast.success("Printer list updated");
   };
 
   // Test printer directly using Tauri API
-  const testPrinter = async (testType: "simple" | "detailed" = "simple") => {
-    if (!selectedPrinter && printers.length > 0) {
-      toast.error("Please select a printer");
+  const testPrinter = async (target: "receipt" | "sticker" | "custom") => {
+    const printerName = target === "custom" 
+      ? selectedPrinter 
+      : target === "receipt" 
+        ? settings.printerConfig.receiptPrinterName 
+        : settings.printerConfig.stickerPrinterName;
+
+    if (!printerName) {
+      toast.error(`No printer configured for ${target}`);
       return;
     }
 
@@ -75,120 +70,58 @@ export function PrinterTestComponent({ className }: PrinterTestComponentProps) {
     setTestResult(null);
 
     try {
-      // Generate ESC/POS test commands based on test type
-      let commands: number[] = [];
+      const testHtml = `
+        <html>
+          <body style="width: 80mm; font-family: monospace; text-align: center; padding: 10px;">
+            <h1 style="font-size: 20px;">FIXARY TEST</h1>
+            <p>Printer: ${printerName}</p>
+            <p>Type: ${target.toUpperCase()}</p>
+            <div style="border-top: 1px dashed black; margin: 10px 0;"></div>
+            <p style="font-size: 10px;">If you see this, native silent printing is WORKING!</p>
+            <p style="font-size: 10px;">${new Date().toLocaleString()}</p>
+          </body>
+        </html>
+      `;
 
-      if (testType === "simple") {
-        // Simple test - print a basic message
-        commands = [
-          0x1b,
-          0x40, // Initialize printer
-          0x1b,
-          0x61,
-          0x01, // Center align
-          0x1b,
-          0x21,
-          0x11, // Double height
-          ...Array.from("PRINTER TEST").map((c) => c.charCodeAt(0)),
-          0x0a, // Line feed
-          0x1b,
-          0x21,
-          0x00, // Normal size
-          ...Array.from("Fixary App Test").map((c) => c.charCodeAt(0)),
-          0x0a,
-          0x0a, // Double line feed
-          0x1d,
-          0x56,
-          0x00, // Cut paper
-        ];
-      } else if (testType === "detailed") {
-        // Detailed test - print comprehensive test page
-        commands = [
-          0x1b,
-          0x40, // Initialize printer
-          0x1b,
-          0x61,
-          0x01, // Center align
-          0x1b,
-          0x21,
-          0x31, // Double width/height
-          ...Array.from("PRINTER TEST").map((c) => c.charCodeAt(0)),
-          0x0a, // Line feed
-          0x1b,
-          0x21,
-          0x01, // Emphasized
-          ...Array.from("================").map((c) => c.charCodeAt(0)),
-          0x0a, // Line feed
-          0x1b,
-          0x61,
-          0x00, // Left align
-          0x1b,
-          0x21,
-          0x00, // Normal size
-          ...Array.from("Date: " + new Date().toLocaleString()).map((c) =>
-            c.charCodeAt(0)
-          ),
-          0x0a, // Line feed
-          0x0a, // Line feed
-          ...Array.from("This is a test print from Fixary app.").map((c) =>
-            c.charCodeAt(0)
-          ),
-          0x0a, // Line feed
-          0x0a, // Line feed
-          ...Array.from(
-            "If you can read this, the printer is working correctly."
-          ).map((c) => c.charCodeAt(0)),
-          0x0a,
-          0x0a,
-          0x0a, // Triple line feed
-          0x1d,
-          0x56,
-          0x00, // Cut paper
-        ];
-      }
-
-      // Send commands to printer directly using Tauri API
-      const result = await invoke<string>("print_escpos_commands", {
-        commands: commands,
-        printer_address: selectedPrinter || null,
+      await invoke("print_html", {
+        html: testHtml,
+        printerName: printerName,
       });
 
       setTestResult({
         success: true,
-        message: "Test print command sent successfully!",
+        message: `Test page sent to ${printerName}`,
       });
-      toast.success("Test print command sent successfully!");
+      toast.success("Print command sent!");
     } catch (error) {
       console.error("Error testing printer:", error);
       setTestResult({
         success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to send print command",
+        message: error instanceof Error ? error.message : "Print failed",
       });
-      toast.error(
-        `Print test failed: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
     } finally {
       setIsTesting(false);
     }
   };
 
+  useEffect(() => {
+    if (availablePrinters.length > 0 && !selectedPrinter) {
+      setSelectedPrinter(availablePrinters[0]);
+    }
+  }, [availablePrinters]);
+
   // Test simple print
   const handleSimpleTest = () => {
-    testPrinter("simple");
+    // testPrinter("simple");
   };
 
   // Test detailed print
   const handleDetailedTest = () => {
-    testPrinter("detailed");
+    // testPrinter("detailed");
   };
 
   useEffect(() => {
-    fetchPrinters();
+    // fetchPrinters();
   }, []);
 
   return (
@@ -203,102 +136,110 @@ export function PrinterTestComponent({ className }: PrinterTestComponentProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Printer Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Select Printer</label>
-          <div className="flex gap-2">
-            <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Select a printer" />
-              </SelectTrigger>
-              <SelectContent>
-                {printers.map((printer, index) => (
-                  <SelectItem key={index} value={printer}>
-                    {printer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={fetchPrinters}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-            </Button>
+        {/* Printer Selection (Manual/Custom) */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Test Custom Printer Selection</label>
+            <div className="flex gap-2">
+              <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select a printer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePrinters.map((printer, index) => (
+                    <SelectItem key={index} value={printer}>
+                      {printer}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
-          {printers.length === 0 && !isLoading && (
-            <p className="text-sm text-muted-foreground">
-              No printers found. Connect your printer and refresh.
-            </p>
-          )}
-        </div>
 
-        {/* Test Buttons */}
-        <div className="flex flex-col gap-3">
           <Button
-            onClick={handleSimpleTest}
-            disabled={isTesting || printers.length === 0}
-            className="w-full"
+            onClick={() => testPrinter("custom")}
+            disabled={isTesting || availablePrinters.length === 0}
+            variant="outline"
+            className="w-full border-dashed"
           >
             {isTesting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Printer className="mr-2 h-4 w-4" />
             )}
-            Simple Test Print
+            Test Manual Selection
+          </Button>
+        </div>
+
+        <div className="divider my-4 border-t border-gray-100"></div>
+
+        {/* Quick Config Tests */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Button
+            onClick={() => testPrinter("receipt")}
+            disabled={isTesting || !settings.printerConfig.receiptPrinterName}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            <Receipt className="mr-2 h-4 w-4" />
+            Test Receipt Printer
           </Button>
 
           <Button
-            variant="secondary"
-            onClick={handleDetailedTest}
-            disabled={isTesting || printers.length === 0}
-            className="w-full"
+            onClick={() => testPrinter("sticker")}
+            disabled={isTesting || !settings.printerConfig.stickerPrinterName}
+            className="w-full bg-orange-600 hover:bg-orange-700"
           >
-            {isTesting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Printer className="mr-2 h-4 w-4" />
-            )}
-            Detailed Test Print
+            <Tag className="mr-2 h-4 w-4" />
+            Test Sticker Printer
           </Button>
         </div>
 
         {/* Test Result */}
         {testResult && (
           <div
-            className={`p-3 rounded-md flex items-start gap-2 ${
+            className={`p-4 rounded-xl flex items-start gap-3 border shadow-sm ${
               testResult.success
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
+                ? "bg-green-50 border-green-100 text-green-800"
+                : "bg-red-50 border-red-100 text-red-800"
             }`}
           >
             {testResult.success ? (
-              <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0 text-green-600" />
             ) : (
-              <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0 text-red-600" />
             )}
             <div>
-              <p className="font-medium">
+              <p className="font-bold">
                 {testResult.success ? "Success" : "Error"}
               </p>
-              <p className="text-sm">{testResult.message}</p>
+              <p className="text-xs opacity-90">{testResult.message}</p>
             </div>
           </div>
         )}
 
         {/* Printer Info */}
-        <div className="text-sm text-muted-foreground">
-          <p className="font-medium mb-1">Printer Information:</p>
-          <ul className="list-disc list-inside space-y-1 text-xs">
-            <li>XP-365B is supported (VID: 1504)</li>
-            <li>Connect via USB, network (port 9100), or Bluetooth</li>
-            <li>Ensure printer is powered on and connected</li>
+        <div className="text-xs text-muted-foreground bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-800">
+          <p className="font-bold mb-2 flex items-center gap-2">
+            <AlertCircle className="h-3 w-3" />
+            Troubleshooting
+          </p>
+          <ul className="list-disc list-inside space-y-1 opacity-80">
+            <li>Ensure "Native Printing" is enabled in Settings</li>
+            <li>Printers must be installed in Windows to appear here</li>
+            <li>For Bluetooth (XP-365B), ensure it's paired and "Online"</li>
+            <li>Native printing bypasses the browser print dialog</li>
           </ul>
         </div>
       </CardContent>

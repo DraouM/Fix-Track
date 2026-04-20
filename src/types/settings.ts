@@ -24,7 +24,8 @@ export interface PrinterConfig {
     customHeight?: number;   // mm, used when printerType is "custom"
     offsetTop: number;       // mm, calibration offset
     offsetLeft: number;      // mm, calibration offset
-    printerName?: string;    // OS printer name for native printing
+    receiptPrinterName?: string; // OS name for receipt printer
+    stickerPrinterName?: string; // OS name for sticker printer
     useNativePrint: boolean; // prefer Rust backend over browser print
 }
 

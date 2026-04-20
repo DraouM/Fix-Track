@@ -33,7 +33,7 @@ import type { DashboardStats } from "@/lib/api/dashboard";
 import { useRepairContext, RepairProvider } from "@/context/RepairContext";
   
 import {  useSettings } from "@/context/SettingsContext";
-import { formatCurrency as formatCurrencyCentralized, getLocaleForIntl } from "@/lib/formatters";
+import { formatCurrency as formatCurrencyCentralized, formatNumber, getLocaleForIntl } from "@/lib/formatters";
 
 export function RepairsPageInner() {
   const { t, i18n } = useTranslation();
@@ -197,6 +197,7 @@ export function RepairsPageInner() {
     subtitle,
     color = "blue",
     trend,
+    suffix,
   }: {
     icon: React.ComponentType<{ className?: string }>;
     title: string;
@@ -204,6 +205,7 @@ export function RepairsPageInner() {
     subtitle?: string;
     color?: "blue" | "green" | "orange" | "red" | "purple";
     trend?: number;
+    suffix?: string;
   }) => {
     const colorClasses = {
       blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
@@ -215,12 +217,14 @@ export function RepairsPageInner() {
 
     return (
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
             <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
               <Icon className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{title}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                {title} {suffix && <span className="opacity-50 ml-1">({suffix})</span>}
+            </span>
           </div>
           {typeof trend === 'number' && (
             <div className={`flex items-center gap-1 text-[10px] font-black ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -229,10 +233,10 @@ export function RepairsPageInner() {
             </div>
           )}
         </div>
-        <div className="flex items-baseline justify-between">
-          <div className="text-2xl font-black text-foreground">{value}</div>
+        <div className="flex flex-col">
+          <div className="text-2xl font-black text-foreground truncate" title={String(value)}>{value}</div>
           {subtitle && (
-            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
+            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70 mt-1">
               <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
               {subtitle}
             </div>
@@ -252,13 +256,20 @@ export function RepairsPageInner() {
             <div className="p-2 rounded-xl bg-primary/10 text-primary">
               <Wrench className="h-6 w-6" />
             </div>
-            <div className="flex items-baseline gap-3">
+            <div className="flex items-baseline gap-3 flex-wrap">
               <h1 className="text-2xl font-black tracking-tight text-foreground">
                 {t('repairs.title')}
               </h1>
-              <p className="hidden md:block text-[10px] text-muted-foreground font-bold uppercase tracking-wider opacity-60">
-                {t('repairs.subtitle')}
-              </p>
+              <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">
+                    <span className="text-xs font-black">{statistics.total}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">{t('repairs.totalRepairs')}</span>
+                 </div>
+                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-800/50">
+                    <span className="text-xs font-black">{statistics.inProgress}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">{t('repairs.inprogress')}</span>
+                 </div>
+              </div>
             </div>
           </div>
           <div className="flex gap-3">
@@ -307,39 +318,28 @@ export function RepairsPageInner() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <StatCard
-            icon={Wrench}
-            title={t('repairs.totalRepairs')}
-            value={statistics.total}
-            subtitle={t('common.completedCount', { count: statistics.completed, plural: statistics.completed !== 1 ? 's' : '' }) || `${statistics.completed} completed`}
-            color="blue"
-          />
-          <StatCard
-            icon={Clock}
-            title={t('repairs.inprogress')}
-            value={statistics.inProgress}
-            subtitle={t('common.pendingCount', { count: statistics.pending, plural: statistics.pending !== 1 ? 's' : '' }) || `${statistics.pending} pending`}
-            color="orange"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard
             icon={DollarSign}
             title={t('repairs.totalRevenue')}
-            value={formatCurrency(statistics.totalRevenue)}
-            subtitle={t('repairs.completed')}
+            value={formatNumber(statistics.totalRevenue, getLocaleForIntl(i18n.language))}
+            suffix={settings.currency}
+            subtitle={t('common.completedCount', { count: statistics.completed, plural: statistics.completed !== 1 ? 's' : '' }) || `${statistics.completed} completed`}
             color="green"
           />
           <StatCard
             icon={TrendingUp}
             title={t('dashboard.metrics.repairProfit')}
-            value={formatCurrency(dashboardStats?.repair_profit || 0)}
+            value={formatNumber(dashboardStats?.repair_profit || 0, getLocaleForIntl(i18n.language))}
+            suffix={settings.currency}
             subtitle={t('dashboard.metrics.afterParts')}
             color="purple"
           />
           <StatCard
             icon={AlertCircle}
             title={t('repairs.outstanding')}
-            value={formatCurrency(statistics.pendingRevenue)}
+            value={formatNumber(statistics.pendingRevenue, getLocaleForIntl(i18n.language))}
+            suffix={settings.currency}
             subtitle={t('repairs.unpaidCount', { count: statistics.unpaidCount, plural: statistics.unpaidCount !== 1 ? 's' : '' }) || `${statistics.unpaidCount} unpaid`}
             color="red"
           />

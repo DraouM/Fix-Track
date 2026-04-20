@@ -65,7 +65,8 @@
         "rowsPerPage": "Rows per page",
         "pageInfo": "Page {{current}} of {{total}}",
         "history": "History",
-        "printSticker": "Print Sticker"
+        "printSticker": "Print Sticker",
+        "call": "Call"
     },
     "status": {
         "active": "Active",
@@ -220,6 +221,7 @@
         "subtitle": "Management & tracking",
         "newRepair": "New Repair",
         "addRepair": "Add Repair",
+        "addDesc": "Core repair information and customer details.",
         "editRepair": "Edit Repair",
         "pending": "Pending",
         "inprogress": "In Progress",
@@ -264,6 +266,8 @@
         "totalBalance": "Total Balance",
         "recordNewTransaction": "Record New Transaction",
         "quickPayment": "Quick Payment",
+        "recordDeposit": "Initial Deposit",
+        "recordPayment": "Record Payment",
         "amount": "Amount",
         "addPayment": "Add Payment",
         "method": "Method",
@@ -295,6 +299,7 @@
         "device": "Device",
         "issue": "Issue",
         "due": "DUE",
+        "remaining": "Remaining",
         "repairReceipt": "Repair Receipt",
         "repairId": "Repair ID",
         "customer": "Customer",
@@ -342,7 +347,10 @@
             "partAdded": "Part: {{name}} (x{{qty}})",
             "note": "Note: {{text}}",
             "unknown": "Unknown event"
-        }
+        },
+        "remainingBalanceMsg": "Remaining balance: {{symbol}}{{amount}}",
+        "fullyPaidMsg": "Fully paid",
+        "whatsappTemplate": "Hello {{name}}, your {{device}} repair is currently {{status}}. {{balance}}"
     },
     "clients": {
         "title": "Clients",

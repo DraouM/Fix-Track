@@ -229,6 +229,15 @@ export default function RepairForm({
             });
           }
         }
+
+        // Add Payment if exists (Edit Mode)
+        if (paymentAmount && parseFloat(paymentAmount) > 0) {
+          await addPayment(repairToEdit.id, {
+            repair_id: repairToEdit.id,
+            amount: parseFloat(paymentAmount),
+            method: paymentMethod as any,
+          });
+        }
       } else {
         const newRepair = await createRepair({
           customer_name: values.customerName,
@@ -244,17 +253,27 @@ export default function RepairForm({
           history: [],
         });
 
-        if (newRepair) {
-          for (const p of values.usedParts) {
-            await addUsedPart(newRepair.id, {
-              repair_id: newRepair.id,
-              part_name: p.name,
-              cost: p.unitCost,
-              quantity: p.quantity,
-              part_id: p.partId,
-            });
+          if (newRepair) {
+            // Add Parts
+            for (const p of values.usedParts) {
+              await addUsedPart(newRepair.id, {
+                repair_id: newRepair.id,
+                part_name: p.name,
+                cost: p.unitCost,
+                quantity: p.quantity,
+                part_id: p.partId,
+              });
+            }
+
+            // Add Initial Payment if exists
+            if (paymentAmount && parseFloat(paymentAmount) > 0) {
+              await addPayment(newRepair.id, {
+                repair_id: newRepair.id,
+                amount: parseFloat(paymentAmount),
+                method: paymentMethod as any,
+              });
+            }
           }
-        }
       }
       toast.success(
         repairToEdit ? t("repairs.repairUpdated") : t("repairs.repairCreated")
@@ -269,8 +288,13 @@ export default function RepairForm({
   };
 
   const handleAddPayment = async () => {
-    if (!repairToEdit || !paymentAmount || parseFloat(paymentAmount) <= 0)
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) return;
+    
+    // In "Add" mode, we don't call the API yet, we just keep the state
+    if (!repairToEdit) {
+      toast.info(t("repairs.depositRecorded") || "Payment recorded as deposit");
       return;
+    }
     setIsAddingPayment(true);
     try {
       await addPayment(repairToEdit.id, {
@@ -664,43 +688,40 @@ export default function RepairForm({
           </div>
 
           {/* Payments Sidebar integration */}
-          {repairToEdit && (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-              <div className="p-6 space-y-4">
-                <div className="p-3 rounded-xl bg-green-50/50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="p-6 space-y-4">
+              <div className="p-3 rounded-xl bg-green-50/50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-green-600 dark:text-green-400">
+                    {t("repairs.paid")}
+                  </span>
+                  <span className="text-lg font-black text-green-700 dark:text-green-300">
+                    {t("repairs.price", {
+                      symbol: "",
+                      amount: ((repairToEdit?.totalPaid || 0) + (parseFloat(paymentAmount) || 0)).toFixed(2),
+                    }).trim()}
+                  </span>
+                </div>
+              </div>
+              {((repairToEdit?.remainingBalance || form.watch("estimatedCost") || 0) - (parseFloat(paymentAmount) || 0)) > 0 && (
+                <div className="p-3 rounded-xl bg-red-50/50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-green-600 dark:text-green-400">
-                      {t("repairs.paid")}
+                    <span className="text-[9px] font-black uppercase tracking-widest text-red-600 dark:text-red-400">
+                      {repairToEdit ? t("repairs.balance") : t("repairs.remaining")}
                     </span>
-                    <span className="text-lg font-black text-green-700 dark:text-green-300">
+                    <span className="text-lg font-black text-red-700 dark:text-red-300">
                       {t("repairs.price", {
                         symbol: "",
-                        amount: (repairToEdit.totalPaid || 0).toFixed(2),
+                        amount: Math.max(0, (repairToEdit ? (repairToEdit.remainingBalance || 0) : (form.watch("estimatedCost") || 0)) - (parseFloat(paymentAmount) || 0)).toFixed(2),
                       }).trim()}
                     </span>
                   </div>
                 </div>
-                {(repairToEdit.remainingBalance || 0) > 0 && (
-                  <div className="p-3 rounded-xl bg-red-50/50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-red-600 dark:text-red-400">
-                        {t("repairs.balance")}
-                      </span>
-                      <span className="text-lg font-black text-red-700 dark:text-red-300">
-                        {t("repairs.price", {
-                          symbol: "",
-                          amount: (repairToEdit.remainingBalance || 0).toFixed(
-                            2
-                          ),
-                        }).trim()}
-                      </span>
-                    </div>
-                  </div>
-                )}
+              )}
 
                 <div className="pt-4 border-t border-gray-50 dark:border-slate-800 space-y-3">
                   <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground text-center">
-                    {t("repairs.quickPayment")}
+                    {repairToEdit ? t("repairs.quickPayment") : t("repairs.recordDeposit")}
                   </p>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -737,11 +758,11 @@ export default function RepairForm({
                     disabled={isAddingPayment || !paymentAmount}
                     className="w-full h-9 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black text-[9px] uppercase tracking-widest"
                   >
-                    {t("repairs.addPayment")}
+                    {repairToEdit ? t("repairs.addPayment") : t("repairs.recordPayment")}
                   </Button>
                 </div>
 
-                {repairToEdit.payments && repairToEdit.payments.length > 0 && (
+                {repairToEdit?.payments && repairToEdit.payments.length > 0 && (
                   <div className="pt-4 border-t border-gray-50 dark:border-slate-800 space-y-2">
                     {repairToEdit.payments.slice(0, 2).map((p, i) => (
                       <div
@@ -766,7 +787,6 @@ export default function RepairForm({
                 )}
               </div>
             </div>
-          )}
 
           <Button
             disabled={isSubmitting}

@@ -65,7 +65,8 @@
         "rowsPerPage": "Lignes par page",
         "pageInfo": "Page {{current}} sur {{total}}",
         "history": "Historique",
-        "printSticker": "Imprimer l'étiquette"
+        "printSticker": "Imprimer l'étiquette",
+        "call": "Appeler"
     },
     "status": {
         "active": "Actif",
@@ -207,6 +208,7 @@
         "subtitle": "Gestion & Suivi",
         "newRepair": "Nouvelle Réparation",
         "addRepair": "Ajouter une Réparation",
+        "addDesc": "Informations de base sur la réparation et détails du client.",
         "editRepair": "Modifier la Réparation",
         "pending": "En attente",
         "inprogress": "En cours",
@@ -251,6 +253,8 @@
         "totalBalance": "Solde Total",
         "recordNewTransaction": "Enregistrer une nouvelle transaction",
         "quickPayment": "Paiement Rapide",
+        "recordDeposit": "Versement initial",
+        "recordPayment": "Enregistrer le paiement",
         "amount": "Montant",
         "addPayment": "Ajouter un paiement",
         "method": "Méthode",
@@ -282,6 +286,7 @@
         "device": "Appareil",
         "issue": "Problème",
         "due": "DÛ",
+        "remaining": "Paiement restant",
         "repairReceipt": "Reçu de réparation",
         "repairId": "ID de réparation",
         "customer": "Client",
@@ -329,7 +334,10 @@
             "partAdded": "Pièce: {{name}} (x{{qty}})",
             "note": "Note: {{text}}",
             "unknown": "Événement inconnu"
-        }
+        },
+        "remainingBalanceMsg": "Solde restant : {{symbol}}{{amount}}",
+        "fullyPaidMsg": "Entièrement payé",
+        "whatsappTemplate": "Bonjour {{name}}, votre réparation pour {{device}} est actuellement {{status}}. {{balance}}"
     },
     "clients": {
         "title": "Clients",

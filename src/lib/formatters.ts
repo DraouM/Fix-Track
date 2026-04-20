@@ -25,6 +25,29 @@ export const formatCurrency = (
 };
 
 /**
+ * Formats a number based on the selected locale with thousand separators
+ * @param amount - The numerical amount to format
+ * @param locale - The locale string (en-US, fr-FR, ar-MA)
+ * @param minimumFractionDigits - Minimum number of fraction digits
+ * @returns Formatted number string
+ */
+export const formatNumber = (
+    amount: number,
+    locale: string = 'en-US',
+    minimumFractionDigits: number = 2
+): string => {
+    try {
+        return new Intl.NumberFormat(locale, {
+            minimumFractionDigits,
+            maximumFractionDigits: minimumFractionDigits,
+        }).format(amount);
+    } catch (error) {
+        console.warn(`Formatting number failed for ${amount} in ${locale}`, error);
+        return String(amount);
+    }
+};
+
+/**
  * Formats a date based on the selected locale
  * @param date - Date object or string
  * @param locale - The locale string (en-US, fr-FR, ar-MA)

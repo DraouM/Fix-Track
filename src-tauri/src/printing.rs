@@ -248,34 +248,23 @@ pub fn print_html(html: String, printer_name: Option<String>) -> Result<(), Stri
 
     #[cfg(target_os = "windows")]
     {
-        // On Windows, use the default browser/handler to print HTML
         let file_path = temp_file.to_string_lossy().to_string();
         
-        if let Some(ref pname) = printer_name {
-            // Try to print directly to the specified printer
-            let output = Command::new("powershell")
-                .args(&[
-                    "-NoProfile",
-                    "-Command",
-                    &format!(
-                        "Start-Process '{}' -Verb Print",
-                        file_path
-                    ),
-                ])
-                .output()
-                .map_err(|e| format!("Failed to print HTML: {}", e))?;
-                
-            if !output.status.success() {
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                return Err(format!("Print error: {}", stderr));
-            }
+        let ps_command = if let Some(ref pname) = printer_name {
+            // Attempt silent print using Edge headless mode if available, 
+            // or fallback to PowerShell's Start-Process with hidden window.
+            format!(
+                "Start-Process -FilePath 'msedge' -ArgumentList '--headless', '--print-to-pdf-no-header', '--print-to-pdf=\"$env:TEMP\\temp.pdf\"', '{}' -Wait; Start-Process -FilePath 'powershell' -ArgumentList '-NoProfile', '-Command', \"Start-Process -FilePath '$env:TEMP\\temp.pdf' -Verb PrintTo -ArgumentList '{}' -WindowStyle Hidden\" -WindowStyle Hidden",
+                file_path, pname
+            )
         } else {
-            // Open with default handler
-            Command::new("cmd")
-                .args(&["/C", "start", "", &file_path])
-                .output()
-                .map_err(|e| format!("Failed to open HTML: {}", e))?;
-        }
+            format!("Start-Process '{}' -Verb Print -WindowStyle Hidden", file_path)
+        };
+
+        Command::new("powershell")
+            .args(&["-NoProfile", "-Command", &ps_command])
+            .output()
+            .map_err(|e| format!("Failed to execute print command: {}", e))?;
     }
 
     #[cfg(not(target_os = "windows"))]

@@ -12,6 +12,7 @@ import {
   renderTransactionReceiptHTML,
 } from "@/lib/printTemplates";
 import { Transaction, TransactionItem, TransactionPayment } from "@/types/transaction";
+import { invoke } from "@tauri-apps/api/core";
 import { clientSchema } from "@/types/client"; // Import for type usage if needed, or just rely on 'any' for now as in template
 
 import { useSettings } from "@/context/SettingsContext";
@@ -109,154 +110,60 @@ export const usePrintUtils = () => {
   );
 
   const printDocument = useCallback(
-    (
+    async (
       htmlContent: string,
       item: Repair | InventoryItem,
       type: "sticker" | "receipt"
     ) => {
       try {
-        // Try iframe-based printing first to avoid popup blockers
-        const iframe = document.createElement("iframe");
-        iframe.style.position = "absolute";
-        iframe.style.left = "-9999px";
-        iframe.style.width = "0";
-        iframe.style.height = "0";
-        iframe.style.border = "none";
-        iframe.style.visibility = "hidden";
-
-        document.body.appendChild(iframe);
-
-        const iframeDoc =
-          iframe.contentDocument || iframe.contentWindow?.document;
-        if (iframeDoc) {
-          iframeDoc.write(htmlContent);
-          iframeDoc.close();
-
-          // Wait for content to load before printing
-          iframe.onload = () => {
-            try {
-              if (iframe.contentWindow) {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-
-                // Success notification after a brief delay
-                setTimeout(() => {
-                  toast.success(
-                    `${type === "sticker" ? "Sticker" : "Receipt"
-                    } sent to printer!`
-                  );
-                  addToPrintHistory(item, type, true);
-                }, 500);
-              }
-            } catch (printErr) {
-              console.error("Iframe print failed:", printErr);
-              // If iframe printing fails, try window.open as fallback
-              try {
-                // Add the print script for window.open method
-                const htmlWithPrintScript = htmlContent.replace(
-                  "</body>",
-                  `
-    <script>
-      window.onload = () => {
-        setTimeout(() => {
-          window.print();
-          setTimeout(() => window.close(), 100);
-        }, 500);
-      };
-    </script>
-  </body>`
-                );
-
-                const printWindow = window.open(
-                  "",
-                  "_blank",
-                  "width=400,height=500"
-                );
-                if (!printWindow) {
-                  const errorMsg = "Popup blocked! Enable popups to print.";
-                  toast.error(errorMsg);
-                  addToPrintHistory(item, type, false, errorMsg);
-                  document.body.removeChild(iframe);
-                  return false;
-                }
-
-                printWindow.document.write(htmlWithPrintScript);
-                printWindow.document.close();
-
-                printWindow.onload = () => {
-                  setTimeout(() => {
-                    toast.success(
-                      `${type === "sticker" ? "Sticker" : "Receipt"
-                      } sent to printer!`
-                    );
-                    addToPrintHistory(item, type, true);
-                  }, 1000);
-                };
-              } catch (fallbackErr) {
-                console.error("Fallback print also failed:", fallbackErr);
-                const errorMsg = "Both print methods failed.";
-                toast.error(errorMsg);
-                addToPrintHistory(item, type, false, errorMsg);
-              }
-            }
-
-            // Clean up the iframe after a delay
-            setTimeout(() => {
-              if (document.body.contains(iframe)) {
-                document.body.removeChild(iframe);
-              }
-            }, 2000);
-          };
-
-          return true;
-        } else {
-          // Fallback to window.open if iframe fails
-          // Add the print script for window.open method
-          const htmlWithPrintScript = htmlContent.replace(
-            "</body>",
-            `
-    <script>
-      window.onload = () => {
-        setTimeout(() => {
-          window.print();
-          setTimeout(() => window.close(), 100);
-        }, 500);
-      };
-    </script>
-  </body>`
-          );
-
-          const printWindow = window.open("", "_blank", "width=400,height=500");
-          if (!printWindow) {
-            const errorMsg = "Popup blocked! Enable popups to print.";
-            toast.error(errorMsg);
-            addToPrintHistory(item, type, false, errorMsg);
-            return false;
+        // Mode check: Browser vs Native
+        if (!settings.printerConfig.useNativePrint) {
+          // Legacy Iframe Fallback (but user requested to get rid of it)
+          // I will keep a simplified version here just in case, or directly tell them to enable native
+          const iframe = document.createElement("iframe");
+          iframe.style.position = "absolute";
+          iframe.style.left = "-9999px";
+          iframe.style.visibility = "hidden";
+          document.body.appendChild(iframe);
+          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (doc) {
+            doc.write(htmlContent);
+            doc.close();
+            iframe.onload = () => {
+              iframe.contentWindow?.print();
+              setTimeout(() => document.body.removeChild(iframe), 1000);
+            };
           }
-
-          printWindow.document.write(htmlWithPrintScript);
-          printWindow.document.close();
-
-          printWindow.onload = () => {
-            setTimeout(() => {
-              toast.success(
-                `${type === "sticker" ? "Sticker" : "Receipt"} sent to printer!`
-              );
-              addToPrintHistory(item, type, true);
-            }, 1000);
-          };
-
           return true;
         }
+
+        // Native Tauri Implementation
+        const printerName = type === "receipt" 
+          ? settings.printerConfig.receiptPrinterName 
+          : settings.printerConfig.stickerPrinterName;
+
+        if (!printerName) {
+          toast.error(`No ${type} printer selected in settings!`);
+          return false;
+        }
+
+        const result = await invoke("print_html", { 
+          html: htmlContent, 
+          printerName: printerName 
+        });
+
+        toast.success(`${type === "receipt" ? "Receipt" : "Sticker"} sent to ${printerName}`);
+        addToPrintHistory(item, type, true);
+        return true;
+
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : "Unknown error";
-        toast.error(`Failed to print: ${errorMsg}`);
+        const errorMsg = error instanceof Error ? error.message : "Print failed";
+        toast.error(`Native Print Error: ${errorMsg}`);
         addToPrintHistory(item, type, false, errorMsg);
         return false;
       }
     },
-    [addToPrintHistory]
+    [settings.printerConfig, addToPrintHistory]
   );
 
   const printSticker = useCallback(
@@ -517,6 +424,39 @@ export const usePrintUtils = () => {
     [generatePrintContent, settings]
   );
 
+  /**
+   * Sequential Repair Print: Receipt then Sticker
+   */
+  const printRepairSequence = useCallback(
+    async (repair: Repair) => {
+      toast.info("Starting print sequence...");
+      
+      // 1. Print Receipt
+      const receiptSuccess = await printReceipt(repair, {
+        includePayments: true,
+        includeParts: true,
+      });
+
+      if (!receiptSuccess) {
+        toast.error("Receipt print failed. Aborting sequence.");
+        return false;
+      }
+
+      // Small delay between prints to allow spooler to breathe
+      await new Promise(r => setTimeout(r, 1000));
+
+      // 2. Print Sticker
+      const stickerSuccess = await printSticker(repair);
+      
+      if (stickerSuccess) {
+        toast.success("Full repair sequence completed!");
+      }
+
+      return stickerSuccess;
+    },
+    [printReceipt, printSticker]
+  );
+
   return {
     printReceipt,
     printPaymentReceipt,
@@ -528,5 +468,6 @@ export const usePrintUtils = () => {
     generatePrintContent,
     printHistory,
     addToPrintHistory,
+    printRepairSequence,
   };
 };

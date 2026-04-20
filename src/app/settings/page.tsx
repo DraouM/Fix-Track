@@ -7,6 +7,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { ThemeSettingsCard } from "@/components/settings/ThemeSettingsCard";
 import { LanguageCurrencyCard } from "@/components/settings/LanguageCurrencyCard";
 import { PrintDimensionsCard } from "@/components/settings/PrintDimensionsCard";
+import { NativePrinterSettingsCard } from "@/components/settings/NativePrinterSettingsCard";
 import { Save, RotateCcw, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_SETTINGS } from "@/lib/settings";

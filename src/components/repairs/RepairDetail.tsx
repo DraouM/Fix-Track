@@ -33,6 +33,8 @@ import {
   Wrench,
   Loader2,
   Check,
+  Receipt,
+  Tag,
 } from "lucide-react";
 import { useRepairActions, useRepairContext } from "@/context/RepairContext";
 import { useSettings } from "@/context/SettingsContext";
@@ -91,7 +93,7 @@ export function RepairDetail({
   const { updateRepairStatus, fetchRepairById } = useRepairActions();
   const { getItemById, repairs } = useRepairContext();
   const { settings } = useSettings();
-  const { printReceipt, printSticker } = usePrintUtils();
+  const { printReceipt, printSticker, printRepairSequence } = usePrintUtils();
 
   const currencySymbol =
     settings.currency in CURRENCY_SYMBOLS
@@ -768,47 +770,51 @@ export function RepairDetail({
                   <Button
                     onClick={async () => {
                       setIsPrintingReceipt(true);
-                      await printReceipt(
-                        currentRepair,
-                        {
-                          includePayments: true,
-                          includeParts: true,
-                        },
-                        i18n.language,
-                        settings.currency
-                      );
+                      await printRepairSequence(currentRepair);
                       setIsPrintingReceipt(false);
                     }}
-                    disabled={isPrintingReceipt}
-                    className="h-12 rounded-xl bg-white dark:bg-slate-900 border-2 border-primary text-primary hover:bg-primary/5 dark:hover:bg-primary/10 shadow-lg shadow-primary/20 font-black text-xs uppercase tracking-wider"
+                    disabled={isPrintingReceipt || isPrintingSticker}
+                    className="h-14 rounded-xl bg-primary text-white hover:bg-primary/90 shadow-xl shadow-primary/20 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 group"
                   >
                     {isPrintingReceipt ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
-                      <Printer className="h-4 w-4 mr-2" />
+                      <Printer className="h-5 w-5 transition-transform group-hover:scale-110" />
                     )}
-                    {t("repairs.printReceipt")}
+                    Print All (Receipt + Sticker)
                   </Button>
-                  <Button
-                    onClick={async () => {
-                      setIsPrintingSticker(true);
-                      await printSticker(
-                        currentRepair,
-                        i18n.language,
-                        settings.currency
-                      );
-                      setIsPrintingSticker(false);
-                    }}
-                    disabled={isPrintingSticker}
-                    className="h-12 rounded-xl bg-slate-900 dark:bg-slate-950 border-none text-white hover:bg-slate-800 dark:hover:bg-slate-900 shadow-lg shadow-slate-200/20 font-black text-xs uppercase tracking-wider"
-                  >
-                    {isPrintingSticker ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <FileText className="h-4 w-4 mr-2" />
-                    )}
-                    {t("repairs.printSticker")}
-                  </Button>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        setIsPrintingReceipt(true);
+                        await printReceipt(
+                          currentRepair,
+                          { includePayments: true, includeParts: true }
+                        );
+                        setIsPrintingReceipt(false);
+                      }}
+                      disabled={isPrintingReceipt}
+                      className="h-11 rounded-xl border-gray-100 dark:border-slate-800 text-muted-foreground hover:text-primary font-bold text-[10px] uppercase tracking-wider"
+                    >
+                      {isPrintingReceipt ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Receipt className="h-3 w-3 mr-2" />}
+                      {t("repairs.printReceipt")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        setIsPrintingSticker(true);
+                        await printSticker(currentRepair);
+                        setIsPrintingSticker(false);
+                      }}
+                      disabled={isPrintingSticker}
+                      className="h-11 rounded-xl border-gray-100 dark:border-slate-800 text-muted-foreground hover:text-primary font-bold text-[10px] uppercase tracking-wider"
+                    >
+                      {isPrintingSticker ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Tag className="h-3 w-3 mr-2" />}
+                      {t("repairs.printSticker")}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -816,19 +822,6 @@ export function RepairDetail({
         </DialogContent>
       </Dialog>
 
-      {/* Hidden Layout for Printing */}
-      <div className="hidden">
-        <div id="receipt-print-template">
-          <ReceiptTemplate
-            repair={currentRepair}
-            includePayments={true}
-            includeParts={true}
-          />
-        </div>
-        <div id="sticker-print-template">
-          <StickerTemplate data={currentRepair} type="repair" />
-        </div>
-      </div>
     </>
   );
 }

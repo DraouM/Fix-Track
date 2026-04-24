@@ -12,7 +12,7 @@ import React, {
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { useInventoryFilters, SortConfig } from "@/hooks/useInventoryFilters";
-import { useEvents } from "@/context/EventContext";
+import { useEvents, useEvent } from "@/context/EventContext";
 
 import type {
   InventoryItem,
@@ -76,8 +76,8 @@ interface InventoryItemDB {
   item_type: ItemType;
   buying_price: number;
   selling_price: number;
-  quantity_in_stock: number;
-  low_stock_threshold: number;
+  quantity_in_stock: number | null;
+  low_stock_threshold: number | null;
   supplier_info: string;
   barcode: string;
   history?: InventoryHistoryEvent[];
@@ -91,8 +91,8 @@ function mapItemFromDB(dbItem: InventoryItemDB): InventoryItem {
     itemType: dbItem.item_type,
     buyingPrice: dbItem.buying_price,
     sellingPrice: dbItem.selling_price,
-    quantityInStock: dbItem.quantity_in_stock,
-    lowStockThreshold: dbItem.low_stock_threshold,
+    quantityInStock: dbItem.quantity_in_stock ?? 0,
+    lowStockThreshold: dbItem.low_stock_threshold ?? 0,
     supplierInfo: dbItem.supplier_info || "",
     barcode: dbItem.barcode || "",
     history: dbItem.history ?? [],
@@ -165,6 +165,10 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => clearTimeout(initTimer);
   }, [initialize]);
+
+  // Listen for financial or repair changes to refresh stock levels
+  useEvent("financial-data-change", fetchItems);
+  useEvent("repair-updated", fetchItems);
 
   const addInventoryItem = useCallback(
     async (itemData: InventoryFormValues) => {
@@ -296,12 +300,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!item) return;
 
         const currentStock = item.quantityInStock ?? 0;
-        if (quantityChange < 0 && currentStock < Math.abs(quantityChange)) {
-          toast.error(`Not enough stock for ${item.itemName}`);
-          return;
-        }
-
-        const newQuantity = Math.max(0, currentStock + quantityChange);
+        const newQuantity = currentStock + quantityChange;
 
         await invoke("update_item_quantity", { id, new_quantity: newQuantity });
 

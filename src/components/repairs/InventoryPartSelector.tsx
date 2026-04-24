@@ -24,10 +24,12 @@ import { tokenize } from "@/lib/flexibleSearch";
 
 interface InventoryPartSelectorProps {
   onSelect: (part: InventoryItem | null) => void;
+  excludeIds?: string[];
 }
 
 export function InventoryPartSelector({
   onSelect,
+  excludeIds = [],
 }: InventoryPartSelectorProps) {
   const { t } = useTranslation();
   const { filteredAndSortedItems: inventoryItems, loading } = useInventory();
@@ -77,18 +79,23 @@ export function InventoryPartSelector({
             </CommandEmpty>
             <CommandGroup>
               {inventoryItems
-                .filter(
-                  (item) => item.quantityInStock && item.quantityInStock > 0
-                ) // Only show items with stock
+                .filter((item) => !excludeIds.includes(item.id)) // Show everything not already added
                 .map((item) => (
                   <CommandItem
                     key={item.id}
                     value={`${item.itemName} ${item.phoneBrand || ''} ${item.itemType || ''} ${item.barcode || ''} ${item.id}`}
                     onSelect={() => {
-                      handleSelect(item);
-                      setOpen(false);
+                      if ((item.quantityInStock ?? 0) > 0) {
+                        handleSelect(item);
+                        setOpen(false);
+                      }
                     }}
-                    className="flex justify-between items-center py-2 px-3 border-b border-gray-50 dark:border-slate-800/50 last:border-0 hover:bg-muted/50 cursor-pointer"
+                    className={cn(
+                      "flex justify-between items-center py-2 px-3 border-b border-gray-50 dark:border-slate-800/50 last:border-0 transition-all",
+                      (item.quantityInStock ?? 0) > 0 
+                        ? "hover:bg-muted/50 cursor-pointer" 
+                        : "opacity-40 cursor-not-allowed bg-muted/10"
+                    )}
                   >
                     <div className="flex flex-col gap-1 w-full relative">
                       <div className="flex items-start justify-between">
@@ -102,9 +109,25 @@ export function InventoryPartSelector({
                       
                       <div className="flex items-center justify-between mt-1">
                         <div className="flex items-center gap-2">
-                          <Package className="h-3 w-3 text-muted-foreground opacity-50" />
-                          <Badge variant="secondary" className="text-[9px] font-bold tracking-widest uppercase bg-primary/10 text-primary hover:bg-primary/20 border-none rounded-md px-1.5 py-0">
-                            {t('repairs.inStock', { count: item.quantityInStock })}
+                          <Package className={cn(
+                            "h-3 w-3",
+                            (item.quantityInStock ?? 0) <= 0 ? "text-orange-500" : "text-muted-foreground opacity-50"
+                          )} />
+                          <Badge 
+                            variant="secondary" 
+                            className={cn(
+                              "text-[9px] font-bold tracking-widest uppercase border-none rounded-md px-1.5 py-0",
+                              (item.quantityInStock ?? 0) > 0 
+                                ? "bg-primary/10 text-primary" 
+                                : "bg-orange-500/10 text-orange-600"
+                            )}
+                          >
+                            {(item.quantityInStock ?? 0) > 0 
+                              ? t('repairs.inStock', { count: item.quantityInStock })
+                              : (item.quantityInStock ?? 0) === 0 
+                                ? t('inventory.table.outOfStock') || 'Out of Stock'
+                                : t('inventory.table.backOrdered') || 'Back-ordered' + ` (${item.quantityInStock})`
+                            }
                           </Badge>
                         </div>
                         <Check

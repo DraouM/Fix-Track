@@ -26,28 +26,29 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({
   const eventCallbacks = useRef<Record<string, EventCallback[]>>({});
 
   const subscribe = useCallback((event: string, callback: () => void) => {
-    const callbackId = `${event}_${callback.toString()}`;
-
     if (!eventCallbacks.current[event]) {
       eventCallbacks.current[event] = [];
     }
 
     const existingCallbacks = eventCallbacks.current[event];
     const isAlreadySubscribed = existingCallbacks.some(
-      (item) => item.id === callbackId
+      (item) => item.callback === callback
     );
 
     if (!isAlreadySubscribed) {
-      eventCallbacks.current[event].push({ id: callbackId, callback });
+      // Use a unique ID for each subscription instance if needed, 
+      // but here we just store the callback itself.
+      eventCallbacks.current[event].push({ 
+        id: Math.random().toString(36).substr(2, 9), 
+        callback 
+      });
     }
   }, []);
 
   const unsubscribe = useCallback((event: string, callback: () => void) => {
-    const callbackId = `${event}_${callback.toString()}`;
-
     if (eventCallbacks.current[event]) {
       eventCallbacks.current[event] = eventCallbacks.current[event].filter(
-        (item) => item.id !== callbackId
+        (item) => item.callback !== callback
       );
     }
   }, []);
@@ -88,11 +89,23 @@ export const useEvents = () => {
 // Hook to listen for specific events with stable callback
 export const useEvent = (event: string, callback: () => void) => {
   const { subscribe, unsubscribe } = useEvents();
+  
+  // Use a ref to keep the latest callback without re-subscribing
+  const callbackRef = useRef(callback);
+  
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   useEffect(() => {
-    subscribe(event, callback);
-    return () => {
-      unsubscribe(event, callback);
+    // This wrapper function stays stable for the life of the effect
+    const handler = () => {
+      callbackRef.current();
     };
-  }, [event]); // Only event as dependency to avoid infinite loop
+
+    subscribe(event, handler);
+    return () => {
+      unsubscribe(event, handler);
+    };
+  }, [event, subscribe, unsubscribe]);
 };

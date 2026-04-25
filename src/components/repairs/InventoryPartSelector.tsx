@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,9 +32,14 @@ export function InventoryPartSelector({
   excludeIds = [],
 }: InventoryPartSelectorProps) {
   const { t } = useTranslation();
-  const { filteredAndSortedItems: inventoryItems, loading } = useInventory();
+  const { inventoryItems: rawItems, loading } = useInventory();
   const [open, setOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+
+  // Sort raw items by name for consistent selection experience
+  const inventoryItems = useMemo(() => {
+    return [...rawItems].sort((a, b) => a.itemName.localeCompare(b.itemName));
+  }, [rawItems]);
 
   const handleSelect = useCallback(
     (item: InventoryItem | null) => {

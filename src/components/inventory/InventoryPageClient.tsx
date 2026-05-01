@@ -9,14 +9,8 @@ import {
 import { VirtualizedTable } from "./VirtualizedTable";
 import { InventoryForm } from "./InventoryForm";
 import { InventoryHistoryDialog } from "./InventoryHistoryDialog";
-import { InventoryBulkActions } from "./InventoryBulkActions";
 import type { InventoryHistoryEvent, InventoryItem } from "@/types/inventory";
-import {
-  PHONE_BRANDS,
-  ITEM_TYPES,
-  PhoneBrand,
-  ItemType,
-} from "@/types/inventory";
+import { PhoneBrand, ItemType } from "@/types/inventory";
 import { useTranslation } from "react-i18next";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { exportInventoryToCSV } from "@/lib/exportUtils";
@@ -30,13 +24,6 @@ import {
 } from "../ui/dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "../ui/select";
 import { Icons } from "../icons";
 import {
   Package,
@@ -49,8 +36,11 @@ import {
   Search,
   RotateCcw,
   Loader2,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib";
+import { useSettings } from "@/context/SettingsContext";
+import { formatCurrency as formatCurrencyCentralized, formatNumber, getLocaleForIntl } from "@/lib/formatters";
 
 export function InventoryPageInner() {
   const {
@@ -80,8 +70,10 @@ export function InventoryPageInner() {
   );
   const [isExporting, setIsExporting] = useState(false);
 
-  const { t } = useTranslation();
+  const { settings } = useSettings();
+  const { t, i18n } = useTranslation();
   const { printSticker } = usePrintUtils();
+
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -156,43 +148,48 @@ export function InventoryPageInner() {
     value,
     subtitle,
     color = "blue",
+    trend,
+    suffix,
   }: {
     icon: React.ComponentType<{ className?: string }>;
     title: string;
     value: string | number;
     subtitle?: string;
     color?: "blue" | "green" | "orange" | "red" | "purple";
+    trend?: number;
+    suffix?: string;
   }) => {
     const colorClasses = {
-      blue: "bg-blue-50 text-blue-600",
-      green: "bg-green-50 text-green-600",
-      orange: "bg-orange-50 text-orange-600",
-      red: "bg-red-50 text-red-600",
-      purple: "bg-purple-50 text-purple-600",
+      blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+      green: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+      orange: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+      red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+      purple: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
     };
 
     return (
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
-            <div className={cn("p-2 rounded-xl", colorClasses[color])}>
+            <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
               <Icon className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60">
-              {title}
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                {title} {suffix && <span className="opacity-50 ml-1">({suffix})</span>}
             </span>
           </div>
+          {typeof trend === 'number' && (
+            <div className={`flex items-center gap-1 text-[10px] font-black ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <TrendingUp className={`w-3 h-3 ${trend < 0 && 'rotate-180'}`} />
+              {Math.abs(trend)}%
+            </div>
+          )}
         </div>
-        <div className="flex items-baseline justify-between">
-          <div className="text-2xl font-black text-foreground dark:text-slate-100">{value}</div>
+        <div className="flex flex-col">
+          <div className="text-2xl font-black text-foreground truncate" title={String(value)}>{value}</div>
           {subtitle && (
-            <div className="text-[10px] font-bold text-muted-foreground dark:text-slate-500 flex items-center gap-1 opacity-70">
-              <div
-                className={cn(
-                  "h-1 w-1 rounded-full",
-                  colorClasses[color].replace("text-", "bg-")
-                )}
-              ></div>
+            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70 mt-1">
+              <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
               {subtitle}
             </div>
           )}
@@ -202,21 +199,28 @@ export function InventoryPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-8 transition-colors duration-300">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
               <Package className="h-6 w-6" />
             </div>
-            <div className="flex items-baseline gap-3">
+            <div className="flex items-baseline gap-3 flex-wrap">
               <h1 className="text-2xl font-black tracking-tight text-foreground">
                 {t('inventory.title')}
               </h1>
-              <p className="hidden md:block text-[10px] text-muted-foreground dark:text-slate-500 font-bold uppercase tracking-wider opacity-60">
-                {t('inventory.subtitle')}
-              </p>
+              <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">
+                    <span className="text-xs font-black">{statistics.total}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">{t('common.items')}</span>
+                 </div>
+                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-800/50">
+                    <span className="text-xs font-black">{statistics.outOfStock}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">{t('inventory.table.stockLabels.empty')}</span>
+                 </div>
+              </div>
             </div>
           </div>
           <div className="flex gap-3">
@@ -234,7 +238,7 @@ export function InventoryPageInner() {
                   }
                 }, 800);
               }}
-              className="h-11 px-4 rounded-xl border-2 dark:border-slate-800 dark:bg-slate-900 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:text-slate-200 hover:dark:text-slate-100 transition-colors"
+              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
               {isExporting ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin text-primary" />
@@ -245,7 +249,7 @@ export function InventoryPageInner() {
             </Button>
             <Button
               variant="outline"
-              className="h-11 px-4 rounded-xl border-2 dark:border-slate-800 dark:bg-slate-900 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:text-slate-200 hover:dark:text-slate-100 transition-colors"
+              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
               <Upload className="w-4 h-4 mr-2" />
               {t('common.import')}
@@ -257,7 +261,7 @@ export function InventoryPageInner() {
               }}
               className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Icons.plusCircle className="mr-2 h-4 w-4" />
               {t('inventory.addItem')}
             </Button>
           </div>
@@ -282,137 +286,60 @@ export function InventoryPageInner() {
           <StatCard
             icon={DollarSign}
             title={t('dashboard.cashier.totalRevenue')}
-            value={formatCurrency(statistics.totalValue)}
+            value={formatNumber(statistics.totalValue, getLocaleForIntl(i18n.language))}
+            suffix={settings.currency}
             subtitle={t('dashboard.cashier.allRevenue')}
             color="green"
           />
           <StatCard
             icon={TrendingUp}
             title={t('dashboard.charts.profit')}
-            value={formatCurrency(statistics.potentialProfit)}
+            value={formatNumber(statistics.potentialProfit, getLocaleForIntl(i18n.language))}
+            suffix={settings.currency}
             subtitle={t('dashboard.charts.revenueTrend')}
             color="purple"
           />
         </div>
 
-        {/* Filters and Search */}
-        <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            {/* Search */}
-            <div className="flex-1 relative w-full">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1 mb-1.5 block">
-                {t('common.search')}
-              </span>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/40 w-4 h-4 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder={t('common.filter')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-800 border-2 border-gray-100 dark:border-slate-700 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium dark:text-slate-100"
-                />
-              </div>
-            </div>
-
-            {/* Brand Filter */}
-            <div className="w-full md:w-[180px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1 mb-1.5 block">
-                {t('inventory.table.brand')}
-              </span>
-              <Select
-                value={selectedBrand}
-                onValueChange={(value) => setSelectedBrand(value as PhoneBrand)}
-              >
-                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-sm dark:text-slate-200">
-                  <SelectValue placeholder="All Brands" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900 dark:text-slate-200">
-                  {PHONE_BRANDS.map((brand) => (
-                    <SelectItem
-                      key={brand}
-                      value={brand}
-                      className="font-bold text-xs uppercase py-2.5 focus:bg-primary/10 dark:focus:bg-slate-800"
-                    >
-                      {brand}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Type Filter */}
-            <div className="w-full md:w-[180px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-400 opacity-60 ml-1 mb-1.5 block">
-                {t('inventory.table.category')}
-              </span>
-              <Select
-                value={selectedType}
-                onValueChange={(value) => setSelectedType(value as ItemType)}
-              >
-                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-sm dark:text-slate-200">
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900 dark:text-slate-200">
-                  {ITEM_TYPES.map((type) => (
-                    <SelectItem
-                      key={type}
-                      value={type}
-                      className="font-bold text-xs uppercase py-2.5 focus:bg-primary/10 dark:focus:bg-slate-800"
-                    >
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Clear Filters */}
-            {(searchTerm !== "" ||
-              selectedBrand !== "All" ||
-              selectedType !== "All") && (
-              <Button
-                variant="ghost"
-                onClick={clearFilters}
-                className="h-11 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-all"
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                {t('inventory.bulkActions.clear')}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Bulk Actions */}
-        <InventoryBulkActions
-          items={filteredAndSortedItems}
-          selectedIds={selectedIds}
-          onSelectionChange={setSelectedIds}
-        />
 
         {/* Inventory Table */}
-        {loading ? (
-          <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : (
-          <VirtualizedTable
-            items={filteredAndSortedItems}
-            sortConfig={sortConfig}
-            onSort={handleSort}
-            onEdit={(item) => {
-              setEditItem(item);
-              setShowForm(true);
-            }}
-            onViewHistory={handleViewHistory}
-            onDelete={(id) => deleteInventoryItem(id)}
-            selectedIds={selectedIds}
-            onSelectionChange={setSelectedIds}
-            onPrint={(item) => {
-              printSticker(item);
-            }}
-          />
-        )}
+        <div className="space-y-4">
+             <div className="flex items-center gap-3">
+                 <div className="h-2 w-2 rounded-full bg-primary"></div>
+                 <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t('inventory.historyLogs')}</h2>
+             </div>
+             {loading ? (
+                <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+             ) : (
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                    <VirtualizedTable
+                        items={filteredAndSortedItems}
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                        onEdit={(item) => {
+                        setEditItem(item);
+                        setShowForm(true);
+                        }}
+                        onViewHistory={handleViewHistory}
+                        onDelete={(id) => deleteInventoryItem(id)}
+                        selectedIds={selectedIds}
+                        onSelectionChange={setSelectedIds}
+                        onPrint={(item) => {
+                        printSticker(item);
+                        }}
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        selectedBrand={selectedBrand}
+                        setSelectedBrand={setSelectedBrand}
+                        selectedType={selectedType}
+                        setSelectedType={setSelectedType}
+                        clearFilters={clearFilters}
+                    />
+                </div>
+             )}
+        </div>
 
         {/* Add/Edit Form */}
         {showForm && (
@@ -423,25 +350,27 @@ export function InventoryPageInner() {
               if (!o) setEditItem(null);
             }}
           >
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>
-                  {editItem ? "Edit Inventory Item" : "Add New Inventory Item"}
+            <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
+              <DialogHeader className="pb-4 border-b dark:border-slate-800">
+                <DialogTitle className="text-2xl font-black">
+                  {editItem ? t('inventory.editItem') : t('inventory.newItem')}
                 </DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="font-medium text-muted-foreground">
                   {editItem
-                    ? "Update the details for this inventory item."
-                    : "Enter the details for the new inventory item."}
+                    ? t('inventory.editDesc') || "Update the details for this inventory item."
+                    : t('inventory.addDesc') || "Enter the details for the new inventory item."}
                 </DialogDescription>
               </DialogHeader>
-              <InventoryForm
-                key={editItem ? `edit-${editItem.id}` : "new-inventory-item"}
-                itemToEdit={editItem}
-                onSuccess={() => {
-                  setShowForm(false);
-                  setEditItem(null);
-                }}
-              />
+              <div className="pt-4">
+                <InventoryForm
+                    key={editItem ? `edit-${editItem.id}` : "new-inventory-item"}
+                    itemToEdit={editItem}
+                    onSuccess={() => {
+                    setShowForm(false);
+                    setEditItem(null);
+                    }}
+                />
+              </div>
             </DialogContent>
           </Dialog>
         )}

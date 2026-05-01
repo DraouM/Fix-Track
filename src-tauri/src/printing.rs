@@ -7,14 +7,47 @@ use std::process::Command;
 
 /// Printer configuration passed from the frontend.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PrinterConfig {
     pub printer_type: String,      // "58mm", "80mm", "custom"
     pub custom_width: Option<f64>, // mm
     pub custom_height: Option<f64>, // mm
     pub offset_top: f64,           // mm
     pub offset_left: f64,          // mm
-    pub printer_name: Option<String>,
+    
+    pub receipt_connection_type: Option<String>, // "usb" or "tcp"
+    pub receipt_printer_name: Option<String>,
+    pub receipt_printer_ip: Option<String>,
+    pub receipt_printer_port: Option<u16>,
+    
+    pub sticker_connection_type: Option<String>, // "usb" or "tcp"
+    pub sticker_printer_name: Option<String>,
+    pub sticker_printer_ip: Option<String>,
+    pub sticker_printer_port: Option<u16>,
+    
     pub use_native_print: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReceiptItem {
+    pub name: String,
+    pub qty: i32,
+    pub price: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReceiptData {
+    pub order_id: String,
+    pub customer: String,
+    pub items: Vec<ReceiptItem>,
+    pub total: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StickerData {
+    pub barcode: String,
+    pub item_name: String,
+    pub price: f64,
 }
 
 /// Information about an available printer.
@@ -172,34 +205,57 @@ pub fn print_raw(printer_name: String, data: Vec<u8>) -> Result<(), String> {
 
 #[cfg(target_os = "windows")]
 fn print_raw_windows(printer_name: &str, data: &[u8]) -> Result<(), String> {
-    // use std::io::Write;
+    use std::ptr;
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+    use winapi::um::winspool::{OpenPrinterW, ClosePrinter, StartDocPrinterW, EndDocPrinter, StartPagePrinter, EndPagePrinter, WritePrinter, DOC_INFO_1W};
+    use winapi::shared::minwindef::DWORD;
+    use winapi::um::winnt::HANDLE;
 
-    // Write data to a temp file, then send via shell
-    let temp_dir = std::env::temp_dir();
-    let temp_file = temp_dir.join("fixary_print_raw.bin");
+    let mut printer_name_wide: Vec<u16> = OsStr::new(printer_name).encode_wide().chain(Some(0)).collect();
+    let mut h_printer: HANDLE = ptr::null_mut();
 
-    std::fs::write(&temp_file, data)
-        .map_err(|e| format!("Failed to write temp file: {}", e))?;
+    unsafe {
+        if OpenPrinterW(printer_name_wide.as_mut_ptr(), &mut h_printer, ptr::null_mut()) == 0 {
+            return Err(format!("Failed to open printer: {}", printer_name));
+        }
 
-    let output = Command::new("powershell")
-        .args(&[
-            "-NoProfile",
-            "-Command",
-            &format!(
-                "Get-Content -Path '{}' -Encoding Byte -ReadCount 0 | Out-Printer -Name '{}'",
-                temp_file.to_string_lossy(),
-                printer_name
-            ),
-        ])
-        .output()
-        .map_err(|e| format!("Failed to send to printer: {}", e))?;
+        let doc_name: Vec<u16> = OsStr::new("FixTrack Direct Print").encode_wide().chain(Some(0)).collect();
+        let data_type: Vec<u16> = OsStr::new("RAW").encode_wide().chain(Some(0)).collect();
 
-    // Clean up temp file
-    let _ = std::fs::remove_file(&temp_file);
+        let mut doc_info = DOC_INFO_1W {
+            pDocName: doc_name.as_ptr() as *mut u16,
+            pOutputFile: ptr::null_mut(),
+            pDatatype: data_type.as_ptr() as *mut u16,
+        };
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Printer error: {}", stderr));
+        let doc_id = StartDocPrinterW(h_printer, 1, &mut doc_info as *mut _ as *mut u8);
+        if doc_id == 0 {
+            ClosePrinter(h_printer);
+            return Err("Failed to start document printer".to_string());
+        }
+
+        if StartPagePrinter(h_printer) == 0 {
+            EndDocPrinter(h_printer);
+            ClosePrinter(h_printer);
+            return Err("Failed to start page printer".to_string());
+        }
+
+        let mut bytes_written: DWORD = 0;
+        let write_result = WritePrinter(
+            h_printer,
+            data.as_ptr() as *mut _,
+            data.len() as DWORD,
+            &mut bytes_written,
+        );
+
+        EndPagePrinter(h_printer);
+        EndDocPrinter(h_printer);
+        ClosePrinter(h_printer);
+
+        if write_result == 0 {
+            return Err("Failed to write to printer".to_string());
+        }
     }
 
     Ok(())
@@ -274,6 +330,117 @@ pub fn print_html(html: String, printer_name: Option<String>) -> Result<(), Stri
             .arg(&file_path)
             .output()
             .map_err(|e| format!("Failed to open HTML: {}", e))?;
+    }
+
+    Ok(())
+}
+
+/// Send raw direct commands (ESC/POS) for a receipt
+#[tauri::command]
+pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<(), String> {
+    println!("Printing receipt: data={:?}, config={:?}", data, config);
+    let mut payload: Vec<u8> = Vec::new();
+    
+    // ESC/POS Implementation - ULTRA SAFE MODE
+    // 1. Initialize printer: ESC @
+    payload.extend_from_slice(&[0x1B, 0x40]); 
+    
+    // 2. Simple Header
+    payload.extend_from_slice(b"--- FIXTRACK ---\n");
+    payload.extend_from_slice(format!("Order: {}\n", data.order_id).as_bytes());
+    payload.extend_from_slice(format!("Customer: {}\n", data.customer).as_bytes());
+    payload.extend_from_slice(b"----------------\n");
+
+    // 3. Simple Items
+    for item in data.items {
+        let line = format!("{}x {} - ${:.2}\n", item.qty, item.name, item.price);
+        payload.extend_from_slice(line.as_bytes());
+    }
+
+    payload.extend_from_slice(b"----------------\n");
+    payload.extend_from_slice(format!("TOTAL: ${:.2}\n", data.total).as_bytes());
+    payload.extend_from_slice(b"\nThank you!\n");
+    
+    // 4. Feed 3 lines: ESC d 3
+    payload.extend_from_slice(&[0x1B, 0x64, 0x03]);
+    
+    // 7. Footer & Cut
+    payload.extend_from_slice(b"\nThank you!\n");
+    
+    // Feed 1 line: ESC d 1
+    payload.extend_from_slice(&[0x1B, 0x64, 0x01]);
+    
+    // Standard Full Cut (Commented out for compatibility with non-cutter printers)
+    // payload.extend_from_slice(&[0x1D, 0x56, 0x00]);
+
+    println!("Payload generated: {} bytes", payload.len());
+
+    let connection_type = config.receipt_connection_type.as_deref().unwrap_or("usb");
+    println!("Connection type: {}", connection_type);
+
+    if connection_type == "tcp" {
+        let ip = config.receipt_printer_ip.ok_or("Receipt printer IP address is required for TCP connection")?;
+        let port = config.receipt_printer_port.unwrap_or(9100);
+        println!("Connecting to TCP printer: {}:{}", ip, port);
+        
+        let mut stream = std::net::TcpStream::connect_timeout(
+            &format!("{}:{}", ip, port).parse().map_err(|_| "Invalid IP/Port format")?,
+            std::time::Duration::from_secs(3),
+        ).map_err(|e| format!("Failed to connect to network printer: {}", e))?;
+
+        use std::io::Write;
+        stream.write_all(&payload).map_err(|e| format!("Failed to send data: {}", e))?;
+        stream.flush().map_err(|e| format!("Failed to flush: {}", e))?;
+        println!("TCP Print successful");
+    } else {
+        // Fallback to USB/OS spooler
+        let printer_name = config.receipt_printer_name.ok_or("Receipt printer name is required for USB connection")?;
+        println!("Sending to USB printer: {}", printer_name);
+        print_raw(printer_name, payload)?;
+        println!("USB Print successful");
+    }
+
+    Ok(())
+}
+
+/// Send raw direct commands (TSPL) for a sticker
+#[tauri::command]
+pub fn print_sticker_direct(config: PrinterConfig, data: StickerData) -> Result<(), String> {
+    // TSPL template (often used for XPrinter XP-365B)
+    // 50mm x 25mm label
+    let tspl_template = format!(
+        "SIZE 50 mm, 25 mm\r\n\
+         GAP 2 mm, 0 mm\r\n\
+         CLS\r\n\
+         TEXT 10,10,\"TSS24.BF2\",0,1,1,\"{name}\"\r\n\
+         BARCODE 10,50,\"128\",60,1,0,2,2,\"{barcode}\"\r\n\
+         TEXT 10,140,\"TSS24.BF2\",0,1,1,\"Price: ${price:.2}\"\r\n\
+         PRINT 1\r\n",
+        name = data.item_name,
+        barcode = data.barcode,
+        price = data.price
+    );
+    
+    let payload = tspl_template.into_bytes();
+
+    let connection_type = config.sticker_connection_type.as_deref().unwrap_or("usb");
+
+    if connection_type == "tcp" {
+        let ip = config.sticker_printer_ip.ok_or("Sticker printer IP address is required for TCP connection")?;
+        let port = config.sticker_printer_port.unwrap_or(9100);
+        
+        let mut stream = std::net::TcpStream::connect_timeout(
+            &format!("{}:{}", ip, port).parse().map_err(|_| "Invalid IP/Port format")?,
+            std::time::Duration::from_secs(3),
+        ).map_err(|e| format!("Failed to connect to network printer: {}", e))?;
+
+        use std::io::Write;
+        stream.write_all(&payload).map_err(|e| format!("Failed to send data: {}", e))?;
+        stream.flush().map_err(|e| format!("Failed to flush: {}", e))?;
+    } else {
+        // Fallback to USB/OS spooler
+        let printer_name = config.sticker_printer_name.ok_or("Sticker printer name is required for USB connection")?;
+        print_raw(printer_name, payload)?;
     }
 
     Ok(())

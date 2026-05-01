@@ -21,27 +21,25 @@ import { Button } from "@/components/ui/button";
 import { useSettings } from "@/context/SettingsContext";
 import { Printer, RefreshCw, Receipt, Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { PrinterConfig } from "@/types/settings";
+import { Input } from "../ui/input";
 
 export function NativePrinterSettingsCard() {
   const { settings, updateSettings, availablePrinters, refreshPrinters } = useSettings();
-  const { t } = useTranslation();
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-  const handleToggleNative = (checked: boolean) => {
+  const config = settings.printerConfig;
+
+  const update = (patch: Partial<PrinterConfig>) => {
     updateSettings({
-      printerConfig: {
-        ...settings.printerConfig,
-        useNativePrint: checked,
-      },
+      printerConfig: { ...config, ...patch },
     });
   };
 
-  const handlePrinterChange = (type: "receipt" | "sticker", name: string) => {
-    updateSettings({
-      printerConfig: {
-        ...settings.printerConfig,
-        [type === "receipt" ? "receiptPrinterName" : "stickerPrinterName"]: name,
-      },
-    });
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshPrinters();
+    setIsRefreshing(false);
   };
 
   return (
@@ -54,7 +52,7 @@ export function NativePrinterSettingsCard() {
               Native Thermal Printing
             </CardTitle>
             <CardDescription>
-              Configure direct OS printing for Xprinter and other thermal devices.
+              Direct hardware communication for receipts (ESC/POS) and stickers (TSPL).
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -63,66 +61,142 @@ export function NativePrinterSettingsCard() {
             </Label>
             <Switch
               id="native-print"
-              checked={settings.printerConfig.useNativePrint}
-              onCheckedChange={handleToggleNative}
+              checked={config.useNativePrint}
+              onCheckedChange={(checked) => update({ useNativePrint: checked })}
             />
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Receipt Printer */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <Receipt className="h-4 w-4 text-blue-500" />
-              Receipt Printer (USB/Thermal)
-            </Label>
-            <Select
-              value={settings.printerConfig.receiptPrinterName || ""}
-              onValueChange={(val) => handlePrinterChange("receipt", val)}
-              disabled={!settings.printerConfig.useNativePrint}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select default printer..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availablePrinters.map((printer) => (
-                  <SelectItem key={printer} value={printer}>
-                    {printer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-tight">
-              Used for repair receipts, invoices, and payment proof.
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Receipt Printer Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2 text-sm font-semibold">
+                <Receipt className="h-4 w-4 text-blue-500" />
+                Receipt Printer
+              </Label>
+              <div className="flex bg-muted p-0.5 rounded-md text-[10px]">
+                <button
+                  onClick={() => update({ receiptConnectionType: "usb" })}
+                  className={`px-2 py-1 rounded-sm transition-all ${config.receiptConnectionType === "usb" ? "bg-background shadow-sm font-bold" : "text-muted-foreground"}`}
+                >
+                  USB
+                </button>
+                <button
+                  onClick={() => update({ receiptConnectionType: "tcp" })}
+                  className={`px-2 py-1 rounded-sm transition-all ${config.receiptConnectionType === "tcp" ? "bg-background shadow-sm font-bold" : "text-muted-foreground"}`}
+                >
+                  TCP
+                </button>
+              </div>
+            </div>
+
+            {config.receiptConnectionType === "usb" ? (
+              <div className="space-y-2">
+                <Select
+                  value={config.receiptPrinterName || ""}
+                  onValueChange={(val) => update({ receiptPrinterName: val })}
+                  disabled={!config.useNativePrint}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select receipt printer..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availablePrinters.length > 0 ? (
+                      availablePrinters.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>No devices found</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="IP (e.g. 192.168.1.100)"
+                  value={config.receiptPrinterIp || ""}
+                  onChange={(e) => update({ receiptPrinterIp: e.target.value })}
+                  disabled={!config.useNativePrint}
+                  className="text-xs"
+                />
+                <Input
+                  type="number"
+                  placeholder="Port"
+                  value={config.receiptPrinterPort || 9100}
+                  onChange={(e) => update({ receiptPrinterPort: parseInt(e.target.value) })}
+                  disabled={!config.useNativePrint}
+                  className="w-24 text-xs"
+                />
+              </div>
+            )}
           </div>
 
-          {/* Sticker Printer */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <Tag className="h-4 w-4 text-orange-500" />
-              Sticker Printer (XP-365B/Label)
-            </Label>
-            <Select
-              value={settings.printerConfig.stickerPrinterName || ""}
-              onValueChange={(val) => handlePrinterChange("sticker", val)}
-              disabled={!settings.printerConfig.useNativePrint}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select default printer..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availablePrinters.map((printer) => (
-                  <SelectItem key={printer} value={printer}>
-                    {printer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-tight">
-              Used for device identification labels and barcodes.
-            </p>
+          {/* Sticker Printer Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2 text-sm font-semibold">
+                <Tag className="h-4 w-4 text-orange-500" />
+                Sticker Printer
+              </Label>
+              <div className="flex bg-muted p-0.5 rounded-md text-[10px]">
+                <button
+                  onClick={() => update({ stickerConnectionType: "usb" })}
+                  className={`px-2 py-1 rounded-sm transition-all ${config.stickerConnectionType === "usb" ? "bg-background shadow-sm font-bold" : "text-muted-foreground"}`}
+                >
+                  USB
+                </button>
+                <button
+                  onClick={() => update({ stickerConnectionType: "tcp" })}
+                  className={`px-2 py-1 rounded-sm transition-all ${config.stickerConnectionType === "tcp" ? "bg-background shadow-sm font-bold" : "text-muted-foreground"}`}
+                >
+                  TCP
+                </button>
+              </div>
+            </div>
+
+            {config.stickerConnectionType === "usb" ? (
+              <div className="space-y-2">
+                <Select
+                  value={config.stickerPrinterName || ""}
+                  onValueChange={(val) => update({ stickerPrinterName: val })}
+                  disabled={!config.useNativePrint}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sticker printer..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availablePrinters.length > 0 ? (
+                      availablePrinters.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>No devices found</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="IP (e.g. 192.168.1.101)"
+                  value={config.stickerPrinterIp || ""}
+                  onChange={(e) => update({ stickerPrinterIp: e.target.value })}
+                  disabled={!config.useNativePrint}
+                  className="text-xs"
+                />
+                <Input
+                  type="number"
+                  placeholder="Port"
+                  value={config.stickerPrinterPort || 9100}
+                  onChange={(e) => update({ stickerPrinterPort: parseInt(e.target.value) })}
+                  disabled={!config.useNativePrint}
+                  className="w-24 text-xs"
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -130,15 +204,16 @@ export function NativePrinterSettingsCard() {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={refreshPrinters}
+            onClick={handleRefresh}
+            disabled={isRefreshing || !config.useNativePrint}
             className="text-xs text-muted-foreground hover:text-primary"
           >
-            <RefreshCw className="mr-2 h-3 w-3" />
-            Refresh Printer List
+            <RefreshCw className={`mr-2 h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? "Discovering..." : "Refresh Printer List"}
           </Button>
-          {!settings.printerConfig.useNativePrint && (
+          {!config.useNativePrint && (
             <p className="text-xs text-amber-600 font-medium">
-              * Using browser-based printing (requires confirmation)
+              * Native printing is disabled
             </p>
           )}
         </div>

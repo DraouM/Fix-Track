@@ -24,8 +24,19 @@ export interface PrinterConfig {
     customHeight?: number;   // mm, used when printerType is "custom"
     offsetTop: number;       // mm, calibration offset
     offsetLeft: number;      // mm, calibration offset
+    
+    // Receipt printer config
+    receiptConnectionType: "usb" | "tcp";
     receiptPrinterName?: string; // OS name for receipt printer
+    receiptPrinterIp?: string;
+    receiptPrinterPort?: number;
+    
+    // Sticker printer config
+    stickerConnectionType: "usb" | "tcp";
     stickerPrinterName?: string; // OS name for sticker printer
+    stickerPrinterIp?: string;
+    stickerPrinterPort?: number;
+    
     useNativePrint: boolean; // prefer Rust backend over browser print
 }
 
@@ -33,7 +44,11 @@ export const DEFAULT_PRINTER_CONFIG: PrinterConfig = {
     printerType: "80mm",
     offsetTop: 0,
     offsetLeft: 0,
-    useNativePrint: false,
+    useNativePrint: true,
+    receiptConnectionType: "usb",
+    receiptPrinterPort: 9100,
+    stickerConnectionType: "usb",
+    stickerPrinterPort: 9100,
 };
 
 export interface AppSettings {

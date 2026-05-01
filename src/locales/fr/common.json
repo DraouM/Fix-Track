@@ -66,6 +66,7 @@
         "pageInfo": "Page {{current}} sur {{total}}",
         "history": "Historique",
         "printSticker": "Imprimer l'étiquette",
+        "selected": "Sélectionné",
         "call": "Appeler"
     },
     "status": {
@@ -139,6 +140,11 @@
         "lowStock": "Stock faible",
         "outOfStock": "Rupture de stock",
         "inStock": "En stock",
+        "historyLogs": "Historique de l'inventaire",
+        "editItem": "Modifier l'article",
+        "newItem": "Nouvel article",
+        "editDesc": "Mettre à jour les détails de cet article.",
+        "addDesc": "Saisissez les détails du nouvel article.",
         "sku": "SKU",
         "table": {
             "product": "Produit",
@@ -178,7 +184,7 @@
             "printError": "Veuillez sélectionner au moins un article à imprimer"
         },
         "form": {
-            "barcode": "Code-barres (Scanner ou Générer)",
+            "barcode": "Code-barres",
             "barcodePlaceholder": "Scannez le code-barres ou saisissez-le manuellement...",
             "generate": "Générer",
             "productName": "Nom du produit",
@@ -204,7 +210,8 @@
             "editDesc": "Mettre à jour les détails de cet article de l'inventaire.",
             "addDesc": "Saisissez les détails du nouvel article de l'inventaire."
         },
-        "printSticker": "Imprimer l'étiquette"
+        "printSticker": "Imprimer l'étiquette",
+        "printStickers": "Imprimer les étiquettes"
     },
     "repairs": {
         "title": "Réparations",

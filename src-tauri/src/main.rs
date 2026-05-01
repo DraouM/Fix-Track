@@ -168,6 +168,8 @@ fn main() {
             printing::list_printers,
             printing::print_raw,
             printing::print_html,
+            printing::print_receipt_direct,
+            printing::print_sticker_direct,
         ])
         .build(tauri::generate_context!())
     {

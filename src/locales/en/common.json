@@ -66,6 +66,7 @@
         "pageInfo": "Page {{current}} of {{total}}",
         "history": "History",
         "printSticker": "Print Sticker",
+        "selected": "Selected",
         "call": "Call"
     },
     "status": {
@@ -152,6 +153,11 @@
         "lowStock": "Low Stock",
         "outOfStock": "Out of Stock",
         "inStock": "In Stock",
+        "historyLogs": "Inventory History Logs",
+        "editItem": "Edit Item",
+        "newItem": "New Item",
+        "editDesc": "Update the details for this inventory item.",
+        "addDesc": "Enter the details for the new inventory item.",
         "sku": "SKU",
         "table": {
             "product": "Product",
@@ -217,7 +223,8 @@
             "editDesc": "Update the details for this inventory item.",
             "addDesc": "Enter the details for the new inventory item."
         },
-        "printSticker": "Print Sticker"
+        "printSticker": "Print Sticker",
+        "printStickers": "Print Stickers"
     },
     "repairs": {
         "title": "Repairs",

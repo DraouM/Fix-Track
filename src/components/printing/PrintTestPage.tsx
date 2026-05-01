@@ -137,18 +137,56 @@ export function PrintTestPage() {
         <div className="text-muted-foreground">
           Offsets: ↓{config.offsetTop}mm →{config.offsetLeft}mm
         </div>
-        {config.printerName && (
+        {config.receiptPrinterName && (
           <>
             <div className="text-muted-foreground">|</div>
             <div className="text-muted-foreground">
-              Printer: {config.printerName}
+              Printer: {config.receiptPrinterName}
             </div>
           </>
         )}
-        <div className="text-muted-foreground">|</div>
         <div className={config.useNativePrint ? "text-primary font-medium" : "text-muted-foreground"}>
           {config.useNativePrint ? "Native ✓" : "Browser Print"}
         </div>
+      </div>
+
+      <div className="flex gap-4">
+        <Button onClick={async () => {
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('print_receipt_direct', { 
+              config, 
+              data: {
+                order_id: "TEST-001",
+                customer: "John Doe",
+                items: [
+                  { name: "Screen Replacement", qty: 1, price: 99.99 },
+                  { name: "Battery", qty: 1, price: 49.99 }
+                ],
+                total: 149.98
+              }
+            });
+            toast.success("Raw test receipt sent!");
+          } catch (err) {
+             toast.error(`Print failed: ${err}`);
+          }
+        }} variant="secondary">Test Raw Receipt (ESC/POS)</Button>
+        <Button onClick={async () => {
+          try {
+             const { invoke } = await import('@tauri-apps/api/core');
+             await invoke('print_sticker_direct', {
+               config,
+               data: {
+                 barcode: "1234567890",
+                 item_name: "iPhone 13 Screen",
+                 price: 120.00
+               }
+             });
+             toast.success("Raw test sticker sent!");
+          } catch (err) {
+             toast.error(`Print failed: ${err}`);
+          }
+        }} variant="secondary">Test Raw Sticker (TSPL)</Button>
       </div>
 
       {/* Tab Navigation */}

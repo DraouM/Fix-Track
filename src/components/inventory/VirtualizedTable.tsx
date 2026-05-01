@@ -33,11 +33,25 @@ import {
   TrendingDown,
   ChevronDown,
   Printer,
+  Search,
+  RotateCcw,
+  X,
+  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useSettings } from "@/context/SettingsContext";
 import { CURRENCY_SYMBOLS } from "@/types/settings";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { PHONE_BRANDS, ITEM_TYPES, PhoneBrand, ItemType } from "@/types/inventory";
+import { Input } from "@/components/ui/input";
+
 
 interface VirtualizedTableProps {
   items: InventoryItem[];
@@ -49,6 +63,14 @@ interface VirtualizedTableProps {
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   onPrint?: (item: InventoryItem) => void;
+  // Filter props
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  selectedBrand: string;
+  setSelectedBrand: (brand: PhoneBrand) => void;
+  selectedType: string;
+  setSelectedType: (type: ItemType) => void;
+  clearFilters: () => void;
 }
 
 const ROW_HEIGHT = 64;
@@ -161,7 +183,7 @@ const InventoryRow = memo(function InventoryRow({
     <div
       key={item.id}
       role="row"
-      className="absolute top-0 left-0 w-full flex items-center border-b border-gray-100 dark:border-slate-800 hover:bg-muted/30 dark:hover:bg-slate-800/30 transition-all duration-200 group cursor-pointer"
+      className="absolute top-0 left-0 w-full flex items-center border-b border-gray-100 dark:border-slate-800 hover:bg-muted/5 dark:hover:bg-slate-800/30 transition-all duration-200 group cursor-pointer"
       style={{
         height: `${virtualRow.size}px`,
         transform: `translateY(${virtualRow.start}px)`,
@@ -289,7 +311,32 @@ const InventoryRow = memo(function InventoryRow({
       </div>
 
       {/* Actions */}
-      <div className="w-24 text-center pr-4">
+      <div className="w-24 text-center pr-4 flex items-center justify-center gap-1">
+        {/* Quick Print - Only visible on hover, subtle */}
+        {item.barcode && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPrint?.(item);
+                }}
+                className="h-8 w-8 p-0 rounded-xl hover:bg-primary/10 text-primary opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <Printer className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              className="rounded-lg font-bold text-[10px] uppercase tracking-wider"
+            >
+              {t('inventory.printSticker')}
+            </TooltipContent>
+          </Tooltip>
+        )}
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -309,13 +356,6 @@ const InventoryRow = memo(function InventoryRow({
               className="rounded-xl font-bold text-xs uppercase tracking-wider py-2"
             >
               <Info className="h-4 w-4 mr-3 opacity-70" /> {t('common.view')} {t('common.history')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onPrint?.(item)}
-              className="rounded-xl font-bold text-xs uppercase tracking-wider py-2"
-              disabled={!item.barcode}
-            >
-               <Printer className="h-4 w-4 mr-3 opacity-70" /> {t('inventory.printSticker')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onEdit(item)}
@@ -348,11 +388,31 @@ export const VirtualizedTable = memo(function VirtualizedTable({
   selectedIds,
   onSelectionChange,
   onPrint,
+  searchTerm,
+  setSearchTerm,
+  selectedBrand,
+  setSelectedBrand,
+  selectedType,
+  setSelectedType,
+  clearFilters,
 }: VirtualizedTableProps) {
-  const { t } = useTranslation();
   const { settings } = useSettings();
+  const { t } = useTranslation();
   const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
   const parentRef = useRef<HTMLDivElement>(null);
+
+  const selectedItems = items.filter((item) => selectedIds?.includes(item.id));
+  const isAllSelected = items.length > 0 && selectedIds?.length === items.length;
+
+  const handleSelectAll = () => {
+    if (onSelectionChange) {
+      if (isAllSelected) {
+        onSelectionChange([]);
+      } else {
+        onSelectionChange(items.map((item) => item.id));
+      }
+    }
+  };
 
   const rowVirtualizer = useVirtualizer({
     count: items.length,
@@ -364,14 +424,128 @@ export const VirtualizedTable = memo(function VirtualizedTable({
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-full">
       <TooltipProvider>
+        {/* Search and Filters Bar (Unified with Table) */}
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center px-6 py-4 border-b dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+           {/* Search Bar */}
+           <div className="relative flex-1 min-w-0 w-full">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+             <Input
+               placeholder={t('common.filter')}
+               value={searchTerm}
+               onChange={(event) => setSearchTerm(event.target.value)}
+               className="pl-10 rounded-xl h-11 border-gray-200 dark:border-slate-800 focus:ring-primary/20 bg-white dark:bg-slate-950 font-bold text-sm"
+             />
+           </div>
+
+           {/* Filters */}
+           <div className="flex flex-wrap gap-3 items-center w-full md:w-auto">
+             <div className="flex items-center gap-1">
+               <Filter className="h-4 w-4 text-gray-500 dark:text-slate-400" />
+               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hidden sm:block">
+                 {t('common.filters')}
+               </span>
+             </div>
+
+             {/* Brand Filter */}
+             <Select
+               value={selectedBrand}
+               onValueChange={(value) => setSelectedBrand(value as PhoneBrand)}
+             >
+               <SelectTrigger className="w-full md:w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-black text-[10px] uppercase tracking-wider">
+                 <SelectValue placeholder={t('inventory.table.brand')} />
+               </SelectTrigger>
+               <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
+                  {PHONE_BRANDS.map((brand) => (
+                    <SelectItem
+                      key={brand}
+                      value={brand}
+                      className="font-black text-[10px] uppercase tracking-widest py-3"
+                    >
+                      {brand}
+                    </SelectItem>
+                  ))}
+               </SelectContent>
+             </Select>
+
+             {/* Type Filter */}
+             <Select
+               value={selectedType}
+               onValueChange={(value) => setSelectedType(value as ItemType)}
+             >
+               <SelectTrigger className="w-full md:w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-black text-[10px] uppercase tracking-wider">
+                 <SelectValue placeholder={t('inventory.table.category')} />
+               </SelectTrigger>
+               <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
+                  {ITEM_TYPES.map((type) => (
+                    <SelectItem
+                      key={type}
+                      value={type}
+                      className="font-black text-[10px] uppercase tracking-widest py-3"
+                    >
+                      {type}
+                    </SelectItem>
+                  ))}
+               </SelectContent>
+             </Select>
+
+             {/* Clear Filters */}
+             {(searchTerm !== "" || selectedBrand !== "All" || selectedType !== "All") && (
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 text-muted-foreground hover:text-red-500 transition-colors"
+                  onClick={clearFilters}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+             )}
+           </div>
+        </div>
+
+        {/* Bulk Actions (Contextual) */}
+        {selectedIds && selectedIds.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-2 bg-primary/5 border-b border-primary/10 animate-in slide-in-from-top-1 duration-200">
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                {selectedIds.length} {t('inventory.bulkActions.selected', { count: selectedIds.length, total: items.length }).split(' ')[1]} {t('common.selected') || 'Selected'}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSelectionChange?.([])}
+                className="h-7 px-3 rounded-lg text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10"
+              >
+                <X className="h-3 w-3 mr-1.5" />
+                {t('inventory.bulkActions.clear')}
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => onPrint && selectedItems.length > 0 && selectedItems.forEach(item => onPrint(item))}
+                className="h-8 px-4 rounded-xl bg-primary text-white text-[9px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95"
+              >
+                <Printer className="h-3.5 w-3.5 mr-2" />
+                {t('inventory.printStickers')}
+              </Button>
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div
-          className="bg-muted/10 dark:bg-slate-800/10 backdrop-blur-sm border-b border-gray-100 dark:border-slate-800 z-10 shrink-0"
+          className="bg-muted/10 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 z-10 shrink-0"
           style={{ height: HEADER_HEIGHT }}
         >
           <div className="flex w-full h-full items-center">
             <div className="flex-[3] pl-2 min-w-0">
               <div className="flex items-center gap-2 min-w-0">
+                <Checkbox
+                  checked={isAllSelected}
+                  onCheckedChange={handleSelectAll}
+                  className="translate-x-0.5"
+                />
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-500 opacity-60">
                   {t('inventory.table.product')}
                 </span>

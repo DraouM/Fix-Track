@@ -31,6 +31,7 @@ import {
   BarChart3,
   ShoppingCart,
   History,
+  Sparkles,
 } from "lucide-react";
 
 const Icons = {
@@ -66,6 +67,7 @@ const Icons = {
   barChart: BarChart3, // Added for Statistics
   shoppingCart: ShoppingCart, // Added for Sales page
   history: History, // Added for Inventory History
+  sparkles: Sparkles, // Added for Barcode Generation
 };
 
 export { Icons };

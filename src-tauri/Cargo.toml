@@ -41,7 +41,7 @@ regex = "1.0"
 # Platform-specific printer communication
 # Windows
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["winusb", "setupapi", "guiddef", "fileapi", "handleapi", "winnt"] }
+winapi = { version = "0.3", features = ["winusb", "setupapi", "guiddef", "fileapi", "handleapi", "winnt", "winspool"] }
 
 # Unix (Linux/macOS)
 [target.'cfg(unix)'.dependencies]

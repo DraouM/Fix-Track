@@ -66,6 +66,7 @@
         "pageInfo": "صفحة {{current}} من {{total}}",
         "history": "السجل",
         "printSticker": "طباعة الملصق",
+        "selected": "محدد",
         "call": "اتصال"
     },
     "status": {
@@ -139,6 +140,11 @@
         "lowStock": "مخزون منخفض",
         "outOfStock": "نفد من المخزون",
         "inStock": "متوفر",
+        "historyLogs": "سجلات تاريخ المخزون",
+        "editItem": "تعديل الصنف",
+        "newItem": "صنف جديد",
+        "editDesc": "تحديث تفاصيل صنف المخزون هذا.",
+        "addDesc": "أدخل تفاصيل صنف المخزون الجديد.",
         "sku": "وحدة حفظ المخزون",
         "table": {
             "product": "المنتج",
@@ -178,7 +184,7 @@
             "printError": "يرجى تحديد صنف واحد على الأقل للطباعة"
         },
         "form": {
-            "barcode": "الباركود (مسح أو توليد)",
+            "barcode": "الباركود",
             "barcodePlaceholder": "امسح الباركود أو أدخله يدويًا...",
             "generate": "توليد",
             "productName": "اسم المنتج",
@@ -204,7 +210,8 @@
             "editDesc": "تحديث تفاصيل صنف المخزون هذا.",
             "addDesc": "أدخل تفاصيل صنف المخزون الجديد."
         },
-        "printSticker": "طباعة ملصق"
+        "printSticker": "طباعة ملصق",
+        "printStickers": "طباعة الملصقات"
     },
     "repairs": {
         "title": "الإصلاحات",

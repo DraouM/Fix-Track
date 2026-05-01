@@ -52,6 +52,7 @@ export default function SettingsPage() {
           <ThemeSettingsCard />
           <LanguageCurrencyCard />
           <PrintDimensionsCard />
+          <NativePrinterSettingsCard />
         </div>
 
         {/* Sidebar - Actions */}

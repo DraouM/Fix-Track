@@ -186,8 +186,56 @@ pub fn update_supplier(supplier: SupplierFrontend) -> Result<(), String> {
 #[tauri::command]
 pub fn delete_supplier(supplier_id: String) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
-    conn.execute("DELETE FROM suppliers WHERE id = ?1", params![supplier_id])
-        .map_err(|e| e.to_string())?;
+    
+    // 1. Check if the supplier has any usage
+    // Check orders
+    let has_orders: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM orders WHERE supplier_id = ?1)",
+        params![supplier_id],
+        |row| row.get(0)
+    ).map_err(|e| e.to_string())?;
+
+    // Check payments
+    let has_payments: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM supplier_payments WHERE supplier_id = ?1)",
+        params![supplier_id],
+        |row| row.get(0)
+    ).map_err(|e| e.to_string())?;
+
+    // Check transactions
+    let has_transactions: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM transactions WHERE party_id = ?1 AND party_type = 'Supplier')",
+        params![supplier_id],
+        |row| row.get(0)
+    ).map_err(|e| e.to_string())?;
+
+    if has_orders || has_payments || has_transactions {
+        // 2. SOFT DELETE: Deactivate if used
+        conn.execute(
+            "UPDATE suppliers SET active = 0, updated_at = ?2 WHERE id = ?1",
+            params![supplier_id, chrono::Utc::now().to_rfc3339()]
+        ).map_err(|e| e.to_string())?;
+
+        // Log deactivation in history
+        let history_id = uuid::Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                history_id,
+                supplier_id,
+                chrono::Utc::now().to_rfc3339(),
+                "Supplier Deactivated",
+                "Supplier marked as inactive due to existing financial history",
+                0.0
+            ]
+        ).map_err(|e| e.to_string())?;
+    } else {
+        // 3. HARD DELETE: Physically remove if unused
+        conn.execute("DELETE FROM suppliers WHERE id = ?1", params![supplier_id])
+            .map_err(|e| e.to_string())?;
+    }
+
     Ok(())
 }
 

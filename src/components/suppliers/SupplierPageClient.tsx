@@ -225,7 +225,7 @@ const SupplierPageClient = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this supplier?")) {
+    if (confirm("Are you sure you want to remove this supplier? If the supplier has existing orders or payments, they will be deactivated instead of deleted.")) {
       try {
         await deleteSupplier(id);
       } catch (error) {
@@ -600,7 +600,7 @@ const SupplierPageClient = () => {
                                 className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
                               >
                                 <Trash className="mr-3 h-4 w-4 opacity-40" />{" "}
-                                Terminate Account
+                                Remove Supplier
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

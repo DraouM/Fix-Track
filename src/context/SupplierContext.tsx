@@ -351,9 +351,9 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       clearError();
 
-      await withAsync(() => invoke("delete_supplier", { id }), {
+      await withAsync(() => invoke("delete_supplier", { supplierId: id }), {
         onSuccess: () => {
-          toast.success("Supplier deleted successfully");
+          toast.success("Supplier removed or deactivated successfully");
           setSuppliers((prev) => prev.filter((s) => s.id !== id));
           if (selectedSupplier?.id === id) setSelectedSupplier(null);
         },

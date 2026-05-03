@@ -55,11 +55,12 @@ export function PrinterTestComponent({ className }: PrinterTestComponentProps) {
 
   // Test printer directly using Tauri API
   const testPrinter = async (target: "receipt" | "sticker" | "custom") => {
+    const config = settings.printerConfig;
     const printerName = target === "custom" 
       ? selectedPrinter 
       : target === "receipt" 
-        ? settings.printerConfig.receiptPrinterName 
-        : settings.printerConfig.stickerPrinterName;
+        ? config.receiptPrinterName 
+        : config.stickerPrinterName;
 
     if (!printerName) {
       toast.error(`No printer configured for ${target}`);
@@ -70,34 +71,33 @@ export function PrinterTestComponent({ className }: PrinterTestComponentProps) {
     setTestResult(null);
 
     try {
-      const testHtml = `
-        <html>
-          <body style="width: 80mm; font-family: monospace; text-align: center; padding: 10px;">
-            <h1 style="font-size: 20px;">FIXARY TEST</h1>
-            <p>Printer: ${printerName}</p>
-            <p>Type: ${target.toUpperCase()}</p>
-            <div style="border-top: 1px dashed black; margin: 10px 0;"></div>
-            <p style="font-size: 10px;">If you see this, native silent printing is WORKING!</p>
-            <p style="font-size: 10px;">${new Date().toLocaleString()}</p>
-          </body>
-        </html>
-      `;
-
-      await invoke("print_html", {
-        html: testHtml,
-        printerName: printerName,
-      });
+      if (target === "sticker") {
+        const data = {
+          barcode: "1234567890",
+          item_name: "TEST STICKER",
+          price: 99.99
+        };
+        await invoke("print_sticker_direct", { config, data });
+      } else {
+        const data = {
+          order_id: "TEST-001",
+          customer: "Test Customer",
+          items: [{ name: "Test Item", qty: 1, price: 10.00 }],
+          total: 10.00
+        };
+        await invoke("print_receipt_direct", { config, data });
+      }
 
       setTestResult({
         success: true,
-        message: `Test page sent to ${printerName}`,
+        message: `Test ${target} sent to ${printerName}`,
       });
       toast.success("Print command sent!");
     } catch (error) {
       console.error("Error testing printer:", error);
       setTestResult({
         success: false,
-        message: error instanceof Error ? error.message : "Print failed",
+        message: error instanceof Error ? error.message : String(error),
       });
     } finally {
       setIsTesting(false);

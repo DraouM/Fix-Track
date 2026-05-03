@@ -17,6 +17,7 @@ import { clientSchema } from "@/types/client"; // Import for type usage if neede
 
 import { useSettings } from "@/context/SettingsContext";
 import { CURRENCY_SYMBOLS } from "@/types/settings";
+import { useRouter } from "next/navigation";
 
 interface PrintOptions {
   includePayments?: boolean;
@@ -37,6 +38,7 @@ interface PrintHistoryEntry {
 export const usePrintUtils = () => {
   const { settings } = useSettings();
   const shopInfo = getShopInfo();
+  const router = useRouter();
   const [printHistory, setPrintHistory] = useState<PrintHistoryEntry[]>([]);
 
   const generatePrintContent = useCallback(
@@ -115,11 +117,25 @@ export const usePrintUtils = () => {
       item: Repair | InventoryItem,
       type: "sticker" | "receipt"
     ) => {
+      // 1. Basic configuration check
+      const config = settings.printerConfig;
+      const printerName = type === "receipt" ? config.receiptPrinterName : config.stickerPrinterName;
+
+      if (!printerName && config.useNativePrint) {
+        toast.error(`No ${type} printer selected!`, {
+          description: "Please select a printer in the settings to use native printing.",
+          action: {
+            label: "Go to Settings",
+            onClick: () => router.push("/settings"),
+          },
+        });
+        return false;
+      }
+
       try {
         // Mode check: Browser vs Native
-        if (!settings.printerConfig.useNativePrint) {
-          // Legacy Iframe Fallback (but user requested to get rid of it)
-          // I will keep a simplified version here just in case, or directly tell them to enable native
+        if (!config.useNativePrint) {
+          // Browser Print Fallback
           const iframe = document.createElement("iframe");
           iframe.style.position = "absolute";
           iframe.style.left = "-9999px";
@@ -130,6 +146,7 @@ export const usePrintUtils = () => {
             doc.write(htmlContent);
             doc.close();
             iframe.onload = () => {
+              iframe.contentWindow?.focus();
               iframe.contentWindow?.print();
               setTimeout(() => document.body.removeChild(iframe), 1000);
             };
@@ -137,33 +154,54 @@ export const usePrintUtils = () => {
           return true;
         }
 
-        // Native Tauri Implementation
-        const printerName = type === "receipt" 
-          ? settings.printerConfig.receiptPrinterName 
-          : settings.printerConfig.stickerPrinterName;
+        // Native Direct Thermal Implementation
+        if (type === "sticker") {
+          const stickerData = {
+            barcode: ("barcode" in item ? item.barcode : (item as Repair).code) || item.id,
+            item_name: ("itemName" in item ? item.itemName : `${(item as Repair).deviceBrand} ${(item as Repair).deviceModel}`) || "Unknown",
+            price: "sellingPrice" in item ? item.sellingPrice : 0,
+          };
 
-        if (!printerName) {
-          toast.error(`No ${type} printer selected in settings!`);
-          return false;
+          await invoke("print_sticker_direct", { config, data: stickerData });
+          toast.success(`Sticker sent to ${config.stickerPrinterName}`);
+        } else {
+          // Receipt
+          const isRepair = "deviceBrand" in item;
+          const repair = isRepair ? (item as Repair) : null;
+          
+          const receiptData = {
+            orderId: isRepair ? repair?.code || repair?.id : item.id,
+            customer: isRepair ? repair?.customerName : "Walk-in Customer",
+            device: isRepair ? `${repair?.deviceBrand} ${repair?.deviceModel}` : undefined,
+            issue: isRepair ? repair?.issueDescription : undefined,
+            items: isRepair 
+              ? (repair?.usedParts?.map(p => ({ name: p.partName, qty: p.quantity, price: p.cost })) || [])
+              : [{ name: (item as InventoryItem).itemName, qty: 1, price: (item as InventoryItem).sellingPrice }],
+            total: isRepair ? repair?.estimatedCost || 0 : (item as InventoryItem).sellingPrice,
+            shopInfo: {
+              shopName: shopInfo.shopName,
+              phoneNumber: shopInfo.phoneNumber,
+              address: shopInfo.address,
+              receiptFooter: shopInfo.receiptFooter,
+            },
+            date: new Date().toLocaleString(),
+          };
+
+          await invoke("print_receipt_direct", { config, data: receiptData });
+          toast.success(`Receipt sent to ${config.receiptPrinterName}`);
         }
 
-        const result = await invoke("print_html", { 
-          html: htmlContent, 
-          printerName: printerName 
-        });
-
-        toast.success(`${type === "receipt" ? "Receipt" : "Sticker"} sent to ${printerName}`);
         addToPrintHistory(item, type, true);
         return true;
 
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : "Print failed";
+        const errorMsg = error instanceof Error ? error.message : String(error);
         toast.error(`Native Print Error: ${errorMsg}`);
         addToPrintHistory(item, type, false, errorMsg);
         return false;
       }
     },
-    [settings.printerConfig, addToPrintHistory]
+    [settings.printerConfig, addToPrintHistory, router]
   );
 
   const printSticker = useCallback(
@@ -457,8 +495,36 @@ export const usePrintUtils = () => {
     [printReceipt, printSticker]
   );
 
+  /**
+   * Opens a preview of the receipt in a new window
+   * This is useful for "Save as PDF" or standard office printers
+   */
+  const previewReceipt = useCallback(
+    (repair: Repair, options: PrintOptions = {}) => {
+      const content = generatePrintContent(
+        repair,
+        { ...options, format: "receipt" },
+        settings.language,
+        settings.currency
+      );
+
+      const previewWindow = window.open("", "_blank", "width=800,height=600");
+      if (previewWindow) {
+        previewWindow.document.write(content);
+        previewWindow.document.close();
+        // The template should already contain the window.print() logic in its fallback, 
+        // but we can trigger it here to be sure.
+        previewWindow.focus();
+      } else {
+        toast.error("Pop-up blocked! Please allow pop-ups to see the preview.");
+      }
+    },
+    [generatePrintContent, settings]
+  );
+
   return {
     printReceipt,
+    previewReceipt, // Added preview
     printPaymentReceipt,
     printTransactionReceipt,
     printSticker,

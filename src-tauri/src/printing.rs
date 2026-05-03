@@ -29,6 +29,15 @@ pub struct PrinterConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShopInfo {
+    pub shop_name: String,
+    pub phone_number: String,
+    pub address: String,
+    pub receipt_footer: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReceiptItem {
     pub name: String,
     pub qty: i32,
@@ -36,11 +45,16 @@ pub struct ReceiptItem {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ReceiptData {
     pub order_id: String,
     pub customer: String,
+    pub device: Option<String>,
+    pub issue: Option<String>,
     pub items: Vec<ReceiptItem>,
     pub total: f64,
+    pub shop_info: Option<ShopInfo>,
+    pub date: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -341,37 +355,85 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
     println!("Printing receipt: data={:?}, config={:?}", data, config);
     let mut payload: Vec<u8> = Vec::new();
     
-    // ESC/POS Implementation - ULTRA SAFE MODE
-    // 1. Initialize printer: ESC @
-    payload.extend_from_slice(&[0x1B, 0x40]); 
-    
-    // 2. Simple Header
-    payload.extend_from_slice(b"--- FIXTRACK ---\n");
-    payload.extend_from_slice(format!("Order: {}\n", data.order_id).as_bytes());
-    payload.extend_from_slice(format!("Customer: {}\n", data.customer).as_bytes());
-    payload.extend_from_slice(b"----------------\n");
+    // ESC/POS Commands
+    let esc: u8 = 0x1B;
+    // let gs: u8 = 0x1D; // Unused for now, commenting out
 
-    // 3. Simple Items
+    // 1. Initialize printer: ESC @
+    payload.extend_from_slice(&[esc, 0x40]); 
+    
+    // 2. Header (Centered, Bold)
+    if let Some(ref shop) = data.shop_info {
+        payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
+        payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
+        payload.extend_from_slice(format!("{}\n", shop.shop_name.to_uppercase()).as_bytes());
+        payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
+        payload.extend_from_slice(format!("{}\n", shop.address).as_bytes());
+        payload.extend_from_slice(format!("Tel: {}\n", shop.phone_number).as_bytes());
+        payload.extend_from_slice(b"\n");
+    } else {
+        payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
+        payload.extend_from_slice(b"--- FIXTRACK REPAIR ---\n\n");
+    }
+
+    // 3. Order Info (Left align)
+    payload.extend_from_slice(&[esc, 0x61, 0x00]); // Left align
+    payload.extend_from_slice(format!("ORDER ID: {}\n", data.order_id).as_bytes());
+    if let Some(date) = data.date {
+        payload.extend_from_slice(format!("DATE:     {}\n", date).as_bytes());
+    }
+    payload.extend_from_slice(format!("CUSTOMER: {}\n", data.customer).as_bytes());
+    payload.extend_from_slice(b"--------------------------------\n");
+
+    // 4. Device Details (Bold label)
+    if let Some(dev) = data.device {
+        payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
+        payload.extend_from_slice(b"DEVICE: ");
+        payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
+        payload.extend_from_slice(format!("{}\n", dev).as_bytes());
+    }
+    if let Some(issue) = data.issue {
+        payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
+        payload.extend_from_slice(b"ISSUE:  ");
+        payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
+        payload.extend_from_slice(format!("{}\n", issue).as_bytes());
+    }
+    payload.extend_from_slice(b"--------------------------------\n");
+
+    // 5. Items (Parts/Labor)
+    payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
+    payload.extend_from_slice(b"ITEM             QTY      PRICE\n");
+    payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
+    
     for item in data.items {
-        let line = format!("{}x {} - ${:.2}\n", item.qty, item.name, item.price);
+        // Simple fixed-width formatting
+        let name = if item.name.len() > 15 { &item.name[0..15] } else { &item.name };
+        let line = format!("{:<16} {:<8} ${:>8.2}\n", name, item.qty, item.price);
         payload.extend_from_slice(line.as_bytes());
     }
 
-    payload.extend_from_slice(b"----------------\n");
+    payload.extend_from_slice(b"--------------------------------\n");
+
+    // 6. Total (Right align, Bold)
+    payload.extend_from_slice(&[esc, 0x61, 0x02]); // Right align
+    payload.extend_from_slice(&[esc, 0x21, 0x08]); // Bold/Emphasized
     payload.extend_from_slice(format!("TOTAL: ${:.2}\n", data.total).as_bytes());
-    payload.extend_from_slice(b"\nThank you!\n");
+    payload.extend_from_slice(&[esc, 0x21, 0x00]); // Back to normal
     
-    // 4. Feed 3 lines: ESC d 3
-    payload.extend_from_slice(&[0x1B, 0x64, 0x03]);
+    // 7. Footer
+    payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
+    payload.extend_from_slice(b"\n");
+    if let Some(ref shop) = data.shop_info {
+        payload.extend_from_slice(format!("{}\n", shop.receipt_footer).as_bytes());
+    } else {
+        payload.extend_from_slice(b"Thank you for your trust!\n");
+    }
     
-    // 7. Footer & Cut
-    payload.extend_from_slice(b"\nThank you!\n");
+    // 8. Feed & Cut
+    payload.extend_from_slice(&[esc, 0x64, 0x05]); // Feed 5 lines
     
-    // Feed 1 line: ESC d 1
-    payload.extend_from_slice(&[0x1B, 0x64, 0x01]);
-    
-    // Standard Full Cut (Commented out for compatibility with non-cutter printers)
-    // payload.extend_from_slice(&[0x1D, 0x56, 0x00]);
+    // If standard paper cutter exists: GS V 0
+    // payload.extend_from_slice(&[gs, 0x56, 0x00]); 
 
     println!("Payload generated: {} bytes", payload.len());
 

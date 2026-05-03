@@ -85,6 +85,8 @@ interface RepairColumnActions {
   onPrintSticker: (repair: Repair) => void;
   // Add print receipt function
   onPrintReceipt: (repair: Repair) => void;
+  // Add preview receipt function
+  onPreviewReceipt: (repair: Repair) => void;
 }
 
 export const createRepairColumns = (
@@ -324,6 +326,9 @@ export const createRepairColumns = (
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => actions.onPrintReceipt(repair)} className="rounded-xl font-bold text-xs uppercase tracking-wider py-2">
                 <Printer className="mr-3 h-4 w-4 opacity-70" /> {t('repairs.printReceipt')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => actions.onPreviewReceipt(repair)} className="rounded-xl font-bold text-xs uppercase tracking-wider py-2">
+                <FileText className="mr-3 h-4 w-4 opacity-70" /> Preview & PDF
               </DropdownMenuItem>
               <div className="h-px bg-muted my-1 mx-1"></div>
               <DropdownMenuItem

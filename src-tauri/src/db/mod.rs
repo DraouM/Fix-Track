@@ -57,5 +57,7 @@ pub fn get_connection() -> Result<Connection> {
     let conn = Connection::open(&path)?;
     // Enable WAL mode to improve concurrency
     conn.pragma_update(None, "journal_mode", "WAL")?;
+    // Enable foreign key constraints
+    conn.pragma_update(None, "foreign_keys", "ON")?;
     Ok(conn)
 }

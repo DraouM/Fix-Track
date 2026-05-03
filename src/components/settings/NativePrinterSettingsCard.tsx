@@ -200,22 +200,79 @@ export function NativePrinterSettingsCard() {
           </div>
         </div>
 
-        <div className="pt-4 border-t flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleRefresh}
-            disabled={isRefreshing || !config.useNativePrint}
-            className="text-xs text-muted-foreground hover:text-primary"
-          >
-            <RefreshCw className={`mr-2 h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? "Discovering..." : "Refresh Printer List"}
-          </Button>
-          {!config.useNativePrint && (
-            <p className="text-xs text-amber-600 font-medium">
-              * Native printing is disabled
-            </p>
-          )}
+        <div className="pt-4 border-t flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={isRefreshing || !config.useNativePrint}
+              className="text-xs text-muted-foreground hover:text-primary"
+            >
+              <RefreshCw className={`mr-2 h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? "Discovering..." : "Refresh Printer List"}
+            </Button>
+            {!config.useNativePrint && (
+              <p className="text-xs text-amber-600 font-medium">
+                * Native printing is disabled
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!config.useNativePrint || !config.receiptPrinterName}
+              onClick={async () => {
+                try {
+                  const { invoke } = await import('@tauri-apps/api/core');
+                  await invoke('print_receipt_direct', { 
+                    config, 
+                    data: {
+                      orderId: "TEST-001",
+                      customer: "Settings Test",
+                      items: [{ name: "Test Receipt Item", qty: 1, price: 10.00 }],
+                      total: 10.00
+                    }
+                  });
+                  import('sonner').then(({ toast }) => toast.success("Test receipt sent!"));
+                } catch (err) {
+                  import('sonner').then(({ toast }) => toast.error(`Test failed: ${err}`));
+                }
+              }}
+              className="h-9 text-[10px] font-black uppercase tracking-widest border-blue-200 hover:bg-blue-50 dark:border-blue-900/30 dark:hover:bg-blue-950/30"
+            >
+              <Receipt className="mr-2 h-3 w-3 text-blue-500" />
+              Test Receipt
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!config.useNativePrint || !config.stickerPrinterName}
+              onClick={async () => {
+                try {
+                  const { invoke } = await import('@tauri-apps/api/core');
+                  await invoke('print_sticker_direct', {
+                    config,
+                    data: {
+                      barcode: "1234567890",
+                      item_name: "TEST STICKER",
+                      price: 99.99
+                    }
+                  });
+                  import('sonner').then(({ toast }) => toast.success("Test sticker sent!"));
+                } catch (err) {
+                  import('sonner').then(({ toast }) => toast.error(`Test failed: ${err}`));
+                }
+              }}
+              className="h-9 text-[10px] font-black uppercase tracking-widest border-orange-200 hover:bg-orange-50 dark:border-orange-900/30 dark:hover:bg-orange-950/30"
+            >
+              <Tag className="mr-2 h-3 w-3 text-orange-500" />
+              Test Sticker
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -35,7 +35,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
   const { t, i18n } = useTranslation();
   const { repairs, updateRepairStatus, deleteRepair } = useRepairContext();
   const { settings } = useSettings();
-  const { printSticker, printReceipt } = usePrintUtils(); // Add print sticker hook
+  const { printSticker, printReceipt, previewReceipt } = usePrintUtils(); // Add print sticker hook
 
   const [selectedRepair, setSelectedRepair] = useState<Repair | null>(null);
   const [paymentDialogRepair, setPaymentDialogRepair] = useState<Repair | null>(
@@ -137,6 +137,14 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
     [printReceipt]
   );
 
+  // ✅ Handle preview receipt functionality
+  const handlePreviewReceipt = useCallback(
+    (repair: Repair) => {
+      previewReceipt(repair, { includePayments: true, includeParts: true });
+    },
+    [previewReceipt]
+  );
+
   // ✅ Create column actions for TanStack Table
   const columnActions = useMemo(
     () => ({
@@ -149,8 +157,9 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       formatNumber,
       currencySymbol: currentSymbol,
       getPaymentBadgeProps,
-      onPrintSticker: handlePrintSticker, // Add print sticker action
-      onPrintReceipt: handlePrintReceipt, // Add print receipt action
+      onPrintSticker: handlePrintSticker,
+      onPrintReceipt: handlePrintReceipt,
+      onPreviewReceipt: handlePreviewReceipt, // Add preview action
     }),
     [
       onEditRepair,
@@ -159,8 +168,9 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       formatCurrency,
       formatNumber,
       getPaymentBadgeProps,
-      handlePrintSticker, // Add print sticker to dependencies
-      handlePrintReceipt, // Add print receipt to dependencies
+      handlePrintSticker,
+      handlePrintReceipt,
+      handlePreviewReceipt,
     ]
   );
 

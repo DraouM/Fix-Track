@@ -18,6 +18,7 @@ import { clientSchema } from "@/types/client"; // Import for type usage if neede
 import { useSettings } from "@/context/SettingsContext";
 import { CURRENCY_SYMBOLS } from "@/types/settings";
 import { useRouter } from "next/navigation";
+import { LOGO_DATA_URI } from "@/lib/logoDataUri";
 
 interface PrintOptions {
   includePayments?: boolean;
@@ -76,7 +77,7 @@ export const usePrintUtils = () => {
           options,
           lang,
           curr,
-          "/logo_shop.svg"
+          LOGO_DATA_URI
         );
       }
 
@@ -156,10 +157,17 @@ export const usePrintUtils = () => {
 
         // Native Direct Thermal Implementation
         if (type === "sticker") {
+          const isRepair = "deviceBrand" in item;
+          const repair = isRepair ? (item as Repair) : null;
+
           const stickerData = {
-            barcode: ("barcode" in item ? item.barcode : (item as Repair).code) || item.id,
-            item_name: ("itemName" in item ? item.itemName : `${(item as Repair).deviceBrand} ${(item as Repair).deviceModel}`) || "Unknown",
-            price: "sellingPrice" in item ? item.sellingPrice : 0,
+            barcode: (isRepair ? repair?.code : (item as InventoryItem).barcode) || item.id,
+            itemName: (isRepair ? `${repair?.deviceBrand} ${repair?.deviceModel}` : (item as InventoryItem).itemName) || "Unknown",
+            customerName: isRepair ? repair?.customerName : undefined,
+            customerPhone: isRepair ? repair?.customerPhone : undefined,
+            issue: isRepair ? repair?.issueDescription : undefined,
+            price: isRepair ? (repair?.estimatedCost || 0) : (item as InventoryItem).sellingPrice,
+            currencySymbol: CURRENCY_SYMBOLS[settings.currency] || "$",
           };
 
           await invoke("print_sticker_direct", { config, data: stickerData });
@@ -175,7 +183,7 @@ export const usePrintUtils = () => {
             device: isRepair ? `${repair?.deviceBrand} ${repair?.deviceModel}` : undefined,
             issue: isRepair ? repair?.issueDescription : undefined,
             items: isRepair 
-              ? (repair?.usedParts?.map(p => ({ name: p.partName, qty: p.quantity, price: p.cost })) || [])
+              ? (repair?.usedParts?.length ? repair.usedParts.map(p => ({ name: p.partName, qty: p.quantity, price: p.cost })) : [{ name: "Repair Service", qty: 1, price: repair?.estimatedCost || 0 }])
               : [{ name: (item as InventoryItem).itemName, qty: 1, price: (item as InventoryItem).sellingPrice }],
             total: isRepair ? repair?.estimatedCost || 0 : (item as InventoryItem).sellingPrice,
             shopInfo: {
@@ -185,6 +193,7 @@ export const usePrintUtils = () => {
               receiptFooter: shopInfo.receiptFooter,
             },
             date: new Date().toLocaleString(),
+            currencySymbol: CURRENCY_SYMBOLS[settings.currency] || "$",
           };
 
           await invoke("print_receipt_direct", { config, data: receiptData });
@@ -274,7 +283,7 @@ export const usePrintUtils = () => {
           referenceCode,
           language || settings.language,
           currency || settings.currency,
-          "/logo_shop.svg",
+          LOGO_DATA_URI,
           previousBalance
         );
         return printDocument(content, { id: payment.id } as any, "receipt");
@@ -307,7 +316,7 @@ export const usePrintUtils = () => {
           previousBalance,
           language || settings.language,
           currency || settings.currency,
-          "/logo_shop.svg"
+          LOGO_DATA_URI
         );
         // Casting transaction to any to satisfy the minimal interface required by printDocument/addToPrintHistory
         // effectively treating it as an item with an id.

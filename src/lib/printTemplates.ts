@@ -2,6 +2,8 @@ import { Repair, Payment } from "@/types/repair";
 import { getShopInfo } from "./shopInfo";
 import { CURRENCY_SYMBOLS, type Currency } from "@/types/settings";
 import { i18n } from "./i18n";
+import { LOGO_DATA_URI } from "./logoDataUri";
+
 
 /**
  * Generates the HTML for a thermal repair receipt.
@@ -76,11 +78,7 @@ export function renderRepairReceiptHTML(
       </head>
       <body dir="${direction}">
         <div style="text-align: center; margin-bottom: 4px; border-bottom: 1px dashed #000; padding-bottom: 4px;">
-          ${logoUrl || shopInfo.logoUrl
-      ? `<div style="margin-bottom: 2px;"><img src="${logoUrl || shopInfo.logoUrl
-      }" style="max-width: 60mm; max-height: 40mm; object-fit: contain;"></div>`
-      : ""
-    }
+          <div style="margin-bottom: 2px;"><img src="${logoUrl || shopInfo.logoUrl || LOGO_DATA_URI}" style="max-width: 60mm; max-height: 20mm; object-fit: contain;"></div>
           <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">${shopInfo.shopName}</div>
           <div style="font-size: 7px;">${shopInfo.address}</div>
           <div style="font-size: 7px;">${i18n.t("receipt.telephone", { lng: language })}: ${shopInfo.phoneNumber}</div>
@@ -200,11 +198,7 @@ export function renderPaymentReceiptHTML(
       </head>
       <body>
         <div style="text-align: center; margin-bottom: 4px; border-bottom: 1px dashed #000; padding-bottom: 4px;">
-          ${logoUrl || shopInfo.logoUrl
-      ? `<div style="margin-bottom: 2px;"><img src="${logoUrl || shopInfo.logoUrl
-      }" style="max-width: 60mm; max-height: 40mm; object-fit: contain;"></div>`
-      : ""
-    }
+          <div style="margin-bottom: 2px;"><img src="${logoUrl || shopInfo.logoUrl || LOGO_DATA_URI}" style="max-width: 60mm; max-height: 20mm; object-fit: contain;"></div>
           <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">${shopInfo.shopName}</div>
           <div style="font-size: 7px;">${shopInfo.address}</div>
           <div style="font-size: 7px;">${i18n.t("receipt.telephone", { lng: language })}: ${shopInfo.phoneNumber}</div>
@@ -376,11 +370,7 @@ export function renderTransactionReceiptHTML(
       <body>
         <!-- Header -->
         <div class="center" style="margin-bottom: 10px;">
-          ${logoUrl || shopInfo.logoUrl
-      ? `<div style="margin-bottom: 4px;"><img src="${logoUrl || shopInfo.logoUrl
-      }" style="max-width: 60mm; max-height: 40mm; object-fit: contain;"></div>`
-      : ""
-    }
+          <div style="margin-bottom: 4px;"><img src="${logoUrl || shopInfo.logoUrl || LOGO_DATA_URI}" style="max-width: 60mm; max-height: 20mm; object-fit: contain;"></div>
           <div style="font-size: 14px; font-weight: bold;">${shopInfo.shopName}</div>
           <div style="font-size: 9px;">${shopInfo.address}</div>
           <div style="font-size: 9px;">${i18n.t("receipt.telephone", { lng: language })}: ${shopInfo.phoneNumber}</div>

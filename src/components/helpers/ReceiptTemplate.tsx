@@ -20,9 +20,8 @@ import { PrintFooter } from "./PrintFooter";
 interface ReceiptTemplateProps {
   repair: Repair;
   includePayments?: boolean;
-  includeParts?: boolean;
   /**
-   * Optional logo URL override. Falls back to shopInfo.logoUrl if omitted.
+   * Optional logo URL override. Falls back to shopInfo.logoUrl then /logo_shop.svg.
    */
   logoUrl?: string;
 }
@@ -30,7 +29,6 @@ interface ReceiptTemplateProps {
 export function ReceiptTemplate({
   repair,
   includePayments = true,
-  includeParts = true,
   logoUrl,
 }: ReceiptTemplateProps) {
   const { settings } = useSettings();
@@ -118,32 +116,6 @@ export function ReceiptTemplate({
 
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
 
-      {/* Parts Used */}
-      {includeParts && repair.usedParts && repair.usedParts.length > 0 && (
-        <>
-          <div style={{ marginBottom: "6px", fontSize: "11px" }}>
-            <div style={{ marginBottom: "2px", textDecoration: "underline" }}>
-              {t("receipt.partsUsed")}:
-            </div>
-            {repair.usedParts.map((part, index) => (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "1px",
-                }}
-              >
-                <span>
-                  {part.partName} x{part.quantity}
-                </span>
-                <span>{CURRENCY_SYMBOLS[settings.currency]}{(part.cost || 0).toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }}></div>
-        </>
-      )}
 
       {/* Financial Summary */}
       <div style={{ marginBottom: "6px", fontSize: "11px" }}>

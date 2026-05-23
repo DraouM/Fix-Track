@@ -2,6 +2,7 @@
 
 import { getShopInfo } from "@/lib/shopInfo";
 import { useTranslation } from "react-i18next";
+import { LOGO_DATA_URI } from "@/lib/logoDataUri";
 
 interface PrintHeaderProps {
   logoUrl?: string;
@@ -11,7 +12,7 @@ interface PrintHeaderProps {
 export function PrintHeader({ logoUrl, fontSize = "11px" }: PrintHeaderProps) {
   const shopInfo = getShopInfo();
   const { t } = useTranslation();
-  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/images/logo_1.png";
+  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? LOGO_DATA_URI;
 
   return (
     <div

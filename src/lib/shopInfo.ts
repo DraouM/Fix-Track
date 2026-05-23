@@ -1,5 +1,6 @@
 // lib/shopInfo.ts
 // Shop information management
+import { LOGO_DATA_URI } from "./logoDataUri";
 
 export interface ShopInfo {
   shopName: string;
@@ -23,7 +24,7 @@ export const DEFAULT_SHOP_INFO: ShopInfo = {
   email: "contact@techfixpro.com",
   website: "www.techfixpro.com",
   businessHours: "Mon-Fri: 9AM-6PM, Sat: 10AM-4PM",
-  logoUrl: "/images/logo_1.png", // Default to logo_1.png
+  logoUrl: LOGO_DATA_URI, // Embedded SVG data URI — works without an HTTP server
   ownerName: "Mohamed Elamine", // Default owner name
 };
 
@@ -33,7 +34,13 @@ export const getShopInfo = (): ShopInfo => {
     const shopInfoRaw = localStorage.getItem("shopInfo");
     if (shopInfoRaw) {
       try {
-        return { ...DEFAULT_SHOP_INFO, ...JSON.parse(shopInfoRaw) };
+        const stored = JSON.parse(shopInfoRaw);
+        // Replace any stored relative logo URL (e.g. "/images/logo_1.png") with
+        // the embedded data URI so it works inside Tauri iframes / temp HTML files.
+        if (!stored.logoUrl || stored.logoUrl.startsWith("/")) {
+          stored.logoUrl = LOGO_DATA_URI;
+        }
+        return { ...DEFAULT_SHOP_INFO, ...stored };
       } catch (e) {
         console.error("Failed to parse shop info from localStorage", e);
       }

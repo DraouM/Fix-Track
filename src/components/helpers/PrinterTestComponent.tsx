@@ -73,14 +73,17 @@ export function PrinterTestComponent({ className }: PrinterTestComponentProps) {
     try {
       if (target === "sticker") {
         const data = {
-          barcode: "1234567890",
-          item_name: "TEST STICKER",
+          barcode: "REP-TEST",
+          itemName: "TEST STICKER",
+          customerName: "TEST",
+          customerPhone: "0550000000",
+          issue: "Test Issue",
           price: 99.99
         };
         await invoke("print_sticker_direct", { config, data });
       } else {
         const data = {
-          order_id: "TEST-001",
+          orderId: "TEST-001",
           customer: "Test Customer",
           items: [{ name: "Test Item", qty: 1, price: 10.00 }],
           total: 10.00

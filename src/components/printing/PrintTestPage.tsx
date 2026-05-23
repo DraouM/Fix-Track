@@ -157,7 +157,7 @@ export function PrintTestPage() {
             await invoke('print_receipt_direct', { 
               config, 
               data: {
-                order_id: "TEST-001",
+                orderId: "TEST-001",
                 customer: "John Doe",
                 items: [
                   { name: "Screen Replacement", qty: 1, price: 99.99 },
@@ -177,8 +177,11 @@ export function PrintTestPage() {
              await invoke('print_sticker_direct', {
                config,
                data: {
-                 barcode: "1234567890",
-                 item_name: "iPhone 13 Screen",
+                 barcode: "REP-TEST",
+                 itemName: "iPhone 13 Screen",
+                 customerName: "TEST",
+                 customerPhone: "0550000000",
+                 issue: "Screen Replacement",
                  price: 120.00
                }
              });

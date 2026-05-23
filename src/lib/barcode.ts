@@ -25,19 +25,19 @@ export function getBarcodeData(data: Repair | InventoryItem): BarcodePrintData {
     barcodeValue: isRepair
       ? repair?.code || repair?.id || ""
       : item?.barcode || item?.id || "",
-    // Repair: Show Code at top. Inventory: None.
+    // Repair: Show Code at top.
     title: isRepair
       ? `${repair?.code || "REPAIR"}`
       : "",
-    // Repair: Show Issue. Inventory: Item Name.
+    // Repair: Show Device Brand/Model. Inventory: Item Name.
     mainText: isRepair
-      ? repair?.issueDescription || ""
+      ? `${repair?.deviceBrand || ""} ${repair?.deviceModel || ""}`
       : item?.itemName || "",
-    // Repair: Replace Barcode with Phone. Inventory: Keep barcode.
+    // Repair: Show Customer Name.
     subText: isRepair
-      ? "" // Moved to center
+      ? repair?.customerName || ""
       : "",
-    showBarcode: !isRepair,
+    showBarcode: true,
     barcodeLabel: isRepair ? `${repair?.customerName || ""} - ${repair?.customerPhone || ""}` : undefined,
   };
 }

@@ -10,7 +10,7 @@ export interface ReceiptItemData {
 }
 
 export interface ReceiptData {
-  order_id: string;
+  orderId: string;
   customer: string;
   items: ReceiptItemData[];
   total: number;
@@ -18,8 +18,12 @@ export interface ReceiptData {
 
 export interface StickerData {
   barcode: string;
-  item_name: string;
+  itemName: string;
+  customerName?: string;
+  customerPhone?: string;
+  issue?: string;
   price: number;
+  currencySymbol?: string;
 }
 
 /**

@@ -55,13 +55,19 @@ pub struct ReceiptData {
     pub total: f64,
     pub shop_info: Option<ShopInfo>,
     pub date: Option<String>,
+    pub currency_symbol: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StickerData {
     pub barcode: String,
     pub item_name: String,
+    pub customer_name: Option<String>,
+    pub customer_phone: Option<String>,
+    pub issue: Option<String>,
     pub price: f64,
+    pub currency_symbol: Option<String>,
 }
 
 /// Information about an available printer.
@@ -405,10 +411,12 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
     payload.extend_from_slice(b"ITEM             QTY      PRICE\n");
     payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
     
+    let symbol = data.currency_symbol.as_deref().unwrap_or("$");
+
     for item in data.items {
         // Simple fixed-width formatting
         let name = if item.name.len() > 15 { &item.name[0..15] } else { &item.name };
-        let line = format!("{:<16} {:<8} ${:>8.2}\n", name, item.qty, item.price);
+        let line = format!("{:<16} {:<8} {:>1}{:>8.2}\n", name, item.qty, symbol, item.price);
         payload.extend_from_slice(line.as_bytes());
     }
 
@@ -417,7 +425,7 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
     // 6. Total (Right align, Bold)
     payload.extend_from_slice(&[esc, 0x61, 0x02]); // Right align
     payload.extend_from_slice(&[esc, 0x21, 0x08]); // Bold/Emphasized
-    payload.extend_from_slice(format!("TOTAL: ${:.2}\n", data.total).as_bytes());
+    payload.extend_from_slice(format!("TOTAL: {}{:.2}\n", symbol, data.total).as_bytes());
     payload.extend_from_slice(&[esc, 0x21, 0x00]); // Back to normal
     
     // 7. Footer
@@ -468,19 +476,54 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
 /// Send raw direct commands (TSPL) for a sticker
 #[tauri::command]
 pub fn print_sticker_direct(config: PrinterConfig, data: StickerData) -> Result<(), String> {
+    let customer = data.customer_name.as_deref().unwrap_or("");
+    let phone = data.customer_phone.as_deref().unwrap_or("");
+    let issue = data.issue.as_deref().unwrap_or("");
+
+    // Build the customer + phone line: "NAME-PHONE" or just "NAME"
+    let customer_line = if !phone.is_empty() {
+        format!("{}-{}", customer, phone)
+    } else {
+        customer.to_string()
+    };
+
     // TSPL template (often used for XPrinter XP-365B)
     // 50mm x 25mm label
+    // Layout:
+    //   Line 1: Repair code / Barcode
+    //   Line 2: Issue or Item Name (Main display)
+    //   Line 3: Customer info
+    
+    // Use item_name if issue is empty (e.g. for inventory stickers)
+    let display_text = if issue.is_empty() { &data.item_name } else { issue };
+    
+    // Truncate to prevent overflow (Font 3 is 16 dots wide, 400 dots max -> ~25 characters)
+    let mut main_text = display_text.to_string();
+    if main_text.len() > 24 {
+        main_text.truncate(24);
+    }
+
+    // Centering logic: Sticker is 50mm (~400 dots). Center point is 200.
+    // Font "2" is 12 dots wide (6 dots half-width)
+    // Font "3" is 16 dots wide (8 dots half-width)
+    let code_x = (200 - (data.barcode.len() as i32 * 6)).max(10);
+    let main_x = (200 - (main_text.len() as i32 * 8)).max(10);
+    // Shift left by 20 dots to push name+number left
+    let cust_x = (200 - (customer_line.len() as i32 * 6) - 20).max(10);
+
     let tspl_template = format!(
         "SIZE 50 mm, 25 mm\r\n\
-         GAP 2 mm, 0 mm\r\n\
+         GAP 3 mm, 0 mm\r\n\
+         DIRECTION 1,0\r\n\
+         REFERENCE 0,0\r\n\
          CLS\r\n\
-         TEXT 10,10,\"TSS24.BF2\",0,1,1,\"{name}\"\r\n\
-         BARCODE 10,50,\"128\",60,1,0,2,2,\"{barcode}\"\r\n\
-         TEXT 10,140,\"TSS24.BF2\",0,1,1,\"Price: ${price:.2}\"\r\n\
+         TEXT {code_x},20,\"2\",0,1,1,\"{code}\"\r\n\
+         TEXT {main_x},60,\"3\",0,1,1,\"{main_text}\"\r\n\
+         TEXT {cust_x},105,\"2\",0,1,1,\"{customer_line}\"\r\n\
          PRINT 1\r\n",
-        name = data.item_name,
-        barcode = data.barcode,
-        price = data.price
+        code = data.barcode,
+        main_text = main_text,
+        customer_line = customer_line
     );
     
     let payload = tspl_template.into_bytes();

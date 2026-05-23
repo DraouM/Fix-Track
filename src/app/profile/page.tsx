@@ -624,7 +624,6 @@ export default function ProfilePage() {
                 <ReceiptTemplate
                   repair={sampleRepair}
                   includePayments={true}
-                  includeParts={true}
                 />
               </div>
             </div>

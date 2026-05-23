@@ -257,8 +257,11 @@ export function NativePrinterSettingsCard() {
                   await invoke('print_sticker_direct', {
                     config,
                     data: {
-                      barcode: "1234567890",
-                      item_name: "TEST STICKER",
+                      barcode: "REP-TEST",
+                      itemName: "TEST STICKER",
+                      customerName: "TEST",
+                      customerPhone: "0550000000",
+                      issue: "Test Issue",
                       price: 99.99
                     }
                   });

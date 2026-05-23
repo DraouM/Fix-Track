@@ -353,3 +353,17 @@ pub struct Task {
     pub created_at: String,
     pub updated_at: String,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UnifiedPayment {
+    pub id: String,
+    pub source_id: String,
+    pub source_type: String, // "Repair", "Sale", "Order", "Client", "Supplier"
+    pub amount: f64,
+    pub date: String,
+    pub method: String,
+    pub received_by: Option<String>,
+    pub notes: Option<String>,
+    pub source_number: Option<String>, // e.g. Repair Code, Sale Number
+    pub party_name: Option<String>, // e.g. Client Name, Supplier Name
+}

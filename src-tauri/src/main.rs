@@ -20,9 +20,10 @@ use db::order::{
     update_order_item,
 };
 use db::repair::{
-    add_payment, add_used_part, delete_repair, delete_used_part, get_history_for_repair,
-    get_payments_for_repair, get_repair_by_id, get_repairs, get_used_parts_for_repair,
-    insert_repair, insert_repair_history, update_repair, update_repair_status,
+    add_payment, add_used_part, delete_repair, delete_repair_payment, delete_used_part,
+    get_history_for_repair, get_payments_for_repair, get_repair_by_id, get_repairs,
+    get_used_parts_for_repair, insert_repair, insert_repair_history, update_repair,
+    update_repair_payment, update_repair_status,
 };
 use db::sale::{
     add_sale_item, add_sale_payment, complete_sale, create_sale, get_sale_by_id, get_sales,
@@ -47,6 +48,7 @@ use db::transaction::{
     update_transaction,
 };
 use db::task::{delete_task, get_tasks, insert_task, update_task};
+use db::payment::get_all_payments;
 use std::panic;
 
 fn main() {
@@ -83,12 +85,16 @@ fn main() {
             //Removed update_payment_status as it's now automatically calculated
             delete_repair,
             add_payment,
+            update_repair_payment,
+            delete_repair_payment,
             get_payments_for_repair,
             add_used_part,
             delete_used_part,
             get_used_parts_for_repair,
             insert_repair_history,
             get_history_for_repair,
+            // PAYMENT
+            get_all_payments,
             // SUPPLIERS
             get_suppliers,
             get_supplier_by_id,

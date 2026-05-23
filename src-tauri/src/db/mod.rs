@@ -11,6 +11,7 @@ pub mod session;
 pub mod transaction;
 pub mod dashboard;
 pub mod task;
+pub mod payment;
 
 use rusqlite::{Connection, Result};
 use std::path::PathBuf;

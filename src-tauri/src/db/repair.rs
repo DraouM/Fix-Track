@@ -1,5 +1,7 @@
 use super::models::{Repair, RepairHistory, RepairPayment, RepairUsedPart};
-use rusqlite::{params, OptionalExtension, Result};
+use rusqlite::{params, Connection, OptionalExtension, Result};
+use chrono::Utc;
+use uuid::Uuid;
 
 /// ======================
 /// CRUD FUNCTIONS
@@ -303,11 +305,75 @@ pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
         ],
     ).map_err(|e| e.to_string())?;
 
+    // Recalculate status
+    recalculate_repair_status_internal(&conn, &payment.repair_id)?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_repair_payment(id: String, amount: f64, method: String) -> Result<(), String> {
+    let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
+    
+    // Get repair_id for recalculation and logging
+    let (repair_id, old_amount): (String, f64) = conn.query_row(
+        "SELECT repair_id, amount FROM repair_payments WHERE id = ?1",
+        params![id],
+        |row| Ok((row.get(0)?, row.get(1)?))
+    ).map_err(|e| e.to_string())?;
+
+    // Update payment
+    conn.execute(
+        "UPDATE repair_payments SET amount = ?2, method = ?3 WHERE id = ?1",
+        params![id, amount, method],
+    ).map_err(|e| e.to_string())?;
+
+    // Recalculate and update repair
+    recalculate_repair_status_internal(&conn, &repair_id)?;
+
+    // Log history
+    let h_id = Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO repair_history (id, repair_id, date, event_type, details, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![h_id, repair_id, Utc::now().to_rfc3339(), "note", format!("Payment updated: {} -> {} (Method: {})", old_amount, amount, method), None::<String>],
+    ).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_repair_payment(id: String) -> Result<(), String> {
+    let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
+    
+    // Get repair_id for recalculation and logging
+    let (repair_id, amount): (String, f64) = conn.query_row(
+        "SELECT repair_id, amount FROM repair_payments WHERE id = ?1",
+        params![id],
+        |row| Ok((row.get(0)?, row.get(1)?))
+    ).map_err(|e| e.to_string())?;
+
+    // Delete payment
+    conn.execute("DELETE FROM repair_payments WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
+
+    // Recalculate and update repair
+    recalculate_repair_status_internal(&conn, &repair_id)?;
+
+    // Log history
+    let h_id = Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO repair_history (id, repair_id, date, event_type, details, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![h_id, repair_id, Utc::now().to_rfc3339(), "note", format!("Payment deleted: {}", amount), None::<String>],
+    ).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+fn recalculate_repair_status_internal(conn: &Connection, repair_id: &str) -> Result<(), String> {
     // Recalculate total paid
     let total_paid: f64 = conn
         .query_row(
             "SELECT COALESCE(SUM(amount), 0) FROM repair_payments WHERE repair_id = ?1",
-            params![payment.repair_id],
+            params![repair_id],
             |row| row.get(0),
         )
         .map_err(|e| e.to_string())?;
@@ -316,7 +382,7 @@ pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
     let estimated_cost: f64 = conn
         .query_row(
             "SELECT estimated_cost FROM repairs WHERE id = ?1",
-            params![payment.repair_id],
+            params![repair_id],
             |row| row.get(0),
         )
         .map_err(|e| e.to_string())?;
@@ -333,7 +399,7 @@ pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
     // Update payment status
     conn.execute(
         "UPDATE repairs SET payment_status = ?2, updated_at = datetime('now') WHERE id = ?1",
-        params![payment.repair_id, new_status],
+        params![repair_id, new_status],
     )
     .map_err(|e| e.to_string())?;
 

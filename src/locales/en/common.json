@@ -12,7 +12,8 @@
         "operations": "Operations",
         "management": "Management",
         "tools": "Tools",
-        "tasks": "Tasks & Reminders"
+        "tasks": "Tasks & Reminders",
+        "payments": "Payments"
     },
     "common": {
         "locale": "en-US",

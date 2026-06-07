@@ -25,6 +25,8 @@ import { Edit, Trash2, ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PaymentEditDialog } from "./PaymentEditDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSettings } from "@/context/SettingsContext";
+import { formatNumber, getLocaleForIntl } from "@/lib/formatters";
 
 interface PaymentTableProps {
   payments: UnifiedPayment[];
@@ -33,7 +35,8 @@ interface PaymentTableProps {
 }
 
 export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { getCurrencySymbol } = useSettings();
   const [editingPayment, setEditingPayment] = useState<UnifiedPayment | null>(null);
 
   const columns = useMemo<ColumnDef<UnifiedPayment>[]>(
@@ -43,10 +46,10 @@ export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps)
         header: t("common.date"),
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+            <span className="text-xs font-bold text-foreground">
               {format(new Date(row.original.date), "MMM dd, yyyy")}
             </span>
-            <span className="text-xs text-muted-foreground pt-0.5">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-50">
               {format(new Date(row.original.date), "HH:mm")}
             </span>
           </div>
@@ -56,7 +59,7 @@ export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps)
         accessorKey: "source_type",
         header: t("payments.source"),
         cell: ({ row }) => (
-          <Badge variant="secondary" className="font-semibold uppercase text-[10px] tracking-wider px-2 py-0.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border-none">
+          <Badge variant="secondary" className="font-black uppercase text-[9px] tracking-widest px-2 py-0.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border-none">
             {t(`payments.sourceTypes.${row.original.source_type}`)}
           </Badge>
         ),
@@ -66,7 +69,7 @@ export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps)
         header: t("payments.reference"),
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold text-primary">
+            <span className="font-black text-[10px] uppercase tracking-tighter text-primary bg-primary/5 px-2 py-0.5 rounded-md">
               #{row.original.source_number || "---"}
             </span>
           </div>
@@ -76,7 +79,7 @@ export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps)
         accessorKey: "party_name",
         header: t("payments.party"),
         cell: ({ row }) => (
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">
+          <span className="text-xs font-black text-foreground uppercase tracking-tight">
             {row.original.party_name || "---"}
           </span>
         ),
@@ -85,7 +88,7 @@ export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps)
         accessorKey: "method",
         header: t("repairs.method"),
         cell: ({ row }) => (
-          <Badge variant="outline" className="px-2 py-0 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400">
+          <Badge variant="outline" className="px-2 py-0 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 font-bold text-[9px] uppercase tracking-wider">
             {row.original.method}
           </Badge>
         ),
@@ -94,19 +97,22 @@ export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps)
         accessorKey: "amount",
         header: t("common.amount"),
         cell: ({ row }) => (
-          <span className="font-black text-primary tabular-nums">
-            {row.original.amount.toLocaleString()}
-          </span>
+          <div className="flex items-baseline gap-1">
+             <span className="font-black text-sm text-foreground tabular-nums">
+               {formatNumber(row.original.amount, getLocaleForIntl(i18n.language))}
+             </span>
+             <span className="text-[10px] font-black text-muted-foreground/60 uppercase">{getCurrencySymbol()}</span>
+          </div>
         ),
       },
       {
         id: "actions",
         cell: ({ row }) => (
-          <div className="flex items-center justify-end gap-2 pr-2">
+          <div className="flex items-center justify-end gap-2 pr-2 opacity-0 group-hover:opacity-100 transition-all">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="h-8 w-8 text-zinc-500 hover:text-primary hover:bg-primary/5 transition-colors"
+              className="h-8 w-8 rounded-xl border-gray-100 dark:border-slate-800 shadow-sm hover:text-primary hover:bg-primary/5 transition-all"
               onClick={() => setEditingPayment(row.original)}
             >
               <Edit className="h-4 w-4" />
@@ -115,7 +121,7 @@ export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps)
         ),
       },
     ],
-    [t]
+    [t, i18n, getCurrencySymbol]
   );
 
   const table = useReactTable({

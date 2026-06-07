@@ -68,7 +68,8 @@
         "history": "History",
         "printSticker": "Print Sticker",
         "selected": "Selected",
-        "call": "Call"
+        "call": "Call",
+        "today": "Today"
     },
     "status": {
         "active": "Active",
@@ -678,5 +679,23 @@
                 "backupDesc": "Regularly backup your local database files to prevent data loss."
             }
         }
+    },
+    "payments": {
+        "title": "Payments",
+        "subtitle": "Track all financial transactions and payments",
+        "source": "Source",
+        "reference": "Reference",
+        "party": "Party",
+        "sourceTypes": {
+            "Repair": "Repair",
+            "Sale": "Sale",
+            "Purchase": "Purchase",
+            "Client": "Client",
+            "Supplier": "Supplier"
+        },
+        "editPayment": "Edit Payment",
+        "editCaution": "Editing a payment will automatically adjust the related balance. Please verify the amount carefully.",
+        "updated": "Payment updated successfully",
+        "deleted": "Payment deleted successfully"
     }
 }

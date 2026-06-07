@@ -270,13 +270,6 @@ pub fn get_dashboard_stats() -> Result<DashboardStats, String> {
     // Revenue Change (Mocked for now or calculate vs last month)
     let revenue_change = 12.5; // Placeholder for now
 
-    // Net Cash (From current open session if available, else 0)
-    let net_cash: f64 = conn.query_row(
-        "SELECT COALESCE(SUM(CASE WHEN status = 'open' THEN opening_balance ELSE 0 END), 0) FROM daily_sessions WHERE status = 'open'",
-        [],
-        |row| row.get(0)
-    ).unwrap_or(0.0);
-
     // Calculate Accrual Profit for this month
     let start_of_month = format!("{}-01T00:00:00", this_month);
     let end_of_month = format!("{}-31T23:59:59", this_month); 

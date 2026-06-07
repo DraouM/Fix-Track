@@ -67,7 +67,8 @@
         "history": "السجل",
         "printSticker": "طباعة الملصق",
         "selected": "محدد",
-        "call": "اتصال"
+        "call": "اتصال",
+        "today": "اليوم"
     },
     "status": {
         "active": "نشط",
@@ -590,5 +591,23 @@
         "accountSummary": "ملخص الحساب",
         "previousBalance": "الرصيد السابق",
         "newBalance": "الرصيد الجديد"
+    },
+    "payments": {
+        "title": "المدفوعات",
+        "subtitle": "تتبع جميع المعاملات المالية والمدفوعات",
+        "source": "المصدر",
+        "reference": "المرجع",
+        "party": "الطرف",
+        "sourceTypes": {
+            "Repair": "إصلاح",
+            "Sale": "بيع",
+            "Purchase": "شراء",
+            "Client": "عميل",
+            "Supplier": "مورد"
+        },
+        "editPayment": "تعديل الدفع",
+        "editCaution": "سيقوم تعديل الدفع بضبط الرصيد المرتبط تلقائياً. يرجى التحقق من المبلغ بعناية.",
+        "updated": "تم تحديث الدفع بنجاح",
+        "deleted": "تم حذف الدفع بنجاح"
     }
 }

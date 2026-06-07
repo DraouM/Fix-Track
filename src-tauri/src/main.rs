@@ -6,8 +6,9 @@ mod printing;
 mod system;
 
 use db::client::{
-    add_client_payment, adjust_client_balance, delete_client, get_client_by_id, get_client_history,
-    get_clients, insert_client, insert_client_history, update_client,
+    add_client_payment, adjust_client_balance, delete_client, delete_client_payment,
+    get_client_by_id, get_client_history, get_clients, insert_client, insert_client_history,
+    update_client, update_client_payment,
 };
 use db::expense::{add_expense, get_expenses_by_session, get_today_expenses};
 use db::inventory::{
@@ -39,13 +40,14 @@ use db::dashboard::{
     get_revenue_breakdown, get_revenue_history, get_revenue_history_by_range,
 };
 use db::supplier::{
-    add_supplier_payment, adjust_supplier_credit, delete_supplier, get_supplier_by_id,
-    get_supplier_history, get_suppliers, insert_supplier, insert_supplier_history, update_supplier,
+    add_supplier_payment, adjust_supplier_credit, delete_supplier, delete_supplier_payment,
+    get_supplier_by_id, get_supplier_history, get_suppliers, insert_supplier,
+    insert_supplier_history, update_supplier, update_supplier_payment,
 };
 use db::transaction::{
     add_transaction_item, add_transaction_payment, complete_transaction, create_transaction,
-    get_transaction_by_id, get_transactions, remove_transaction_item, submit_transaction,
-    update_transaction,
+    delete_transaction_payment, get_transaction_by_id, get_transactions, remove_transaction_item,
+    submit_transaction, update_transaction, update_transaction_payment,
 };
 use db::task::{delete_task, get_tasks, insert_task, update_task};
 use db::payment::get_all_payments;
@@ -102,6 +104,8 @@ fn main() {
             update_supplier,
             delete_supplier,
             add_supplier_payment,
+            update_supplier_payment,
+            delete_supplier_payment,
             adjust_supplier_credit,
             get_supplier_history,
             insert_supplier_history,
@@ -124,6 +128,8 @@ fn main() {
             update_client,
             delete_client,
             add_client_payment,
+            update_client_payment,
+            delete_client_payment,
             adjust_client_balance,
             get_client_history,
             insert_client_history,
@@ -154,6 +160,8 @@ fn main() {
             add_transaction_item,
             remove_transaction_item,
             add_transaction_payment,
+            update_transaction_payment,
+            delete_transaction_payment,
             complete_transaction,
             submit_transaction,
             update_transaction,

@@ -67,7 +67,8 @@
         "history": "Historique",
         "printSticker": "Imprimer l'étiquette",
         "selected": "Sélectionné",
-        "call": "Appeler"
+        "call": "Appeler",
+        "today": "Aujourd'hui"
     },
     "status": {
         "active": "Actif",
@@ -589,5 +590,23 @@
         "accountSummary": "RÉSUMÉ DU COMPTE",
         "previousBalance": "Solde précédent",
         "newBalance": "Nouveau solde"
+    },
+    "payments": {
+        "title": "Paiements",
+        "subtitle": "Suivre toutes les transactions financières et les paiements",
+        "source": "Source",
+        "reference": "Référence",
+        "party": "Partie",
+        "sourceTypes": {
+            "Repair": "Réparation",
+            "Sale": "Vente",
+            "Purchase": "Achat",
+            "Client": "Client",
+            "Supplier": "Fournisseur"
+        },
+        "editPayment": "Modifier le paiement",
+        "editCaution": "La modification d'un paiement ajustera automatiquement le solde associé. Veuillez vérifier attentivement le montant.",
+        "updated": "Paiement modifié avec succès",
+        "deleted": "Paiement supprimé avec succès"
     }
 }

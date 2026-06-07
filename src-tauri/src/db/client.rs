@@ -141,6 +141,84 @@ pub fn add_client_payment(
         params![id, client_id, amount, method, notes, session_id],
     )
     .map_err(|e| e.to_string())?;
+
+    // Update balance
+    conn.execute(
+        "UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2",
+        params![amount, client_id],
+    ).ok();
+
+    // Log history
+    let h_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO client_history (id, client_id, date, type, notes, amount) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![h_id, client_id, chrono::Utc::now().to_rfc3339(), "Payment Received", notes.unwrap_or_else(|| "Direct Payment".to_string()), -amount],
+    ).ok();
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_client_payment(id: String, amount: f64, method: String) -> Result<(), String> {
+    let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
+
+    // Get old info
+    let (client_id, old_amount): (String, f64) = conn.query_row(
+        "SELECT client_id, amount FROM client_payments WHERE id = ?1",
+        params![id],
+        |row| Ok((row.get(0)?, row.get(1)?))
+    ).map_err(|e| e.to_string())?;
+
+    // Update record
+    conn.execute(
+        "UPDATE client_payments SET amount = ?1, method = ?2 WHERE id = ?3",
+        params![amount, method, id],
+    ).map_err(|e| e.to_string())?;
+
+    // Adjust balance: Refund old, apply new
+    let balance_adj = old_amount - amount;
+    conn.execute(
+        "UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+        params![balance_adj, client_id],
+    ).ok();
+
+    // Log history
+    let h_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO client_history (id, client_id, date, type, notes, amount) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![h_id, client_id, chrono::Utc::now().to_rfc3339(), "Payment Updated", format!("Payment adjusted: {} -> {} (Method: {})", old_amount, amount, method), balance_adj],
+    ).ok();
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_client_payment(id: String) -> Result<(), String> {
+    let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
+
+    // Get info
+    let (client_id, amount): (String, f64) = conn.query_row(
+        "SELECT client_id, amount FROM client_payments WHERE id = ?1",
+        params![id],
+        |row| Ok((row.get(0)?, row.get(1)?))
+    ).map_err(|e| e.to_string())?;
+
+    // Delete record
+    conn.execute("DELETE FROM client_payments WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
+
+    // Reverse balance: Refund everything
+    conn.execute(
+        "UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+        params![amount, client_id],
+    ).ok();
+
+    // Log history
+    let h_id = uuid::Uuid::new_v4().to_string();
+    conn.execute(
+        "INSERT INTO client_history (id, client_id, date, type, notes, amount) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![h_id, client_id, chrono::Utc::now().to_rfc3339(), "Payment Deleted", format!("Payment of {} deleted", amount), amount],
+    ).ok();
+
     Ok(())
 }
 

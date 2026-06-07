@@ -294,7 +294,8 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
           data.preferredPaymentMethod !== undefined
             ? data.preferredPaymentMethod
             : existingSupplier.preferredPaymentMethod,
-        status: data.status !== undefined ? data.status : existingSupplier.status,
+        status:
+          data.status !== undefined ? data.status : existingSupplier.status,
         outstanding_balance:
           data.outstandingBalance !== undefined
             ? data.outstandingBalance
@@ -380,7 +381,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
 
       await withAsync(
         async () => {
-          // 1. Add payment record
+          // Add payment record (this already updates credit balance in the backend)
           const session = await getCurrentSession();
           await invoke("add_supplier_payment", {
             id: uuidv4(),
@@ -390,21 +391,15 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             notes: notes || null,
             sessionId: session?.id || null,
           });
-
-          // 2. Adjust credit balance (Negative amount because payment reduces debt)
-          await invoke("adjust_supplier_credit", {
-            supplierId,
-            amount: -amount,
-          });
         },
         {
           onSuccess: async () => {
-             // Add history entry for the payment
+            // Add history entry for the payment
             const historyEntry: SupplierHistoryEvent = {
               id: uuidv4(),
               supplierId: supplierId,
               date: new Date().toISOString(),
-              type: "Payment Made", 
+              type: "Payment Made",
               notes: `Payment of $${amount} via ${method}${
                 notes ? `: ${notes}` : ""
               }`,

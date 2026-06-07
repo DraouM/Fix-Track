@@ -46,14 +46,20 @@ export function PaymentEditDialog({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleUpdate = async () => {
-    if (payment.source_type !== "Repair") {
+    let command = "";
+    if (payment.source_type === "Repair") command = "update_repair_payment";
+    else if (payment.source_type === "Sale" || payment.source_type === "Purchase") command = "update_transaction_payment";
+    else if (payment.source_type === "Client") command = "update_client_payment";
+    else if (payment.source_type === "Supplier") command = "update_supplier_payment";
+
+    if (!command) {
         toast.error("Editing for this payment type is not yet implemented.");
         return;
     }
 
     setProcessing(true);
     try {
-      await invoke("update_repair_payment", {
+      await invoke(command, {
         id: payment.id,
         amount: parseFloat(amount),
         method,
@@ -70,14 +76,20 @@ export function PaymentEditDialog({
   };
 
   const handleDelete = async () => {
-    if (payment.source_type !== "Repair") {
+    let command = "";
+    if (payment.source_type === "Repair") command = "delete_repair_payment";
+    else if (payment.source_type === "Sale" || payment.source_type === "Purchase") command = "delete_transaction_payment";
+    else if (payment.source_type === "Client") command = "delete_client_payment";
+    else if (payment.source_type === "Supplier") command = "delete_supplier_payment";
+
+    if (!command) {
         toast.error("Deletion for this payment type is not yet implemented.");
         return;
     }
 
     setProcessing(true);
     try {
-      await invoke("delete_repair_payment", { id: payment.id });
+      await invoke(command, { id: payment.id });
       toast.success(t("payments.deleted"));
       onUpdate();
       onOpenChange(false);

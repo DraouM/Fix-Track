@@ -440,6 +440,116 @@ pub fn add_transaction_payment(payment: TransactionPayment) -> Result<(), String
 }
 
 #[tauri::command]
+pub fn update_transaction_payment(id: String, amount: f64, method: String) -> Result<(), String> {
+    let conn = db::get_connection().map_err(|e| e.to_string())?;
+
+    // Get old info for recalculation
+    let (tx_id, old_amount): (String, f64) = conn.query_row(
+        "SELECT transaction_id, amount FROM transaction_payments WHERE id = ?1",
+        params![id],
+        |row| Ok((row.get(0)?, row.get(1)?))
+    ).map_err(|e| e.to_string())?;
+
+    // Update payment record
+    conn.execute(
+        "UPDATE transaction_payments SET amount = ?1, method = ?2 WHERE id = ?3",
+        params![amount, method, id],
+    ).map_err(|e| e.to_string())?;
+
+    // Recalculate transaction
+    recalculate_transaction_totals(&tx_id)?;
+
+    // Adjust party balance: Refund old, apply new
+    let tx_info: (String, String, String, String) = conn.query_row(
+        "SELECT party_id, party_type, transaction_number, transaction_type FROM transactions WHERE id = ?1",
+        params![tx_id],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+    ).map_err(|e| e.to_string())?;
+
+    let (party_id, party_type, tx_num, tx_type) = tx_info;
+    let balance_adj = old_amount - amount;
+
+    if party_type == "Client" {
+        conn.execute(
+            "UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+            params![balance_adj, party_id],
+        ).ok();
+
+        let h_id = Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Updated", format!("Payment adjusted for {} {}: {} -> {}", tx_type, tx_num, old_amount, amount), balance_adj, None::<String>],
+        ).ok();
+    } else {
+        conn.execute(
+            "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+            params![balance_adj, party_id],
+        ).ok();
+
+        let h_id = Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Updated", format!("Payment adjusted for {} {}: {} -> {}", tx_type, tx_num, old_amount, amount), balance_adj, None::<String>],
+        ).ok();
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_transaction_payment(id: String) -> Result<(), String> {
+    let conn = db::get_connection().map_err(|e| e.to_string())?;
+
+    // Get info before delete
+    let (tx_id, amount): (String, f64) = conn.query_row(
+        "SELECT transaction_id, amount FROM transaction_payments WHERE id = ?1",
+        params![id],
+        |row| Ok((row.get(0)?, row.get(1)?))
+    ).map_err(|e| e.to_string())?;
+
+    // Delete record
+    conn.execute("DELETE FROM transaction_payments WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
+
+    // Recalculate transaction
+    recalculate_transaction_totals(&tx_id)?;
+
+    // Reverse party balance impact
+    let tx_info: (String, String, String, String) = conn.query_row(
+        "SELECT party_id, party_type, transaction_number, transaction_type FROM transactions WHERE id = ?1",
+        params![tx_id],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+    ).map_err(|e| e.to_string())?;
+
+    let (party_id, party_type, tx_num, tx_type) = tx_info;
+
+    if party_type == "Client" {
+        conn.execute(
+            "UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+            params![amount, party_id],
+        ).ok();
+
+        let h_id = Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Deleted", format!("Payment of {} deleted for {} {}", amount, tx_type, tx_num), amount, None::<String>],
+        ).ok();
+    } else {
+        conn.execute(
+            "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
+            params![amount, party_id],
+        ).ok();
+
+        let h_id = Uuid::new_v4().to_string();
+        conn.execute(
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Deleted", format!("Payment of {} deleted for {} {}", amount, tx_type, tx_num), amount, None::<String>],
+        ).ok();
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn complete_transaction(tx_id: String) -> Result<(), String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
 

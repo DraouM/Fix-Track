@@ -191,6 +191,7 @@ export const usePrintUtils = () => {
               phoneNumber: shopInfo.phoneNumber,
               address: shopInfo.address,
               receiptFooter: shopInfo.receiptFooter,
+              logoUrl: shopInfo.logoUrl,
             },
             date: new Date().toLocaleString(),
             currencySymbol: CURRENCY_SYMBOLS[settings.currency] || "$",

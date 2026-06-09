@@ -2,6 +2,7 @@
 
 import { Repair } from "@/types/repair";
 import { getShopInfo } from "@/lib/shopInfo";
+import { LOGO_DATA_URI } from "@/lib/logoDataUri";
 
 interface ShopPrintTemplateProps {
   repair: Repair;
@@ -21,7 +22,7 @@ export function ShopPrintTemplate({
   logoUrl,
 }: ShopPrintTemplateProps) {
   const shopInfo = getShopInfo();
-  const logoSrc = logoUrl ?? shopInfo.logoUrl ?? "/images/logo_1.png";
+  const logoSrc = logoUrl || shopInfo.logoUrl || LOGO_DATA_URI;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";

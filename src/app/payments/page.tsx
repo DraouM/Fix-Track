@@ -6,11 +6,6 @@ import { useTranslation } from "react-i18next";
 import { Wallet, Search, Filter, ArrowLeft, DollarSign, TrendingUp, AlertCircle, Calendar as CalendarIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
 import { toast } from "sonner";
 import { UnifiedPayment } from "@/types/payment";
 import { PaymentTable } from "@/components/payments/PaymentTable";

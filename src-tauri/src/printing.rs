@@ -35,6 +35,7 @@ pub struct ShopInfo {
     pub phone_number: String,
     pub address: String,
     pub receipt_footer: String,
+    pub logo_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -371,6 +372,13 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
     // 2. Header (Centered, Bold)
     if let Some(ref shop) = data.shop_info {
         payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
+        
+        // FUTURE: If shop.logo_url is present, convert to bitmap and send using GS v 0
+        // For now, we ensure the data translation is verified.
+        if shop.logo_url.is_some() {
+            println!("Logo URL received: {}", shop.logo_url.as_ref().unwrap());
+        }
+
         payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
         payload.extend_from_slice(format!("{}\n", shop.shop_name.to_uppercase()).as_bytes());
         payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF

@@ -40,7 +40,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib";
 import { useSettings } from "@/context/SettingsContext";
-import { formatCurrency as formatCurrencyCentralized, formatNumber, getLocaleForIntl } from "@/lib/formatters";
+import {
+  formatCurrency as formatCurrencyCentralized,
+  formatNumber,
+  getLocaleForIntl,
+} from "@/lib/formatters";
 
 export function InventoryPageInner() {
   const {
@@ -66,14 +70,13 @@ export function InventoryPageInner() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [historyEvents, setHistoryEvents] = useState<InventoryHistoryEvent[]>(
-    []
+    [],
   );
   const [isExporting, setIsExporting] = useState(false);
 
   const { settings } = useSettings();
   const { t, i18n } = useTranslation();
-  const { printSticker } = usePrintUtils();
-
+  const { printBarcodeDirect } = usePrintUtils();
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -82,16 +85,16 @@ export function InventoryPageInner() {
       (item) =>
         item.lowStockThreshold != null &&
         (item.quantityInStock ?? 0) > 0 &&
-        (item.quantityInStock ?? 0) <= item.lowStockThreshold
+        (item.quantityInStock ?? 0) <= item.lowStockThreshold,
     );
     const outOfStockItems = inventoryItems.filter(
-      (item) => (item.quantityInStock ?? 0) === 0
+      (item) => (item.quantityInStock ?? 0) === 0,
     );
 
     const totalValue = inventoryItems.reduce(
       (sum, item) =>
         sum + (item.buyingPrice ?? 0) * (item.quantityInStock ?? 0),
-      0
+      0,
     );
 
     const potentialProfit = inventoryItems.reduce(
@@ -99,7 +102,7 @@ export function InventoryPageInner() {
         sum +
         ((item.sellingPrice ?? 0) - (item.buyingPrice ?? 0)) *
           (item.quantityInStock ?? 0),
-      0
+      0,
     );
 
     return {
@@ -161,10 +164,13 @@ export function InventoryPageInner() {
   }) => {
     const colorClasses = {
       blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-      green: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-      orange: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+      green:
+        "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+      orange:
+        "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
       red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-      purple: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+      purple:
+        "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
     };
 
     return (
@@ -175,21 +181,31 @@ export function InventoryPageInner() {
               <Icon className="w-4 h-4" />
             </div>
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                {title} {suffix && <span className="opacity-50 ml-1">({suffix})</span>}
+              {title}{" "}
+              {suffix && <span className="opacity-50 ml-1">({suffix})</span>}
             </span>
           </div>
-          {typeof trend === 'number' && (
-            <div className={`flex items-center gap-1 text-[10px] font-black ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              <TrendingUp className={`w-3 h-3 ${trend < 0 && 'rotate-180'}`} />
+          {typeof trend === "number" && (
+            <div
+              className={`flex items-center gap-1 text-[10px] font-black ${trend >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
+              <TrendingUp className={`w-3 h-3 ${trend < 0 && "rotate-180"}`} />
               {Math.abs(trend)}%
             </div>
           )}
         </div>
         <div className="flex flex-col">
-          <div className="text-2xl font-black text-foreground truncate" title={String(value)}>{value}</div>
+          <div
+            className="text-2xl font-black text-foreground truncate"
+            title={String(value)}
+          >
+            {value}
+          </div>
           {subtitle && (
             <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70 mt-1">
-              <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
+              <div
+                className={`h-1 w-1 rounded-full ${colorClasses[color].replace("text-", "bg-")}`}
+              ></div>
               {subtitle}
             </div>
           )}
@@ -209,17 +225,23 @@ export function InventoryPageInner() {
             </div>
             <div className="flex items-baseline gap-3 flex-wrap">
               <h1 className="text-2xl font-black tracking-tight text-foreground">
-                {t('inventory.title')}
+                {t("inventory.title")}
               </h1>
               <div className="flex items-center gap-2">
-                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">
-                    <span className="text-xs font-black">{statistics.total}</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">{t('common.items')}</span>
-                 </div>
-                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-800/50">
-                    <span className="text-xs font-black">{statistics.outOfStock}</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">{t('inventory.table.stockLabels.empty')}</span>
-                 </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">
+                  <span className="text-xs font-black">{statistics.total}</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
+                    {t("common.items")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-800/50">
+                  <span className="text-xs font-black">
+                    {statistics.outOfStock}
+                  </span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
+                    {t("inventory.table.stockLabels.empty")}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -245,14 +267,14 @@ export function InventoryPageInner() {
               ) : (
                 <Download className="w-4 h-4 mr-2" />
               )}
-              {isExporting ? t('common.loading') : t('common.export')}
+              {isExporting ? t("common.loading") : t("common.export")}
             </Button>
             <Button
               variant="outline"
               className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
               <Upload className="w-4 h-4 mr-2" />
-              {t('common.import')}
+              {t("common.import")}
             </Button>
             <Button
               onClick={() => {
@@ -262,7 +284,7 @@ export function InventoryPageInner() {
               className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
             >
               <Icons.plusCircle className="mr-2 h-4 w-4" />
-              {t('inventory.addItem')}
+              {t("inventory.addItem")}
             </Button>
           </div>
         </div>
@@ -271,74 +293,86 @@ export function InventoryPageInner() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Package}
-            title={t('inventory.table.footer', { count: statistics.total, plural: statistics.total !== 1 ? 's' : '' })}
+            title={t("inventory.table.footer", {
+              count: statistics.total,
+              plural: statistics.total !== 1 ? "s" : "",
+            })}
             value={statistics.total}
-            subtitle={t('inventory.subtitle')}
+            subtitle={t("inventory.subtitle")}
             color="blue"
           />
           <StatCard
             icon={AlertTriangle}
-            title={t('inventory.lowStock')}
+            title={t("inventory.lowStock")}
             value={statistics.lowStock}
-            subtitle={t('dashboard.inventory.lowStock', { count: statistics.outOfStock })}
+            subtitle={t("dashboard.inventory.lowStock", {
+              count: statistics.outOfStock,
+            })}
             color="red"
           />
           <StatCard
             icon={DollarSign}
-            title={t('dashboard.cashier.totalRevenue')}
-            value={formatNumber(statistics.totalValue, getLocaleForIntl(i18n.language))}
+            title={t("dashboard.cashier.totalRevenue")}
+            value={formatNumber(
+              statistics.totalValue,
+              getLocaleForIntl(i18n.language),
+            )}
             suffix={settings.currency}
-            subtitle={t('dashboard.cashier.allRevenue')}
+            subtitle={t("dashboard.cashier.allRevenue")}
             color="green"
           />
           <StatCard
             icon={TrendingUp}
-            title={t('dashboard.charts.profit')}
-            value={formatNumber(statistics.potentialProfit, getLocaleForIntl(i18n.language))}
+            title={t("dashboard.charts.profit")}
+            value={formatNumber(
+              statistics.potentialProfit,
+              getLocaleForIntl(i18n.language),
+            )}
             suffix={settings.currency}
-            subtitle={t('dashboard.charts.revenueTrend')}
+            subtitle={t("dashboard.charts.revenueTrend")}
             color="purple"
           />
         </div>
 
-
         {/* Inventory Table */}
         <div className="space-y-4">
-             <div className="flex items-center gap-3">
-                 <div className="h-2 w-2 rounded-full bg-primary"></div>
-                 <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t('inventory.historyLogs')}</h2>
-             </div>
-             {loading ? (
-                <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-             ) : (
-                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-                    <VirtualizedTable
-                        items={filteredAndSortedItems}
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
-                        onEdit={(item) => {
-                        setEditItem(item);
-                        setShowForm(true);
-                        }}
-                        onViewHistory={handleViewHistory}
-                        onDelete={(id) => deleteInventoryItem(id)}
-                        selectedIds={selectedIds}
-                        onSelectionChange={setSelectedIds}
-                        onPrint={(item) => {
-                        printSticker(item);
-                        }}
-                        searchTerm={searchTerm}
-                        setSearchTerm={setSearchTerm}
-                        selectedBrand={selectedBrand}
-                        setSelectedBrand={setSelectedBrand}
-                        selectedType={selectedType}
-                        setSelectedType={setSelectedType}
-                        clearFilters={clearFilters}
-                    />
-                </div>
-             )}
+          <div className="flex items-center gap-3">
+            <div className="h-2 w-2 rounded-full bg-primary"></div>
+            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+              {t("inventory.historyLogs")}
+            </h2>
+          </div>
+          {loading ? (
+            <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+              <VirtualizedTable
+                items={filteredAndSortedItems}
+                sortConfig={sortConfig}
+                onSort={handleSort}
+                onEdit={(item) => {
+                  setEditItem(item);
+                  setShowForm(true);
+                }}
+                onViewHistory={handleViewHistory}
+                onDelete={(id) => deleteInventoryItem(id)}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                onPrint={(item) => {
+                  printBarcodeDirect(item);
+                }}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                selectedBrand={selectedBrand}
+                setSelectedBrand={setSelectedBrand}
+                selectedType={selectedType}
+                setSelectedType={setSelectedType}
+                clearFilters={clearFilters}
+              />
+            </div>
+          )}
         </div>
 
         {/* Add/Edit Form */}
@@ -353,22 +387,24 @@ export function InventoryPageInner() {
             <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
               <DialogHeader className="pb-4 border-b dark:border-slate-800">
                 <DialogTitle className="text-2xl font-black">
-                  {editItem ? t('inventory.editItem') : t('inventory.newItem')}
+                  {editItem ? t("inventory.editItem") : t("inventory.newItem")}
                 </DialogTitle>
                 <DialogDescription className="font-medium text-muted-foreground">
                   {editItem
-                    ? t('inventory.editDesc') || "Update the details for this inventory item."
-                    : t('inventory.addDesc') || "Enter the details for the new inventory item."}
+                    ? t("inventory.editDesc") ||
+                      "Update the details for this inventory item."
+                    : t("inventory.addDesc") ||
+                      "Enter the details for the new inventory item."}
                 </DialogDescription>
               </DialogHeader>
               <div className="pt-4">
                 <InventoryForm
-                    key={editItem ? `edit-${editItem.id}` : "new-inventory-item"}
-                    itemToEdit={editItem}
-                    onSuccess={() => {
+                  key={editItem ? `edit-${editItem.id}` : "new-inventory-item"}
+                  itemToEdit={editItem}
+                  onSuccess={() => {
                     setShowForm(false);
                     setEditItem(null);
-                    }}
+                  }}
                 />
               </div>
             </DialogContent>
@@ -379,11 +415,9 @@ export function InventoryPageInner() {
         <InventoryHistoryDialog
           open={!!historyItem}
           onOpenChange={(open) => !open && setHistoryItem(null)}
-           item={historyItem}
+          item={historyItem}
           historyEvents={historyEvents}
         />
-
-
       </div>
     </div>
   );

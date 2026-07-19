@@ -86,9 +86,9 @@ export function InventoryForm({
   onSuccess: () => void;
 }) {
   const { t } = useTranslation();
-  const { printSticker } = usePrintUtils();
+  const { printBarcodeDirect } = usePrintUtils();
   const { settings } = useSettings();
-  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || "$";
   const { addInventoryItem, updateInventoryItem } = useInventoryActions();
 
   const form = useForm<InventoryFormValues>({
@@ -121,12 +121,12 @@ export function InventoryForm({
             barcode: values.barcode,
             history: itemToEdit.history,
           };
-          printSticker(updatedItem);
+          printBarcodeDirect(updatedItem);
         }
       } else {
         // Print sticker if barcode exists
         if (values.barcode) {
-          printSticker({
+          printBarcodeDirect({
             id: uuidv4(),
             itemName: values.itemName,
             phoneBrand: values.phoneBrand,
@@ -163,11 +163,11 @@ export function InventoryForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                    {t('inventory.form.productName')}
+                    {t("inventory.form.productName")}
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={t('inventory.form.productNamePlaceholder')}
+                      placeholder={t("inventory.form.productNamePlaceholder")}
                       className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-sm focus-visible:ring-primary/20 transition-all placeholder:font-medium dark:text-slate-100"
                       {...field}
                     />
@@ -184,12 +184,12 @@ export function InventoryForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                    {t('inventory.form.barcode')}
+                    {t("inventory.form.barcode")}
                   </FormLabel>
                   <div className="relative group">
                     <FormControl>
                       <Input
-                        placeholder={t('inventory.form.barcodePlaceholder')}
+                        placeholder={t("inventory.form.barcodePlaceholder")}
                         className="h-11 pl-3 pr-10 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-black text-xs tracking-widest focus-visible:ring-primary/20 transition-all placeholder:font-medium placeholder:tracking-normal dark:text-slate-100"
                         {...field}
                       />
@@ -199,8 +199,10 @@ export function InventoryForm({
                       variant="ghost"
                       size="icon"
                       className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 rounded-lg hover:bg-primary/10 text-primary transition-all active:scale-90"
-                      onClick={() => form.setValue("barcode", generateBarcode())}
-                      title={t('inventory.form.generate')}
+                      onClick={() =>
+                        form.setValue("barcode", generateBarcode())
+                      }
+                      title={t("inventory.form.generate")}
                     >
                       <Icons.sparkles className="h-4 w-4" />
                     </Button>
@@ -220,7 +222,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1">
-                  {t('inventory.form.brand')}
+                  {t("inventory.form.brand")}
                 </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -230,10 +232,10 @@ export function InventoryForm({
                         role="combobox"
                         className={cn(
                           "h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs justify-between hover:bg-gray-50 dark:hover:bg-slate-800 dark:text-slate-200",
-                          !field.value && "text-muted-foreground font-medium"
+                          !field.value && "text-muted-foreground font-medium",
                         )}
                       >
-                        {field.value || t('inventory.form.selectBrand')}
+                        {field.value || t("inventory.form.selectBrand")}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
                       </Button>
                     </FormControl>
@@ -241,11 +243,11 @@ export function InventoryForm({
                   <PopoverContent className="w-[240px] p-2 rounded-2xl border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
                     <Command className="rounded-xl dark:bg-slate-900">
                       <CommandInput
-                        placeholder={t('inventory.form.searchBrand')}
+                        placeholder={t("inventory.form.searchBrand")}
                         className="h-9 font-bold text-xs dark:text-slate-100"
                       />
                       <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40 dark:text-slate-500">
-                        {t('inventory.form.noBrand')}
+                        {t("inventory.form.noBrand")}
                       </CommandEmpty>
                       <CommandGroup className="max-h-[160px] overflow-auto">
                         {PHONE_BRANDS.map((brand) => (
@@ -262,7 +264,7 @@ export function InventoryForm({
                                 "mr-3 h-3.5 w-3.5 text-primary",
                                 field.value === brand
                                   ? "opacity-100"
-                                  : "opacity-0"
+                                  : "opacity-0",
                               )}
                             />
                             {brand}
@@ -283,7 +285,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1">
-                  {t('inventory.form.category')}
+                  {t("inventory.form.category")}
                 </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -293,10 +295,10 @@ export function InventoryForm({
                         role="combobox"
                         className={cn(
                           "h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs justify-between hover:bg-gray-50 dark:hover:bg-slate-800 dark:text-slate-200",
-                          !field.value && "text-muted-foreground font-medium"
+                          !field.value && "text-muted-foreground font-medium",
                         )}
                       >
-                        {field.value || t('inventory.form.selectType')}
+                        {field.value || t("inventory.form.selectType")}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-40" />
                       </Button>
                     </FormControl>
@@ -304,11 +306,11 @@ export function InventoryForm({
                   <PopoverContent className="w-[240px] p-2 rounded-2xl border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
                     <Command className="rounded-xl dark:bg-slate-900">
                       <CommandInput
-                        placeholder={t('inventory.form.searchType')}
+                        placeholder={t("inventory.form.searchType")}
                         className="h-9 font-bold text-xs dark:text-slate-100"
                       />
                       <CommandEmpty className="text-xs font-bold py-4 text-center opacity-40 dark:text-slate-500">
-                        {t('inventory.form.noType')}
+                        {t("inventory.form.noType")}
                       </CommandEmpty>
                       <CommandGroup className="max-h-[160px] overflow-auto">
                         {ITEM_TYPES.map((type) => (
@@ -325,7 +327,7 @@ export function InventoryForm({
                                 "mr-3 h-3.5 w-3.5 text-primary",
                                 field.value === type
                                   ? "opacity-100"
-                                  : "opacity-0"
+                                  : "opacity-0",
                               )}
                             />
                             {type}
@@ -349,7 +351,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                  {t('inventory.form.costPrice', { symbol: currencySymbol })}
+                  {t("inventory.form.costPrice", { symbol: currencySymbol })}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -369,7 +371,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                  {t('inventory.form.sellingPrice', { symbol: currencySymbol })}
+                  {t("inventory.form.sellingPrice", { symbol: currencySymbol })}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -389,7 +391,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                  {t('inventory.form.quantity')}
+                  {t("inventory.form.quantity")}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -408,7 +410,7 @@ export function InventoryForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                  {t('inventory.form.alertAt')}
+                  {t("inventory.form.alertAt")}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -430,11 +432,11 @@ export function InventoryForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">
-                {t('inventory.form.supplierNotes')}
+                {t("inventory.form.supplierNotes")}
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder={t('inventory.form.supplierPlaceholder')}
+                  placeholder={t("inventory.form.supplierPlaceholder")}
                   className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs focus-visible:ring-primary/20 transition-all placeholder:font-medium dark:text-slate-100"
                   {...field}
                   value={field.value ?? ""}
@@ -451,10 +453,12 @@ export function InventoryForm({
             disabled={form.formState.isSubmitting}
             className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/30 text-[11px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] group"
           >
-             <span className="flex items-center gap-2">
-                {itemToEdit ? t('inventory.form.update') : t('inventory.form.create')}
-                <Icons.plusCircle className="h-4 w-4 group-hover:scale-110 transition-transform" />
-             </span>
+            <span className="flex items-center gap-2">
+              {itemToEdit
+                ? t("inventory.form.update")
+                : t("inventory.form.create")}
+              <Icons.plusCircle className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            </span>
           </Button>
         </div>
       </form>

@@ -9,22 +9,22 @@ use std::process::Command;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PrinterConfig {
-    pub printer_type: String,      // "58mm", "80mm", "custom"
-    pub custom_width: Option<f64>, // mm
+    pub printer_type: String,       // "58mm", "80mm", "custom"
+    pub custom_width: Option<f64>,  // mm
     pub custom_height: Option<f64>, // mm
-    pub offset_top: f64,           // mm
-    pub offset_left: f64,          // mm
-    
+    pub offset_top: f64,            // mm
+    pub offset_left: f64,           // mm
+
     pub receipt_connection_type: Option<String>, // "usb" or "tcp"
     pub receipt_printer_name: Option<String>,
     pub receipt_printer_ip: Option<String>,
     pub receipt_printer_port: Option<u16>,
-    
+
     pub sticker_connection_type: Option<String>, // "usb" or "tcp"
     pub sticker_printer_name: Option<String>,
     pub sticker_printer_ip: Option<String>,
     pub sticker_printer_port: Option<u16>,
-    
+
     pub use_native_print: bool,
 }
 
@@ -36,6 +36,11 @@ pub struct ShopInfo {
     pub address: String,
     pub receipt_footer: String,
     pub logo_url: Option<String>,
+    /// Pre-rasterized monochrome bitmap in ESC/POS GS v 0 format.
+    /// Layout: [xL, xH, yL, yH, packed_bitmap_bytes...]
+    /// where bitmap_bytes is 1-bit-per-pixel (MSB=top), each row is (xL + xH*256) bytes.
+    #[serde(default)]
+    pub logo_bitmap: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -113,7 +118,7 @@ fn list_printers_windows() -> Result<Vec<PrinterInfo>, String> {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let trimmed = stdout.trim();
-    
+
     if trimmed.is_empty() {
         return Ok(vec![]);
     }
@@ -132,8 +137,8 @@ fn list_printers_windows() -> Result<Vec<PrinterInfo>, String> {
             .collect()
     } else {
         // Single printer object
-        let parsed: serde_json::Value = serde_json::from_str(trimmed)
-            .map_err(|e| format!("Failed to parse printer: {}", e))?;
+        let parsed: serde_json::Value =
+            serde_json::from_str(trimmed).map_err(|e| format!("Failed to parse printer: {}", e))?;
         vec![PrinterInfo {
             name: parsed["Name"].as_str().unwrap_or("Unknown").to_string(),
             is_default: parsed["IsDefault"].as_bool().unwrap_or(false),
@@ -226,22 +231,36 @@ pub fn print_raw(printer_name: String, data: Vec<u8>) -> Result<(), String> {
 
 #[cfg(target_os = "windows")]
 fn print_raw_windows(printer_name: &str, data: &[u8]) -> Result<(), String> {
-    use std::ptr;
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
-    use winapi::um::winspool::{OpenPrinterW, ClosePrinter, StartDocPrinterW, EndDocPrinter, StartPagePrinter, EndPagePrinter, WritePrinter, DOC_INFO_1W};
+    use std::ptr;
     use winapi::shared::minwindef::DWORD;
     use winapi::um::winnt::HANDLE;
+    use winapi::um::winspool::{
+        ClosePrinter, EndDocPrinter, EndPagePrinter, OpenPrinterW, StartDocPrinterW,
+        StartPagePrinter, WritePrinter, DOC_INFO_1W,
+    };
 
-    let mut printer_name_wide: Vec<u16> = OsStr::new(printer_name).encode_wide().chain(Some(0)).collect();
+    let mut printer_name_wide: Vec<u16> = OsStr::new(printer_name)
+        .encode_wide()
+        .chain(Some(0))
+        .collect();
     let mut h_printer: HANDLE = ptr::null_mut();
 
     unsafe {
-        if OpenPrinterW(printer_name_wide.as_mut_ptr(), &mut h_printer, ptr::null_mut()) == 0 {
+        if OpenPrinterW(
+            printer_name_wide.as_mut_ptr(),
+            &mut h_printer,
+            ptr::null_mut(),
+        ) == 0
+        {
             return Err(format!("Failed to open printer: {}", printer_name));
         }
 
-        let doc_name: Vec<u16> = OsStr::new("FixTrack Direct Print").encode_wide().chain(Some(0)).collect();
+        let doc_name: Vec<u16> = OsStr::new("FixTrack Direct Print")
+            .encode_wide()
+            .chain(Some(0))
+            .collect();
         let data_type: Vec<u16> = OsStr::new("RAW").encode_wide().chain(Some(0)).collect();
 
         let mut doc_info = DOC_INFO_1W {
@@ -289,8 +308,7 @@ fn print_raw_unix(printer_name: &str, data: &[u8]) -> Result<(), String> {
     let temp_dir = std::env::temp_dir();
     let temp_file = temp_dir.join("fixary_print_raw.bin");
 
-    std::fs::write(&temp_file, data)
-        .map_err(|e| format!("Failed to write temp file: {}", e))?;
+    std::fs::write(&temp_file, data).map_err(|e| format!("Failed to write temp file: {}", e))?;
 
     let output = Command::new("lp")
         .args(&[
@@ -320,22 +338,24 @@ pub fn print_html(html: String, printer_name: Option<String>) -> Result<(), Stri
     let temp_dir = std::env::temp_dir();
     let temp_file = temp_dir.join("fixary_print_receipt.html");
 
-    std::fs::write(&temp_file, &html)
-        .map_err(|e| format!("Failed to write temp HTML: {}", e))?;
+    std::fs::write(&temp_file, &html).map_err(|e| format!("Failed to write temp HTML: {}", e))?;
 
     #[cfg(target_os = "windows")]
     {
         let file_path = temp_file.to_string_lossy().to_string();
-        
+
         let ps_command = if let Some(ref pname) = printer_name {
-            // Attempt silent print using Edge headless mode if available, 
+            // Attempt silent print using Edge headless mode if available,
             // or fallback to PowerShell's Start-Process with hidden window.
             format!(
                 "Start-Process -FilePath 'msedge' -ArgumentList '--headless', '--print-to-pdf-no-header', '--print-to-pdf=\"$env:TEMP\\temp.pdf\"', '{}' -Wait; Start-Process -FilePath 'powershell' -ArgumentList '-NoProfile', '-Command', \"Start-Process -FilePath '$env:TEMP\\temp.pdf' -Verb PrintTo -ArgumentList '{}' -WindowStyle Hidden\" -WindowStyle Hidden",
                 file_path, pname
             )
         } else {
-            format!("Start-Process '{}' -Verb Print -WindowStyle Hidden", file_path)
+            format!(
+                "Start-Process '{}' -Verb Print -WindowStyle Hidden",
+                file_path
+            )
         };
 
         Command::new("powershell")
@@ -361,22 +381,47 @@ pub fn print_html(html: String, printer_name: Option<String>) -> Result<(), Stri
 pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<(), String> {
     println!("Printing receipt: data={:?}, config={:?}", data, config);
     let mut payload: Vec<u8> = Vec::new();
-    
+
     // ESC/POS Commands
     let esc: u8 = 0x1B;
     // let gs: u8 = 0x1D; // Unused for now, commenting out
 
     // 1. Initialize printer: ESC @
-    payload.extend_from_slice(&[esc, 0x40]); 
-    
+    payload.extend_from_slice(&[esc, 0x40]);
+
     // 2. Header (Centered, Bold)
     if let Some(ref shop) = data.shop_info {
         payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
-        
-        // FUTURE: If shop.logo_url is present, convert to bitmap and send using GS v 0
-        // For now, we ensure the data translation is verified.
-        if shop.logo_url.is_some() {
-            println!("Logo URL received: {}", shop.logo_url.as_ref().unwrap());
+
+        // Print logo bitmap using GS v 0 (raster bit image) if available
+        if let Some(ref bitmap) = shop.logo_bitmap {
+            if bitmap.len() >= 4 {
+                let x_l = bitmap[0];
+                let x_h = bitmap[1];
+                let y_l = bitmap[2];
+                let y_h = bitmap[3];
+                let bitmap_data = &bitmap[4..];
+
+                let bytes_per_line = x_l as usize + (x_h as usize) * 256;
+                let num_lines = y_l as usize + (y_h as usize) * 256;
+                let expected_len = bytes_per_line * num_lines;
+
+                if bitmap_data.len() == expected_len && expected_len > 0 {
+                    // GS v 0: Print raster bit image
+                    // Format: 1D 76 30 m xL xH yL yH d1...dk
+                    let gs: u8 = 0x1D;
+                    payload.extend_from_slice(&[gs, 0x76, 0x30, 0x00]); // m=0 (normal size)
+                    payload.extend_from_slice(&[x_l, x_h, y_l, y_h]);
+                    payload.extend_from_slice(bitmap_data);
+                    payload.extend_from_slice(b"\n"); // Feed one line after logo
+                } else {
+                    println!(
+                        "Logo bitmap size mismatch: expected {} bytes, got {}",
+                        expected_len,
+                        bitmap_data.len()
+                    );
+                }
+            }
         }
 
         payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
@@ -418,13 +463,16 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
     payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
     payload.extend_from_slice(b"ITEM             QTY      PRICE\n");
     payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
-    
+
     let symbol = data.currency_symbol.as_deref().unwrap_or("$");
 
     for item in data.items {
-        // Simple fixed-width formatting
-        let name = if item.name.len() > 15 { &item.name[0..15] } else { &item.name };
-        let line = format!("{:<16} {:<8} {:>1}{:>8.2}\n", name, item.qty, symbol, item.price);
+        // Safe char-based truncation (UTF-8 aware, won't panic on multi-byte chars)
+        let name: String = item.name.chars().take(15).collect();
+        let line = format!(
+            "{:<16} {:<8} {:>1}{:>8.2}\n",
+            name, item.qty, symbol, item.price
+        );
         payload.extend_from_slice(line.as_bytes());
     }
 
@@ -435,7 +483,7 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
     payload.extend_from_slice(&[esc, 0x21, 0x08]); // Bold/Emphasized
     payload.extend_from_slice(format!("TOTAL: {}{:.2}\n", symbol, data.total).as_bytes());
     payload.extend_from_slice(&[esc, 0x21, 0x00]); // Back to normal
-    
+
     // 7. Footer
     payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
     payload.extend_from_slice(b"\n");
@@ -444,12 +492,12 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
     } else {
         payload.extend_from_slice(b"Thank you for your trust!\n");
     }
-    
+
     // 8. Feed & Cut
     payload.extend_from_slice(&[esc, 0x64, 0x05]); // Feed 5 lines
-    
+
     // If standard paper cutter exists: GS V 0
-    // payload.extend_from_slice(&[gs, 0x56, 0x00]); 
+    // payload.extend_from_slice(&[gs, 0x56, 0x00]);
 
     println!("Payload generated: {} bytes", payload.len());
 
@@ -457,22 +505,33 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
     println!("Connection type: {}", connection_type);
 
     if connection_type == "tcp" {
-        let ip = config.receipt_printer_ip.ok_or("Receipt printer IP address is required for TCP connection")?;
+        let ip = config
+            .receipt_printer_ip
+            .ok_or("Receipt printer IP address is required for TCP connection")?;
         let port = config.receipt_printer_port.unwrap_or(9100);
         println!("Connecting to TCP printer: {}:{}", ip, port);
-        
+
         let mut stream = std::net::TcpStream::connect_timeout(
-            &format!("{}:{}", ip, port).parse().map_err(|_| "Invalid IP/Port format")?,
+            &format!("{}:{}", ip, port)
+                .parse()
+                .map_err(|_| "Invalid IP/Port format")?,
             std::time::Duration::from_secs(3),
-        ).map_err(|e| format!("Failed to connect to network printer: {}", e))?;
+        )
+        .map_err(|e| format!("Failed to connect to network printer: {}", e))?;
 
         use std::io::Write;
-        stream.write_all(&payload).map_err(|e| format!("Failed to send data: {}", e))?;
-        stream.flush().map_err(|e| format!("Failed to flush: {}", e))?;
+        stream
+            .write_all(&payload)
+            .map_err(|e| format!("Failed to send data: {}", e))?;
+        stream
+            .flush()
+            .map_err(|e| format!("Failed to flush: {}", e))?;
         println!("TCP Print successful");
     } else {
         // Fallback to USB/OS spooler
-        let printer_name = config.receipt_printer_name.ok_or("Receipt printer name is required for USB connection")?;
+        let printer_name = config
+            .receipt_printer_name
+            .ok_or("Receipt printer name is required for USB connection")?;
         println!("Sending to USB printer: {}", printer_name);
         print_raw(printer_name, payload)?;
         println!("USB Print successful");
@@ -501,15 +560,16 @@ pub fn print_sticker_direct(config: PrinterConfig, data: StickerData) -> Result<
     //   Line 1: Repair code / Barcode
     //   Line 2: Issue or Item Name (Main display)
     //   Line 3: Customer info
-    
+
     // Use item_name if issue is empty (e.g. for inventory stickers)
-    let display_text = if issue.is_empty() { &data.item_name } else { issue };
-    
-    // Truncate to prevent overflow (Font 3 is 16 dots wide, 400 dots max -> ~25 characters)
-    let mut main_text = display_text.to_string();
-    if main_text.len() > 24 {
-        main_text.truncate(24);
-    }
+    let display_text = if issue.is_empty() {
+        &data.item_name
+    } else {
+        issue
+    };
+
+    // Safe char-based truncation (UTF-8 aware, won't panic on multi-byte chars like Arabic/French)
+    let main_text: String = display_text.chars().take(24).collect();
 
     // Centering logic: Sticker is 50mm (~400 dots). Center point is 200.
     // Font "2" is 12 dots wide (6 dots half-width)
@@ -521,38 +581,49 @@ pub fn print_sticker_direct(config: PrinterConfig, data: StickerData) -> Result<
 
     let tspl_template = format!(
         "SIZE 50 mm, 25 mm\r\n\
-         GAP 3 mm, 0 mm\r\n\
-         DIRECTION 1,0\r\n\
-         REFERENCE 0,0\r\n\
-         CLS\r\n\
-         TEXT {code_x},20,\"2\",0,1,1,\"{code}\"\r\n\
-         TEXT {main_x},60,\"3\",0,1,1,\"{main_text}\"\r\n\
-         TEXT {cust_x},105,\"2\",0,1,1,\"{customer_line}\"\r\n\
-         PRINT 1\r\n",
+GAP 3 mm, 0 mm\r\n\
+DIRECTION 1,0\r\n\
+REFERENCE 0,0\r\n\
+CLS\r\n\
+TEXT {code_x},20,\"2\",0,1,1,\"{code}\"\r\n\
+TEXT {main_x},60,\"3\",0,1,1,\"{main_text}\"\r\n\
+TEXT {cust_x},105,\"2\",0,1,1,\"{customer_line}\"\r\n\
+PRINT 1\r\n",
         code = data.barcode,
         main_text = main_text,
         customer_line = customer_line
     );
-    
+
     let payload = tspl_template.into_bytes();
 
     let connection_type = config.sticker_connection_type.as_deref().unwrap_or("usb");
 
     if connection_type == "tcp" {
-        let ip = config.sticker_printer_ip.ok_or("Sticker printer IP address is required for TCP connection")?;
+        let ip = config
+            .sticker_printer_ip
+            .ok_or("Sticker printer IP address is required for TCP connection")?;
         let port = config.sticker_printer_port.unwrap_or(9100);
-        
+
         let mut stream = std::net::TcpStream::connect_timeout(
-            &format!("{}:{}", ip, port).parse().map_err(|_| "Invalid IP/Port format")?,
+            &format!("{}:{}", ip, port)
+                .parse()
+                .map_err(|_| "Invalid IP/Port format")?,
             std::time::Duration::from_secs(3),
-        ).map_err(|e| format!("Failed to connect to network printer: {}", e))?;
+        )
+        .map_err(|e| format!("Failed to connect to network printer: {}", e))?;
 
         use std::io::Write;
-        stream.write_all(&payload).map_err(|e| format!("Failed to send data: {}", e))?;
-        stream.flush().map_err(|e| format!("Failed to flush: {}", e))?;
+        stream
+            .write_all(&payload)
+            .map_err(|e| format!("Failed to send data: {}", e))?;
+        stream
+            .flush()
+            .map_err(|e| format!("Failed to flush: {}", e))?;
     } else {
         // Fallback to USB/OS spooler
-        let printer_name = config.sticker_printer_name.ok_or("Sticker printer name is required for USB connection")?;
+        let printer_name = config
+            .sticker_printer_name
+            .ok_or("Sticker printer name is required for USB connection")?;
         print_raw(printer_name, payload)?;
     }
 

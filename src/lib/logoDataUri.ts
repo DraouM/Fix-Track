@@ -5,6 +5,9 @@
  * Use this wherever you need to embed the logo inside an HTML string
  * that will be written into an iframe or a temp file (no HTTP server
  * available to resolve a relative "/logo_shop.svg" path).
+ *
+ * Also provides rasterizeLogoForESCPOS() for converting the logo to a
+ * monochrome bitmap suitable for the ESC/POS GS v 0 raster image command.
  */
 
 // The raw SVG content of public/logo_shop.svg, base64-encoded.
@@ -20,3 +23,111 @@ const LOGO_SVG = `<svg width="230" height="54" viewBox="0 0 230 54" fill="none" 
  *   <img src="${LOGO_DATA_URI}" style="max-width:60mm; max-height:20mm; object-fit:contain;" />
  */
 export const LOGO_DATA_URI = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(LOGO_SVG)}`;
+
+/**
+ * Convert a logo (data URI, PNG, SVG, etc.) into a monochrome bitmap
+ * in ESC/POS GS v 0 format for thermal printer rendering.
+ *
+ * Output byte layout: [xL, xH, yL, yH, packed_bitmap_bytes...]
+ *   - xL + xH*256 = bytes per line (width / 8, padded to byte boundary)
+ *   - yL + yH*256 = number of raster lines (image height)
+ *   - packed_bitmap_bytes: 1 bit per pixel, MSB = topmost pixel, black = 1
+ *
+ * @param dataUri   The logo as a data URI or image URL
+ * @param targetWidthMm  Printer paper width in mm (58 or 80)
+ * @returns Byte array ready for the GS v 0 command, or null on failure
+ */
+export async function rasterizeLogoForESCPOS(
+  dataUri: string,
+  targetWidthMm: number = 80,
+): Promise<number[] | null> {
+  // Determine target pixel width from paper size
+  // 58mm ≈ 384 dots, 80mm ≈ 576 dots (standard 203 DPI thermal printers)
+  const targetWidth = targetWidthMm <= 58 ? 384 : 576;
+
+  try {
+    const img = await loadImage(dataUri);
+
+    // Scale proportionally to fit the target width
+    const scale = targetWidth / img.width;
+    const rawHeight = Math.round(img.height * scale);
+
+    // Cap height to prevent excessively long logos (max ~200 dots ≈ 25mm)
+    const maxHeight = 200;
+    const finalHeight = Math.min(rawHeight, maxHeight);
+
+    // Render to an off-screen canvas
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = finalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    // Enable high-quality image smoothing for better downscaling
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    // White background (transparent SVG areas become white)
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, targetWidth, finalHeight);
+    ctx.drawImage(img, 0, 0, targetWidth, finalHeight);
+
+    const imageData = ctx.getImageData(0, 0, targetWidth, finalHeight);
+    const pixels = imageData.data;
+
+    // ESC/POS bitmap packing: each row must be a whole number of bytes
+    const bytesPerLine = Math.ceil(targetWidth / 8);
+    const bitmapData: number[] = [];
+
+    // Luminance threshold for monochrome conversion.
+    // The logo uses #F49B0D (orange, luminance ≈ 165) and #002134 (dark blue, luminance ≈ 25).
+    // A threshold of 200 ensures ALL non-white content (including orange/amber accents)
+    // is rendered as black dots, while white cutout details (luminance > 240) stay white.
+    const THRESHOLD = 200;
+
+    for (let y = 0; y < finalHeight; y++) {
+      for (let byteX = 0; byteX < bytesPerLine; byteX++) {
+        let byte = 0;
+        for (let bit = 0; bit < 8; bit++) {
+          const x = byteX * 8 + bit;
+          if (x < targetWidth) {
+            const idx = (y * targetWidth + x) * 4;
+            const r = pixels[idx];
+            const g = pixels[idx + 1];
+            const b = pixels[idx + 2];
+            const a = pixels[idx + 3];
+            // Perceived luminance; treat transparent pixels as white
+            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+            // Black pixel (bit=1) when content is non-white and opaque
+            if (luminance < THRESHOLD && a > 128) {
+              byte |= 1 << (7 - bit);
+            }
+          }
+        }
+        bitmapData.push(byte);
+      }
+    }
+
+    // Build the GS v 0 payload: [xL, xH, yL, yH, ...bitmapData]
+    const xL = bytesPerLine & 0xff;
+    const xH = (bytesPerLine >> 8) & 0xff;
+    const yL = finalHeight & 0xff;
+    const yH = (finalHeight >> 8) & 0xff;
+
+    return [xL, xH, yL, yH, ...bitmapData];
+  } catch (e) {
+    console.warn("Failed to rasterize logo for ESC/POS:", e);
+    return null;
+  }
+}
+
+/** Helper: load an image from a URL/data URI and resolve when ready */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}

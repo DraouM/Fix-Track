@@ -35,10 +35,6 @@ use db::session::{
     close_session, get_current_session, get_current_session_transactions,
     get_last_session_closing_balance, start_session,
 };
-use db::dashboard::{
-    get_dashboard_stats, get_dashboard_stats_by_range, get_dashboard_transactions_by_range,
-    get_revenue_breakdown, get_revenue_history, get_revenue_history_by_range,
-};
 use db::supplier::{
     add_supplier_payment, adjust_supplier_credit, delete_supplier, delete_supplier_payment,
     get_supplier_by_id, get_supplier_history, get_suppliers, insert_supplier,
@@ -49,7 +45,6 @@ use db::transaction::{
     delete_transaction_payment, get_transaction_by_id, get_transactions, remove_transaction_item,
     submit_transaction, update_transaction, update_transaction_payment,
 };
-use db::task::{delete_task, get_tasks, insert_task, update_task};
 use db::payment::get_all_payments;
 use std::panic;
 
@@ -165,19 +160,7 @@ fn main() {
             complete_transaction,
             submit_transaction,
             update_transaction,
-            // DASHBOARD
-            get_revenue_history,
-            get_revenue_breakdown,
-            get_dashboard_stats,
-            get_revenue_history_by_range,
-            get_dashboard_transactions_by_range,
-            get_dashboard_stats_by_range,
             system::get_device_id,
-            // TASKS
-            get_tasks,
-            insert_task,
-            update_task,
-            delete_task,
             // PRINTING
             printing::list_printers,
             printing::print_raw,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UnifiedCashierDashboard } from "@/components/dashboard/UnifiedCashierDashboard";
+import TransactionsPage from "@/app/transactions/page";
 import { SplashScreen } from "@/components/layout/SplashScreen";
 import { AnimatePresence } from "framer-motion";
 
@@ -26,9 +26,10 @@ export default function HomePage() {
   return (
     <AnimatePresence mode="wait">
       {showMainUI && (
-        <UnifiedCashierDashboard key="dashboard" />
+        <TransactionsPage key="transactions" />
       )}
     </AnimatePresence>
   );
 }
+
 

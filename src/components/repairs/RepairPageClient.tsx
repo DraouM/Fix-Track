@@ -29,7 +29,6 @@ import RepairForm from "@/components/repairs/RepairForm";
 import { RepairTable } from "@/components/repairs/RepairTable";
 import { RepairDetail } from "@/components/repairs/RepairDetail";
 import type { Repair } from "@/types/repair";
-import type { DashboardStats } from "@/lib/api/dashboard";
 import { useRepairContext, RepairProvider } from "@/context/RepairContext";
   
 import {  useSettings } from "@/context/SettingsContext";
@@ -43,20 +42,13 @@ export function RepairsPageInner() {
   const [repairToEdit, setRepairToEdit] = useState<Repair | null>(null);
   const [createdRepair, setCreatedRepair] = useState<Repair | null>(null);
   const [formInstanceKey, setFormInstanceKey] = useState(0);
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
 
-  const fetchStats = useCallback(async () => {
-    try {
-      const stats = await invoke<DashboardStats>("get_dashboard_stats");
-      setDashboardStats(stats);
-    } catch (error) {
-      console.error("Failed to fetch dashboard stats:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats, repairs]); // Re-fetch when repairs change
+  // Calculate statistics
+  const localRepairProfit = useMemo(() => {
+    return repairs
+      .filter((r) => r.status === "Completed" || r.status === "Delivered")
+      .reduce((sum, r) => sum + (r.estimatedCost || 0), 0);
+  }, [repairs]);
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -330,7 +322,7 @@ export function RepairsPageInner() {
           <StatCard
             icon={TrendingUp}
             title={t('dashboard.metrics.repairProfit')}
-            value={formatNumber(dashboardStats?.repair_profit || 0, getLocaleForIntl(i18n.language))}
+            value={formatNumber(localRepairProfit || 0, getLocaleForIntl(i18n.language))}
             suffix={settings.currency}
             subtitle={t('dashboard.metrics.afterParts')}
             color="purple"

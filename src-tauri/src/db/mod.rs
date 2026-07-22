@@ -9,8 +9,6 @@ pub mod sale;
 pub mod expense;
 pub mod session;
 pub mod transaction;
-pub mod dashboard;
-pub mod task;
 pub mod payment;
 
 use rusqlite::{Connection, Result};

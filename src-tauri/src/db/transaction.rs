@@ -111,6 +111,8 @@ pub fn get_transactions(
     type_filter: Option<String>,
     status_filter: Option<String>,
     party_filter: Option<String>,
+    start_date: Option<String>,
+    end_date: Option<String>,
 ) -> Result<Vec<Transaction>, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
 
@@ -124,6 +126,12 @@ pub fn get_transactions(
     }
     if let Some(p) = party_filter {
         query.push_str(&format!(" AND party_id = '{}'", p));
+    }
+    if let Some(start) = start_date {
+        query.push_str(&format!(" AND created_at >= '{}'", start));
+    }
+    if let Some(end) = end_date {
+        query.push_str(&format!(" AND created_at <= '{}'", end));
     }
 
     query.push_str(" ORDER BY created_at DESC");

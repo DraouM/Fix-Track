@@ -7,10 +7,7 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   Clock, 
-  CheckCircle2, 
   AlertCircle,
-  MoreVertical,
-  ChevronRight,
   Eye,
   Printer,
   Calendar as CalendarIcon

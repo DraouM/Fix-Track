@@ -117,6 +117,7 @@ export function RepairDataTable<TData, TValue>({
 
       // Search across multiple fields
       return (
+        repair.code?.toLowerCase().includes(search) ||
         repair.customerName?.toLowerCase().includes(search) ||
         repair.customerPhone?.toLowerCase().includes(search) ||
         repair.deviceBrand?.toLowerCase().includes(search) ||

@@ -94,6 +94,18 @@ export const createRepairColumns = (
   t: any
 ): ColumnDef<Repair>[] => [
   {
+    accessorKey: "code",
+    header: t('repairs.orderDetail')?.split(' ')[0] || 'Order #',
+    cell: ({ row }) => {
+      const repair = row.original;
+      return (
+        <span className="font-black text-sm text-foreground font-mono">
+          #{repair.code || repair.id.split('-')[0].toUpperCase()}
+        </span>
+      );
+    },
+  },
+  {
     accessorKey: "customerName",
     header: t('repairs.customerName'),
     cell: ({ row }) => {

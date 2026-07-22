@@ -31,7 +31,6 @@ import { cn } from "@/lib/utils";
 import { useTransactions } from "@/context/TransactionContext";
 import { toast } from "sonner";
 
-import { useInventory } from "@/context/InventoryContext";
 import { useTranslation } from "react-i18next";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { useSettings } from "@/context/SettingsContext";
@@ -39,7 +38,6 @@ import { useSettings } from "@/context/SettingsContext";
 
 export function TransactionHistory() {
   const { editTransaction } = useTransactions();
-  const { initialized } = useInventory();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,20 +49,26 @@ export function TransactionHistory() {
   const { t, i18n } = useTranslation();
   const { printTransactionReceipt } = usePrintUtils();
   const { settings } = useSettings();
-  const { dateRange, setDateRange } = useDateRange();
+  const { dateRange, setDateRange } = useDateRange({
+    from: new Date(),
+    to: new Date(),
+  });
 
 
   useEffect(() => {
-    if (initialized) {
-      loadTransactions();
-    }
-  }, [initialized]);
+    loadTransactions();
+  }, [dateRange]);
 
   const loadTransactions = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getTransactions();
+      const start = dateRange?.from ? startOfDay(dateRange.from).toISOString() : null;
+      const end = dateRange?.to 
+        ? endOfDay(dateRange.to).toISOString() 
+        : (dateRange?.from ? endOfDay(dateRange.from).toISOString() : null);
+        
+      const data = await getTransactions(null, null, null, start, end);
       setTransactions(data);
     } catch (err) {
       console.error("Failed to load transactions:", err);
@@ -137,19 +141,13 @@ export function TransactionHistory() {
   };
 
   const filteredTransactions = transactions.filter(tx => {
-    const matchesSearch = tx.transaction_number.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         tx.party_id.toLowerCase().includes(searchTerm.toLowerCase());
+    const txNumber = (tx.transaction_number ?? "").toLowerCase();
+    const txParty = (tx.party_id ?? "").toLowerCase();
+    const search = searchTerm.toLowerCase();
+    const matchesSearch = txNumber.includes(search) || txParty.includes(search);
     const matchesType = typeFilter === "All" || tx.transaction_type === typeFilter;
     
-    let matchesDate = true;
-    if (dateRange?.from) {
-      const txDate = parseISO(tx.created_at);
-      const start = startOfDay(dateRange.from);
-      const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
-      matchesDate = isWithinInterval(txDate, { start, end });
-    }
-    
-    return matchesSearch && matchesType && matchesDate;
+    return matchesSearch && matchesType;
   });
 
   return (
@@ -263,14 +261,14 @@ export function TransactionHistory() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-xs font-bold text-muted-foreground dark:text-slate-400">{formatDate(tx.created_at)}</span>
+                    <span className="text-xs font-bold text-muted-foreground dark:text-slate-400">{tx.created_at ? formatDate(tx.created_at) : "—"}</span>
                   </td>
                   <td className="px-6 py-4">
                     <Badge variant={tx.status === "Completed" ? "default" : "secondary"} className={cn(
                       "rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-widest",
                       tx.status === "Completed" ? "bg-green-600 dark:bg-green-700" : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
                     )}>
-                      {t(`status.${tx.status.toLowerCase()}`)}
+                      {tx.status ? t(`status.${tx.status.toLowerCase()}`) : "—"}
                     </Badge>
                   </td>
                   <td className="px-6 py-4 text-right">

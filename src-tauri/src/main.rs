@@ -20,10 +20,11 @@ use db::order::{
     get_order_payments, get_orders, get_orders_by_supplier, remove_order_item, update_order,
     update_order_item,
 };
+use db::payment::get_all_payments;
 use db::repair::{
     add_payment, add_used_part, delete_repair, delete_repair_payment, delete_used_part,
-    get_history_for_repair, get_payments_for_repair, get_repair_by_id, get_repairs,
-    get_used_parts_for_repair, insert_repair, insert_repair_history, update_repair,
+    get_all_repair_payments, get_history_for_repair, get_payments_for_repair, get_repair_by_id,
+    get_repairs, get_used_parts_for_repair, insert_repair, insert_repair_history, update_repair,
     update_repair_payment, update_repair_status,
 };
 use db::sale::{
@@ -45,7 +46,6 @@ use db::transaction::{
     delete_transaction_payment, get_transaction_by_id, get_transactions, remove_transaction_item,
     submit_transaction, update_transaction, update_transaction_payment,
 };
-use db::payment::get_all_payments;
 use std::panic;
 
 fn main() {
@@ -85,6 +85,7 @@ fn main() {
             update_repair_payment,
             delete_repair_payment,
             get_payments_for_repair,
+            get_all_repair_payments,
             add_used_part,
             delete_used_part,
             get_used_parts_for_repair,

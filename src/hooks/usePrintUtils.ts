@@ -17,12 +17,11 @@ import {
   TransactionPayment,
 } from "@/types/transaction";
 import { invoke } from "@tauri-apps/api/core";
-import { clientSchema } from "@/types/client"; // Import for type usage if needed, or just rely on 'any' for now as in template
 
 import { useSettings } from "@/context/SettingsContext";
 import { CURRENCY_SYMBOLS } from "@/types/settings";
 import { useRouter } from "next/navigation";
-import { LOGO_DATA_URI, rasterizeLogoForESCPOS } from "@/lib/logoDataUri";
+import { rasterizeLogoForESCPOS } from "@/lib/logoDataUri";
 
 interface PrintOptions {
   includePayments?: boolean;
@@ -42,7 +41,6 @@ interface PrintHistoryEntry {
 
 export const usePrintUtils = () => {
   const { settings } = useSettings();
-  const shopInfo = getShopInfo();
   const router = useRouter();
   const [printHistory, setPrintHistory] = useState<PrintHistoryEntry[]>([]);
 
@@ -53,23 +51,13 @@ export const usePrintUtils = () => {
       language?: string,
       currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD",
     ) => {
+      const shopInfo = getShopInfo();
       const lang = language || settings.language;
       const curr = currency || settings.currency;
       const { format = "receipt" } = options;
       const isRepair = "deviceBrand" in data;
       const repair = isRepair ? (data as Repair) : null;
       const item = !isRepair ? (data as InventoryItem) : null;
-
-      const barcodeValue = isRepair
-        ? repair?.code || repair?.id
-        : item?.barcode || item?.id;
-      const title = isRepair
-        ? `${repair?.deviceBrand} ${repair?.deviceModel}`
-        : item?.phoneBrand;
-      const mainText = isRepair ? repair?.issueDescription : item?.itemName;
-      const subText = isRepair
-        ? repair?.customerPhone
-        : `${CURRENCY_SYMBOLS[curr]}${item?.sellingPrice.toFixed(2)}`;
 
       if (format === "sticker") {
         return renderStickerHTML(data);
@@ -81,7 +69,7 @@ export const usePrintUtils = () => {
           options,
           lang,
           curr,
-          LOGO_DATA_URI,
+          shopInfo.logoUrl,
         );
       }
 
@@ -123,6 +111,7 @@ export const usePrintUtils = () => {
       item: Repair | InventoryItem,
       type: "sticker" | "receipt",
     ) => {
+      const shopInfo = getShopInfo();
       // 1. Basic configuration check
       const config = settings.printerConfig;
       const connectionType =
@@ -235,7 +224,9 @@ export const usePrintUtils = () => {
 
           const receiptData = {
             orderId: isRepair ? repair?.code || repair?.id : item.id,
-            customer: isRepair ? repair?.customerName : "Walk-in Customer",
+            customer: isRepair ? repair?.customerName || "Walk-in Customer" : "Walk-in Customer",
+            customerName: isRepair ? repair?.customerName : undefined,
+            customerPhone: isRepair ? repair?.customerPhone : undefined,
             device: isRepair
               ? `${repair?.deviceBrand} ${repair?.deviceModel}`
               : undefined,
@@ -264,6 +255,12 @@ export const usePrintUtils = () => {
             total: isRepair
               ? repair?.estimatedCost || 0
               : (item as InventoryItem).sellingPrice,
+            totalPaid: isRepair
+              ? (repair?.payments || []).reduce((sum, payment) => sum + payment.amount, 0)
+              : undefined,
+            balanceDue: isRepair
+              ? (repair?.estimatedCost || 0) - ((repair?.payments || []).reduce((sum, payment) => sum + payment.amount, 0))
+              : (item as InventoryItem).sellingPrice,
             shopInfo: {
               shopName: shopInfo.shopName,
               phoneNumber: shopInfo.phoneNumber,
@@ -274,6 +271,7 @@ export const usePrintUtils = () => {
             },
             date: new Date().toLocaleString(),
             currencySymbol: CURRENCY_SYMBOLS[settings.currency] || "$",
+            status: isRepair ? repair?.status : undefined,
           };
 
           await invoke("print_receipt_direct", { config, data: receiptData });
@@ -293,7 +291,7 @@ export const usePrintUtils = () => {
         return false;
       }
     },
-    [settings.printerConfig, addToPrintHistory, router],
+    [settings.printerConfig, settings.currency, addToPrintHistory, router],
   );
 
   const printSticker = useCallback(
@@ -360,13 +358,14 @@ export const usePrintUtils = () => {
       previousBalance?: number,
     ) => {
       try {
+        const shopInfo = getShopInfo();
         const content = renderPaymentReceiptHTML(
           payment,
           customerName,
           referenceCode,
           language || settings.language,
           currency || settings.currency,
-          LOGO_DATA_URI,
+          shopInfo.logoUrl,
           previousBalance,
         );
         return printDocument(content, { id: payment.id } as any, "receipt");
@@ -391,6 +390,7 @@ export const usePrintUtils = () => {
       currency?: "USD" | "EUR" | "MAD" | "GBP" | "DZD",
     ) => {
       try {
+        const shopInfo = getShopInfo();
         const content = renderTransactionReceiptHTML(
           transaction,
           items,
@@ -399,7 +399,7 @@ export const usePrintUtils = () => {
           previousBalance,
           language || settings.language,
           currency || settings.currency,
-          LOGO_DATA_URI,
+          shopInfo.logoUrl,
         );
         // Casting transaction to any to satisfy the minimal interface required by printDocument/addToPrintHistory
         // effectively treating it as an item with an id.
@@ -494,7 +494,7 @@ export const usePrintUtils = () => {
                 return printDocument(content, item, "sticker");
               }),
             ).then((results) => {
-              results.forEach((result, index) => {
+              results.forEach((result) => {
                 if (result.status === "fulfilled" && result.value) {
                   succeeded++;
                 }

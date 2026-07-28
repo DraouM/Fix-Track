@@ -42,9 +42,9 @@ export function renderRepairReceiptHTML(
   const paymentsHTML =
     includePayments && repair.payments && repair.payments.length > 0
       ? `
-      <div style="margin-top: 4px; font-size: 8px;">
-        <div style="border-top: 1px solid #000; margin-top: 3px; padding-top: 3px;">
-          <div style="display: flex; justify-content: space-between; font-weight: bold; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+      <div style="margin-top: 6px; font-size: 11px;">
+        <div style="border-top: 1px solid #000; margin-top: 6px; padding-top: 6px;">
+          <div style="display:flex; justify-content:space-between; font-weight:bold;">
             <span>${i18n.t("receipt.totalPaid", { lng: language })}:</span>
             <span>${CURRENCY_SYMBOLS[currency]}${totalPaid.toFixed(2)}</span>
           </div>
@@ -53,90 +53,132 @@ export function renderRepairReceiptHTML(
     `
       : "";
 
+  const partsHTML =
+    includeParts && repair.usedParts && repair.usedParts.length > 0
+      ? `
+      <div style="margin-bottom: 8px; font-size: 12px;">
+        <div style="font-weight: bold; margin-bottom: 4px;">Parts Used</div>
+        ${repair.usedParts
+          .map(
+            (part) => `
+            <div style="display:flex; justify-content:space-between; margin-bottom: 2px; padding-left: 4px;">
+              <span>${part.partName} <span style="font-size: 11px;">(x${part.quantity})</span></span>
+              <span>${CURRENCY_SYMBOLS[currency]}${part.cost.toFixed(2)}</span>
+            </div>
+          `,
+          )
+          .join("")}
+      </div>
+      <div class="divider"></div>
+    `
+      : "";
+
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="${language}" dir="${direction}">
       <head>
         <meta charset="UTF-8">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            width: 80mm; 
-            padding: 2mm; 
-            font-family: 'Courier New', Courier, monospace; 
-            font-size: 12px; 
-            font-weight: bold;
-            line-height: 1.2; 
-            color: #000; 
+          body {
+            width: 80mm;
+            padding: 4mm;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            line-height: 1.3;
+            color: #000;
             background: #fff;
           }
-          @media print {
-            @page { size: 80mm auto; margin: 0; }
-            body { width: 80mm; }
+          .center { text-align: center; }
+          .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+          .divider { border-top: 1px dashed #000; margin: 8px 0; }
+          .section { margin-bottom: 8px; }
+          .title { font-size: 16px; font-weight: 900; margin-bottom: 2px; }
+          .subheading { font-weight: bold; margin-bottom: 2px; }
+          .balance-box {
+            border: 2px solid #000;
+            padding: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            background: #f7f7f7;
           }
+          .issue-text { white-space: pre-wrap; word-break: break-word; margin-top: 2px; font-size: 13px; font-weight: 700; }
         </style>
       </head>
-      <body dir="${direction}">
-        <div style="text-align: center; margin-bottom: 4px; border-bottom: 1px dashed #000; padding-bottom: 4px;">
-          <div style="margin-bottom: 2px;"><img src="${logoUrl || shopInfo.logoUrl || LOGO_DATA_URI}" style="max-width: 60mm; max-height: 20mm; object-fit: contain;"></div>
-          <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">${shopInfo.shopName}</div>
-          <div style="font-size: 7px;">${shopInfo.address}</div>
-          <div style="font-size: 7px;">${i18n.t("receipt.telephone", { lng: language })}: ${shopInfo.phoneNumber}</div>
+      <body>
+        <div class="center" style="margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px;">
+          <div style="margin-bottom: 6px;"><img src="${logoUrl || shopInfo.logoUrl || LOGO_DATA_URI}" style="max-width: 60mm; max-height: 50mm; object-fit: contain;"></div>
+          <div class="title">${shopInfo.shopName}</div>
+          ${shopInfo.ownerName ? `<div style="font-size: 12px; margin-bottom: 2px;">Owner: ${shopInfo.ownerName}</div>` : ""}
+          <div style="font-size: 11px;">${shopInfo.address}</div>
+          <div style="font-size: 11px;">${i18n.t("receipt.telephone", { lng: language })}: ${shopInfo.phoneNumber}</div>
+          ${shopInfo.email ? `<div style="font-size: 11px;">Email: ${shopInfo.email}</div>` : ""}
+          ${shopInfo.website ? `<div style="font-size: 11px;">Web: ${shopInfo.website}</div>` : ""}
         </div>
 
-        <div style="margin-bottom: 3px; font-size: 7px;">
-          <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+        <div class="section" style="font-size: 12px;">
+          <div class="row">
             <span>${i18n.t("receipt.orderNumber", { lng: language })}:</span>
-            <span style="font-weight: 900; font-size: 14px;">${repair.code || repair.id}</span>
+            <span style="font-weight: bold;">${repair.code || repair.id}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+          <div class="row">
             <span>${i18n.t("receipt.date", { lng: language })}:</span>
             <span>${formatDate(repair.createdAt)}</span>
           </div>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-
-        <div style="margin-bottom: 4px; font-size: 12px; ${isRTL ? "text-align: right;" : ""}">
-          <div style="font-size: 14px; font-weight: 900;">${repair.customerName}</div>
-          <div style="font-size: 14px; font-weight: 900;">${repair.customerPhone}</div>
-        </div>
-
-        <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-
-        <div style="margin-bottom: 4px; font-size: 12px; ${isRTL ? "text-align: right;" : ""}">
-          <div style="font-size: 13px; font-weight: bold;">${repair.deviceBrand} ${repair.deviceModel}</div>
-          <div style="margin-top: 4px;">
-            <div style="font-weight: bold; text-decoration: underline;">${i18n.t("receipt.issue", { lng: language })}:</div>
-            <div style="white-space: pre-wrap; word-break: break-all; font-size: 14px; font-weight: 900;">${repair.issueDescription}</div>
+          <div class="row">
+            <span>Status:</span>
+            <span style="font-weight: bold;">${repair.status}</span>
           </div>
         </div>
 
+        <div class="divider"></div>
 
-        <div style="margin-bottom: 4px; font-size: 9px;">
-          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+        <div class="section">
+          <div class="subheading">Customer</div>
+          <div style="font-weight: bold;">${repair.customerName || "Unknown"}</div>
+          <div>${repair.customerPhone || "No phone provided"}</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section">
+          <div class="subheading">Device</div>
+          <div style="font-weight: bold;">${repair.deviceBrand || "Unknown"} ${repair.deviceModel || "Device"}</div>
+          <div style="margin-top: 4px;">
+            <span style="text-decoration: underline; font-weight: bold;">${i18n.t("receipt.issue", { lng: language })}:</span>
+            <div class="issue-text">${repair.issueDescription || "No description provided"}</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        ${partsHTML}
+
+        <div class="section" style="font-size: 12px;">
+          <div class="row" style="font-size: 14px; font-weight: bold;">
             <span>${i18n.t("receipt.repairCost", { lng: language })}:</span>
             <span>${CURRENCY_SYMBOLS[currency]}${repair.estimatedCost.toFixed(2)}</span>
           </div>
           ${paymentsHTML}
-          <div style="border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; font-size: 12px; font-weight: 900;">
-            <div style="display: flex; justify-content: space-between; ${isRTL ? "flex-direction: row-reverse;" : ""}">
+          <div class="balance-box">
+            <div class="row">
               <span>${i18n.t("receipt.balanceDue", { lng: language })}:</span>
-              <span style="font-size: 14px;">${CURRENCY_SYMBOLS[currency]}${balance.toFixed(2)}</span>
+              <span>${CURRENCY_SYMBOLS[currency]}${balance.toFixed(2)}</span>
             </div>
           </div>
         </div>
 
-        <div style="text-align: center; font-size: 7px; margin-top: 4px;">
-          <div style="border-top: 1px dashed #000; margin: 4px 0;"></div>
-          <div style="white-space: pre-wrap; margin-bottom: 2px;">${shopInfo.receiptFooter}</div>
-          <div style="font-size: 6px; color: #666;">${i18n.t("receipt.generatedBy", { lng: language })}</div>
+        <div class="divider"></div>
+
+        <div class="center" style="font-size: 11px; margin-top: 6px;">
+          <div style="margin-bottom: 4px; font-style: italic;">${shopInfo.receiptFooter || i18n.t("repairs.thankYou", { lng: language })}</div>
+          ${shopInfo.website ? `<div style="font-size: 10px; color: #111;">${shopInfo.website}</div>` : ""}
+          <div style="font-size: 7px; color: #666; margin-top: 4px;">${i18n.t("receipt.generatedBy", { lng: language })}</div>
         </div>
 
-        <div style="text-align: center; margin-top: 6px; font-size: 7px;">
-          <div style="border: 1px solid #000; padding: 4px; font-family: 'Courier New', Courier, monospace; letter-spacing: 1px;">
-            *${repair.code || repair.id}*
-          </div>
+        <div class="center" style="margin-top: 8px; font-size: 10px;">
+          <div style="border: 1px solid #000; padding: 4px; letter-spacing: 1px;">*${repair.code || repair.id}*</div>
         </div>
       </body>
     </html>

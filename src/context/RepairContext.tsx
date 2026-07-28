@@ -55,11 +55,11 @@ interface RepairActions {
   fetchRepairs: () => Promise<void>;
   fetchRepairById: (id: string) => Promise<void>;
   createRepair: (
-    data: Omit<RepairDb, "id" | "created_at" | "updated_at">
+    data: Omit<RepairDb, "id" | "created_at" | "updated_at">,
   ) => Promise<Repair | undefined>;
   updateRepair: (id: string, data: Partial<Repair>) => Promise<void>;
   deleteRepair: (id: string) => Promise<void>;
-  updateRepairStatus: (id: string, status: RepairStatus) => Promise<void>;
+  updateRepairStatus: (id: string, status: RepairStatus) => void;
   addPayment: (repairId: string, payment: PaymentInput) => Promise<void>;
   addUsedPart: (repairId: string, part: UsedPartInput) => Promise<void>;
   deleteUsedPart: (repairId: string, recordId: string) => Promise<void>;
@@ -78,7 +78,7 @@ async function withAsync<T>(
   {
     onSuccess,
     onError,
-  }: { onSuccess?: (res: T) => void; onError?: (msg: string) => void } = {}
+  }: { onSuccess?: (res: T) => void; onError?: (msg: string) => void } = {},
 ) {
   try {
     const result = await action();
@@ -118,7 +118,7 @@ function mapRepairFromDB(dbRepair: RepairDb): Repair {
 function calculatePaymentTotals(repair: Repair, allPayments: Payment[]) {
   // Convert both to strings for comparison since we have mixed ID types
   const repairPayments = allPayments.filter(
-    (p) => String(p.repair_id) === String(repair.id)
+    (p) => String(p.repair_id) === String(repair.id),
   );
   const totalPaid = repairPayments.reduce((sum, p) => sum + p.amount, 0);
   const remainingBalance = repair.estimatedCost - totalPaid;
@@ -145,10 +145,10 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const { emit } = useEvents();
 
-  // ✅ Use the filtering/sorting hook (you'll need to create useRepairFilters)
+  // ✅ Use the filtering/sorting hook
   const {
-    filteredAndSortedRepairs, // Note: different name than expected
-    filters, // Contains searchTerm, status, paymentStatus
+    filteredAndSortedRepairs,
+    filters,
     sortConfig,
     setSearchTerm,
     setStatusFilter,
@@ -161,58 +161,44 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ✅ Fetch all repairs
   const fetchRepairs = useCallback(async () => {
-    console.log("🔄 Fetching all repairs from database...");
     setLoading(true);
     clearError();
 
     await withAsync(() => invoke<RepairDb[]>("get_repairs"), {
       onSuccess: async (repairsData) => {
-        console.log("✅ Successfully fetched repairs:", repairsData);
-        console.log("📊 Number of repairs fetched:", repairsData.length);
-
-        // // Handle empty repairs case early
-        // if (!repairsData || repairsData.length === 0) {
-        //   console.log("📭 No repairs found, setting empty array");
-        //   setRepairs([]);
-        //   return;
-        // }
-
         const mappedRepairs = repairsData.map(mapRepairFromDB);
 
-        // For now, fetch payments for each repair individually
-        // TODO: Create get_all_payments backend function for better performance
+        // Batch fetch all payments in a single query (avoids N+1 bridge calls)
         try {
-          const repairsWithPayments = await Promise.all(
-            mappedRepairs.map(async (repair) => {
-              try {
-                const repairPayments = await invoke<Payment[]>(
-                  "get_payments_for_repair",
-                  { repairId: repair.id }
-                );
-                return calculatePaymentTotals(repair, repairPayments);
-              } catch (error) {
-                console.warn(
-                  `Failed to fetch payments for repair ${repair.id}:`,
-                  error
-                );
-                return calculatePaymentTotals(repair, []);
-              }
-            })
+          const allPayments = await invoke<Payment[]>(
+            "get_all_repair_payments",
           );
 
-          console.log(
-            "🔄 Mapped repairs with payment totals:",
-            repairsWithPayments
-          );
+          // Group payments by repair_id for efficient lookup
+          const paymentsByRepairId = new Map<string, Payment[]>();
+          for (const payment of allPayments) {
+            const repairId = String(payment.repair_id);
+            if (!paymentsByRepairId.has(repairId)) {
+              paymentsByRepairId.set(repairId, []);
+            }
+            paymentsByRepairId.get(repairId)!.push(payment);
+          }
+
+          const repairsWithPayments = mappedRepairs.map((repair) => {
+            const repairPayments = paymentsByRepairId.get(repair.id) || [];
+            return calculatePaymentTotals(repair, repairPayments);
+          });
+
           setRepairs(repairsWithPayments);
         } catch (error) {
-          console.error("❌ Error calculating payment totals:", error);
-          // Fallback: set repairs without payment calculations
+          console.warn(
+            "Failed to batch fetch payments, using fallback:",
+            error,
+          );
           setRepairs(mappedRepairs);
         }
       },
       onError: (msg) => {
-        console.error("❌ Error fetching repairs:", msg);
         setError(msg);
       },
     });
@@ -232,7 +218,6 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       await fetchRepairs();
       setInitialized(true);
     } catch (err) {
-      console.error("Failed to initialize repairs:", err);
       setError(`Failed to initialize repairs: ${err}`);
       toast.error(`Failed to initialize repairs: ${err}`);
     } finally {
@@ -243,7 +228,6 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
   // ✅ Fetch repair by ID
   const fetchRepairById = useCallback(
     async (id: string) => {
-      console.log("🔍 Fetching repair by ID:", id);
       setLoading(true);
       clearError();
 
@@ -253,18 +237,15 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         () => invoke<RepairDb>("get_repair_by_id", { repairId: id }),
         {
           onSuccess: (data) => {
-            console.log("✅ Successfully fetched repair by ID:", data);
             fetchedRepair = mapRepairFromDB(data);
           },
           onError: (msg) => {
-            console.error("❌ Error fetching repair by ID:", msg);
             setError(msg);
           },
-        }
+        },
       );
 
       if (fetchedRepair && id) {
-        console.log("🔄 Fetching related data for repair:", id);
         // fetch related data
         try {
           const [paymentsData, partsData, historyData] = await Promise.all([
@@ -273,42 +254,38 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
             invoke<RepairHistory[]>("get_history_for_repair", { repairId: id }),
           ]);
 
-          console.log("💰 Payments fetched:", paymentsData);
-          console.log("🔧 Used parts fetched:", partsData);
-          console.log("📜 History fetched:", historyData);
-
           const repairWithTotals = calculatePaymentTotals(
             fetchedRepair,
-            paymentsData
+            paymentsData,
           );
 
           setSelectedRepair(repairWithTotals);
           setRepairs((prev) =>
             prev.map((r) =>
-              r.id === repairWithTotals.id ? repairWithTotals : r
-            )
+              r.id === repairWithTotals.id ? repairWithTotals : r,
+            ),
           );
 
           setPayments(paymentsData);
           setUsedParts(partsData);
           setHistory(historyData);
         } catch (error) {
-          console.error("❌ Error fetching related repair data:", error);
           setError(
-            error instanceof Error ? error.message : "Failed to fetch related data"
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch related data",
           );
         }
       }
 
       setLoading(false);
     },
-    [clearError]
+    [clearError],
   );
 
   // ✅ Create repair
   const createRepair = useCallback(
     async (data: Omit<RepairDb, "id" | "created_at" | "updated_at">) => {
-      console.log("➕ Creating new repair:", data);
       setLoading(true);
       clearError();
       const repairData = {
@@ -317,25 +294,21 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      console.log("📝 Repair data with ID and timestamps:", repairData);
 
       await withAsync(() => invoke("insert_repair", { repair: repairData }), {
         onSuccess: () => {
-          console.log("✅ Repair created successfully");
           toast.success("Repair created successfully");
           fetchRepairs();
-          // Emit event to notify dashboard of financial change
           emit("financial-data-change");
         },
         onError: (msg) => {
-          console.error("❌ Error creating repair:", msg);
           setError(msg);
         },
       });
       setLoading(false);
       return mapRepairFromDB(repairData as RepairDb);
     },
-    [fetchRepairs, clearError]
+    [fetchRepairs, clearError],
   );
 
   // ✅ Update repair
@@ -344,7 +317,6 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       clearError();
 
-      // Find the existing repair to merge with updates
       const existingRepair = repairs.find((r) => r.id === id);
       if (!existingRepair) {
         setError("Repair not found");
@@ -352,7 +324,6 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      // Convert frontend Repair to backend RepairDb format
       const repairData = {
         id: existingRepair.id,
         customer_name: data.customerName ?? existingRepair.customerName,
@@ -375,13 +346,11 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
             prev.map((r) =>
               r.id === id
                 ? { ...r, ...data, updatedAt: new Date().toISOString() }
-                : r
-            )
+                : r,
+            ),
           );
-          // Refresh the selected repair to ensure all data is up-to-date
           fetchRepairById(id);
 
-          // Emit event to notify dashboard if financial data changed
           if (
             data.estimatedCost !== undefined ||
             data.paymentStatus !== undefined
@@ -393,7 +362,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       setLoading(false);
     },
-    [repairs, clearError]
+    [repairs, clearError],
   );
 
   // ✅ Delete repair
@@ -406,47 +375,42 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
           toast.success("Repair deleted successfully");
           setRepairs((prev) => prev.filter((r) => r.id !== id));
           if (selectedRepair?.id === id) setSelectedRepair(null);
-          // Emit event to notify dashboard of financial change
           emit("financial-data-change");
         },
         onError: (msg) => setError(msg),
       });
       setLoading(false);
     },
-    [selectedRepair, clearError]
+    [selectedRepair, clearError],
   );
 
   // ✅ Update repair status
   const updateRepairStatus = useCallback(
     async (id: string, status: RepairStatus) => {
-      console.log("🔄 Updating repair status:", { id, status });
       setLoading(true);
       clearError();
       await withAsync(
         () => invoke("update_repair_status", { id, newStatus: status }),
         {
           onSuccess: () => {
-            console.log("✅ Repair status updated successfully");
             toast.success("Repair status updated");
             setRepairs((prev) =>
               prev.map((r) =>
                 r.id === id
                   ? { ...r, status, updatedAt: new Date().toISOString() }
-                  : r
-              )
+                  : r,
+              ),
             );
-            // Emit event to notify dashboard of financial change
             emit("financial-data-change");
           },
           onError: (msg) => {
-            console.error("❌ Error updating repair status:", msg);
             setError(msg);
           },
-        }
+        },
       );
       setLoading(false);
     },
-    [clearError]
+    [clearError],
   );
 
   // Payment status is now automatically determined by the backend based on payments
@@ -461,17 +425,16 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const paymentData = {
         id: uuidv4(),
-        repair_id: repairId, // Keep as string for backend compatibility
+        repair_id: repairId,
         amount: payment.amount,
         date: new Date().toISOString(),
         method: payment.method,
-        received_by: null, // Optional field
+        received_by: null,
         session_id: session?.id || null,
       };
 
       await withAsync(() => invoke("add_payment", { payment: paymentData }), {
         onSuccess: async () => {
-          // Add history entry for the payment
           const historyEntry = {
             id: uuidv4(),
             repair_id: repairId,
@@ -488,20 +451,15 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
           }
 
           toast.success("Payment added successfully");
-
-          // Fetch the updated repair to get the new payment status and totals
           await fetchRepairById(repairId);
-          // Also refresh all repairs to update payment totals in the list
           fetchRepairs();
-
-          // Emit event to notify dashboard of financial change
           emit("financial-data-change");
         },
         onError: (msg) => setError(msg),
       });
       setLoading(false);
     },
-    [fetchRepairs, fetchRepairById, clearError]
+    [fetchRepairs, fetchRepairById, clearError],
   );
 
   // ✅ Add used part
@@ -520,15 +478,14 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
           onSuccess: () => {
             toast.success("Part added successfully");
             fetchRepairById(repairId);
-            // Emit event to notify dashboard of financial change
             emit("financial-data-change");
           },
           onError: (msg) => setError(msg),
-        }
+        },
       );
       setLoading(false);
     },
-    [fetchRepairById, clearError]
+    [fetchRepairById, clearError],
   );
 
   // ✅ Delete used part
@@ -540,14 +497,13 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         onSuccess: () => {
           toast.success("Part removed successfully");
           fetchRepairById(repairId);
-          // Emit event to notify dashboard of financial change
           emit("financial-data-change");
         },
         onError: (msg) => setError(msg),
       });
       setLoading(false);
     },
-    [fetchRepairById, clearError]
+    [fetchRepairById, clearError],
   );
 
   // ✅ Get repair history
@@ -563,11 +519,11 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         {
           onSuccess: (data) => setHistory(data),
           onError: (msg) => setError(msg),
-        }
+        },
       );
       setLoading(false);
     },
-    [clearError]
+    [clearError],
   );
 
   // ✅ Get repair by ID
@@ -575,16 +531,12 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string) => {
       return repairs.find((repair) => repair.id === id);
     },
-    [repairs]
+    [repairs],
   );
 
   // ✅ Initialize data on mount
   useEffect(() => {
-    const initTimer = setTimeout(() => {
-      initialize();
-    }, 20);
-
-    return () => clearTimeout(initTimer);
+    initialize();
   }, [initialize]);
 
   // ✅ Memoized value with optimized dependencies
@@ -618,7 +570,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       filters.status,
       filters.paymentStatus,
       sortConfig,
-    ]
+    ],
   );
 
   const actionsValue = useMemo<RepairActions>(
@@ -658,12 +610,12 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       addUsedPart,
       getRepairHistory,
       getItemById,
-    ]
+    ],
   );
 
   const value = useMemo<RepairContextType>(
     () => ({ ...stateValue, ...actionsValue }),
-    [stateValue, actionsValue]
+    [stateValue, actionsValue],
   );
 
   return (

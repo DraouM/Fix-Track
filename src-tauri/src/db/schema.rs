@@ -56,11 +56,28 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     )?;
 
     // Migration: Update status from 'Partially Paid' to 'Partially' for consistency
-    let _ = conn.execute("UPDATE repairs SET payment_status = 'Partially' WHERE payment_status = 'Partially Paid'", []);
+    let _ = conn.execute(
+        "UPDATE repairs SET payment_status = 'Partially' WHERE payment_status = 'Partially Paid'",
+        [],
+    );
 
     // Migration: Add code column if it doesn't exist
     // We try to add it, ignoring error if it exists (simplest migration for SQLite without dedicated migration tool)
     let _ = conn.execute("ALTER TABLE repairs ADD COLUMN code TEXT", []);
+
+    // Indexes for repairs table (performance optimization)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_repairs_status ON repairs(status)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_repairs_created_at ON repairs(created_at)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_repairs_customer ON repairs(customer_name)",
+        [],
+    )?;
 
     // Repair payments (supports multiple/partial payments)
     conn.execute(
@@ -73,6 +90,12 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
             received_by TEXT,
             FOREIGN KEY(repair_id) REFERENCES repairs(id) ON DELETE CASCADE
         )",
+        [],
+    )?;
+
+    // Indexes for repair_payments and related tables (performance optimization)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_repair_payments_repair_id ON repair_payments(repair_id)",
         [],
     )?;
 
@@ -90,6 +113,8 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
         [],
     )?;
 
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_repair_used_parts_repair_id ON repair_used_parts(repair_id)", [])?;
+
     // History table for tracking repair lifecycle
     conn.execute(
         "CREATE TABLE IF NOT EXISTS repair_history (
@@ -101,6 +126,11 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
             changed_by TEXT,
             FOREIGN KEY(repair_id) REFERENCES repairs(id) ON DELETE CASCADE
         )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_repair_history_repair_id ON repair_history(repair_id)",
         [],
     )?;
 
@@ -356,10 +386,22 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     )?;
 
     // Indexes for sales
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_client ON customer_sales(client_id)", [])?;
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_status ON customer_sales(status)", [])?;
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id)", [])?;
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_sale_payments_sale ON sale_payments(sale_id)", [])?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_client ON customer_sales(client_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_status ON customer_sales(status)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sale_payments_sale ON sale_payments(sale_id)",
+        [],
+    )?;
 
     // Keep legacy sales table for now to avoid breaking existing data if any
     conn.execute(
@@ -474,9 +516,18 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     )?;
 
     // Indexes for transactions
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_transactions_party ON transactions(party_id)", [])?;
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(transaction_type)", [])?;
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_transaction_items_tx ON transaction_items(transaction_id)", [])?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_transactions_party ON transactions(party_id)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(transaction_type)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_transaction_items_tx ON transaction_items(transaction_id)",
+        [],
+    )?;
     conn.execute("CREATE INDEX IF NOT EXISTS idx_transaction_payments_tx ON transaction_payments(transaction_id)", [])?;
 
     // Migrations to add session_id to payment tables (ignore errors if column exists)
@@ -484,7 +535,10 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     let _ = conn.execute("ALTER TABLE repair_payments ADD COLUMN session_id TEXT", []);
     let _ = conn.execute("ALTER TABLE order_payments ADD COLUMN session_id TEXT", []);
     let _ = conn.execute("ALTER TABLE client_payments ADD COLUMN session_id TEXT", []);
-    let _ = conn.execute("ALTER TABLE supplier_payments ADD COLUMN session_id TEXT", []);
+    let _ = conn.execute(
+        "ALTER TABLE supplier_payments ADD COLUMN session_id TEXT",
+        [],
+    );
 
     // Tasks & Reminders table
     conn.execute(

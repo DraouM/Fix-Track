@@ -55,13 +55,18 @@ pub struct ReceiptItem {
 pub struct ReceiptData {
     pub order_id: String,
     pub customer: String,
+    pub customer_name: Option<String>,
+    pub customer_phone: Option<String>,
     pub device: Option<String>,
     pub issue: Option<String>,
     pub items: Vec<ReceiptItem>,
     pub total: f64,
+    pub total_paid: Option<f64>,
+    pub balance_due: Option<f64>,
     pub shop_info: Option<ShopInfo>,
     pub date: Option<String>,
     pub currency_symbol: Option<String>,
+    pub status: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -376,6 +381,30 @@ pub fn print_html(html: String, printer_name: Option<String>) -> Result<(), Stri
     Ok(())
 }
 
+/// Paper width in characters. 42 is typical for 80mm paper at normal font.
+/// Adjust to 32 if you're on 58mm paper.
+const PAPER_WIDTH: usize = 42;
+
+/// Prints a "label ..... value" line, right-aligning the value — mirrors the
+/// `display: flex; justify-content: space-between` rows in the TSX prototype.
+#[tauri::command]
+fn line_lv(label: &str, value: &str) -> String {
+    let used = label.len() + value.len();
+    let pad = if PAPER_WIDTH > used {
+        PAPER_WIDTH - used
+    } else {
+        1
+    };
+    format!("{}{}{}\n", label, " ".repeat(pad), value)
+}
+
+/// A full-width dashed separator, matching the `border-top: 1px dashed #000`
+/// dividers between sections in the TSX prototype.
+#[tauri::command]
+fn dashed_line() -> String {
+    format!("{}\n", "-".repeat(PAPER_WIDTH))
+}
+
 /// Send raw direct commands (ESC/POS) for a receipt
 #[tauri::command]
 pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<(), String> {
@@ -384,16 +413,18 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
 
     // ESC/POS Commands
     let esc: u8 = 0x1B;
-    // let gs: u8 = 0x1D; // Unused for now, commenting out
+    let gs: u8 = 0x1D;
 
     // 1. Initialize printer: ESC @
     payload.extend_from_slice(&[esc, 0x40]);
 
-    // 2. Header (Centered, Bold)
-    if let Some(ref shop) = data.shop_info {
-        payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
+    // ------------------------------------------------------------------
+    // 2. Header (Centered) — logo, shop name, address, phone
+    // ------------------------------------------------------------------
+    payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
 
-        // Print logo bitmap using GS v 0 (raster bit image) if available
+    if let Some(ref shop) = data.shop_info {
+        // Logo (raster bit image via GS v 0) — unchanged from original
         if let Some(ref bitmap) = shop.logo_bitmap {
             if bitmap.len() >= 4 {
                 let x_l = bitmap[0];
@@ -407,13 +438,10 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
                 let expected_len = bytes_per_line * num_lines;
 
                 if bitmap_data.len() == expected_len && expected_len > 0 {
-                    // GS v 0: Print raster bit image
-                    // Format: 1D 76 30 m xL xH yL yH d1...dk
-                    let gs: u8 = 0x1D;
-                    payload.extend_from_slice(&[gs, 0x76, 0x30, 0x00]); // m=0 (normal size)
+                    payload.extend_from_slice(&[gs, 0x76, 0x30, 0x00]);
                     payload.extend_from_slice(&[x_l, x_h, y_l, y_h]);
                     payload.extend_from_slice(bitmap_data);
-                    payload.extend_from_slice(b"\n"); // Feed one line after logo
+                    payload.extend_from_slice(b"\n");
                 } else {
                     println!(
                         "Logo bitmap size mismatch: expected {} bytes, got {}",
@@ -424,80 +452,168 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
             }
         }
 
+        // Shop name — bold + double-width/height, matching the 16px bold
+        // title in the TSX prototype
+        payload.extend_from_slice(&[esc, 0x21, 0x30]); // double height + double width
         payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
         payload.extend_from_slice(format!("{}\n", shop.shop_name.to_uppercase()).as_bytes());
+        payload.extend_from_slice(&[esc, 0x21, 0x00]); // reset size
         payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
+
         payload.extend_from_slice(format!("{}\n", shop.address).as_bytes());
         payload.extend_from_slice(format!("Tel: {}\n", shop.phone_number).as_bytes());
-        payload.extend_from_slice(b"\n");
     } else {
-        payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
-        payload.extend_from_slice(b"--- FIXTRACK REPAIR ---\n\n");
+        payload.extend_from_slice(&[esc, 0x45, 0x01]);
+        payload.extend_from_slice(b"--- FIXTRACK REPAIR ---\n");
+        payload.extend_from_slice(&[esc, 0x45, 0x00]);
     }
 
-    // 3. Order Info (Left align)
+    payload.extend_from_slice(dashed_line().as_bytes());
+
+    // ------------------------------------------------------------------
+    // 3. Order Info (label / value rows, left align)
+    // ------------------------------------------------------------------
     payload.extend_from_slice(&[esc, 0x61, 0x00]); // Left align
-    payload.extend_from_slice(format!("ORDER ID: {}\n", data.order_id).as_bytes());
+
+    payload.extend_from_slice(line_lv("Order #:", &data.order_id).as_bytes());
     if let Some(date) = data.date {
-        payload.extend_from_slice(format!("DATE:     {}\n", date).as_bytes());
+        payload.extend_from_slice(line_lv("Date:", &date.to_string()).as_bytes());
     }
-    payload.extend_from_slice(format!("CUSTOMER: {}\n", data.customer).as_bytes());
-    payload.extend_from_slice(b"--------------------------------\n");
+    if let Some(status) = data.status.as_deref() {
+        payload.extend_from_slice(line_lv("Status:", status).as_bytes());
+    }
 
-    // 4. Device Details (Bold label)
-    if let Some(dev) = data.device {
-        payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
-        payload.extend_from_slice(b"DEVICE: ");
-        payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
-        payload.extend_from_slice(format!("{}\n", dev).as_bytes());
-    }
-    if let Some(issue) = data.issue {
-        payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
-        payload.extend_from_slice(b"ISSUE:  ");
-        payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
-        payload.extend_from_slice(format!("{}\n", issue).as_bytes());
-    }
-    payload.extend_from_slice(b"--------------------------------\n");
+    payload.extend_from_slice(dashed_line().as_bytes());
 
-    // 5. Items (Parts/Labor)
-    payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
-    payload.extend_from_slice(b"ITEM             QTY      PRICE\n");
-    payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
+    // ------------------------------------------------------------------
+    // 4. Customer Details
+    // ------------------------------------------------------------------
+    payload.extend_from_slice(&[esc, 0x45, 0x01]);
+    payload.extend_from_slice(b"CUSTOMER\n");
+    payload.extend_from_slice(&[esc, 0x45, 0x00]);
+
+    let customer_name = data
+        .customer_name
+        .as_deref()
+        .unwrap_or(data.customer.as_str());
+    let customer_name = if customer_name.trim().is_empty() {
+        "Unknown"
+    } else {
+        customer_name
+    };
+    let customer_phone = data
+        .customer_phone
+        .as_deref()
+        .filter(|p| !p.trim().is_empty())
+        .unwrap_or("No phone provided");
+
+    payload.extend_from_slice(format!("{}\n", customer_name).as_bytes());
+    payload.extend_from_slice(format!("{}\n", customer_phone).as_bytes());
+
+    payload.extend_from_slice(dashed_line().as_bytes());
+
+    // ------------------------------------------------------------------
+    // 5. Device Details + Issue
+    // ------------------------------------------------------------------
+    if data.device.is_some() || data.issue.is_some() {
+        payload.extend_from_slice(&[esc, 0x45, 0x01]);
+        payload.extend_from_slice(b"DEVICE\n");
+        payload.extend_from_slice(&[esc, 0x45, 0x00]);
+
+        match data.device {
+            Some(dev) => payload.extend_from_slice(format!("{}\n", dev).as_bytes()),
+            None => payload.extend_from_slice(b"Unknown Device\n"),
+        }
+
+        match data.issue {
+            Some(issue) => {
+                payload.extend_from_slice(&[esc, 0x2D, 0x01]); // underline ON
+                payload.extend_from_slice(b"Issue:");
+                payload.extend_from_slice(&[esc, 0x2D, 0x00]); // underline OFF
+                payload.extend_from_slice(format!(" {}\n", issue).as_bytes());
+            }
+            None => {
+                payload.extend_from_slice(&[esc, 0x2D, 0x01]);
+                payload.extend_from_slice(b"Issue:");
+                payload.extend_from_slice(&[esc, 0x2D, 0x00]);
+                payload.extend_from_slice(b" No description provided\n");
+            }
+        }
+
+        payload.extend_from_slice(dashed_line().as_bytes());
+    }
+
+    // ------------------------------------------------------------------
+    // 6. Parts / Service Items
+    // ------------------------------------------------------------------
+    payload.extend_from_slice(&[esc, 0x45, 0x01]);
+    payload.extend_from_slice(b"PARTS / SERVICE\n");
+    payload.extend_from_slice(&[esc, 0x45, 0x00]);
 
     let symbol = data.currency_symbol.as_deref().unwrap_or("$");
 
     for item in data.items {
-        // Safe char-based truncation (UTF-8 aware, won't panic on multi-byte chars)
-        let name: String = item.name.chars().take(15).collect();
+        let name: String = item.name.chars().take(18).collect();
         let line = format!(
-            "{:<16} {:<8} {:>1}{:>8.2}\n",
+            "{:<19} {:<4} {:>1}{:>8.2}\n",
             name, item.qty, symbol, item.price
         );
         payload.extend_from_slice(line.as_bytes());
     }
 
-    payload.extend_from_slice(b"--------------------------------\n");
+    payload.extend_from_slice(dashed_line().as_bytes());
 
-    // 6. Total (Right align, Bold)
+    // ------------------------------------------------------------------
+    // 7. Financial Summary — REPAIR COST / TOTAL PAID / BALANCE DUE box
+    // ------------------------------------------------------------------
     payload.extend_from_slice(&[esc, 0x61, 0x02]); // Right align
-    payload.extend_from_slice(&[esc, 0x21, 0x08]); // Bold/Emphasized
-    payload.extend_from_slice(format!("TOTAL: {}{:.2}\n", symbol, data.total).as_bytes());
-    payload.extend_from_slice(&[esc, 0x21, 0x00]); // Back to normal
+    payload.extend_from_slice(&[esc, 0x21, 0x08]); // Emphasized
+    payload.extend_from_slice(format!("REPAIR COST: {}{:.2}\n", symbol, data.total).as_bytes());
+    payload.extend_from_slice(&[esc, 0x21, 0x00]);
 
-    // 7. Footer
+    if let Some(total_paid) = data.total_paid {
+        payload.extend_from_slice(&[esc, 0x61, 0x00]);
+        payload.extend_from_slice(b"--------------------\n");
+        payload.extend_from_slice(&[esc, 0x61, 0x02]);
+        payload.extend_from_slice(&[esc, 0x21, 0x08]);
+        payload.extend_from_slice(format!("TOTAL PAID: {}{:.2}\n", symbol, total_paid).as_bytes());
+        payload.extend_from_slice(&[esc, 0x21, 0x00]);
+    }
+
+    let balance_due = data.balance_due.unwrap_or(data.total);
+
+    // Emulate the bordered/shaded box from the TSX using a framed section +
+    // reverse video (white-on-black), since ESC/POS has no CSS-style borders
+    // or backgrounds. If your printer doesn't support GS B (reverse), it
+    // just prints normally — harmless fallback.
     payload.extend_from_slice(&[esc, 0x61, 0x01]); // Center
     payload.extend_from_slice(b"\n");
+    payload.extend_from_slice(format!("{}\n", "=".repeat(PAPER_WIDTH)).as_bytes());
+    payload.extend_from_slice(&[gs, 0x42, 0x01]); // Reverse (white on black) ON
+    payload.extend_from_slice(&[esc, 0x21, 0x30]); // double height + width
+    payload.extend_from_slice(format!("BALANCE DUE\n{}{:.2}\n", symbol, balance_due).as_bytes());
+    payload.extend_from_slice(&[esc, 0x21, 0x00]); // reset size
+    payload.extend_from_slice(&[gs, 0x42, 0x00]); // Reverse OFF
+    payload.extend_from_slice(format!("{}\n", "=".repeat(PAPER_WIDTH)).as_bytes());
+
+    // ------------------------------------------------------------------
+    // 8. Footer
+    // ------------------------------------------------------------------
+    payload.extend_from_slice(b"\n");
+
     if let Some(ref shop) = data.shop_info {
         payload.extend_from_slice(format!("{}\n", shop.receipt_footer).as_bytes());
     } else {
-        payload.extend_from_slice(b"Thank you for your trust!\n");
+        payload.extend_from_slice(b"Thank you for your business!\n");
     }
 
-    // 8. Feed & Cut
-    payload.extend_from_slice(&[esc, 0x64, 0x05]); // Feed 5 lines
+    payload.extend_from_slice(&[esc, 0x45, 0x01]); // Bold ON
+    payload.extend_from_slice(b"Please keep this receipt for warranty.\n");
+    payload.extend_from_slice(&[esc, 0x45, 0x00]); // Bold OFF
 
-    // If standard paper cutter exists: GS V 0
-    // payload.extend_from_slice(&[gs, 0x56, 0x00]);
+    // 9. Feed & Cut
+    payload.extend_from_slice(&[esc, 0x64, 0x05]); // Feed 5 lines
+                                                   // payload.extend_from_slice(&[gs, 0x56, 0x00]); // Full cut, if supported
 
     println!("Payload generated: {} bytes", payload.len());
 
@@ -528,7 +644,6 @@ pub fn print_receipt_direct(config: PrinterConfig, data: ReceiptData) -> Result<
             .map_err(|e| format!("Failed to flush: {}", e))?;
         println!("TCP Print successful");
     } else {
-        // Fallback to USB/OS spooler
         let printer_name = config
             .receipt_printer_name
             .ok_or("Receipt printer name is required for USB connection")?;

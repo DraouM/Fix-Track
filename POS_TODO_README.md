@@ -54,14 +54,3 @@ npm run build
 cd src-tauri
 cargo build
 ```
-
-- Goal: resolve TypeScript/Rust compile errors, missing imports, and React hook warnings.
-- Acceptance: both builds succeed; major runtime flows (add item, complete sale) work in dev environment.
-
-**Notes & next steps**
-
-- Start by finalizing `CashierPanel` wiring (step 3) so UI components use the stable `usePOS` API.
-- Implement `QuickActions` and `DashboardPanel` as lightweight placeholders to keep iteration fast.
-- After builds succeed, implement keyboard shortcuts and polish visuals.
-
-If you want, I can scaffold `QuickActions` and `DashboardPanel` now and run the builds to surface errors.

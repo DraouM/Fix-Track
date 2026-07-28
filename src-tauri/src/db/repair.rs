@@ -1,6 +1,6 @@
 use super::models::{Repair, RepairHistory, RepairPayment, RepairUsedPart};
-use rusqlite::{params, Connection, OptionalExtension, Result};
 use chrono::Utc;
+use rusqlite::{params, Connection, OptionalExtension, Result};
 use uuid::Uuid;
 
 /// ======================
@@ -92,20 +92,20 @@ pub fn get_repairs() -> Result<Vec<Repair>, String> {
 #[tauri::command]
 pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
-    
+
     // 1. Get the base repair
     let mut stmt = conn
         .prepare("SELECT id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code FROM repairs WHERE id = ?1")
         .map_err(|e| e.to_string())?;
-    
+
     let mut rows = stmt.query(params![repair_id]).map_err(|e| e.to_string())?;
-    
+
     if let Some(row) = rows.next().map_err(|e| e.to_string())? {
         // 2. Get used parts
         let mut parts_stmt = conn
             .prepare("SELECT id, repair_id, part_id, part_name, quantity, unit_price FROM repair_used_parts WHERE repair_id = ?1")
             .map_err(|e| e.to_string())?;
-            
+
         let used_parts: Vec<RepairUsedPart> = parts_stmt
             .query_map(params![repair_id], |row| {
                 Ok(RepairUsedPart {
@@ -125,7 +125,7 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
         let mut payments_stmt = conn
             .prepare("SELECT id, repair_id, amount, date, method, received_by, session_id FROM repair_payments WHERE repair_id = ?1 ORDER BY date DESC")
             .map_err(|e| e.to_string())?;
-            
+
         let payments: Vec<RepairPayment> = payments_stmt
             .query_map(params![repair_id], |row| {
                 Ok(RepairPayment {
@@ -146,7 +146,7 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
         let mut history_stmt = conn
             .prepare("SELECT id, repair_id, date, event_type, details, changed_by FROM repair_history WHERE repair_id = ?1 ORDER BY date DESC")
             .map_err(|e| e.to_string())?;
-            
+
         let history: Vec<RepairHistory> = history_stmt
             .query_map(params![repair_id], |row| {
                 Ok(RepairHistory {
@@ -176,30 +176,16 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
             estimated_cost,
             status: row.get(7).map_err(|e| e.to_string())?,
             payment_status: row.get(8).map_err(|e| e.to_string())?,
-            
+
             // Related entities
             used_parts,
             payments,
             history,
-            
+
             // Dates & Code
             created_at: row.get(9).map_err(|e| e.to_string())?,
             updated_at: row.get(10).map_err(|e| e.to_string())?,
             code: row.get(11).ok(),
-            
-            // Note: Our Rust struct might not have totalPaid/remainingBalance locally if they are not in the struct definition in models.rs
-            // Checking models.rs... they are NOT in the struct.
-            // Wait, models.rs struct Repair definition:
-            /*
-            pub struct Repair {
-                pub id: String,
-                pub customer_name: String,
-                ...
-                pub used_parts: Option<Vec<RepairUsedPart>>, // Need to check if these fields exist!
-            }
-            */
-            // I previously viewed models.rs and the Repair struct DOES NOT have used_parts, payments, history fields in the Rust definition!
-            // I need to update models.rs FIRST to include these fields, otherwise I cannot return them here.
         }))
     } else {
         Ok(None)
@@ -222,10 +208,6 @@ pub fn update_repair(repair: Repair) -> Result<(), String> {
             repair.estimated_cost,
             repair.status,
             repair.payment_status,
-            // We usually don't update code, so I'll leave it as is or should I?
-            // If code is not updating, I don't need to add it to SET.
-            // But if the user edits the 'code' (not currently planned), it would be needed.
-            // For now, let's NOT update code to prevent accidental changes.
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -244,14 +226,14 @@ pub fn update_repair_status(id: String, new_status: String) -> Result<(), String
             |row| row.get(0),
         )
         .map_err(|e| e.to_string())?;
-    
+
     // Update the status
     conn.execute(
         "UPDATE repairs SET status = ?2, updated_at = datetime('now') WHERE id = ?1",
         params![id, new_status],
     )
     .map_err(|e| e.to_string())?;
-    
+
     // Add history entry for the status change
     use chrono::Utc;
     use uuid::Uuid;
@@ -268,7 +250,7 @@ pub fn update_repair_status(id: String, new_status: String) -> Result<(), String
         ],
     )
     .map_err(|e| e.to_string())?;
-    
+
     Ok(())
 }
 
@@ -286,6 +268,33 @@ pub fn delete_repair(id: String) -> Result<(), String> {
 /// ======================
 /// PAYMENTS
 /// ======================
+
+/// Fetch all payments for all repairs in a single query (batch operation)
+/// This avoids the N+1 problem where each repair would trigger a separate
+/// Tauri bridge invoke to fetch its payments.
+#[tauri::command]
+pub fn get_all_repair_payments() -> Result<Vec<RepairPayment>, String> {
+    let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare("SELECT id, repair_id, amount, date, method, received_by, session_id FROM repair_payments ORDER BY date DESC")
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(RepairPayment {
+                id: row.get(0)?,
+                repair_id: row.get(1)?,
+                amount: row.get(2)?,
+                date: row.get(3)?,
+                method: row.get(4)?,
+                received_by: row.get(5).ok(),
+                session_id: row.get(6).ok(),
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(|res| res.ok())
+        .collect();
+    Ok(rows)
+}
 
 #[tauri::command]
 pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
@@ -314,19 +323,22 @@ pub fn add_payment(payment: RepairPayment) -> Result<(), String> {
 #[tauri::command]
 pub fn update_repair_payment(id: String, amount: f64, method: String) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
-    
+
     // Get repair_id for recalculation and logging
-    let (repair_id, old_amount): (String, f64) = conn.query_row(
-        "SELECT repair_id, amount FROM repair_payments WHERE id = ?1",
-        params![id],
-        |row| Ok((row.get(0)?, row.get(1)?))
-    ).map_err(|e| e.to_string())?;
+    let (repair_id, old_amount): (String, f64) = conn
+        .query_row(
+            "SELECT repair_id, amount FROM repair_payments WHERE id = ?1",
+            params![id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .map_err(|e| e.to_string())?;
 
     // Update payment
     conn.execute(
         "UPDATE repair_payments SET amount = ?2, method = ?3 WHERE id = ?1",
         params![id, amount, method],
-    ).map_err(|e| e.to_string())?;
+    )
+    .map_err(|e| e.to_string())?;
 
     // Recalculate and update repair
     recalculate_repair_status_internal(&conn, &repair_id)?;
@@ -344,16 +356,19 @@ pub fn update_repair_payment(id: String, amount: f64, method: String) -> Result<
 #[tauri::command]
 pub fn delete_repair_payment(id: String) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
-    
+
     // Get repair_id for recalculation and logging
-    let (repair_id, amount): (String, f64) = conn.query_row(
-        "SELECT repair_id, amount FROM repair_payments WHERE id = ?1",
-        params![id],
-        |row| Ok((row.get(0)?, row.get(1)?))
-    ).map_err(|e| e.to_string())?;
+    let (repair_id, amount): (String, f64) = conn
+        .query_row(
+            "SELECT repair_id, amount FROM repair_payments WHERE id = ?1",
+            params![id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .map_err(|e| e.to_string())?;
 
     // Delete payment
-    conn.execute("DELETE FROM repair_payments WHERE id = ?1", params![id]).map_err(|e| e.to_string())?;
+    conn.execute("DELETE FROM repair_payments WHERE id = ?1", params![id])
+        .map_err(|e| e.to_string())?;
 
     // Recalculate and update repair
     recalculate_repair_status_internal(&conn, &repair_id)?;
@@ -593,7 +608,7 @@ pub fn delete_used_part(id: String) -> Result<(), String> {
                     .map_err(|e| e.to_string())?;
 
                     // Log inventory return
-                     use chrono::Utc;
+                    use chrono::Utc;
                     use uuid::Uuid;
                     let history_id = Uuid::new_v4().to_string();
                     tx.execute(
@@ -603,7 +618,7 @@ pub fn delete_used_part(id: String) -> Result<(), String> {
                             &part_id,
                             Utc::now().to_rfc3339(),
                             "Return from Repair",
-                            quantity, 
+                            quantity,
                             format!("Restored from repair deletion"),
                             &repair_id,
                         ],
@@ -611,8 +626,8 @@ pub fn delete_used_part(id: String) -> Result<(), String> {
                     .map_err(|e| e.to_string())?;
                 }
             }
-             
-             // 3. Log repair history
+
+            // 3. Log repair history
             use chrono::Utc;
             use uuid::Uuid;
             let repair_history_id = Uuid::new_v4().to_string();

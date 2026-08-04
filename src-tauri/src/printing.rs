@@ -90,23 +90,31 @@ pub struct PrinterInfo {
 
 /// List available printers on the system.
 #[tauri::command]
-pub fn list_printers() -> Result<Vec<PrinterInfo>, String> {
-    #[cfg(target_os = "windows")]
-    {
-        list_printers_windows()
-    }
+pub async fn list_printers() -> Result<Vec<PrinterInfo>, String> {
+    tokio::task::spawn_blocking(|| {
+        #[cfg(target_os = "windows")]
+        {
+            list_printers_windows()
+        }
 
-    #[cfg(not(target_os = "windows"))]
-    {
-        // Fallback for non-Windows: use lpstat
-        list_printers_unix()
-    }
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Fallback for non-Windows: use lpstat
+            list_printers_unix()
+        }
+    })
+    .await
+    .map_err(|e| format!("Task join error: {}", e))?
 }
 
 #[cfg(target_os = "windows")]
 fn list_printers_windows() -> Result<Vec<PrinterInfo>, String> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
     // Use PowerShell to enumerate printers
     let output = Command::new("powershell")
+        .creation_flags(CREATE_NO_WINDOW)
         .args(&[
             "-NoProfile",
             "-Command",
@@ -155,7 +163,11 @@ fn list_printers_windows() -> Result<Vec<PrinterInfo>, String> {
 
 #[cfg(target_os = "windows")]
 fn list_printers_wmic() -> Result<Vec<PrinterInfo>, String> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
     let output = Command::new("wmic")
+        .creation_flags(CREATE_NO_WINDOW)
         .args(&["printer", "get", "Name,Default", "/format:csv"])
         .output()
         .map_err(|e| format!("Failed to run wmic: {}", e))?;
@@ -347,6 +359,9 @@ pub fn print_html(html: String, printer_name: Option<String>) -> Result<(), Stri
 
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
         let file_path = temp_file.to_string_lossy().to_string();
 
         let ps_command = if let Some(ref pname) = printer_name {
@@ -364,6 +379,7 @@ pub fn print_html(html: String, printer_name: Option<String>) -> Result<(), Stri
         };
 
         Command::new("powershell")
+            .creation_flags(CREATE_NO_WINDOW)
             .args(&["-NoProfile", "-Command", &ps_command])
             .output()
             .map_err(|e| format!("Failed to execute print command: {}", e))?;

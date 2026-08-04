@@ -41,12 +41,12 @@ interface ClientActions {
     clientId: string,
     amount: number,
     method: string,
-    notes?: string
+    notes?: string,
   ) => Promise<void>;
   adjustBalance: (
     clientId: string,
     amount: number,
-    notes?: string
+    notes?: string,
   ) => Promise<void>;
   getClientHistory: (clientId: string) => Promise<void>;
 }
@@ -131,7 +131,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     },
-    [fetchClients]
+    [fetchClients],
   );
 
   const updateClient = useCallback(
@@ -164,7 +164,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     },
-    [clients, fetchClients]
+    [clients, fetchClients],
   );
 
   const deleteClient = useCallback(async (id: string) => {
@@ -185,7 +185,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
       clientId: string,
       amount: number,
       method: string,
-      notes?: string
+      notes?: string,
     ) => {
       setLoading(true);
       try {
@@ -209,7 +209,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     },
-    [fetchClients, fetchClientById, selectedClient]
+    [fetchClients, fetchClientById, selectedClient],
   );
 
   const adjustBalance = useCallback(
@@ -227,7 +227,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     },
-    [fetchClients, fetchClientById, selectedClient]
+    [fetchClients, fetchClientById, selectedClient],
   );
 
   const getClientHistory = useCallback(
@@ -235,22 +235,22 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const data = await invoke<any[]>("get_client_history", { clientId });
         setClients((prev) =>
-          prev.map((c) => (c.id === clientId ? { ...c, history: data } : c))
+          prev.map((c) => (c.id === clientId ? { ...c, history: data } : c)),
         );
         if (selectedClient?.id === clientId) {
           setSelectedClient((prev) =>
-            prev ? { ...prev, history: data } : null
+            prev ? { ...prev, history: data } : null,
           );
         }
       } catch (err: any) {
         toast.error(err.message || "Failed to fetch history");
       }
     },
-    [selectedClient]
+    [selectedClient],
   );
 
   useEffect(() => {
-    initialize();
+    void initialize();
   }, [initialize]);
 
   const value = useMemo(
@@ -288,7 +288,7 @@ export const ClientProvider: React.FC<{ children: React.ReactNode }> = ({
       addPayment,
       adjustBalance,
       getClientHistory,
-    ]
+    ],
   );
 
   return (

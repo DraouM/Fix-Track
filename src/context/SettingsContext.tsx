@@ -38,7 +38,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   // Apply theme on mount and when theme changes
   useEffect(() => {
     applyTheme(settings.theme);
-    refreshPrinters();
+    // Defer printer scanning so it doesn't block initial app launch
+    const timer = setTimeout(() => {
+      refreshPrinters();
+    }, 1500);
+    return () => clearTimeout(timer);
   }, [settings.theme]);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {

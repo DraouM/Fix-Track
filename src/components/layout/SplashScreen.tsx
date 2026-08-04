@@ -1,30 +1,59 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
-export function SplashScreen({ finishLoading }: { finishLoading: () => void }) {
+interface SplashScreenProps {
+  finishLoading: () => void;
+  /** When true, the splash can dismiss (after minimum display time). */
+  isReady?: boolean;
+}
+
+export function SplashScreen({ finishLoading, isReady = false }: SplashScreenProps) {
   const [showLogo, setShowLogo] = useState(false);
   const [showText, setShowText] = useState(false);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const hasFinished = useRef(false);
 
+  // Stagger logo and text appearance
   useEffect(() => {
-    const logoTimer = setTimeout(() => setShowLogo(true), 200);
-    const textTimer = setTimeout(() => setShowText(true), 600);
-    const finishTimer = setTimeout(() => finishLoading(), 2500);
+    const logoTimer = setTimeout(() => setShowLogo(true), 150);
+    const textTimer = setTimeout(() => setShowText(true), 400);
+    // Minimum display time for branding (800ms)
+    const minTimer = setTimeout(() => setMinTimeElapsed(true), 800);
 
     return () => {
       clearTimeout(logoTimer);
       clearTimeout(textTimer);
-      clearTimeout(finishTimer);
+      clearTimeout(minTimer);
     };
+  }, []);
+
+  // Finish as soon as both minimum time has elapsed AND app is ready
+  useEffect(() => {
+    if (minTimeElapsed && isReady && !hasFinished.current) {
+      hasFinished.current = true;
+      finishLoading();
+    }
+  }, [minTimeElapsed, isReady, finishLoading]);
+
+  // Safety fallback: if app never signals ready, dismiss after 4s
+  useEffect(() => {
+    const fallback = setTimeout(() => {
+      if (!hasFinished.current) {
+        hasFinished.current = true;
+        finishLoading();
+      }
+    }, 4000);
+    return () => clearTimeout(fallback);
   }, [finishLoading]);
 
   return (
     <motion.div
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.8, ease: "easeInOut" }}
+      transition={{ duration: 0.5, ease: "easeInOut" }}
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-white dark:bg-[#0a0a0a]"
     >
       <div className="relative flex flex-col items-center">
@@ -95,8 +124,8 @@ export function SplashScreen({ finishLoading }: { finishLoading: () => void }) {
                 <div className="mt-8 w-48 h-1 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ x: "-100%" }}
-                    animate={{ x: "0%" }}
-                    transition={{ duration: 2, ease: "easeInOut" }}
+                    animate={{ x: isReady ? "0%" : "-10%" }}
+                    transition={{ duration: isReady ? 0.3 : 1.5, ease: "easeInOut" }}
                     className="h-full bg-blue-600 rounded-full"
                   />
                 </div>

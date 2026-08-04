@@ -55,8 +55,9 @@ fn main() {
         // In a real application, you might want to log this to a file or send it to a server
     }));
 
-    // Initialize database path
+    // Initialize database path and schema
     db::init_db_path();
+    db::init_db_schema();
 
     // Use a more robust approach to start the application
     match tauri::Builder::default()

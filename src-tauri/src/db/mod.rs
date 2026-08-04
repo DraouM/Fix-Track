@@ -58,5 +58,18 @@ pub fn get_connection() -> Result<Connection> {
     conn.pragma_update(None, "journal_mode", "WAL")?;
     // Enable foreign key constraints
     conn.pragma_update(None, "foreign_keys", "ON")?;
+    // Performance optimizations
+    conn.pragma_update(None, "synchronous", "NORMAL")?;
+    conn.pragma_update(None, "cache_size", 10000)?;
+    conn.pragma_update(None, "temp_store", "MEMORY")?;
     Ok(conn)
+}
+
+/// Initialize database schema on startup directly in Rust.
+pub fn init_db_schema() {
+    if let Ok(conn) = get_connection() {
+        if let Err(e) = schema::init_all_tables(&conn) {
+            eprintln!("Failed to initialize database schema: {}", e);
+        }
+    }
 }

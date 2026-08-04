@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 interface ContextInitializerProps {
   children: React.ReactNode;
@@ -8,8 +8,8 @@ interface ContextInitializerProps {
   errorFallback?: (error: string) => React.ReactNode;
 }
 
-export function ContextInitializer({ 
-  children, 
+export function ContextInitializer({
+  children,
   loadingFallback = (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center">
@@ -21,9 +21,11 @@ export function ContextInitializer({
   errorFallback = (error: string) => (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="text-center p-6 bg-destructive/10 rounded-lg max-w-md">
-        <h2 className="text-xl font-bold text-destructive mb-2">Initialization Error</h2>
+        <h2 className="text-xl font-bold text-destructive mb-2">
+          Initialization Error
+        </h2>
         <p className="text-destructive/80 mb-4">{error}</p>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:opacity-90 transition-opacity"
         >
@@ -31,34 +33,27 @@ export function ContextInitializer({
         </button>
       </div>
     </div>
-  )
+  ),
 }: ContextInitializerProps) {
-  const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Simple initialization simulation
   useEffect(() => {
-    const init = async () => {
-      try {
-        // Simulate initialization delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setLoading(false);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to initialize application';
-        setError(errorMessage);
-        console.error('Context initialization error:', errorMessage);
-      }
-    };
-    
-    init();
+    setReady(true);
   }, []);
 
-  if (loading) {
+  if (!ready) {
     return <>{loadingFallback}</>;
   }
 
   if (error) {
-    return <>{typeof errorFallback === 'function' ? errorFallback(error) : errorFallback}</>;
+    return (
+      <>
+        {typeof errorFallback === "function"
+          ? errorFallback(error)
+          : errorFallback}
+      </>
+    );
   }
 
   return <>{children}</>;

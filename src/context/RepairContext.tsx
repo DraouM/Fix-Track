@@ -536,7 +536,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ✅ Initialize data on mount
   useEffect(() => {
-    initialize();
+    void initialize();
   }, [initialize]);
 
   // ✅ Memoized value with optimized dependencies

@@ -47,7 +47,7 @@ interface InventoryActions {
   addInventoryItem: (itemData: InventoryFormValues) => Promise<void>;
   updateInventoryItem: (
     id: string,
-    itemData: Partial<InventoryFormValues>
+    itemData: Partial<InventoryFormValues>,
   ) => Promise<void>;
   deleteInventoryItem: (id: string) => Promise<void>;
   getItemById: (id: string) => InventoryItem | undefined;
@@ -56,7 +56,7 @@ interface InventoryActions {
     quantityChange: number,
     type: HistoryEventType,
     notes?: string,
-    relatedId?: string
+    relatedId?: string,
   ) => Promise<void>;
   searchItems: (query: string) => Promise<InventoryItem[]>;
 }
@@ -65,7 +65,7 @@ interface InventoryActions {
 export type InventoryContextType = InventoryState & InventoryActions;
 
 const InventoryContext = createContext<InventoryContextType | undefined>(
-  undefined
+  undefined,
 );
 
 // Matches raw DB row
@@ -145,7 +145,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
     setError(null);
 
     try {
-      await invoke("init_database");
       await fetchItems();
       setInitialized(true);
     } catch (err) {
@@ -157,18 +156,33 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [fetchItems, initialized]);
 
-  // ✅ Initialize on mount with a slight delay to prevent blocking
+  // ✅ Initialize on mount
   useEffect(() => {
-    const initTimer = setTimeout(() => {
-      initialize();
-    }, 10);
-
-    return () => clearTimeout(initTimer);
+    void initialize();
   }, [initialize]);
 
+  // Debounced fetch for event listeners to avoid rapid duplicate DB calls
+  const debouncedFetchRef = React.useRef<NodeJS.Timeout | null>(null);
+  const handleEventRefetch = useCallback(() => {
+    if (debouncedFetchRef.current) {
+      clearTimeout(debouncedFetchRef.current);
+    }
+    debouncedFetchRef.current = setTimeout(() => {
+      fetchItems();
+    }, 150);
+  }, [fetchItems]);
+
+  useEffect(() => {
+    return () => {
+      if (debouncedFetchRef.current) {
+        clearTimeout(debouncedFetchRef.current);
+      }
+    };
+  }, []);
+
   // Listen for financial or repair changes to refresh stock levels
-  useEvent("financial-data-change", fetchItems);
-  useEvent("repair-updated", fetchItems);
+  useEvent("financial-data-change", handleEventRefetch);
+  useEvent("repair-updated", handleEventRefetch);
 
   const addInventoryItem = useCallback(
     async (itemData: InventoryFormValues) => {
@@ -211,7 +225,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
         toast.error(`Failed to add item: ${err}`);
       }
     },
-    [fetchItems]
+    [fetchItems],
   );
 
   const updateInventoryItem = useCallback(
@@ -262,7 +276,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
         toast.error(`Failed to update item: ${err}`);
       }
     },
-    [fetchItems, inventoryItems]
+    [fetchItems, inventoryItems],
   );
 
   const deleteInventoryItem = useCallback(
@@ -277,14 +291,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
         toast.error(`Failed to delete item: ${err}`);
       }
     },
-    [fetchItems]
+    [fetchItems],
   );
 
   const getItemById = useCallback(
     (id: string) => {
       return inventoryItems.find((item) => item.id === id);
     },
-    [inventoryItems]
+    [inventoryItems],
   );
 
   const updateItemQuantity = useCallback(
@@ -293,7 +307,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
       quantityChange: number,
       type: HistoryEventType,
       notes?: string,
-      relatedId?: string
+      relatedId?: string,
     ) => {
       try {
         const item = inventoryItems.find((it) => it.id === id);
@@ -324,7 +338,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
         toast.error(`Failed to update quantity: ${err}`);
       }
     },
-    [fetchItems, inventoryItems]
+    [fetchItems, inventoryItems],
   );
 
   const searchItems = useCallback(async (query: string) => {
@@ -390,7 +404,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
       getItemById,
       updateItemQuantity,
       searchItems,
-    ]
+    ],
   );
 
   return (
@@ -405,7 +419,7 @@ export function useInventoryContext() {
   const context = useContext(InventoryContext);
   if (!context) {
     throw new Error(
-      "useInventoryContext must be used within an InventoryProvider"
+      "useInventoryContext must be used within an InventoryProvider",
     );
   }
   return context;

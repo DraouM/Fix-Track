@@ -15,9 +15,10 @@ export default function HomePage() {
   if (isLoading) {
     return (
       <SplashScreen 
+        isReady={true}
         finishLoading={() => {
           setIsLoading(false);
-          setTimeout(() => setShowMainUI(true), 100);
+          setShowMainUI(true);
         }} 
       />
     );

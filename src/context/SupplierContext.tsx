@@ -67,19 +67,19 @@ interface SupplierActions {
   createSupplier: (data: SupplierFormValues) => Promise<void>;
   updateSupplier: (
     id: string,
-    data: Partial<SupplierFormValues>
+    data: Partial<SupplierFormValues>,
   ) => Promise<void>;
   deleteSupplier: (id: string) => Promise<void>;
   addPayment: (
     supplierId: string,
     amount: number,
     method: PaymentMethod,
-    notes?: string
+    notes?: string,
   ) => Promise<void>;
   adjustCredit: (
     supplierId: string,
     amount: number,
-    notes?: string
+    notes?: string,
   ) => Promise<void>;
   getSupplierHistory: (supplierId: string) => Promise<void>;
   getSupplierById: (id: string) => Supplier | undefined;
@@ -89,7 +89,7 @@ interface SupplierActions {
 export type SupplierContextType = SupplierState & SupplierActions;
 
 const SupplierContext = createContext<SupplierContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -97,7 +97,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -120,21 +120,15 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ✅ Fetch all suppliers
   const fetchSuppliers = useCallback(async () => {
-    console.log("🔄 Fetching all suppliers from database...");
     setLoading(true);
     clearError();
 
     await withAsync(() => invoke<SupplierFrontend[]>("get_suppliers"), {
       onSuccess: (suppliersData) => {
-        console.log("✅ Successfully fetched suppliers:", suppliersData);
-        console.log("📊 Number of suppliers fetched:", suppliersData.length);
-        // Map the SupplierFrontend data to Supplier interface
         const mappedSuppliers = suppliersData.map(mapSupplierFromDB);
-        console.log("🔄 Mapped suppliers to frontend format:", mappedSuppliers);
         setSuppliers(mappedSuppliers);
       },
       onError: (msg) => {
-        console.error("❌ Error fetching suppliers:", msg);
         setError(msg);
       },
     });
@@ -165,7 +159,6 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
   // ✅ Fetch supplier by ID
   const fetchSupplierById = useCallback(
     async (id: string) => {
-      console.log("🔍 Fetching supplier by ID:", id);
       setLoading(true);
       clearError();
 
@@ -174,28 +167,23 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
           invoke<SupplierFrontend>("get_supplier_by_id", { supplierId: id }),
         {
           onSuccess: (data) => {
-            console.log("✅ Successfully fetched supplier by ID:", data);
-            // Map the SupplierFrontend data to Supplier interface
             const mappedSupplier = mapSupplierFromDB(data);
-            console.log(
-              "🔄 Mapped supplier to frontend format:",
-              mappedSupplier
-            );
             setSelectedSupplier(mappedSupplier);
             setSuppliers((prev) =>
-              prev.map((s) => (s.id === mappedSupplier.id ? mappedSupplier : s))
+              prev.map((s) =>
+                s.id === mappedSupplier.id ? mappedSupplier : s,
+              ),
             );
           },
           onError: (msg) => {
-            console.error("❌ Error fetching supplier by ID:", msg);
             setError(msg);
           },
-        }
+        },
       );
 
       setLoading(false);
     },
-    [clearError]
+    [clearError],
   );
 
   // ✅ Create supplier
@@ -241,7 +229,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             } catch (error) {
               console.warn(
                 "Failed to insert supplier creation history:",
-                error
+                error,
               );
             }
 
@@ -254,11 +242,11 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             console.error("❌ Error creating supplier:", msg);
             setError(msg);
           },
-        }
+        },
       );
       setLoading(false);
     },
-    [fetchSuppliers, clearError]
+    [fetchSuppliers, clearError],
   );
 
   // ✅ Update supplier
@@ -330,7 +318,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             // Map the updated supplier back to camelCase for frontend
             const mappedSupplier = mapSupplierFromDB(updatedSupplier);
             setSuppliers((prev) =>
-              prev.map((s) => (s.id === id ? mappedSupplier : s))
+              prev.map((s) => (s.id === id ? mappedSupplier : s)),
             );
             if (selectedSupplier?.id === id) {
               setSelectedSupplier(mappedSupplier);
@@ -339,11 +327,11 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
           onError: (msg) => {
             setError(msg);
           },
-        }
+        },
       );
       setLoading(false);
     },
-    [suppliers, selectedSupplier, clearError, fetchSuppliers]
+    [suppliers, selectedSupplier, clearError, fetchSuppliers],
   );
 
   // ✅ Delete supplier
@@ -365,7 +353,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       setLoading(false);
     },
-    [selectedSupplier, clearError]
+    [selectedSupplier, clearError],
   );
 
   // ✅ Add payment to supplier
@@ -374,7 +362,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       supplierId: string,
       amount: number,
       method: PaymentMethod,
-      notes?: string
+      notes?: string,
     ) => {
       setLoading(true);
       clearError();
@@ -426,11 +414,11 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             setError(msg);
             toast.error(msg);
           },
-        }
+        },
       );
       setLoading(false);
     },
-    [fetchSuppliers, fetchSupplierById, clearError]
+    [fetchSuppliers, fetchSupplierById, clearError],
   );
 
   // ✅ Adjust supplier credit balance
@@ -458,7 +446,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             } catch (error) {
               console.warn(
                 "Failed to insert credit adjustment history:",
-                error
+                error,
               );
             }
 
@@ -475,11 +463,11 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
             setError(msg);
             toast.error(msg);
           },
-        }
+        },
       );
       setLoading(false);
     },
-    [fetchSuppliers, fetchSupplierById, clearError]
+    [fetchSuppliers, fetchSupplierById, clearError],
   );
 
   // ✅ Get supplier history
@@ -497,23 +485,23 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
           onSuccess: (data) => {
             // Update the selected supplier with history
             setSelectedSupplier((prev) =>
-              prev ? { ...prev, history: data } : null
+              prev ? { ...prev, history: data } : null,
             );
             // Also update in the suppliers list
             setSuppliers((prev) =>
               prev.map((s) =>
-                s.id === supplierId ? { ...s, history: data } : s
-              )
+                s.id === supplierId ? { ...s, history: data } : s,
+              ),
             );
           },
           onError: (msg) => {
             setError(msg);
             toast.error(msg);
           },
-        }
+        },
       );
     },
-    [clearError]
+    [clearError],
   );
 
   // ✅ Get supplier by ID from local state
@@ -521,16 +509,12 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
     (id: string) => {
       return suppliers.find((supplier) => supplier.id === id);
     },
-    [suppliers]
+    [suppliers],
   );
 
   // ✅ Initialize data on mount
   useEffect(() => {
-    const initTimer = setTimeout(() => {
-      initialize();
-    }, 30);
-
-    return () => clearTimeout(initTimer);
+    void initialize();
   }, [initialize]);
 
   // ✅ Memoized value with optimized dependencies
@@ -556,7 +540,7 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       filters.searchTerm,
       filters.active,
       sortConfig,
-    ]
+    ],
   );
 
   const actionsValue = useMemo<SupplierActions>(
@@ -591,12 +575,12 @@ export const SupplierProvider: React.FC<{ children: React.ReactNode }> = ({
       adjustCredit,
       getSupplierHistory,
       getSupplierById,
-    ]
+    ],
   );
 
   const value = useMemo<SupplierContextType>(
     () => ({ ...stateValue, ...actionsValue }),
-    [stateValue, actionsValue]
+    [stateValue, actionsValue],
   );
 
   return (
@@ -611,7 +595,7 @@ export function useSupplierContext() {
   const context = useContext(SupplierContext);
   if (!context) {
     throw new Error(
-      "useSupplierContext must be used within a SupplierProvider"
+      "useSupplierContext must be used within a SupplierProvider",
     );
   }
   return context;
@@ -683,7 +667,7 @@ async function withAsync<T>(
   {
     onSuccess,
     onError,
-  }: { onSuccess?: (res: T) => void; onError?: (msg: string) => void } = {}
+  }: { onSuccess?: (res: T) => void; onError?: (msg: string) => void } = {},
 ) {
   try {
     const result = await action();

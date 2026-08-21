@@ -2,6 +2,7 @@
 #![windows_subsystem = "windows"]
 
 mod db;
+mod license;
 mod printing;
 mod system;
 
@@ -163,6 +164,10 @@ fn main() {
             submit_transaction,
             update_transaction,
             system::get_device_id,
+            // LICENSE
+            license::activate_license,
+            license::is_licensed,
+            license::deactivate_license,
             // PRINTING
             printing::list_printers,
             printing::print_raw,

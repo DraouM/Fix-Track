@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { isLicenseActive as checkLicense } from "@/lib/license";
+import { isLicenseActive } from "@/lib/license";
 
 interface LicenseContextType {
   isActivated: boolean;
@@ -16,10 +16,18 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Check local storage for license key
-    const active = checkLicense();
-    setIsActivated(active);
-    setIsLoading(false);
+    // Check cached license via Rust backend (async IPC call)
+    isLicenseActive()
+      .then((active) => {
+        setIsActivated(active);
+      })
+      .catch((err) => {
+        console.error("License check failed:", err);
+        setIsActivated(false); // Fail closed
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   return (

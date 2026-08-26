@@ -1,0 +1,11 @@
+{
+  "version": "v0.1.0",
+  "notes": "Initial release of Fixary POS v0.1.0",
+  "pub_date": "2026-08-26T20:20:00Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG5jUmk5dUFXeVY4SndvTGxUQlJuQk1UNlN0eDJKYnhQRjZ0ME9xUEFqR2tkZVhyalB1TlgvV0Y0LzBSNGRCcW1mU0dRTE5hQWd5Vkk3dHpEL2JUSjhFcUd3L1VCeEFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg3NzY4Nzc5CWZpbGU6Zml4YXJ5XzAuMS4wX3g2NC1zZXR1cC5leGUKeEdYR2dlNkJGSC8rWkFHZU1zV1ZDUGs0SFZpODUweXdyT1BTZkEyL2FUTC83YlN3NmQ3NHdLRWxtRHdEdldtRHhibVp0N21ySmdMaHJ2Z2RCR3JKQmc9PQo=",
+      "url": "https://github.com/DraouM/Fix-Track/releases/download/v0.1.0/fixary_0.1.0_x64-setup.exe"
+    }
+  }
+}

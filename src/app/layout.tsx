@@ -5,6 +5,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { SettingsProvider } from "@/context/SettingsContext";
 import { I18nProvider } from "@/components/providers/I18nProvider";
 import { LicenseProvider } from "@/context/LicenseContext";
+import { Updater } from "@/components/Updater";
 
 export const metadata: Metadata = {
   title: "FixTrack - Inventory & Repair Management",
@@ -28,6 +29,7 @@ export default function RootLayout({
           <I18nProvider>
             <LicenseProvider>
               <AppLayout>{children}</AppLayout>
+              <Updater />
             </LicenseProvider>
           </I18nProvider>
         </SettingsProvider>

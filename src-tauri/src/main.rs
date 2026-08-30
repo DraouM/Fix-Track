@@ -175,6 +175,8 @@ fn main() {
             printing::print_receipt_direct,
             printing::print_sticker_direct,
         ])
+        // Register the updater plugin so the Rust backend initializes it and it becomes available to the frontend
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .build(tauri::generate_context!())
     {
         Ok(app) => {

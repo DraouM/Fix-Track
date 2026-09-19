@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -37,6 +39,7 @@ import {
   RotateCcw,
   X,
   Filter,
+  Columns2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
@@ -51,6 +54,18 @@ import {
 } from "@/components/ui/select";
 import { PHONE_BRANDS, ITEM_TYPES, PhoneBrand, ItemType } from "@/types/inventory";
 import { Input } from "@/components/ui/input";
+
+/* ---------- Column Visibility Types ---------- */
+type ColumnId = "brand" | "category" | "cost" | "price" | "profit" | "stock";
+
+const DEFAULT_COLUMN_VISIBILITY: Record<ColumnId, boolean> = {
+  brand: true,
+  category: true,
+  cost: true,
+  price: true,
+  profit: true,
+  stock: true,
+};
 
 
 interface VirtualizedTableProps {
@@ -146,6 +161,7 @@ const InventoryRow = memo(function InventoryRow({
   selectedIds,
   onSelectionChange,
   onPrint,
+  columnVisibility,
 }: {
   item: InventoryItem;
   virtualRow: import("@tanstack/react-virtual").VirtualItem;
@@ -156,6 +172,7 @@ const InventoryRow = memo(function InventoryRow({
   onSelectionChange?: (ids: string[]) => void;
   onPrint?: (item: InventoryItem) => void;
   currencySymbol: string;
+  columnVisibility: Record<ColumnId, boolean>;
 }) {
   const { t } = useTranslation();
   const profit = (item.sellingPrice ?? 0) - (item.buyingPrice ?? 0);
@@ -225,90 +242,102 @@ const InventoryRow = memo(function InventoryRow({
       </div>
 
       {/* Brand */}
-      <div className="flex-1">
-        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
-          {item.phoneBrand}
-        </span>
-      </div>
-
-      {/* Category */}
-      <div className="flex-1">
-        <Badge
-          variant="secondary"
-          className="bg-muted dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest dark:text-slate-300"
-        >
-          {item.itemType}
-        </Badge>
-      </div>
-
-      {/* Cost */}
-      <div className="flex-1 text-right pr-6">
-        <span className="text-xs font-bold text-muted-foreground/60 tracking-tight">
-          {(item.buyingPrice ?? 0).toFixed(2)}
-        </span>
-      </div>
-
-      {/* Price */}
-      <div className="flex-1 text-right pr-6">
-        <span className="text-sm font-black text-foreground dark:text-slate-200 tracking-tight">
-          {(item.sellingPrice ?? 0).toFixed(2)}
-        </span>
-      </div>
-
-      {/* Profit */}
-      <div className="flex-1 text-right pr-6">
-        <div className="flex items-center justify-end gap-1.5">
-          <span
-            className={cn(
-              "text-xs font-black tracking-tight",
-              isPositive && "text-green-600 dark:text-green-400",
-              isNegative && "text-red-600 dark:text-red-400",
-              !isPositive && !isNegative && "text-muted-foreground dark:text-slate-500 opacity-40"
-            )}
-          >
-            {isPositive ? "+" : ""}
-            {profit.toFixed(2)}
+      {columnVisibility.brand && (
+        <div className="flex-1">
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60">
+            {item.phoneBrand}
           </span>
         </div>
-      </div>
+      )}
 
-      {/* Stock */}
-      <div className="flex-1 text-right pr-6">
-        <div className="flex items-center justify-end gap-2 text-right">
-          <div className="flex flex-col items-end">
+      {/* Category */}
+      {columnVisibility.category && (
+        <div className="flex-1">
+          <Badge
+            variant="secondary"
+            className="bg-muted dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest dark:text-slate-300"
+          >
+            {item.itemType}
+          </Badge>
+        </div>
+      )}
+
+      {/* Cost */}
+      {columnVisibility.cost && (
+        <div className="flex-1 text-right pr-6">
+          <span className="text-xs font-bold text-muted-foreground/60 tracking-tight">
+            {(item.buyingPrice ?? 0).toFixed(2)}
+          </span>
+        </div>
+      )}
+
+      {/* Price */}
+      {columnVisibility.price && (
+        <div className="flex-1 text-right pr-6">
+          <span className="text-sm font-black text-foreground dark:text-slate-200 tracking-tight">
+            {(item.sellingPrice ?? 0).toFixed(2)}
+          </span>
+        </div>
+      )}
+
+      {/* Profit */}
+      {columnVisibility.profit && (
+        <div className="flex-1 text-right pr-6">
+          <div className="flex items-center justify-end gap-1.5">
             <span
               className={cn(
-                "text-sm font-black tracking-tight",
-                isOutOfStock && "text-red-600 dark:text-red-400",
-                isLowStock && "text-orange-600 dark:text-orange-400",
-                !isOutOfStock && !isLowStock && "text-foreground dark:text-slate-200"
+                "text-xs font-black tracking-tight",
+                isPositive && "text-green-600 dark:text-green-400",
+                isNegative && "text-red-600 dark:text-red-400",
+                !isPositive && !isNegative && "text-muted-foreground dark:text-slate-500 opacity-40"
               )}
             >
-              {quantity}
+              {isPositive ? "+" : ""}
+              {profit.toFixed(2)}
             </span>
-            {(isOutOfStock || isLowStock) && (
+          </div>
+        </div>
+      )}
+
+      {/* Stock */}
+      {columnVisibility.stock && (
+        <div className="flex-1 text-right pr-6">
+          <div className="flex items-center justify-end gap-2 text-right">
+            <div className="flex flex-col items-end">
               <span
                 className={cn(
-                  "text-[8px] font-black uppercase tracking-tighter",
-                  isOutOfStock ? "text-red-500" : "text-orange-500"
+                  "text-sm font-black tracking-tight",
+                  isOutOfStock && "text-red-600 dark:text-red-400",
+                  isLowStock && "text-orange-600 dark:text-orange-400",
+                  !isOutOfStock && !isLowStock && "text-foreground dark:text-slate-200"
                 )}
               >
-                {t(isOutOfStock ? 'inventory.table.stockLabels.empty' : 'inventory.table.stockLabels.low')}
+                {quantity}
               </span>
-            )}
+              {(isOutOfStock || isLowStock) && (
+                <span
+                  className={cn(
+                    "text-[8px] font-black uppercase tracking-tighter",
+                    isOutOfStock ? "text-red-500" : "text-orange-500"
+                  )}
+                >
+                  {t(isOutOfStock ? 'inventory.table.stockLabels.empty' : 'inventory.table.stockLabels.low')}
+                </span>
+              )}
+            </div>
+            <div
+              className={cn(
+                "h-1.5 w-1.5 rounded-full shrink-0",
+                isOutOfStock
+                  ? "bg-red-500 animate-pulse"
+                  : isLowStock
+                  ? "bg-orange-500"
+                  : "bg-green-500"
+              )}
+            ></div>
           </div>
-          <div
-            className={cn(
-              "h-1.5 w-1.5 rounded-full shrink-0",
-              isOutOfStock
-                ? "bg-red-500 animate-pulse"
-                : isLowStock
-                ? "bg-orange-500"
-                : "bg-green-500"
-            )}
-          ></div>
         </div>
-      </div>
+      )}
 
       {/* Actions */}
       <div className="w-24 text-center pr-4 flex items-center justify-center gap-1">
@@ -400,6 +429,12 @@ export const VirtualizedTable = memo(function VirtualizedTable({
   const { t } = useTranslation();
   const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
   const parentRef = useRef<HTMLDivElement>(null);
+  const [columnVisibility, setColumnVisibility] = useState<Record<ColumnId, boolean>>(DEFAULT_COLUMN_VISIBILITY);
+
+  const toggleColumn = (col: ColumnId) =>
+    setColumnVisibility((prev) => ({ ...prev, [col]: !prev[col] }));
+
+  const hiddenCount = Object.values(columnVisibility).filter((v) => !v).length;
 
   const selectedItems = items.filter((item) => selectedIds?.includes(item.id));
   const isAllSelected = items.length > 0 && selectedIds?.length === items.length;
@@ -499,6 +534,64 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                   <RotateCcw className="h-4 w-4" />
                 </Button>
              )}
+
+             {/* Column Visibility Toggle */}
+             <DropdownMenu>
+               <Tooltip>
+                 <TooltipTrigger asChild>
+                   <DropdownMenuTrigger asChild>
+                     <Button
+                       variant="outline"
+                       size="icon"
+                       className={cn(
+                         "rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 transition-colors relative",
+                         hiddenCount > 0 ? "text-primary border-primary/40" : "text-muted-foreground"
+                       )}
+                     >
+                       <Columns2 className="h-4 w-4" />
+                       {hiddenCount > 0 && (
+                         <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary text-[9px] font-black text-white flex items-center justify-center">
+                           {hiddenCount}
+                         </span>
+                       )}
+                     </Button>
+                   </DropdownMenuTrigger>
+                 </TooltipTrigger>
+                 <TooltipContent side="bottom" className="rounded-lg font-bold text-[10px] uppercase tracking-wider">
+                   Toggle Columns
+                 </TooltipContent>
+               </Tooltip>
+               <DropdownMenuContent align="end" className="rounded-2xl border dark:border-slate-800 shadow-2xl p-2 min-w-[180px] dark:bg-slate-900">
+                 <DropdownMenuLabel className="text-[9px] font-black uppercase tracking-widest text-muted-foreground px-2 py-1.5">
+                   Toggle Columns
+                 </DropdownMenuLabel>
+                 <DropdownMenuSeparator className="my-1 bg-muted dark:bg-slate-800" />
+                 {([
+                   { id: "brand", label: t('inventory.table.brand') },
+                   { id: "category", label: t('inventory.table.category') },
+                   { id: "cost", label: `${t('inventory.table.cost')} (${currencySymbol})` },
+                   { id: "price", label: `${t('inventory.table.price')} (${currencySymbol})` },
+                   { id: "profit", label: `${t('inventory.table.profit')} (${currencySymbol})` },
+                   { id: "stock", label: t('inventory.table.stock') },
+                 ] as { id: ColumnId; label: string }[]).map(({ id, label }) => (
+                   <DropdownMenuCheckboxItem
+                     key={id}
+                     checked={columnVisibility[id]}
+                     onCheckedChange={() => toggleColumn(id)}
+                     className="rounded-xl font-bold text-xs uppercase tracking-wider py-2 cursor-pointer"
+                   >
+                     {label}
+                   </DropdownMenuCheckboxItem>
+                 ))}
+                 <DropdownMenuSeparator className="my-1 bg-muted dark:bg-slate-800" />
+                 <DropdownMenuItem
+                   onClick={() => setColumnVisibility(DEFAULT_COLUMN_VISIBILITY)}
+                   className="rounded-xl font-bold text-[10px] uppercase tracking-wider py-2 text-primary focus:text-primary focus:bg-primary/5"
+                 >
+                   Reset to default
+                 </DropdownMenuItem>
+               </DropdownMenuContent>
+             </DropdownMenu>
            </div>
         </div>
 
@@ -544,73 +637,90 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                 <Checkbox
                   checked={isAllSelected}
                   onCheckedChange={handleSelectAll}
-                  className="translate-x-0.5"
+                  className="translate-x-0.5 shrink-0"
                 />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-500 opacity-60">
+                <SortableHeader
+                  columnKey="itemName"
+                  tooltip={t('inventory.table.tooltips.name')}
+                  sortConfig={sortConfig}
+                  onSort={onSort}
+                >
                   {t('inventory.table.product')}
-                </span>
+                </SortableHeader>
               </div>
             </div>
-            <div className="flex-1">
-              <SortableHeader
-                columnKey="phoneBrand"
-                tooltip={t('inventory.table.tooltips.brand')}
-                sortConfig={sortConfig}
-                onSort={onSort}
-              >
-                {t('inventory.table.brand')}
-              </SortableHeader>
-            </div>
-            <div className="flex-1">
-              <SortableHeader
-                columnKey="itemType"
-                tooltip={t('inventory.table.tooltips.category')}
-                sortConfig={sortConfig}
-                onSort={onSort}
-              >
-                {t('inventory.table.category')}
-              </SortableHeader>
-            </div>
-            <div className="flex-1 text-right pr-6">
-              <SortableHeader
-                columnKey="buyingPrice"
-                tooltip={t('inventory.table.tooltips.cost')}
-                sortConfig={sortConfig}
-                onSort={onSort}
-              >
-                {t('inventory.table.cost')} ({currencySymbol})
-              </SortableHeader>
-            </div>
-            <div className="flex-1 text-right pr-6">
-              <SortableHeader
-                columnKey="sellingPrice"
-                tooltip={t('inventory.table.tooltips.price')}
-                sortConfig={sortConfig}
-                onSort={onSort}
-              >
-                {t('inventory.table.price')} ({currencySymbol})
-              </SortableHeader>
-            </div>
-            <div className="flex-1 text-right pr-6">
-              <SortableHeader
-                columnKey="profit"
-                tooltip={t('inventory.table.tooltips.profit')}
-                sortConfig={sortConfig}
-                onSort={onSort}
-              >
-                {t('inventory.table.profit')} ({currencySymbol})
-              </SortableHeader>
-            </div>
-            <div className="flex-1 text-right pr-6">
-              <SortableHeader
-                columnKey="quantityInStock"
-                tooltip={t('inventory.table.tooltips.stock')}
-                sortConfig={sortConfig}
-                onSort={onSort}
-              >
-                {t('inventory.table.stock')}
-              </SortableHeader>
-            </div>
+            {columnVisibility.brand && (
+              <div className="flex-1">
+                <SortableHeader
+                  columnKey="phoneBrand"
+                  tooltip={t('inventory.table.tooltips.brand')}
+                  sortConfig={sortConfig}
+                  onSort={onSort}
+                >
+                  {t('inventory.table.brand')}
+                </SortableHeader>
+              </div>
+            )}
+            {columnVisibility.category && (
+              <div className="flex-1">
+                <SortableHeader
+                  columnKey="itemType"
+                  tooltip={t('inventory.table.tooltips.category')}
+                  sortConfig={sortConfig}
+                  onSort={onSort}
+                >
+                  {t('inventory.table.category')}
+                </SortableHeader>
+              </div>
+            )}
+            {columnVisibility.cost && (
+              <div className="flex-1 text-right pr-6">
+                <SortableHeader
+                  columnKey="buyingPrice"
+                  tooltip={t('inventory.table.tooltips.cost')}
+                  sortConfig={sortConfig}
+                  onSort={onSort}
+                >
+                  {t('inventory.table.cost')} ({currencySymbol})
+                </SortableHeader>
+              </div>
+            )}
+            {columnVisibility.price && (
+              <div className="flex-1 text-right pr-6">
+                <SortableHeader
+                  columnKey="sellingPrice"
+                  tooltip={t('inventory.table.tooltips.price')}
+                  sortConfig={sortConfig}
+                  onSort={onSort}
+                >
+                  {t('inventory.table.price')} ({currencySymbol})
+                </SortableHeader>
+              </div>
+            )}
+            {columnVisibility.profit && (
+              <div className="flex-1 text-right pr-6">
+                <SortableHeader
+                  columnKey="profit"
+                  tooltip={t('inventory.table.tooltips.profit')}
+                  sortConfig={sortConfig}
+                  onSort={onSort}
+                >
+                  {t('inventory.table.profit')} ({currencySymbol})
+                </SortableHeader>
+              </div>
+            )}
+            {columnVisibility.stock && (
+              <div className="flex-1 text-right pr-6">
+                <SortableHeader
+                  columnKey="quantityInStock"
+                  tooltip={t('inventory.table.tooltips.stock')}
+                  sortConfig={sortConfig}
+                  onSort={onSort}
+                >
+                  {t('inventory.table.stock')}
+                </SortableHeader>
+              </div>
+            )}
             <div className="w-24 text-center pr-4 text-muted-foreground/60 text-[10px] font-black uppercase tracking-widest">
               {t('inventory.table.actions')}
             </div>
@@ -646,6 +756,7 @@ export const VirtualizedTable = memo(function VirtualizedTable({
                     onSelectionChange={onSelectionChange}
                     onPrint={onPrint}
                     currencySymbol={currencySymbol}
+                    columnVisibility={columnVisibility}
                   />
                 );
               })

@@ -124,6 +124,7 @@ pub struct ClientHistoryEvent {
     pub notes: Option<String>,
     pub amount: f64, // Made non-optional for history
     pub changed_by: Option<String>,
+    pub related_id: Option<String>, // Links to the originating transaction
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -135,6 +136,7 @@ pub struct SupplierHistoryEvent {
     pub notes: Option<String>,
     pub amount: f64,
     pub changed_by: Option<String>,
+    pub related_id: Option<String>, // Links to the originating transaction
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

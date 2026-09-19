@@ -52,4 +52,5 @@ export interface ClientHistoryEvent {
     notes?: string;
     amount: number;
     changed_by?: string;
+    related_id?: string;
 }

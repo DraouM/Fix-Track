@@ -540,6 +540,10 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
         [],
     );
 
+    // Migrations to add related_id to history tables (links history events to transactions)
+    let _ = conn.execute("ALTER TABLE client_history ADD COLUMN related_id TEXT", []);
+    let _ = conn.execute("ALTER TABLE supplier_history ADD COLUMN related_id TEXT", []);
+
     // Tasks & Reminders table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS tasks (

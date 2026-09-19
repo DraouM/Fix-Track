@@ -15,6 +15,7 @@ import { LazyContextProvider } from "@/components/helpers/LazyContextProvider";
 import { useLicense } from "@/context/LicenseContext";
 import { ActivationScreen } from "@/components/license/ActivationScreen";
 import { SplashScreen } from "@/components/layout/SplashScreen";
+import { usePathname } from "next/navigation";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -28,7 +29,7 @@ function LayoutContent({ children }: AppLayoutProps) {
       <main
         className={cn(
           "flex-1 transition-all duration-300",
-          state === "expanded" ? "ms-0 ps-64" : "ms-0 ps-0"
+          state === "expanded" ? "ms-0 ps-64" : "ms-0 ps-0",
         )}
       >
         <ErrorBoundary>
@@ -45,10 +46,14 @@ function LayoutContent({ children }: AppLayoutProps) {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { isActivated, isLoading, setActivated } = useLicense();
+  const pathname = usePathname();
+  // Routes that open in their own dedicated desktop window should render
+  // without the app chrome (sidebar etc.).
+  const isStandalone = !!pathname && pathname.startsWith("/clients/ledger");
   // const [showSplash, setShowSplash] = useState(true);
 
   if (isLoading) {
-      return null; // Or a minimal loader, but context loads fast
+    return null; // Or a minimal loader, but context loads fast
   }
 
   // If not activated, we must show ActivationScreen.
@@ -57,9 +62,24 @@ export function AppLayout({ children }: AppLayoutProps) {
   // We can handle it here or leave it in page.tsx.
   // But if we are in Activation mode, page.tsx is NOT rendered.
   // So we lose SplashScreen for non-activated users if we block here.
-  
+
   if (!isActivated) {
     return <ActivationScreen onActivated={() => setActivated(true)} />;
+  }
+
+  if (isStandalone) {
+    return (
+      <>
+        <ErrorBoundary>
+          <Suspense
+            fallback={<AppLoader message="Initializing application..." />}
+          >
+            <LazyContextProvider>{children}</LazyContextProvider>
+          </Suspense>
+        </ErrorBoundary>
+        <Toaster />
+      </>
+    );
   }
 
   return (

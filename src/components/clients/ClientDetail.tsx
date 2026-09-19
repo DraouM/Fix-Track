@@ -1,36 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   User,
   Mail,
   Phone,
   MapPin,
-  Clock,
   DollarSign,
-  History,
-  ShoppingCart,
   Pencil,
-  Trash2,
   ChevronLeft,
-  ArrowUpRight,
-  ArrowDownRight,
-  Activity,
   Calendar,
-  CreditCard,
   ShieldCheck,
-  Tag,
-  LayoutDashboard,
-  Box,
   Link as LinkIcon,
   Wallet,
   TrendingUp,
   XCircle,
   FileText,
+  History,
+  ArrowRight,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClientContext } from "@/context/ClientContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -38,8 +29,11 @@ import { formatCurrency, formatDate } from "@/lib/clientUtils";
 import { ClientForm } from "./ClientForm";
 import { ClientPaymentModal } from "./ClientPaymentModal";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ClientHistoryList } from "./ClientHistoryList";
+import { getTransactions } from "@/lib/api/transactions";
+import { Transaction } from "@/types/transaction";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { ClientLedgerTable } from "./ClientLedgerTable";
+import { openLedgerWindow } from "@/lib/openWindow";
 
 interface ClientDetailProps {
   clientId: string;
@@ -47,22 +41,48 @@ interface ClientDetailProps {
 
 export function ClientDetail({ clientId }: ClientDetailProps) {
   const router = useRouter();
-  const { clients, getClientHistory, deleteClient, loading } =
-    useClientContext();
+  const { clients, getClientHistory } = useClientContext();
   const client = clients.find((c) => c.id === clientId);
 
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") || "history";
+  const rawTab = searchParams.get("tab");
+  const initialTab = rawTab === "analytics" ? "analytics" : "ledger";
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [hasLoadedLedger, setHasLoadedLedger] = useState(false);
 
-  useEffect(() => {
-    if (clientId) {
-      getClientHistory(clientId);
+  const loadLedgerData = useCallback(async () => {
+    if (!clientId) return;
+    setLedgerLoading(true);
+    try {
+      const [txData] = await Promise.all([
+        getTransactions("Sale", null, clientId),
+        getClientHistory(clientId),
+      ]);
+      setTransactions(txData);
+      setHasLoadedLedger(true);
+    } catch (err) {
+      console.error("Failed to load ledger data:", err);
+    } finally {
+      setLedgerLoading(false);
     }
-  }, [clientId]); // Only run when clientId changes, not on every render
+  }, [clientId, getClientHistory]);
+
+  // Lazy load ledger data on-demand when the statement tab is active
+  useEffect(() => {
+    if (activeTab === "ledger" && !hasLoadedLedger) {
+      loadLedgerData();
+    }
+  }, [activeTab, hasLoadedLedger, loadLedgerData]);
+
+  // Reset loaded cache when switching client
+  useEffect(() => {
+    setHasLoadedLedger(false);
+  }, [clientId]);
 
   if (!client) {
     return (
@@ -173,58 +193,10 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
               </div>
             </div>
           </div>
-
-          {/* Activity & History Tabs Skeleton */}
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="px-8 pt-6 border-b border-gray-50 dark:border-slate-800/50">
-              <div className="flex gap-8">
-                <div className="h-10 w-32 bg-gray-200/30 rounded animate-pulse" />
-                <div className="h-10 w-36 bg-gray-200/30 rounded animate-pulse" />
-                <div className="h-10 w-40 bg-gray-200/30 rounded animate-pulse" />
-              </div>
-            </div>
-            <div className="p-8">
-              <div className="h-96 w-full bg-gray-200/20 rounded-2xl animate-pulse" />
-            </div>
-          </div>
         </div>
       </div>
     );
   }
-
-  const history = client.history || [];
-
-  const getEventIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "payment":
-      case "settlement":
-        return <ArrowDownRight className="w-4 h-4" />;
-      case "sale":
-      case "purchase":
-        return <ShoppingCart className="w-4 h-4" />;
-      case "adjustment":
-      case "balance adjusted":
-        return <Activity className="w-4 h-4" />;
-      default:
-        return <Tag className="w-4 h-4" />;
-    }
-  };
-
-  const getEventBadgeStyles = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "payment":
-      case "settlement":
-        return "bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40";
-      case "sale":
-      case "purchase":
-        return "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/40";
-      case "adjustment":
-      case "balance adjusted":
-        return "bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/40";
-      default:
-        return "bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-100 dark:border-slate-700";
-    }
-  };
 
   return (
     <div className="flex flex-col h-full bg-[#fbfcfd] dark:bg-slate-950">
@@ -258,7 +230,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
                     "rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-widest border shadow-none",
                     client.status === "active"
                       ? "bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40"
-                      : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"
+                      : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700",
                   )}
                 >
                   {client.status === "active" ? "Operational" : "Inactive"}
@@ -278,6 +250,19 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const opened = await openLedgerWindow(client.id);
+                if (!opened) {
+                  router.push(`/clients/ledger?id=${client.id}`);
+                }
+              }}
+              className="h-12 px-4 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 transition-all shadow-sm dark:border-slate-800 flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              Financial Ledger
+            </Button>
             <Button
               onClick={() => setIsPaymentModalOpen(true)}
               className="h-12 px-3 rounded-2xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all font-black text-[10px] uppercase tracking-widest min-w-[40px]"
@@ -388,7 +373,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
                           "text-5xl font-black tracking-tighter",
                           (client.outstandingBalance || 0) > 0
                             ? "text-red-500 dark:text-red-400"
-                            : "text-emerald-600 dark:text-emerald-400"
+                            : "text-emerald-600 dark:text-emerald-400",
                         )}
                       >
                         {formatCurrency(client.outstandingBalance || 0)}
@@ -436,28 +421,21 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
           </Card>
         </div>
 
-        {/* Activity & History Tabs */}
+        {/* Ledger / Statement Tab */}
         <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-          <Tabs 
-            value={activeTab} 
-            onValueChange={setActiveTab} 
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
             className="w-full"
           >
             <div className="px-8 pt-6 border-b border-gray-50 dark:border-slate-800/50">
               <TabsList className="bg-transparent gap-8 h-14 p-0">
                 <TabsTrigger
-                  value="history"
+                  value="ledger"
                   className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
                 >
-                  <Activity className="w-3.5 h-3.5 mr-2" />
-                  Operational Feed
-                </TabsTrigger>
-                <TabsTrigger
-                  value="sales"
-                  className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
-                >
-                  <ShoppingCart className="w-3.5 h-3.5 mr-2" />
-                  Transaction Ledger
+                  <FileText className="w-3.5 h-3.5 mr-2" />
+                  Account Statement
                 </TabsTrigger>
                 <TabsTrigger
                   value="analytics"
@@ -469,28 +447,14 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
               </TabsList>
             </div>
 
-            <TabsContent value="history" className="p-8 mt-0 outline-none">
-              <ClientHistoryList history={history} isLoading={loading} />
-            </TabsContent>
-
-            <TabsContent value="sales" className="p-8 mt-0 outline-none">
-              <div className="flex flex-col items-center justify-center py-32 bg-gray-50/30 dark:bg-slate-950/30 rounded-[2.5rem] border-2 border-dashed border-gray-100 dark:border-slate-800">
-                <Box className="h-16 w-16 mb-6 text-muted-foreground/10 dark:text-muted-foreground/5" />
-                <h3 className="text-lg font-black uppercase tracking-widest text-muted-foreground/40 dark:text-muted-foreground/30 mb-2">
-                  Transaction Vault
-                </h3>
-                <p className="text-xs font-bold text-muted-foreground/60 max-w-sm text-center mb-8 uppercase tracking-widest leading-loose">
-                  Historical sales data and formal agreements will be accessible
-                  here once the ledger is synchronized.
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => router.push("/sales/new")}
-                  className="h-12 px-8 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-white dark:hover:bg-slate-900 transition-all shadow-sm dark:border-slate-800"
-                >
-                  Initiate New Protocol
-                </Button>
-              </div>
+            <TabsContent value="ledger" className="p-8 mt-0 outline-none">
+              <ClientLedgerTable
+                transactions={transactions}
+                history={client.history || []}
+                clientId={clientId}
+                isLoading={ledgerLoading}
+                onHistoryRefresh={loadLedgerData}
+              />
             </TabsContent>
 
             <TabsContent value="analytics" className="p-8 mt-0 outline-none">

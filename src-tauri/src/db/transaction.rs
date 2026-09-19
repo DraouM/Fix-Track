@@ -92,14 +92,14 @@ pub fn create_transaction(mut transaction: Transaction) -> Result<Transaction, S
     if transaction.party_type == "Client" {
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Sale Created", format!("Sale {} created", transaction.transaction_number), 0.0, transaction.created_by],
+            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Sale Created", format!("Sale {} created", transaction.transaction_number), 0.0, transaction.created_by, transaction.id],
         ).map_err(|e| e.to_string())?;
     } else {
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Purchase Order Created", format!("Order {} created", transaction.transaction_number), 0.0, transaction.created_by],
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Purchase Order Created", format!("Order {} created", transaction.transaction_number), 0.0, transaction.created_by, transaction.id],
         ).map_err(|e| e.to_string())?;
     }
 
@@ -427,8 +427,8 @@ pub fn add_transaction_payment(payment: TransactionPayment) -> Result<(), String
 
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Received", format!("Payment for {} {}", tx_type, tx_num), -payment.amount, payment.received_by],
+            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Received", format!("Payment for {} {}", tx_type, tx_num), -payment.amount, payment.received_by, payment.transaction_id],
         ).ok();
     } else {
         conn.execute(
@@ -439,8 +439,8 @@ pub fn add_transaction_payment(payment: TransactionPayment) -> Result<(), String
 
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Made", format!("Payment for {} {}", tx_type, tx_num), -payment.amount, payment.received_by],
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Made", format!("Payment for {} {}", tx_type, tx_num), -payment.amount, payment.received_by, payment.transaction_id],
         ).ok();
     }
 
@@ -485,8 +485,8 @@ pub fn update_transaction_payment(id: String, amount: f64, method: String) -> Re
 
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Updated", format!("Payment adjusted for {} {}: {} -> {}", tx_type, tx_num, old_amount, amount), balance_adj, None::<String>],
+            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Updated", format!("Payment adjusted for {} {}: {} -> {}", tx_type, tx_num, old_amount, amount), balance_adj, None::<String>, tx_id],
         ).ok();
     } else {
         conn.execute(
@@ -496,8 +496,8 @@ pub fn update_transaction_payment(id: String, amount: f64, method: String) -> Re
 
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Updated", format!("Payment adjusted for {} {}: {} -> {}", tx_type, tx_num, old_amount, amount), balance_adj, None::<String>],
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Updated", format!("Payment adjusted for {} {}: {} -> {}", tx_type, tx_num, old_amount, amount), balance_adj, None::<String>, tx_id],
         ).ok();
     }
 
@@ -538,8 +538,8 @@ pub fn delete_transaction_payment(id: String) -> Result<(), String> {
 
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Deleted", format!("Payment of {} deleted for {} {}", amount, tx_type, tx_num), amount, None::<String>],
+            "INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Deleted", format!("Payment of {} deleted for {} {}", amount, tx_type, tx_num), amount, None::<String>, tx_id],
         ).ok();
     } else {
         conn.execute(
@@ -549,8 +549,8 @@ pub fn delete_transaction_payment(id: String) -> Result<(), String> {
 
         let h_id = Uuid::new_v4().to_string();
         conn.execute(
-            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Deleted", format!("Payment of {} deleted for {} {}", amount, tx_type, tx_num), amount, None::<String>],
+            "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, party_id, Utc::now().to_rfc3339(), "Payment Deleted", format!("Payment of {} deleted for {} {}", amount, tx_type, tx_num), amount, None::<String>, tx_id],
         ).ok();
     }
 
@@ -622,8 +622,8 @@ pub fn complete_transaction(tx_id: String) -> Result<(), String> {
         )
         .ok();
         let h_id = Uuid::new_v4().to_string();
-        conn.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, tx.party_id, Utc::now().to_rfc3339(), "Sale Completed", format!("Sale {}", tx.transaction_number), tx.total_amount, None::<String>]).ok();
+        conn.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, tx.party_id, Utc::now().to_rfc3339(), "Sale Completed", format!("Sale {}", tx.transaction_number), tx.total_amount, None::<String>, tx.id]).ok();
     } else {
         conn.execute(
             "UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2",
@@ -631,8 +631,8 @@ pub fn complete_transaction(tx_id: String) -> Result<(), String> {
         )
         .ok();
         let h_id = Uuid::new_v4().to_string();
-        conn.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![h_id, tx.party_id, Utc::now().to_rfc3339(), "Purchase Order Completed", format!("Order {}", tx.transaction_number), tx.total_amount, None::<String>]).ok();
+        conn.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![h_id, tx.party_id, Utc::now().to_rfc3339(), "Purchase Order Completed", format!("Order {}", tx.transaction_number), tx.total_amount, None::<String>, tx.id]).ok();
     }
 
     // 3. Update Status
@@ -711,30 +711,30 @@ fn apply_transaction_impact_internal(
             // Increase client balance by total
             tx.execute("UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![transaction.total_amount, transaction.party_id]).map_err(|e| e.to_string())?;
             let h_id = Uuid::new_v4().to_string();
-            tx.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Sale Completed", format!("Sale {}", transaction.transaction_number), transaction.total_amount, None::<String>]).map_err(|e| e.to_string())?;
+            tx.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Sale Completed", format!("Sale {}", transaction.transaction_number), transaction.total_amount, None::<String>, transaction.id]).map_err(|e| e.to_string())?;
 
             // Subtract payments from balance
             for payment in payments {
                 tx.execute("UPDATE clients SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2", params![payment.amount, transaction.party_id]).map_err(|e| e.to_string())?;
                 let p_h_id = Uuid::new_v4().to_string();
-                tx.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                    params![p_h_id, transaction.party_id, Utc::now().to_rfc3339(), "Payment Received", format!("Payment for Sale {}", transaction.transaction_number), -payment.amount, payment.received_by]).map_err(|e| e.to_string())?;
+                tx.execute("INSERT INTO client_history (id, client_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    params![p_h_id, transaction.party_id, Utc::now().to_rfc3339(), "Payment Received", format!("Payment for Sale {}", transaction.transaction_number), -payment.amount, payment.received_by, transaction.id]).map_err(|e| e.to_string())?;
             }
         } else {
             // Supplier
             tx.execute("UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ?1 WHERE id = ?2", params![transaction.total_amount, transaction.party_id]).map_err(|e| e.to_string())?;
             let h_id = Uuid::new_v4().to_string();
-            tx.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Purchase Order Completed", format!("Order {}", transaction.transaction_number), transaction.total_amount, None::<String>],
+            tx.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![h_id, transaction.party_id, Utc::now().to_rfc3339(), "Purchase Order Completed", format!("Order {}", transaction.transaction_number), transaction.total_amount, None::<String>, transaction.id],
             ).map_err(|e| e.to_string())?;
 
             // Subtract payments
             for payment in payments {
                 tx.execute("UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) - ?1 WHERE id = ?2", params![payment.amount, transaction.party_id]).map_err(|e| e.to_string())?;
                 let p_h_id = Uuid::new_v4().to_string();
-                tx.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                    params![p_h_id, transaction.party_id, Utc::now().to_rfc3339(), "Payment Made", format!("Payment for Purchase {}", transaction.transaction_number), -payment.amount, payment.received_by]).map_err(|e| e.to_string())?;
+                tx.execute("INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    params![p_h_id, transaction.party_id, Utc::now().to_rfc3339(), "Payment Made", format!("Payment for Purchase {}", transaction.transaction_number), -payment.amount, payment.received_by, transaction.id]).map_err(|e| e.to_string())?;
             }
         }
     }

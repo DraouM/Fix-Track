@@ -378,7 +378,7 @@ use crate::db::models::SupplierHistoryEvent;
 pub fn get_supplier_history(supplier_id: String) -> Result<Vec<SupplierHistoryEvent>, String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     let mut stmt = conn
-        .prepare("SELECT id, supplier_id, date, type, notes, amount, changed_by FROM supplier_history WHERE supplier_id = ?1 ORDER BY date DESC")
+        .prepare("SELECT id, supplier_id, date, type, notes, amount, changed_by, related_id FROM supplier_history WHERE supplier_id = ?1 AND type IN ('Payment Made', 'Payment Updated', 'Payment Deleted', 'Credit Balance Adjusted') ORDER BY date DESC")
         .map_err(|e| e.to_string())?;
     let history = stmt
         .query_map(params![supplier_id], |row| {
@@ -390,6 +390,7 @@ pub fn get_supplier_history(supplier_id: String) -> Result<Vec<SupplierHistoryEv
                 notes: row.get(4).ok(),
                 amount: row.get::<_, f64>(5).unwrap_or(0.0),
                 changed_by: row.get(6).ok(),
+                related_id: row.get(7).ok(),
             })
         })
         .map_err(|e| e.to_string())?
@@ -403,7 +404,7 @@ pub fn get_supplier_history(supplier_id: String) -> Result<Vec<SupplierHistoryEv
 pub fn insert_supplier_history(event: SupplierHistoryEvent) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     conn.execute(
-        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, changed_by, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             event.id,
             event.supplier_id,
@@ -412,6 +413,7 @@ pub fn insert_supplier_history(event: SupplierHistoryEvent) -> Result<(), String
             event.notes,
             event.amount,
             event.changed_by,
+            event.related_id,
         ],
     ).map_err(|e| e.to_string())?;
     Ok(())

@@ -259,7 +259,7 @@ pub fn adjust_client_balance(
 pub fn get_client_history(client_id: String) -> Result<Vec<ClientHistoryEvent>, String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     let mut stmt = conn
-        .prepare("SELECT id, client_id, date, type, notes, amount FROM client_history WHERE client_id = ?1 ORDER BY date DESC")
+        .prepare("SELECT id, client_id, date, type, notes, amount, changed_by, related_id FROM client_history WHERE client_id = ?1 AND type IN ('Payment Received', 'Payment Updated', 'Payment Deleted', 'Balance Adjusted') ORDER BY date DESC")
         .map_err(|e| e.to_string())?;
     
     let history = stmt
@@ -271,7 +271,8 @@ pub fn get_client_history(client_id: String) -> Result<Vec<ClientHistoryEvent>, 
                 event_type: row.get(3)?,
                 notes: row.get(4).ok(),
                 amount: row.get::<_, f64>(5).unwrap_or(0.0),
-                changed_by: None,
+                changed_by: row.get(6).ok(),
+                related_id: row.get(7).ok(),
             })
         })
         .map_err(|e| e.to_string())?
@@ -285,7 +286,7 @@ pub fn get_client_history(client_id: String) -> Result<Vec<ClientHistoryEvent>, 
 pub fn insert_client_history(event: ClientHistoryEvent) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     conn.execute(
-        "INSERT INTO client_history (id, client_id, date, type, notes, amount) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        "INSERT INTO client_history (id, client_id, date, type, notes, amount, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         params![
             event.id,
             event.client_id,
@@ -293,6 +294,7 @@ pub fn insert_client_history(event: ClientHistoryEvent) -> Result<(), String> {
             event.event_type,
             event.notes,
             event.amount,
+            event.related_id,
         ],
     ).map_err(|e| e.to_string())?;
     Ok(())

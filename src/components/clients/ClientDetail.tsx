@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
   User,
   Mail,
@@ -17,22 +17,16 @@ import {
   XCircle,
   FileText,
   History,
-  ArrowRight,
-  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClientContext } from "@/context/ClientContext";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/clientUtils";
 import { ClientForm } from "./ClientForm";
 import { ClientPaymentModal } from "./ClientPaymentModal";
 import { cn } from "@/lib/utils";
-import { getTransactions } from "@/lib/api/transactions";
-import { Transaction } from "@/types/transaction";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { ClientLedgerTable } from "./ClientLedgerTable";
 import { openLedgerWindow } from "@/lib/openWindow";
 
 interface ClientDetailProps {
@@ -41,48 +35,11 @@ interface ClientDetailProps {
 
 export function ClientDetail({ clientId }: ClientDetailProps) {
   const router = useRouter();
-  const { clients, getClientHistory } = useClientContext();
+  const { clients } = useClientContext();
   const client = clients.find((c) => c.id === clientId);
-
-  const searchParams = useSearchParams();
-  const rawTab = searchParams.get("tab");
-  const initialTab = rawTab === "analytics" ? "analytics" : "ledger";
-  const [activeTab, setActiveTab] = useState(initialTab);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [ledgerLoading, setLedgerLoading] = useState(false);
-  const [hasLoadedLedger, setHasLoadedLedger] = useState(false);
-
-  const loadLedgerData = useCallback(async () => {
-    if (!clientId) return;
-    setLedgerLoading(true);
-    try {
-      const [txData] = await Promise.all([
-        getTransactions("Sale", null, clientId),
-        getClientHistory(clientId),
-      ]);
-      setTransactions(txData);
-      setHasLoadedLedger(true);
-    } catch (err) {
-      console.error("Failed to load ledger data:", err);
-    } finally {
-      setLedgerLoading(false);
-    }
-  }, [clientId, getClientHistory]);
-
-  // Lazy load ledger data on-demand when the statement tab is active
-  useEffect(() => {
-    if (activeTab === "ledger" && !hasLoadedLedger) {
-      loadLedgerData();
-    }
-  }, [activeTab, hasLoadedLedger, loadLedgerData]);
-
-  // Reset loaded cache when switching client
-  useEffect(() => {
-    setHasLoadedLedger(false);
-  }, [clientId]);
 
   if (!client) {
     return (
@@ -419,69 +376,6 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Ledger / Statement Tab */}
-        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <div className="px-8 pt-6 border-b border-gray-50 dark:border-slate-800/50">
-              <TabsList className="bg-transparent gap-8 h-14 p-0">
-                <TabsTrigger
-                  value="ledger"
-                  className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
-                >
-                  <FileText className="w-3.5 h-3.5 mr-2" />
-                  Account Statement
-                </TabsTrigger>
-                <TabsTrigger
-                  value="analytics"
-                  className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5 mr-2" />
-                  Identity Intelligence
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="ledger" className="p-8 mt-0 outline-none">
-              <ClientLedgerTable
-                transactions={transactions}
-                history={client.history || []}
-                clientId={clientId}
-                isLoading={ledgerLoading}
-                onHistoryRefresh={loadLedgerData}
-              />
-            </TabsContent>
-
-            <TabsContent value="analytics" className="p-8 mt-0 outline-none">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-10 border-2 border-dashed border-gray-100 dark:border-slate-800 rounded-[2rem] flex flex-col items-center justify-center text-center">
-                  <TrendingUp className="w-12 h-12 text-primary opacity-10 dark:opacity-5 mb-6" />
-                  <h3 className="text-lg font-black tracking-tight text-foreground/30 dark:text-foreground/20 mb-2">
-                    Predictive Logic
-                  </h3>
-                  <p className="text-[10px] font-bold text-muted-foreground dark:text-muted-foreground/40 uppercase tracking-widest max-w-[200px] mx-auto">
-                    Future integration: Behavior forecasting based on
-                    interaction history.
-                  </p>
-                </div>
-                <div className="p-10 border-2 border-dashed border-gray-100 dark:border-slate-800 rounded-[2rem] flex flex-col items-center justify-center text-center">
-                  <LayoutDashboard className="w-12 h-12 text-primary opacity-10 dark:opacity-5 mb-6" />
-                  <h3 className="text-lg font-black tracking-tight text-foreground/30 dark:text-foreground/20 mb-2">
-                    Behavioral Metrics
-                  </h3>
-                  <p className="text-[10px] font-bold text-muted-foreground dark:text-muted-foreground/40 uppercase tracking-widest max-w-[200px] mx-auto">
-                    Future integration: Customer lifetime value and engagement
-                    analysis.
-                  </p>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
         </div>
       </div>
 

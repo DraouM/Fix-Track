@@ -8,6 +8,7 @@ import {
   DollarSign,
   User,
   ShieldCheck,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ interface LedgerDrawerProps {
   isLoading?: boolean;
   onRefresh: () => void;
   onOpenPayment?: () => void;
+  onOpenWindow?: () => void;
 }
 
 export function LedgerDrawer({
@@ -40,6 +42,7 @@ export function LedgerDrawer({
   isLoading = false,
   onRefresh,
   onOpenPayment,
+  onOpenWindow,
 }: LedgerDrawerProps) {
   // ── Keyboard shortcut: Escape to close ──────────────────────────────────
   useEffect(() => {
@@ -93,7 +96,7 @@ export function LedgerDrawer({
                     "rounded-lg px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest border",
                     clientStatus === "active"
                       ? "bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40"
-                      : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"
+                      : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700",
                   )}
                 >
                   {clientStatus === "active" ? "Operational" : "Inactive"}
@@ -114,6 +117,20 @@ export function LedgerDrawer({
 
           {/* Action Buttons & Close */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Escalate peek to a dedicated window */}
+            {onOpenWindow && (
+              <Button
+                onClick={onOpenWindow}
+                variant="outline"
+                size="sm"
+                title="Open in dedicated window"
+                className="h-10 px-3.5 rounded-xl border border-gray-200 dark:border-slate-800 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors font-black text-[10px] uppercase tracking-widest gap-1.5 text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Open in Window
+              </Button>
+            )}
+
             {/* Quick Settle Balance trigger */}
             {onOpenPayment && (
               <Button

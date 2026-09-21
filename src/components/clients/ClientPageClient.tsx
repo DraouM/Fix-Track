@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
-import { 
-  Users, 
-  Search, 
-  Filter, 
-  RefreshCcw, 
-  Download, 
+import React, { useState, useCallback } from "react";
+import {
+  Users,
+  Search,
+  Filter,
+  RefreshCcw,
+  Download,
   UserPlus,
   CreditCard,
   TrendingUp,
   RotateCcw,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useClientContext } from "@/context/ClientContext";
@@ -20,32 +20,37 @@ import { useClientFilters } from "@/hooks/useClientFilters";
 import { ClientTable } from "./ClientTable";
 import { ClientForm } from "./ClientForm";
 import { ClientPaymentModal } from "./ClientPaymentModal";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import { LedgerDrawer } from "./LedgerDrawer";
+import { getTransactions } from "@/lib/api/transactions";
+import { Transaction } from "@/types/transaction";
+import { openLedgerWindow } from "@/lib/openWindow";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  Select, 
-  SelectTrigger, 
-  SelectValue, 
-  SelectContent, 
-  SelectItem 
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
 } from "../ui/select";
 import { formatCurrency } from "@/lib/clientUtils";
 
 export default function ClientPageClient() {
-  const { clients, loading, fetchClients } = useClientContext();
-  const { 
-    filteredAndSortedClients, 
-    searchTerm, 
-    setSearchTerm, 
-    setActiveFilter, 
+  const { clients, loading, fetchClients, getClientHistory } =
+    useClientContext();
+  const {
+    filteredAndSortedClients,
+    searchTerm,
+    setSearchTerm,
+    setActiveFilter,
     activeFilter,
-    clearFilters
+    clearFilters,
   } = useClientFilters(clients);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -53,8 +58,45 @@ export default function ClientPageClient() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const totalOutstanding = clients.reduce((sum, c) => sum + (c.outstandingBalance || 0), 0);
-  const activeClients = clients.filter(c => c.status === "active").length;
+  // ── Ledger peek drawer (fast in-context glance without leaving the list) ──
+  const [ledgerPeekId, setLedgerPeekId] = useState<string | null>(null);
+  const [peekTransactions, setPeekTransactions] = useState<Transaction[]>([]);
+  const [peekLoading, setPeekLoading] = useState(false);
+  const peekClient = clients.find((c) => c.id === ledgerPeekId) || null;
+
+  const loadPeek = useCallback(
+    async (clientId: string) => {
+      setPeekLoading(true);
+      try {
+        const [tx] = await Promise.all([
+          getTransactions("Sale", null, clientId),
+          getClientHistory(clientId),
+        ]);
+        setPeekTransactions(tx);
+      } catch (err) {
+        console.error("Failed to load ledger peek data:", err);
+      } finally {
+        setPeekLoading(false);
+      }
+    },
+    [getClientHistory],
+  );
+
+  const openPeek = (id: string) => {
+    setLedgerPeekId(id);
+    loadPeek(id);
+  };
+
+  const closePeek = () => {
+    setLedgerPeekId(null);
+    setPeekTransactions([]);
+  };
+
+  const totalOutstanding = clients.reduce(
+    (sum, c) => sum + (c.outstandingBalance || 0),
+    0,
+  );
+  const activeClients = clients.filter((c) => c.status === "active").length;
 
   const StatCard = ({
     icon: Icon,
@@ -71,10 +113,13 @@ export default function ClientPageClient() {
   }) => {
     const colorClasses = {
       blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-      green: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-      orange: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+      green:
+        "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+      orange:
+        "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
       red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-      purple: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+      purple:
+        "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
     };
 
     return (
@@ -84,14 +129,18 @@ export default function ClientPageClient() {
             <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
               <Icon className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{title}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+              {title}
+            </span>
           </div>
         </div>
         <div className="flex items-baseline justify-between">
           <div className="text-2xl font-black text-foreground">{value}</div>
           {subtitle && (
             <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
-              <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
+              <div
+                className={`h-1 w-1 rounded-full ${colorClasses[color].replace("text-", "bg-")}`}
+              ></div>
               {subtitle}
             </div>
           )}
@@ -125,7 +174,9 @@ export default function ClientPageClient() {
               disabled={loading}
               className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
-              <RefreshCcw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCcw
+                className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+              />
               Sync
             </Button>
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
@@ -137,14 +188,16 @@ export default function ClientPageClient() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg max-h-[90vh] rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden p-0 dark:bg-slate-900">
                 <DialogHeader className="p-6 pb-4 border-b dark:border-slate-800">
-                  <DialogTitle className="text-xl font-black">Add New Client</DialogTitle>
+                  <DialogTitle className="text-xl font-black">
+                    Add New Client
+                  </DialogTitle>
                   <DialogDescription className="font-medium text-muted-foreground">
                     Enter the details for the new client record.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-y-auto min-h-0">
-                  <ClientForm 
-                    onSuccess={() => setIsAddModalOpen(false)} 
+                  <ClientForm
+                    onSuccess={() => setIsAddModalOpen(false)}
                     onCancel={() => setIsAddModalOpen(false)}
                   />
                 </div>
@@ -154,15 +207,17 @@ export default function ClientPageClient() {
             <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
               <DialogContent className="sm:max-w-lg max-h-[90vh] rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden p-0 dark:bg-slate-900">
                 <DialogHeader className="p-6 pb-4 border-b dark:border-slate-800">
-                  <DialogTitle className="text-xl font-black">Edit Client</DialogTitle>
+                  <DialogTitle className="text-xl font-black">
+                    Edit Client
+                  </DialogTitle>
                   <DialogDescription className="font-medium text-muted-foreground">
                     Update the client's information.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-y-auto min-h-0">
                   {selectedClientId && (
-                    <ClientForm 
-                      clientId={selectedClientId} 
+                    <ClientForm
+                      clientId={selectedClientId}
                       onSuccess={() => {
                         setIsEditModalOpen(false);
                         setSelectedClientId(null);
@@ -198,7 +253,11 @@ export default function ClientPageClient() {
           <StatCard
             icon={TrendingUp}
             title="Avg. Balance"
-            value={clients.length > 0 ? formatCurrency(totalOutstanding / clients.length) : formatCurrency(0)}
+            value={
+              clients.length > 0
+                ? formatCurrency(totalOutstanding / clients.length)
+                : formatCurrency(0)
+            }
             subtitle="Per client average"
             color="green"
           />
@@ -216,7 +275,9 @@ export default function ClientPageClient() {
           <div className="flex flex-col md:flex-row gap-4 items-end">
             {/* Search */}
             <div className="flex-1 relative w-full">
-               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Search Directory</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+                Search Directory
+              </span>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/40 w-4 h-4 pointer-events-none" />
                 <input
@@ -231,18 +292,43 @@ export default function ClientPageClient() {
 
             {/* Status Filter */}
             <div className="w-full md:w-[200px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">Account Status</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+                Account Status
+              </span>
               <Select
-                value={activeFilter === "All" ? "all" : activeFilter ? "active" : "inactive"}
-                onValueChange={(v) => setActiveFilter(v === "all" ? "All" : v === "active")}
+                value={
+                  activeFilter === "All"
+                    ? "all"
+                    : activeFilter
+                      ? "active"
+                      : "inactive"
+                }
+                onValueChange={(v) =>
+                  setActiveFilter(v === "all" ? "All" : v === "active")
+                }
               >
                 <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-sm">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900">
-                  <SelectItem value="all" className="font-bold text-xs uppercase py-2.5">All Accounts</SelectItem>
-                  <SelectItem value="active" className="font-bold text-xs uppercase py-2.5">Active Only</SelectItem>
-                  <SelectItem value="inactive" className="font-bold text-xs uppercase py-2.5">Inactive Only</SelectItem>
+                  <SelectItem
+                    value="all"
+                    className="font-bold text-xs uppercase py-2.5"
+                  >
+                    All Accounts
+                  </SelectItem>
+                  <SelectItem
+                    value="active"
+                    className="font-bold text-xs uppercase py-2.5"
+                  >
+                    Active Only
+                  </SelectItem>
+                  <SelectItem
+                    value="inactive"
+                    className="font-bold text-xs uppercase py-2.5"
+                  >
+                    Inactive Only
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -263,8 +349,8 @@ export default function ClientPageClient() {
 
         {/* Clients Table */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-          <ClientTable 
-            clients={filteredAndSortedClients} 
+          <ClientTable
+            clients={filteredAndSortedClients}
             loading={loading}
             onRecordPayment={(id) => {
               setSelectedClientId(id);
@@ -274,13 +360,39 @@ export default function ClientPageClient() {
               setSelectedClientId(id);
               setIsEditModalOpen(true);
             }}
+            onPeekLedger={openPeek}
           />
         </div>
 
-        <ClientPaymentModal 
+        <ClientPaymentModal
           isOpen={isPaymentModalOpen}
-          onClose={() => setIsPaymentModalOpen(false)}
+          onClose={() => {
+            setIsPaymentModalOpen(false);
+            // Refresh the peek drawer so the settlement reflects immediately.
+            if (ledgerPeekId) loadPeek(ledgerPeekId);
+          }}
           clientId={selectedClientId}
+        />
+
+        <LedgerDrawer
+          isOpen={!!ledgerPeekId}
+          onClose={closePeek}
+          clientId={ledgerPeekId || ""}
+          clientName={peekClient?.name || ""}
+          clientStatus={peekClient?.status}
+          transactions={peekTransactions}
+          history={peekClient?.history || []}
+          isLoading={peekLoading}
+          onRefresh={() => ledgerPeekId && loadPeek(ledgerPeekId)}
+          onOpenPayment={() => {
+            if (ledgerPeekId) {
+              setSelectedClientId(ledgerPeekId);
+              setIsPaymentModalOpen(true);
+            }
+          }}
+          onOpenWindow={() => {
+            if (ledgerPeekId) openLedgerWindow(ledgerPeekId);
+          }}
         />
       </div>
     </div>

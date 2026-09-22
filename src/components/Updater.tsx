@@ -15,6 +15,23 @@ export function Updater() {
   const [debugInfo, setDebugInfo] = useState<string>("Initializing...");
   const modalRef = useRef<HTMLDivElement | null>(null);
 
+  // A transport failure means the request never received an HTTP reply: DNS, TLS,
+  // connection reset or offline. Typically transient (or raw.githubusercontent.com
+  // being blocked on the current network), so always offer a retry.
+  function describeError(errMsg: string) {
+    if (
+      /error sending request|dns error|connection refused|tls handshake|timed out|network/i.test(
+        errMsg,
+      )
+    ) {
+      return "Could not reach the update server. Check your internet connection (raw.githubusercontent.com may need a VPN/proxy on this network).";
+    }
+    if (/invalid key|signature/i.test(errMsg)) {
+      return "Update package signature is invalid. Do not install this build.";
+    }
+    return errMsg;
+  }
+
   // Only check when running in Tauri environment
   async function checkForUpdates() {
     if (
@@ -40,7 +57,7 @@ export function Updater() {
       const errMsg = err?.message || String(err);
       console.error("Failed to check for updates:", err);
       setDebugInfo(`Error: ${errMsg}`);
-      setError(errMsg);
+      setError(describeError(errMsg));
     } finally {
       setChecking(false);
     }
@@ -81,7 +98,7 @@ export function Updater() {
       await relaunch();
     } catch (err: any) {
       console.error("Failed to install update:", err);
-      setError(err?.message || "Failed to download update");
+      setError(describeError(err?.message || "Failed to download update"));
       setDownloading(false);
     }
   }
@@ -107,7 +124,18 @@ export function Updater() {
   if (!update) {
     return (
       <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border border-yellow-500/30 bg-yellow-950/90 p-3 shadow-lg text-yellow-200 text-xs font-mono">
-        <div className="font-bold mb-1">🔍 Updater</div>
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <div className="font-bold">🔍 Updater</div>
+          <button
+            onClick={checkForUpdates}
+            disabled={checking}
+            className="flex items-center gap-1 rounded border border-yellow-500/40 px-1.5 py-0.5 text-yellow-100 transition hover:bg-yellow-900/60 disabled:opacity-50"
+            aria-label="Re-check for updates"
+          >
+            <RefreshCw className={checking ? "animate-spin" : ""} />
+            Retry
+          </button>
+        </div>
         <div>{debugInfo}</div>
         {checking && <div className="mt-1 animate-pulse">⏳ Checking...</div>}
         {error && <div className="mt-1 text-red-400">❌ {error}</div>}

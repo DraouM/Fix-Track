@@ -544,6 +544,11 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     let _ = conn.execute("ALTER TABLE client_history ADD COLUMN related_id TEXT", []);
     let _ = conn.execute("ALTER TABLE supplier_history ADD COLUMN related_id TEXT", []);
 
+    // Migrations to extend expenses so they can be shown as outbound "Charges" in the
+    // payments ledger (payment method + optional payee). Ignore errors if present.
+    let _ = conn.execute("ALTER TABLE expenses ADD COLUMN method TEXT", []);
+    let _ = conn.execute("ALTER TABLE expenses ADD COLUMN party_name TEXT", []);
+
     // Tasks & Reminders table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS tasks (

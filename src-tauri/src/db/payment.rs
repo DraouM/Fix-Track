@@ -125,6 +125,33 @@ pub fn get_all_payments() -> Result<Vec<UnifiedPayment>, String> {
         }
     }
 
+    // 5. Charges (outbound fees/expenses recorded in the expenses table)
+    let mut stmt = conn.prepare(
+        "SELECT id, id, 'Charge', amount, date, COALESCE(method, 'Cash'), NULL, NULL, reason, party_name
+         FROM expenses"
+    ).map_err(|e| e.to_string())?;
+
+    let charge_payments = stmt.query_map([], |row| {
+        Ok(UnifiedPayment {
+            id: row.get(0)?,
+            source_id: row.get(1)?,
+            source_type: row.get(2)?,
+            amount: row.get(3)?,
+            date: row.get(4)?,
+            method: row.get(5)?,
+            received_by: row.get(6).ok(),
+            notes: row.get(7).ok(),
+            source_number: row.get(8).ok(),
+            party_name: row.get(9).ok(),
+        })
+    }).map_err(|e| e.to_string())?;
+
+    for p in charge_payments {
+        if let Ok(payment) = p {
+            payments.push(payment);
+        }
+    }
+
     // Sort by date descending
     payments.sort_by(|a, b| b.date.cmp(&a.date));
 

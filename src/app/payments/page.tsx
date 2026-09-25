@@ -3,12 +3,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
-import { Wallet, Search, Filter, ArrowLeft, DollarSign, TrendingUp, AlertCircle, Calendar as CalendarIcon, X } from "lucide-react";
+import { Wallet, Search, Filter, ArrowLeft, DollarSign, AlertCircle, Calendar as CalendarIcon, X, Plus, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { UnifiedPayment } from "@/types/payment";
 import { PaymentTable } from "@/components/payments/PaymentTable";
+import { ChargeFormDialog } from "@/components/payments/ChargeFormDialog";
 import { Badge } from "@/components/ui/badge";
 import { useSettings } from "@/context/SettingsContext";
 import { formatNumber, getLocaleForIntl } from "@/lib/formatters";
@@ -22,6 +23,8 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<UnifiedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | "payments" | "charges">("all");
+  const [chargeOpen, setChargeOpen] = useState(false);
   
   // Default toToday
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -49,6 +52,11 @@ export default function PaymentsPage() {
 
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
+      // 0. Type filter (charges are outbound expenses)
+      const isCharge = p.source_type === "Charge";
+      if (typeFilter === "payments" && isCharge) return false;
+      if (typeFilter === "charges" && !isCharge) return false;
+
       // 1. Search filter
       const searchLower = search.toLowerCase();
       const matchesSearch = 
@@ -70,9 +78,17 @@ export default function PaymentsPage() {
 
       return true;
     });
-  }, [payments, search, dateRange]);
+  }, [payments, search, dateRange, typeFilter]);
 
-  const totalAmount = filteredPayments.reduce((acc, p) => acc + p.amount, 0);
+  const { moneyIn, chargesOut, net } = useMemo(() => {
+    let income = 0;
+    let charges = 0;
+    for (const p of filteredPayments) {
+      if (p.source_type === "Charge") charges += p.amount;
+      else income += p.amount;
+    }
+    return { moneyIn: income, chargesOut: charges, net: income - charges };
+  }, [filteredPayments]);
 
   const StatCard = ({
     icon: Icon,
@@ -157,6 +173,11 @@ export default function PaymentsPage() {
               showPresets={true}
             />
 
+            <Button onClick={() => setChargeOpen(true)} className="h-11 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider shadow-sm">
+              <Plus className="h-4 w-4 mr-1.5" />
+              {t("payments.newCharge")}
+            </Button>
+
             <Button onClick={fetchPayments} variant="outline" className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800">
               <Filter className="h-4 w-4 mr-2" />
               {t("common.filter")}
@@ -179,48 +200,74 @@ export default function PaymentsPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            icon={DollarSign}
-            title={t("common.total")}
-            value={formatNumber(totalAmount, getLocaleForIntl(i18n.language))}
+            icon={ArrowUpRight}
+            title={t("payments.moneyIn")}
+            value={formatNumber(moneyIn, getLocaleForIntl(i18n.language))}
             suffix={settings.currency}
             subtitle={dateRange?.from ? `${format(dateRange.from, 'MMM dd')} - ${format(dateRange.to || dateRange.from, 'MMM dd')}` : t("payments.subtitle")}
             color="green"
           />
           <StatCard
-            icon={TrendingUp}
-            title={t("common.average")}
-            value={formatNumber(filteredPayments.length > 0 ? totalAmount / filteredPayments.length : 0, getLocaleForIntl(i18n.language))}
+            icon={ArrowDownRight}
+            title={t("payments.chargesOut")}
+            value={formatNumber(chargesOut, getLocaleForIntl(i18n.language))}
             suffix={settings.currency}
-            subtitle={t("payments.source")}
-            color="purple"
+            subtitle={t("payments.chargesSubtitle")}
+            color="red"
+          />
+          <StatCard
+            icon={DollarSign}
+            title={t("payments.netTotal")}
+            value={formatNumber(net, getLocaleForIntl(i18n.language))}
+            suffix={settings.currency}
+            subtitle={t("payments.netSubtitle")}
+            color="blue"
           />
           <StatCard
             icon={AlertCircle}
             title={t("common.count")}
             value={filteredPayments.length}
             subtitle={t("common.items")}
-            color="blue"
+            color="purple"
           />
         </div>
 
         {/* Payments Table */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="h-2 w-2 rounded-full bg-primary"></div>
               <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t("payments.historyLogs") || "Payment Logs"}</h2>
             </div>
-            
-            <div className="relative flex-1 max-w-sm ml-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t("common.searchPlaceholder")}
-                className="pl-9 bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800 rounded-xl"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-1">
+                {(["all", "payments", "charges"] as const).map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => setTypeFilter(tf)}
+                    className={`px-3 h-7 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+                      typeFilter === tf
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-gray-50 dark:hover:bg-slate-800"
+                    }`}
+                  >
+                    {tf === "all" ? t("payments.filterAll") : tf === "payments" ? t("payments.filterPayments") : t("payments.filterCharges")}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative flex-1 lg:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t("common.searchPlaceholder")}
+                  className="pl-9 bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800 rounded-xl"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -233,6 +280,12 @@ export default function PaymentsPage() {
           </div>
         </div>
       </div>
+
+      <ChargeFormDialog
+        open={chargeOpen}
+        onOpenChange={setChargeOpen}
+        onCreated={fetchPayments}
+      />
     </div>
   );
 }

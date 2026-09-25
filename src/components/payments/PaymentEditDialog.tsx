@@ -51,6 +51,7 @@ export function PaymentEditDialog({
     else if (payment.source_type === "Sale" || payment.source_type === "Purchase") command = "update_transaction_payment";
     else if (payment.source_type === "Client") command = "update_client_payment";
     else if (payment.source_type === "Supplier") command = "update_supplier_payment";
+    else if (payment.source_type === "Charge") command = "update_expense";
 
     if (!command) {
         toast.error("Editing for this payment type is not yet implemented.");
@@ -81,6 +82,7 @@ export function PaymentEditDialog({
     else if (payment.source_type === "Sale" || payment.source_type === "Purchase") command = "delete_transaction_payment";
     else if (payment.source_type === "Client") command = "delete_client_payment";
     else if (payment.source_type === "Supplier") command = "delete_supplier_payment";
+    else if (payment.source_type === "Charge") command = "delete_expense";
 
     if (!command) {
         toast.error("Deletion for this payment type is not yet implemented.");

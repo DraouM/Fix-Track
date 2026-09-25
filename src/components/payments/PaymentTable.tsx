@@ -58,11 +58,21 @@ export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps)
       {
         accessorKey: "source_type",
         header: t("payments.source"),
-        cell: ({ row }) => (
-          <Badge variant="secondary" className="font-black uppercase text-[9px] tracking-widest px-2 py-0.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border-none">
-            {t(`payments.sourceTypes.${row.original.source_type}`)}
-          </Badge>
-        ),
+        cell: ({ row }) => {
+          const isCharge = row.original.source_type === "Charge";
+          return (
+            <Badge
+              variant="secondary"
+              className={
+                isCharge
+                  ? "font-black uppercase text-[9px] tracking-widest px-2 py-0.5 bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 border-none"
+                  : "font-black uppercase text-[9px] tracking-widest px-2 py-0.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border-none"
+              }
+            >
+              {t(`payments.sourceTypes.${row.original.source_type}`)}
+            </Badge>
+          );
+        },
       },
       {
         accessorKey: "source_number",
@@ -96,14 +106,22 @@ export function PaymentTable({ payments, loading, onUpdate }: PaymentTableProps)
       {
         accessorKey: "amount",
         header: t("common.amount"),
-        cell: ({ row }) => (
-          <div className="flex items-baseline gap-1">
-             <span className="font-black text-sm text-foreground tabular-nums">
-               {formatNumber(row.original.amount, getLocaleForIntl(i18n.language))}
-             </span>
-             <span className="text-[10px] font-black text-muted-foreground/60 uppercase">{getCurrencySymbol()}</span>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const isCharge = row.original.source_type === "Charge";
+          return (
+            <div className="flex items-baseline gap-1">
+               <span
+                 className={`font-black text-sm tabular-nums ${
+                   isCharge ? "text-red-500" : "text-foreground"
+                 }`}
+               >
+                 {isCharge ? "−" : ""}
+                 {formatNumber(row.original.amount, getLocaleForIntl(i18n.language))}
+               </span>
+               <span className="text-[10px] font-black text-muted-foreground/60 uppercase">{getCurrencySymbol()}</span>
+            </div>
+          );
+        },
       },
       {
         id: "actions",

@@ -603,11 +603,31 @@
             "Sale": "بيع",
             "Purchase": "شراء",
             "Client": "عميل",
-            "Supplier": "مورد"
+            "Supplier": "مورد",
+            "Charge": "مصروف"
         },
         "editPayment": "تعديل الدفع",
         "editCaution": "سيقوم تعديل الدفع بضبط الرصيد المرتبط تلقائياً. يرجى التحقق من المبلغ بعناية.",
         "updated": "تم تحديث الدفع بنجاح",
-        "deleted": "تم حذف الدفع بنجاح"
+        "deleted": "تم حذف الدفع بنجاح",
+        "newCharge": "مصروف جديد",
+        "chargesDesc": "سجّل رسوماً أو مصروفاً خارجياً (إيجار، فواتير، لوازم، ...).",
+        "chargeCreated": "تم تسجيل المصروف بنجاح",
+        "chargeReasonRequired": "يرجى إدخال سبب للمصروف.",
+        "chargeAmountRequired": "يرجى إدخال مبلغ صالح أكبر من صفر.",
+        "reason": "السبب",
+        "reasonPlaceholder": "مثال: إيجار المحل",
+        "category": "الفئة",
+        "categoryPlaceholder": "مثال: فواتير",
+        "payee": "مدفوع إلى",
+        "payeePlaceholder": "المورّد أو الشخص (اختياري)",
+        "filterAll": "الكل",
+        "filterPayments": "المدفوعات",
+        "filterCharges": "المصروفات",
+        "moneyIn": "الوارد",
+        "chargesOut": "المصروفات",
+        "chargesSubtitle": "الرسوم والمصاريف الخارجية",
+        "netTotal": "الصافي",
+        "netSubtitle": "الوارد ناقص المصروفات"
     }
 }

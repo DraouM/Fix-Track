@@ -11,7 +11,10 @@ use db::client::{
     get_client_by_id, get_client_history, get_clients, insert_client, insert_client_history,
     update_client, update_client_payment,
 };
-use db::expense::{add_expense, get_expenses_by_session, get_today_expenses};
+use db::expense::{
+    add_expense, delete_expense, get_all_expenses, get_expenses_by_session, get_today_expenses,
+    update_expense,
+};
 use db::inventory::{
     delete_item, get_history_for_item, get_item_by_id, get_items, get_low_stock_items,
     insert_history_event, insert_item, search_items, update_item, update_item_quantity,
@@ -141,8 +144,11 @@ fn main() {
             remove_sale_item,
             add_sale_payment,
             complete_sale,
-            // EXPENSES
+            // EXPENSES / CHARGES
             add_expense,
+            get_all_expenses,
+            update_expense,
+            delete_expense,
             get_today_expenses,
             get_expenses_by_session,
             // SESSIONS

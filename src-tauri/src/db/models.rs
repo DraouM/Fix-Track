@@ -219,7 +219,7 @@ pub struct SaleWithDetails {
     pub client_name: String,
 }
 
-/// EXPENSES
+/// EXPENSES (also surfaced in the payments ledger as outbound "Charges")
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Expense {
     pub id: String,
@@ -229,6 +229,10 @@ pub struct Expense {
     pub session_id: Option<String>,
     pub category: Option<String>,
     pub created_by: Option<String>,
+    #[serde(default)]
+    pub method: String,
+    #[serde(default)]
+    pub party_name: Option<String>,
 }
 
 /// DAILY SESSIONS

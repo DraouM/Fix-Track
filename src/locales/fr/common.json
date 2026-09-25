@@ -602,11 +602,31 @@
             "Sale": "Vente",
             "Purchase": "Achat",
             "Client": "Client",
-            "Supplier": "Fournisseur"
+            "Supplier": "Fournisseur",
+            "Charge": "Frais"
         },
         "editPayment": "Modifier le paiement",
         "editCaution": "La modification d'un paiement ajustera automatiquement le solde associé. Veuillez vérifier attentivement le montant.",
         "updated": "Paiement modifié avec succès",
-        "deleted": "Paiement supprimé avec succès"
+        "deleted": "Paiement supprimé avec succès",
+        "newCharge": "Nouveau frais",
+        "chargesDesc": "Enregistrer une dépense ou un frais (loyer, factures, fournitures, ...).",
+        "chargeCreated": "Frais enregistré avec succès",
+        "chargeReasonRequired": "Veuillez saisir un motif pour ce frais.",
+        "chargeAmountRequired": "Veuillez saisir un montant valide supérieur à zéro.",
+        "reason": "Motif",
+        "reasonPlaceholder": "ex. Loyer du local",
+        "category": "Catégorie",
+        "categoryPlaceholder": "ex. Factures",
+        "payee": "Payé à",
+        "payeePlaceholder": "Vendeur ou personne (optionnel)",
+        "filterAll": "Tous",
+        "filterPayments": "Paiements",
+        "filterCharges": "Frais",
+        "moneyIn": "Entrées",
+        "chargesOut": "Frais",
+        "chargesSubtitle": "Dépenses et frais sortants",
+        "netTotal": "Net",
+        "netSubtitle": "Entrées moins frais"
     }
 }

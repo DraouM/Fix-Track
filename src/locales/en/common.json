@@ -691,11 +691,31 @@
             "Sale": "Sale",
             "Purchase": "Purchase",
             "Client": "Client",
-            "Supplier": "Supplier"
+            "Supplier": "Supplier",
+            "Charge": "Charge"
         },
         "editPayment": "Edit Payment",
         "editCaution": "Editing a payment will automatically adjust the related balance. Please verify the amount carefully.",
         "updated": "Payment updated successfully",
-        "deleted": "Payment deleted successfully"
+        "deleted": "Payment deleted successfully",
+        "newCharge": "New Charge",
+        "chargesDesc": "Log an outbound fee or expense (rent, utilities, supplies, ...).",
+        "chargeCreated": "Charge recorded successfully",
+        "chargeReasonRequired": "Please enter a reason for the charge.",
+        "chargeAmountRequired": "Please enter a valid amount greater than zero.",
+        "reason": "Reason",
+        "reasonPlaceholder": "e.g. Shop rent",
+        "category": "Category",
+        "categoryPlaceholder": "e.g. Utilities",
+        "payee": "Paid To",
+        "payeePlaceholder": "Optional vendor or person",
+        "filterAll": "All",
+        "filterPayments": "Payments",
+        "filterCharges": "Charges",
+        "moneyIn": "Money In",
+        "chargesOut": "Charges",
+        "chargesSubtitle": "Outbound fees & expenses",
+        "netTotal": "Net",
+        "netSubtitle": "Money in minus charges"
     }
 }

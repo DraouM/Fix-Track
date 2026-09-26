@@ -13,23 +13,23 @@ export function Updater() {
   const [progress, setProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>("Initializing...");
+  const [isDismissed, setIsDismissed] = useState<boolean>(false);
   const modalRef = useRef<HTMLDivElement | null>(null);
 
   // A transport failure means the request never received an HTTP reply: DNS, TLS,
-  // connection reset or offline. Typically transient (or raw.githubusercontent.com
-  // being blocked on the current network), so always offer a retry.
+  // connection reset or offline. Return a secure, sanitized user-friendly message.
   function describeError(errMsg: string) {
     if (
       /error sending request|dns error|connection refused|tls handshake|timed out|network/i.test(
         errMsg,
       )
     ) {
-      return "Could not reach the update server. Check your internet connection (raw.githubusercontent.com may need a VPN/proxy on this network).";
+      return "Could not reach the update server. Please check your internet connection.";
     }
     if (/invalid key|signature/i.test(errMsg)) {
       return "Update package signature is invalid. Do not install this build.";
     }
-    return errMsg;
+    return "An error occurred while checking for updates.";
   }
 
   // Only check when running in Tauri environment
@@ -56,7 +56,7 @@ export function Updater() {
     } catch (err: any) {
       const errMsg = err?.message || String(err);
       console.error("Failed to check for updates:", err);
-      setDebugInfo(`Error: ${errMsg}`);
+      setDebugInfo("Update check failed");
       setError(describeError(errMsg));
     } finally {
       setChecking(false);
@@ -120,21 +120,37 @@ export function Updater() {
     );
   };
 
-  // If no update found yet, show a subtle debug banner in dev; in prod this is hidden
+  // If no update found yet, show a subtle debug banner in dev (hidden in production or if dismissed)
   if (!update) {
+    if (process.env.NODE_ENV !== "development" || isDismissed) {
+      return null;
+    }
+
     return (
       <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border border-yellow-500/30 bg-yellow-950/90 p-3 shadow-lg text-yellow-200 text-xs font-mono">
         <div className="flex items-center justify-between gap-3 mb-1">
           <div className="font-bold">🔍 Updater</div>
-          <button
-            onClick={checkForUpdates}
-            disabled={checking}
-            className="flex items-center gap-1 rounded border border-yellow-500/40 px-1.5 py-0.5 text-yellow-100 transition hover:bg-yellow-900/60 disabled:opacity-50"
-            aria-label="Re-check for updates"
-          >
-            <RefreshCw className={checking ? "animate-spin" : ""} />
-            Retry
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                setIsDismissed(false);
+                checkForUpdates();
+              }}
+              disabled={checking}
+              className="flex items-center gap-1 rounded border border-yellow-500/40 px-1.5 py-0.5 text-yellow-100 transition hover:bg-yellow-900/60 disabled:opacity-50"
+              aria-label="Re-check for updates"
+            >
+              <RefreshCw className={`w-3 h-3 ${checking ? "animate-spin" : ""}`} />
+              Retry
+            </button>
+            <button
+              onClick={() => setIsDismissed(true)}
+              className="flex items-center rounded border border-yellow-500/40 p-0.5 text-yellow-100 transition hover:bg-yellow-900/60"
+              aria-label="Dismiss updater banner"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
         <div>{debugInfo}</div>
         {checking && <div className="mt-1 animate-pulse">⏳ Checking...</div>}

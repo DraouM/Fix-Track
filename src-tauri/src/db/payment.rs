@@ -152,6 +152,33 @@ pub fn get_all_payments() -> Result<Vec<UnifiedPayment>, String> {
         }
     }
 
+    // 6. Money Transfers — surfaced as a neutral entry (not income, not expense)
+    let mut stmt = conn.prepare(
+        "SELECT id, id, 'Transfer', amount, date, COALESCE(method, 'Internal'), NULL, notes, from_account, to_account
+         FROM money_transfers"
+    ).map_err(|e| e.to_string())?;
+
+    let transfer_entries = stmt.query_map([], |row| {
+        Ok(UnifiedPayment {
+            id: row.get(0)?,
+            source_id: row.get(1)?,
+            source_type: row.get(2)?,
+            amount: row.get(3)?,
+            date: row.get(4)?,
+            method: row.get(5)?,
+            received_by: row.get(6).ok(),
+            notes: row.get(7).ok(),
+            source_number: row.get(8).ok(),  // from_account
+            party_name: row.get(9).ok(),      // to_account
+        })
+    }).map_err(|e| e.to_string())?;
+
+    for t in transfer_entries {
+        if let Ok(entry) = t {
+            payments.push(entry);
+        }
+    }
+
     // Sort by date descending
     payments.sort_by(|a, b| b.date.cmp(&a.date));
 

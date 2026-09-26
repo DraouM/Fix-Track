@@ -3,13 +3,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
-import { Wallet, Search, Filter, ArrowLeft, DollarSign, AlertCircle, Calendar as CalendarIcon, X, Plus, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { Wallet, Search, Filter, ArrowLeft, DollarSign, AlertCircle, Calendar as CalendarIcon, X, Plus, ArrowDownRight, ArrowUpRight, ArrowLeftRight, Landmark, Banknote, Smartphone, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { UnifiedPayment } from "@/types/payment";
 import { PaymentTable } from "@/components/payments/PaymentTable";
 import { ChargeFormDialog } from "@/components/payments/ChargeFormDialog";
+import { MoneyTransferDialog } from "@/components/payments/MoneyTransferDialog";
 import { Badge } from "@/components/ui/badge";
 import { useSettings } from "@/context/SettingsContext";
 import { formatNumber, getLocaleForIntl } from "@/lib/formatters";
@@ -17,14 +18,69 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { startOfDay, endOfDay, isWithinInterval, format } from "date-fns";
 
+const DEFAULT_ACCOUNTS = [
+  "Cash Register",
+  "Bank Account",
+  "Safe / Vault",
+  "Mobile Wallet",
+];
+
+function isPaymentInAccount(p: UnifiedPayment, accountName: string): boolean {
+  if (accountName === "all") return true;
+
+  if (p.source_type === "Transfer") {
+    return p.source_number === accountName || p.party_name === accountName;
+  }
+
+  const methodLower = (p.method || "").toLowerCase();
+  const accountLower = accountName.toLowerCase();
+
+  if (methodLower === accountLower) return true;
+
+  if (
+    accountLower === "cash register" ||
+    accountLower === "caisse" ||
+    accountLower === "الصندوق"
+  ) {
+    return (
+      methodLower === "cash" ||
+      methodLower === "espèces" ||
+      methodLower === "especes" ||
+      methodLower === "نقد"
+    );
+  }
+
+  if (
+    accountLower === "bank account" ||
+    accountLower === "compte bancaire" ||
+    accountLower === "الحساب البنكي"
+  ) {
+    return (
+      methodLower === "card" ||
+      methodLower === "carte" ||
+      methodLower === "transfer" ||
+      methodLower === "virement" ||
+      methodLower === "check" ||
+      methodLower === "chèque" ||
+      methodLower === "cheque" ||
+      methodLower === "bank" ||
+      methodLower === "banque"
+    );
+  }
+
+  return false;
+}
+
 export default function PaymentsPage() {
   const { t, i18n } = useTranslation();
   const { settings } = useSettings();
   const [payments, setPayments] = useState<UnifiedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | "payments" | "charges">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "payments" | "charges" | "transfers">("all");
+  const [selectedAccount, setSelectedAccount] = useState<string>("all");
   const [chargeOpen, setChargeOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   
   // Default toToday
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -50,14 +106,33 @@ export default function PaymentsPage() {
     fetchPayments();
   }, []);
 
+  // Dynamically extract all unique accounts across default list and logged transfers
+  const availableAccounts = useMemo(() => {
+    const set = new Set<string>(DEFAULT_ACCOUNTS);
+    for (const p of payments) {
+      if (p.source_type === "Transfer") {
+        if (p.source_number?.trim()) set.add(p.source_number.trim());
+        if (p.party_name?.trim()) set.add(p.party_name.trim());
+      }
+    }
+    return Array.from(set);
+  }, [payments]);
+
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
-      // 0. Type filter (charges are outbound expenses)
-      const isCharge = p.source_type === "Charge";
-      if (typeFilter === "payments" && isCharge) return false;
-      if (typeFilter === "charges" && !isCharge) return false;
+      // 0. Account filter
+      if (selectedAccount !== "all" && !isPaymentInAccount(p, selectedAccount)) {
+        return false;
+      }
 
-      // 1. Search filter
+      // 1. Type filter
+      const isCharge = p.source_type === "Charge";
+      const isTransfer = p.source_type === "Transfer";
+      if (typeFilter === "payments" && (isCharge || isTransfer)) return false;
+      if (typeFilter === "charges" && !isCharge) return false;
+      if (typeFilter === "transfers" && !isTransfer) return false;
+
+      // 2. Search filter
       const searchLower = search.toLowerCase();
       const matchesSearch = 
         p.source_number?.toLowerCase().includes(searchLower) ||
@@ -67,7 +142,7 @@ export default function PaymentsPage() {
 
       if (!matchesSearch) return false;
 
-      // 2. Date range filter
+      // 3. Date range filter
       if (dateRange?.from) {
         const paymentDate = new Date(p.date);
         const start = startOfDay(dateRange.from);
@@ -78,17 +153,62 @@ export default function PaymentsPage() {
 
       return true;
     });
-  }, [payments, search, dateRange, typeFilter]);
+  }, [payments, search, dateRange, typeFilter, selectedAccount]);
 
   const { moneyIn, chargesOut, net } = useMemo(() => {
     let income = 0;
     let charges = 0;
     for (const p of filteredPayments) {
-      if (p.source_type === "Charge") charges += p.amount;
-      else income += p.amount;
+      if (p.source_type === "Charge") {
+        charges += p.amount;
+      } else if (p.source_type === "Transfer") {
+        if (selectedAccount !== "all") {
+          if (p.source_number === selectedAccount) {
+            charges += p.amount; // transfer out from this account
+          } else if (p.party_name === selectedAccount) {
+            income += p.amount; // transfer in to this account
+          }
+        }
+      } else {
+        income += p.amount;
+      }
     }
     return { moneyIn: income, chargesOut: charges, net: income - charges };
-  }, [filteredPayments]);
+  }, [filteredPayments, selectedAccount]);
+
+  // Compute total of all previous logs prior to the selected date interval
+  const previousSubtotal = useMemo(() => {
+    if (!dateRange?.from) return 0;
+
+    const startDate = startOfDay(dateRange.from);
+    let total = 0;
+
+    for (const p of payments) {
+      const paymentDate = new Date(p.date);
+      // Strictly before the selected start date
+      if (paymentDate >= startDate) continue;
+
+      if (selectedAccount !== "all" && !isPaymentInAccount(p, selectedAccount)) {
+        continue;
+      }
+
+      if (p.source_type === "Charge") {
+        total -= p.amount;
+      } else if (p.source_type === "Transfer") {
+        if (selectedAccount !== "all") {
+          if (p.source_number === selectedAccount) {
+            total -= p.amount;
+          } else if (p.party_name === selectedAccount) {
+            total += p.amount;
+          }
+        }
+      } else {
+        total += p.amount;
+      }
+    }
+
+    return total;
+  }, [payments, dateRange, selectedAccount]);
 
   const StatCard = ({
     icon: Icon,
@@ -178,6 +298,11 @@ export default function PaymentsPage() {
               {t("payments.newCharge")}
             </Button>
 
+            <Button onClick={() => setTransferOpen(true)} className="h-11 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider shadow-sm">
+              <ArrowLeftRight className="h-4 w-4 mr-1.5" />
+              {t("payments.newTransfer", "New Transfer")}
+            </Button>
+
             <Button onClick={fetchPayments} variant="outline" className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800">
               <Filter className="h-4 w-4 mr-2" />
               {t("common.filter")}
@@ -199,11 +324,73 @@ export default function PaymentsPage() {
           </div>
         </div>
 
+        {/* Account Switcher Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2 rounded-2xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none">
+            <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground px-2 flex items-center gap-1.5 shrink-0">
+              <Landmark className="h-3.5 w-3.5 text-primary" />
+              {t("payments.account", "Account")}:
+            </span>
+
+            <button
+              onClick={() => setSelectedAccount("all")}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shrink-0 ${
+                selectedAccount === "all"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              <span>{t("payments.allAccounts", "All Accounts")}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+                selectedAccount === "all" ? "bg-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
+              }`}>
+                {payments.length}
+              </span>
+            </button>
+
+            {availableAccounts.map((acc) => {
+              const count = payments.filter((p) => isPaymentInAccount(p, acc)).length;
+              const isSelected = selectedAccount === acc;
+              return (
+                <button
+                  key={acc}
+                  onClick={() => setSelectedAccount(acc)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shrink-0 ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-gray-100 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <span>{acc}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+                    isSelected ? "bg-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedAccount !== "all" && (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold shrink-0 self-start sm:self-auto border border-blue-100 dark:border-blue-900/50">
+              <span>{selectedAccount}</span>
+              <button
+                onClick={() => setSelectedAccount("all")}
+                className="hover:bg-blue-200/50 dark:hover:bg-blue-900/50 rounded p-0.5 transition"
+                title={t("payments.allAccounts", "All Accounts")}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={ArrowUpRight}
-            title={t("payments.moneyIn")}
+            title={selectedAccount !== "all" ? `${t("payments.moneyIn")} (${selectedAccount})` : t("payments.moneyIn")}
             value={formatNumber(moneyIn, getLocaleForIntl(i18n.language))}
             suffix={settings.currency}
             subtitle={dateRange?.from ? `${format(dateRange.from, 'MMM dd')} - ${format(dateRange.to || dateRange.from, 'MMM dd')}` : t("payments.subtitle")}
@@ -211,25 +398,25 @@ export default function PaymentsPage() {
           />
           <StatCard
             icon={ArrowDownRight}
-            title={t("payments.chargesOut")}
+            title={selectedAccount !== "all" ? `${t("payments.chargesOut")} (${selectedAccount})` : t("payments.chargesOut")}
             value={formatNumber(chargesOut, getLocaleForIntl(i18n.language))}
             suffix={settings.currency}
-            subtitle={t("payments.chargesSubtitle")}
+            subtitle={selectedAccount !== "all" ? selectedAccount : t("payments.chargesSubtitle")}
             color="red"
           />
           <StatCard
             icon={DollarSign}
-            title={t("payments.netTotal")}
+            title={selectedAccount !== "all" ? t("payments.accountBalance", "Account Balance") : t("payments.netTotal")}
             value={formatNumber(net, getLocaleForIntl(i18n.language))}
             suffix={settings.currency}
-            subtitle={t("payments.netSubtitle")}
+            subtitle={selectedAccount !== "all" ? selectedAccount : t("payments.netSubtitle")}
             color="blue"
           />
           <StatCard
             icon={AlertCircle}
             title={t("common.count")}
             value={filteredPayments.length}
-            subtitle={t("common.items")}
+            subtitle={selectedAccount !== "all" ? selectedAccount : t("common.items")}
             color="purple"
           />
         </div>
@@ -244,7 +431,7 @@ export default function PaymentsPage() {
 
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-1">
-                {(["all", "payments", "charges"] as const).map((tf) => (
+                {(["all", "payments", "charges", "transfers"] as const).map((tf) => (
                   <button
                     key={tf}
                     onClick={() => setTypeFilter(tf)}
@@ -254,7 +441,13 @@ export default function PaymentsPage() {
                         : "text-muted-foreground hover:bg-gray-50 dark:hover:bg-slate-800"
                     }`}
                   >
-                    {tf === "all" ? t("payments.filterAll") : tf === "payments" ? t("payments.filterPayments") : t("payments.filterCharges")}
+                    {tf === "all"
+                      ? t("payments.filterAll")
+                      : tf === "payments"
+                      ? t("payments.filterPayments")
+                      : tf === "charges"
+                      ? t("payments.filterCharges")
+                      : t("payments.filterTransfers", "Transfers")}
                   </button>
                 ))}
               </div>
@@ -276,6 +469,8 @@ export default function PaymentsPage() {
               payments={filteredPayments} 
               loading={loading} 
               onUpdate={fetchPayments} 
+              selectedAccount={selectedAccount}
+              previousSubtotal={previousSubtotal}
             />
           </div>
         </div>
@@ -284,6 +479,12 @@ export default function PaymentsPage() {
       <ChargeFormDialog
         open={chargeOpen}
         onOpenChange={setChargeOpen}
+        onCreated={fetchPayments}
+      />
+
+      <MoneyTransferDialog
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
         onCreated={fetchPayments}
       />
     </div>

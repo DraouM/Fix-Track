@@ -9,4 +9,5 @@ export interface UnifiedPayment {
   notes?: string;
   source_number?: string;
   party_name?: string;
+  subtotal?: number;
 }

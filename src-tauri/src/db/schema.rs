@@ -549,6 +549,26 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     let _ = conn.execute("ALTER TABLE expenses ADD COLUMN method TEXT", []);
     let _ = conn.execute("ALTER TABLE expenses ADD COLUMN party_name TEXT", []);
 
+    // Money Transfers table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS money_transfers (
+            id TEXT PRIMARY KEY,
+            from_account TEXT NOT NULL,
+            to_account TEXT NOT NULL,
+            amount REAL NOT NULL,
+            date TEXT NOT NULL,
+            method TEXT,
+            notes TEXT,
+            created_by TEXT
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_money_transfers_date ON money_transfers(date)",
+        [],
+    )?;
+
     // Tasks & Reminders table
     conn.execute(
         "CREATE TABLE IF NOT EXISTS tasks (

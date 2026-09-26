@@ -235,6 +235,19 @@ pub struct Expense {
     pub party_name: Option<String>,
 }
 
+/// MONEY TRANSFERS
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MoneyTransfer {
+    pub id: String,
+    pub from_account: String,   // e.g. "Cash Register", "Bank", "Mobile Wallet"
+    pub to_account: String,
+    pub amount: f64,
+    pub date: String,
+    pub method: Option<String>, // e.g. "Bank Transfer", "Cash", "Mobile"
+    pub notes: Option<String>,
+    pub created_by: Option<String>,
+}
+
 /// DAILY SESSIONS
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DailySession {

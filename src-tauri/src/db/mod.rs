@@ -10,6 +10,7 @@ pub mod expense;
 pub mod session;
 pub mod transaction;
 pub mod payment;
+pub mod transfer;
 
 use rusqlite::{Connection, Result};
 use std::path::PathBuf;

@@ -52,6 +52,28 @@ export function PaymentEditDialog({
     else if (payment.source_type === "Client") command = "update_client_payment";
     else if (payment.source_type === "Supplier") command = "update_supplier_payment";
     else if (payment.source_type === "Charge") command = "update_expense";
+    else if (payment.source_type === "Transfer") {
+      setProcessing(true);
+      try {
+        await invoke("update_money_transfer", {
+          id: payment.id,
+          amount: parseFloat(amount),
+          fromAccount: payment.source_number || "",
+          toAccount: payment.party_name || "",
+          method,
+          notes: payment.notes,
+        });
+        toast.success(t("payments.transferUpdated", t("payments.updated")));
+        onUpdate();
+        onOpenChange(false);
+      } catch (error) {
+        console.error("Failed to update transfer:", error);
+        toast.error(t("common.error"));
+      } finally {
+        setProcessing(false);
+      }
+      return;
+    }
 
     if (!command) {
         toast.error("Editing for this payment type is not yet implemented.");
@@ -83,6 +105,7 @@ export function PaymentEditDialog({
     else if (payment.source_type === "Client") command = "delete_client_payment";
     else if (payment.source_type === "Supplier") command = "delete_supplier_payment";
     else if (payment.source_type === "Charge") command = "delete_expense";
+    else if (payment.source_type === "Transfer") command = "delete_money_transfer";
 
     if (!command) {
         toast.error("Deletion for this payment type is not yet implemented.");

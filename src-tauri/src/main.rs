@@ -25,6 +25,7 @@ use db::order::{
     update_order_item,
 };
 use db::payment::get_all_payments;
+use db::transfer::{add_money_transfer, get_all_transfers, update_money_transfer, delete_money_transfer};
 use db::repair::{
     add_payment, add_used_part, delete_repair, delete_repair_payment, delete_used_part,
     get_all_repair_payments, get_history_for_repair, get_payments_for_repair, get_repair_by_id,
@@ -98,6 +99,11 @@ fn main() {
             get_history_for_repair,
             // PAYMENT
             get_all_payments,
+            // MONEY TRANSFERS
+            add_money_transfer,
+            get_all_transfers,
+            update_money_transfer,
+            delete_money_transfer,
             // SUPPLIERS
             get_suppliers,
             get_supplier_by_id,

@@ -363,7 +363,14 @@
         "serviceIntake": "Admission du service",
         "customerAndDeviceDetails": "Dossiers client et appareil",
         "inventoryAllocation": "Composants et matériel",
-        "recentPayments": "Paiements récents"
+        "recentPayments": "Paiements récents",
+        "viewAllPayments": "Tout voir ({{count}})",
+        "hidePayments": "Réduire",
+        "noPaymentsYet": "Aucun paiement enregistré",
+        "collectionProgress": "Encaissé : {{percent}}%",
+        "previewReceipt": "Aperçu",
+        "printAll": "Tout imprimer (reçu + étiquette)",
+        "showMoreEvents": "+{{count}} événements supplémentaires"
     },
     "clients": {
         "title": "Clients",

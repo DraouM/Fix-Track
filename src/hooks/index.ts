@@ -7,3 +7,4 @@ export * from "./useRepairFilters";
 export * from "./useSupplierFilters";
 export * from "./useAsyncInitialize";
 export * from "./useContextInitializer";
+export * from "./useAddRepairShortcut";

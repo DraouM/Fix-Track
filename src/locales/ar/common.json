@@ -363,7 +363,14 @@
         "serviceIntake": "استلام الخدمة",
         "customerAndDeviceDetails": "سجلات العميل والجهاز",
         "inventoryAllocation": "المكونات والأجهزة",
-        "recentPayments": "المدفوعات الأخيرة"
+        "recentPayments": "المدفوعات الأخيرة",
+        "viewAllPayments": "عرض الكل ({{count}})",
+        "hidePayments": "عرض أقل",
+        "noPaymentsYet": "لا توجد دفعات مسجلة",
+        "collectionProgress": "المحصّل: {{percent}}%",
+        "previewReceipt": "معاينة",
+        "printAll": "طباعة الكل (وصل + ملصق)",
+        "showMoreEvents": "+{{count}} أحداث إضافية"
     },
     "clients": {
         "title": "العملاء",

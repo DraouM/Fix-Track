@@ -377,7 +377,14 @@
         "serviceIntake": "Service Intake",
         "customerAndDeviceDetails": "Customer & Device Records",
         "inventoryAllocation": "Components & Hardware",
-        "recentPayments": "Recent Payments"
+        "recentPayments": "Recent Payments",
+        "viewAllPayments": "View all ({{count}})",
+        "hidePayments": "Show less",
+        "noPaymentsYet": "No payments recorded",
+        "collectionProgress": "Collected: {{percent}}%",
+        "previewReceipt": "Preview",
+        "printAll": "Print all (receipt + sticker)",
+        "showMoreEvents": "+{{count}} more events"
     },
     "clients": {
         "title": "Clients",

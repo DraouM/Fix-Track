@@ -1,4 +1,4 @@
-import { Currency } from '@/types/settings';
+import { Currency, CURRENCY_SYMBOLS } from "@/types/settings";
 
 /**
  * Formats a currency amount based on the selected currency and locale
@@ -8,20 +8,44 @@ import { Currency } from '@/types/settings';
  * @returns Formatted currency string
  */
 export const formatCurrency = (
-    amount: number,
-    currency: Currency,
-    locale: string = 'en-US'
+  amount: number,
+  currency: Currency,
+  locale: string = "en-US",
 ): string => {
-    try {
-        return new Intl.NumberFormat(locale, {
-            style: 'currency',
-            currency: currency,
-        }).format(amount);
-    } catch (error) {
-        // Fallback if formatting fails
-        console.warn(`Formatting currency failed for ${currency} in ${locale}`, error);
-        return `${amount} ${currency}`;
-    }
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  } catch (error) {
+    // Fallback if formatting fails
+    console.warn(
+      `Formatting currency failed for ${currency} in ${locale}`,
+      error,
+    );
+    return `${amount} ${currency}`;
+  }
+};
+
+/**
+ * Currency format without a redundant symbol prefix: word-based symbols
+ * (DA, MAD, dinar...) are placed as a suffix ("1,200.00 DA"), while glyph
+ * currencies ($, €, ¥...) keep the standard intl prefix.
+ * @param amount - The numerical amount to format
+ * @param currency - The currency code (USD, EUR, MAD, etc.)
+ * @param locale - The locale string (en-US, fr-FR, ar-MA)
+ * @returns Formatted currency string
+ */
+export const formatCurrencySmart = (
+  amount: number,
+  currency: Currency | string,
+  locale: string = "en-US",
+): string => {
+  const symbol = (CURRENCY_SYMBOLS as Record<string, string>)[currency];
+  if (symbol && /^[A-Za-z]+$/.test(symbol)) {
+    return `${formatNumber(amount, locale)} ${symbol}`;
+  }
+  return formatCurrency(amount, currency as Currency, locale);
 };
 
 /**
@@ -32,19 +56,19 @@ export const formatCurrency = (
  * @returns Formatted number string
  */
 export const formatNumber = (
-    amount: number,
-    locale: string = 'en-US',
-    minimumFractionDigits: number = 2
+  amount: number,
+  locale: string = "en-US",
+  minimumFractionDigits: number = 2,
 ): string => {
-    try {
-        return new Intl.NumberFormat(locale, {
-            minimumFractionDigits,
-            maximumFractionDigits: minimumFractionDigits,
-        }).format(amount);
-    } catch (error) {
-        console.warn(`Formatting number failed for ${amount} in ${locale}`, error);
-        return String(amount);
-    }
+  try {
+    return new Intl.NumberFormat(locale, {
+      minimumFractionDigits,
+      maximumFractionDigits: minimumFractionDigits,
+    }).format(amount);
+  } catch (error) {
+    console.warn(`Formatting number failed for ${amount} in ${locale}`, error);
+    return String(amount);
+  }
 };
 
 /**
@@ -55,31 +79,31 @@ export const formatNumber = (
  * @returns Formatted date string
  */
 export const formatDate = (
-    date: Date | string | number,
-    locale: string = 'en-US',
-    options: Intl.DateTimeFormatOptions = {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    }
+  date: Date | string | number,
+  locale: string = "en-US",
+  options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  },
 ): string => {
-    try {
-        const dateObj = new Date(date);
-        return new Intl.DateTimeFormat(locale, options).format(dateObj);
-    } catch (error) {
-        console.warn(`Formatting date failed for ${date} in ${locale}`, error);
-        return String(date);
-    }
+  try {
+    const dateObj = new Date(date);
+    return new Intl.DateTimeFormat(locale, options).format(dateObj);
+  } catch (error) {
+    console.warn(`Formatting date failed for ${date} in ${locale}`, error);
+    return String(date);
+  }
 };
 
 /**
  * Maps app locale codes (en, fr, ar) to standard BCP 47 language tags
  */
 export const getLocaleForIntl = (appLocale: string): string => {
-    const map: Record<string, string> = {
-        en: 'en-US',
-        fr: 'fr-FR',
-        ar: 'ar-DZ',
-    };
-    return map[appLocale] || 'en-US';
+  const map: Record<string, string> = {
+    en: "en-US",
+    fr: "fr-FR",
+    ar: "ar-DZ",
+  };
+  return map[appLocale] || "en-US";
 };

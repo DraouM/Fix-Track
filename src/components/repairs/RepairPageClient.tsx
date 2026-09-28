@@ -1,7 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,10 @@ import { RepairDetail } from "@/components/repairs/RepairDetail";
 import { RepairFinancialDialog } from "@/components/repairs/RepairFinancialDialog";
 import type { Repair } from "@/types/repair";
 import { useRepairContext, RepairProvider } from "@/context/RepairContext";
+import {
+  OPEN_NEW_REPAIR_EVENT,
+  PENDING_NEW_REPAIR_KEY,
+} from "@/hooks/useAddRepairShortcut";
 
 export function RepairsPageInner() {
   const { t } = useTranslation();
@@ -58,6 +62,32 @@ export function RepairsPageInner() {
     setFormInstanceKey((prevKey) => prevKey + 1); // force remount for a clean form
     setIsFormOpen(true);
   }, []);
+
+  // Global Ctrl/Cmd+Shift+N shortcut: open the form when the event fires
+  // while this page is mounted, or consume the pending intent on mount
+  // (when the shortcut triggered a navigation from another page).
+  useEffect(() => {
+    const handleOpenNewRepair = () => {
+      try {
+        sessionStorage.removeItem(PENDING_NEW_REPAIR_KEY);
+      } catch {
+        // storage unavailable: the event alone is enough
+      }
+      openAddForm();
+    };
+
+    window.addEventListener(OPEN_NEW_REPAIR_EVENT, handleOpenNewRepair);
+    try {
+      if (sessionStorage.getItem(PENDING_NEW_REPAIR_KEY)) {
+        handleOpenNewRepair();
+      }
+    } catch {
+      // ignore
+    }
+
+    return () =>
+      window.removeEventListener(OPEN_NEW_REPAIR_EVENT, handleOpenNewRepair);
+  }, [openAddForm]);
 
   // ✅ Open Edit form
   const openEditForm = useCallback(async (repair: Repair) => {

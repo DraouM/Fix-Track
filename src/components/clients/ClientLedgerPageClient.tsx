@@ -157,53 +157,51 @@ export function ClientLedgerPageClient({
       </div>
 
       {/* Main Page Body */}
-      <div className="max-w-7xl mx-auto w-full px-8 py-8 space-y-8 flex-1">
+      <div className="max-w-7xl mx-auto w-full px-8 py-5 space-y-5 flex-1">
         {/* Quick Financial Overview Bar */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
-            <CardContent className="p-6">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 mb-2">
+        <Card className="rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+          <CardContent className="px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/50 dark:text-muted-foreground/40 mb-0.5">
                 Outstanding Aggregate
               </p>
-              <div className="flex items-baseline gap-2">
-                <h2
-                  className={cn(
-                    "text-3xl font-black tracking-tight",
-                    (client.outstandingBalance || 0) > 0
-                      ? "text-red-500 dark:text-red-400"
-                      : "text-emerald-600 dark:text-emerald-400",
-                  )}
-                >
-                  {formatCurrency(client.outstandingBalance || 0)}
-                </h2>
-              </div>
-            </CardContent>
-          </Card>
+              <span
+                className={cn(
+                  "text-lg font-black tracking-tight",
+                  (client.outstandingBalance || 0) > 0
+                    ? "text-red-500 dark:text-red-400"
+                    : "text-emerald-600 dark:text-emerald-400",
+                )}
+              >
+                {formatCurrency(client.outstandingBalance || 0)}
+              </span>
+            </div>
 
-          <Card className="rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
-            <CardContent className="p-6">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 mb-2">
+            <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 hidden md:block" />
+
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/50 dark:text-muted-foreground/40 mb-0.5">
                 Standing Rating
               </p>
-              <div className="flex items-center gap-2 text-foreground font-black text-xl">
-                <ShieldCheck className="w-5 h-5 text-blue-500" />
+              <div className="flex items-center gap-1.5 text-foreground font-black text-sm">
+                <ShieldCheck className="w-4 h-4 text-blue-500" />
                 <span>Verified Account</span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-sm bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
-            <CardContent className="p-6">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 mb-2">
+            <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 hidden md:block" />
+
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/50 dark:text-muted-foreground/40 mb-0.5">
                 Live Audit Mode
               </p>
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-black text-xl">
-                <TrendingUp className="w-5 h-5" />
+              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-black text-sm">
+                <TrendingUp className="w-4 h-4" />
                 <span>Real-Time Sync</span>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Ledger Table Section */}
         <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-xl shadow-gray-200/50 dark:shadow-none p-6 md:p-8">

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   InventoryProvider,
@@ -9,7 +10,8 @@ import {
 import { VirtualizedTable } from "./VirtualizedTable";
 import { InventoryForm } from "./InventoryForm";
 import { InventoryHistoryDialog } from "./InventoryHistoryDialog";
-import type { InventoryHistoryEvent, InventoryItem } from "@/types/inventory";
+import type { StockMovement, InventoryItem } from "@/types/inventory";
+import { mapMovementFromDB, type StockMovementDB } from "@/lib/stockMovement";
 import { PhoneBrand, ItemType } from "@/types/inventory";
 import { useTranslation } from "react-i18next";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
@@ -37,6 +39,7 @@ import {
   RotateCcw,
   Loader2,
   ArrowRight,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib";
 import { useSettings } from "@/context/SettingsContext";
@@ -69,14 +72,13 @@ export function InventoryPageInner() {
   const [historyItem, setHistoryItem] = useState<InventoryItem | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const [historyEvents, setHistoryEvents] = useState<InventoryHistoryEvent[]>(
-    [],
-  );
+  const [historyEvents, setHistoryEvents] = useState<StockMovement[]>([]);
   const [isExporting, setIsExporting] = useState(false);
 
   const { settings } = useSettings();
   const { t, i18n } = useTranslation();
   const { printBarcodeDirect } = usePrintUtils();
+  const router = useRouter();
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -117,22 +119,12 @@ export function InventoryPageInner() {
   const handleViewHistory = async (item: InventoryItem) => {
     setHistoryItem(item);
     try {
-      const events = await invoke<any[]>("get_history_for_item", {
-        itemId: item.id,
-      });
-
-      // map snake_case → camelCase
-      const mapped: InventoryHistoryEvent[] = events.map((e) => ({
-        id: e.id,
-        itemId: item.id, // ✅ add the itemId from the current item
-        date: e.date,
-        type: e.event_type as InventoryHistoryEvent["type"], // ✅ map event_type → type
-        quantityChange: e.quantity_change, // ✅ map quantity_change → quantityChange
-        notes: e.notes,
-        relatedId: e.related_id,
-      }));
-
-      setHistoryEvents(mapped);
+      // Use the global ledger so the dialog can show the price, the
+      // counterparty and the source document of each movement
+      const rows = await invoke<StockMovementDB[]>("get_all_stock_movements");
+      setHistoryEvents(
+        rows.map(mapMovementFromDB).filter((m) => m.itemId === item.id),
+      );
     } catch (err) {
       toast.error("Failed to load history: " + err);
       setHistoryEvents([]);
@@ -246,6 +238,14 @@ export function InventoryPageInner() {
             </div>
           </div>
           <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/inventory/stock-movement")}
+              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
+            >
+              <ArrowLeftRight className="w-4 h-4 mr-2" />
+              {t("inventory.stockMovement.title")}
+            </Button>
             <Button
               variant="outline"
               disabled={isExporting}

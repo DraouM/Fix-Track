@@ -226,7 +226,61 @@
             "addDesc": "Enter the details for the new inventory item."
         },
         "printSticker": "Print Sticker",
-        "printStickers": "Print Stickers"
+        "printStickers": "Print Stickers",
+        "stockMovement": {
+            "title": "Stock Movement",
+            "subtitle": "Unified ledger of every inventory change",
+            "back": "Back to Inventory",
+            "loadError": "Failed to load stock movements",
+            "movements": "Movements",
+            "allTime": "All time recorded",
+            "inbound": "Inbound",
+            "outbound": "Outbound",
+            "inboundDesc": "Units added (purchases & returns)",
+            "outboundDesc": "Units removed (sales & repairs)",
+            "netValue": "Net Value",
+            "netChange": "{{count}} net units changed",
+            "ledgerTitle": "Global Movement Ledger",
+            "deletedItem": "Deleted item",
+            "table": {
+                "movement": "Movement",
+                "party": "Buyer / Seller",
+                "qty": "Qty",
+                "qtyLeft": "Qty Left",
+                "unit": "Unit",
+                "current": "current",
+                "value": "Value",
+                "empty": "No stock movements found",
+                "emptyDesc": "Movements appear here when items are purchased, sold, used in repairs, returned or corrected.",
+                "footer": "Showing {{count}} of {{total}} Movements",
+                "itemHistory": "Item History"
+            },
+            "filters": {
+                "searchItem": "Search by item name...",
+                "allTypes": "All Movements",
+                "pickDates": "Date range",
+                "priceRange": "Price / Cost Range",
+                "min": "Min",
+                "max": "Max",
+                "equalHint": "Min = Max for an exact match"
+            },
+            "movementTypes": {
+                "Purchased": "Purchased",
+                "Sold": "Sold",
+                "Used in Repair": "Used in Repair",
+                "Returned": "Returned",
+                "Manual Correction": "Manual Correction",
+                "Adjustment": "Adjustment"
+            },
+            "party": {
+                "buyer": "buyer",
+                "supplier": "supplier"
+            },
+            "details": {
+                "from": "from",
+                "to": "to"
+            }
+        }
     },
     "repairs": {
         "title": "Repairs",

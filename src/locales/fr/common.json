@@ -212,7 +212,61 @@
             "addDesc": "Saisissez les détails du nouvel article de l'inventaire."
         },
         "printSticker": "Imprimer l'étiquette",
-        "printStickers": "Imprimer les étiquettes"
+        "printStickers": "Imprimer les étiquettes",
+        "stockMovement": {
+            "title": "Mouvements de Stock",
+            "subtitle": "Registre unifié de chaque changement d'inventaire",
+            "back": "Retour à l'Inventaire",
+            "loadError": "Échec du chargement des mouvements de stock",
+            "movements": "Mouvements",
+            "allTime": "Enregistrés depuis l'origine",
+            "inbound": "Entrées",
+            "outbound": "Sorties",
+            "inboundDesc": "Unités ajoutées (achats & retours)",
+            "outboundDesc": "Unités retirées (ventes & réparations)",
+            "netValue": "Valeur Nette",
+            "netChange": "{{count}} unités nettes changées",
+            "ledgerTitle": "Registre Global des Mouvements",
+            "deletedItem": "Article supprimé",
+            "table": {
+                "movement": "Mouvement",
+                "party": "Acheteur / Vendeur",
+                "qty": "Qté",
+                "qtyLeft": "Qté restante",
+                "unit": "Unitaire",
+                "current": "actuel",
+                "value": "Valeur",
+                "empty": "Aucun mouvement de stock trouvé",
+                "emptyDesc": "Les mouvements apparaissent ici quand des articles sont achetés, vendus, utilisés en réparation, retournés ou corrigés.",
+                "footer": "Affichage de {{count}} sur {{total}} Mouvements",
+                "itemHistory": "Historique de l'article"
+            },
+            "filters": {
+                "searchItem": "Rechercher par nom d'article...",
+                "allTypes": "Tous les Mouvements",
+                "pickDates": "Période",
+                "priceRange": "Plage de Prix / Coût",
+                "min": "Min",
+                "max": "Max",
+                "equalHint": "Min = Max pour une correspondance exacte"
+            },
+            "movementTypes": {
+                "Purchased": "Acheté",
+                "Sold": "Vendu",
+                "Used in Repair": "Utilisé en Réparation",
+                "Returned": "Retourné",
+                "Manual Correction": "Correction Manuelle",
+                "Adjustment": "Ajustement"
+            },
+            "party": {
+                "buyer": "acheteur",
+                "supplier": "fournisseur"
+            },
+            "details": {
+                "from": "chez",
+                "to": "pour"
+            }
+        }
     },
     "repairs": {
         "title": "Réparations",

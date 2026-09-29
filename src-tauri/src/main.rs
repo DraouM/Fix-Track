@@ -16,8 +16,9 @@ use db::expense::{
     update_expense,
 };
 use db::inventory::{
-    delete_item, get_history_for_item, get_item_by_id, get_items, get_low_stock_items,
-    insert_history_event, insert_item, search_items, update_item, update_item_quantity,
+    delete_item, get_all_stock_movements, get_history_for_item, get_item_by_id, get_items,
+    get_low_stock_items, insert_history_event, insert_item, search_items, update_item,
+    update_item_quantity,
 };
 use db::order::{
     add_order_item, add_order_payment, complete_order, create_order, get_order_by_id,
@@ -25,7 +26,6 @@ use db::order::{
     update_order_item,
 };
 use db::payment::get_all_payments;
-use db::transfer::{add_money_transfer, get_all_transfers, update_money_transfer, delete_money_transfer};
 use db::repair::{
     add_payment, add_used_part, delete_repair, delete_repair_payment, delete_used_part,
     get_all_repair_payments, get_history_for_repair, get_payments_for_repair, get_repair_by_id,
@@ -50,6 +50,9 @@ use db::transaction::{
     add_transaction_item, add_transaction_payment, complete_transaction, create_transaction,
     delete_transaction_payment, get_transaction_by_id, get_transactions, remove_transaction_item,
     submit_transaction, update_transaction, update_transaction_payment,
+};
+use db::transfer::{
+    add_money_transfer, delete_money_transfer, get_all_transfers, update_money_transfer,
 };
 use std::panic;
 
@@ -79,6 +82,7 @@ fn main() {
             search_items,
             insert_history_event,
             get_history_for_item,
+            get_all_stock_movements,
             // REPAIRS
             insert_repair,
             get_repairs,

@@ -212,7 +212,61 @@
             "addDesc": "أدخل تفاصيل صنف المخزون الجديد."
         },
         "printSticker": "طباعة ملصق",
-        "printStickers": "طباعة الملصقات"
+        "printStickers": "طباعة الملصقات",
+        "stockMovement": {
+            "title": "حركة المخزون",
+            "subtitle": "سجل موحد لكل تغييرات المخزون",
+            "back": "العودة إلى المخزون",
+            "loadError": "فشل في تحميل حركة المخزون",
+            "movements": "الحركات",
+            "allTime": "المسجلة منذ البداية",
+            "inbound": "وارد",
+            "outbound": "صادر",
+            "inboundDesc": "الوحدات المضافة (المشتريات والمرتجعات)",
+            "outboundDesc": "الوحدات المطروحة (المبيعات والإصلاحات)",
+            "netValue": "صافي القيمة",
+            "netChange": "تغيرت {{count}} وحدة صافية",
+            "ledgerTitle": "سجل الحركات العام",
+            "deletedItem": "صنف محذوف",
+            "table": {
+                "movement": "الحركة",
+                "party": "المشتري / البائع",
+                "qty": "الكمية",
+                "qtyLeft": "المتبقي",
+                "unit": "الوحدة",
+                "current": "حالي",
+                "value": "القيمة",
+                "empty": "لا توجد حركات مخزون",
+                "emptyDesc": "تظهر الحركات هنا عند شراء أو بيع أو استخدام أو إرجاع أو تصحيح الأصناف.",
+                "footer": "عرض {{count}} من {{total}} حركة",
+                "itemHistory": "سجل الصنف"
+            },
+            "filters": {
+                "searchItem": "ابحث باسم الصنف...",
+                "allTypes": "كل الحركات",
+                "pickDates": "الفترة الزمنية",
+                "priceRange": "نطاق السعر / التكلفة",
+                "min": "الأدنى",
+                "max": "الأقصى",
+                "equalHint": "الأدنى = الأقصى للمطابقة التامة"
+            },
+            "movementTypes": {
+                "Purchased": "مُشترى",
+                "Sold": "مُباع",
+                "Used in Repair": "مُستخدم في الإصلاح",
+                "Returned": "مُرتجع",
+                "Manual Correction": "تصحيح يدوي",
+                "Adjustment": "تسوية"
+            },
+            "party": {
+                "buyer": "مشتري",
+                "supplier": "مورد"
+            },
+            "details": {
+                "from": "من",
+                "to": "إلى"
+            }
+        }
     },
     "repairs": {
         "title": "الإصلاحات",

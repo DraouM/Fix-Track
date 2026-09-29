@@ -1,4 +1,3 @@
-
 export interface InventoryItem {
   id: string;
   itemName: string;
@@ -57,7 +56,17 @@ export type HistoryEventType =
   | "Used in Repair"
   | "Sold"
   | "Manual Correction"
-  | "Returned";
+  | "Returned"
+  | "Adjustment";
+
+export const HISTORY_EVENT_TYPES: HistoryEventType[] = [
+  "Purchased",
+  "Sold",
+  "Used in Repair",
+  "Returned",
+  "Manual Correction",
+  "Adjustment",
+];
 
 export interface InventoryHistoryEvent {
   id: string;
@@ -67,6 +76,28 @@ export interface InventoryHistoryEvent {
   quantityChange: number; // e.g., +10 for purchase, -1 for sale
   notes?: string; // e.g., "Repair ID: 3" or "Sale ID: sale_123"
   relatedId?: string; // repair ID, sale ID, etc.
+}
+
+// Global stock movement ledger row (history event + joined item info)
+export interface StockMovement {
+  id: string;
+  itemId: string;
+  itemName?: string; // undefined if the item was deleted
+  phoneBrand?: string;
+  itemType?: string;
+  buyingPrice?: number;
+  sellingPrice?: number;
+  date: string; // ISO string
+  type: HistoryEventType;
+  quantityChange: number;
+  notes?: string;
+  relatedId?: string;
+  // Price charged/paid at the time of the movement (falls back to item defaults)
+  movementPrice?: number;
+  // Counterparty name: supplier for purchases, client for sales/repairs
+  movementParty?: string;
+  // Source document reference (TX / sale / order number or repair code)
+  movementReference?: string;
 }
 
 // Schema for form validation, can be placed here or in the form component
@@ -80,14 +111,14 @@ export const inventoryItemSchema = z.object({
   phoneBrand: z.enum(
     PHONE_BRANDS.filter((brand) => brand !== "All") as [
       PhoneBrand,
-      ...PhoneBrand[]
+      ...PhoneBrand[],
     ],
-    { message: "Please select a valid phone brand." }
+    { message: "Please select a valid phone brand." },
   ),
 
   itemType: z.enum(
     ITEM_TYPES.filter((type) => type !== "All") as [ItemType, ...ItemType[]],
-    { message: "Please select a valid item type." }
+    { message: "Please select a valid item type." },
   ),
 
   buyingPrice: z.coerce

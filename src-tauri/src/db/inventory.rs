@@ -272,6 +272,86 @@ pub fn insert_history_event(event: InventoryHistoryEvent) -> Result<(), String> 
     Ok(())
 }
 
+// Global stock movement ledger row: history event joined with its item info
+#[derive(Serialize, Deserialize)]
+pub struct StockMovement {
+    pub id: String,
+    pub item_id: String,
+    pub item_name: Option<String>,
+    pub phone_brand: Option<String>,
+    pub item_type: Option<String>,
+    pub buying_price: Option<f64>,
+    pub selling_price: Option<f64>,
+    pub date: String,       // ISO string
+    pub event_type: String, // e.g., Purchased, Sold, Used in Repair, Returned, Manual Correction
+    pub quantity_change: i64,
+    pub notes: Option<String>,
+    pub related_id: Option<String>,
+    // Price actually charged/paid at the time of the movement (from the source document)
+    pub movement_price: Option<f64>,
+    // Counterparty: supplier for purchases, client for sales/repairs
+    pub movement_party: Option<String>,
+    // Source document reference (TX / sale / order number or repair code)
+    pub movement_reference: Option<String>,
+}
+
+#[tauri::command]
+pub fn get_all_stock_movements() -> Result<Vec<StockMovement>, String> {
+    let conn = db::get_connection().map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare(
+        "SELECT h.id, h.item_id, i.item_name, i.phone_brand, i.item_type, i.buying_price, i.selling_price,
+                h.date, h.event_type, h.quantity_change, h.notes, h.related_id,
+                COALESCE(
+                    (SELECT ti.unit_price FROM transaction_items ti WHERE ti.transaction_id = h.related_id AND ti.item_id = h.item_id LIMIT 1),
+                    (SELECT si.unit_price FROM sale_items si WHERE si.sale_id = h.related_id AND si.item_id = h.item_id LIMIT 1),
+                    (SELECT oi.unit_price FROM order_items oi WHERE oi.order_id = h.related_id AND oi.item_id = h.item_id LIMIT 1),
+                    (SELECT ru.unit_price FROM repair_used_parts ru WHERE ru.repair_id = h.related_id AND ru.part_id = h.item_id LIMIT 1)
+                ) AS movement_price,
+                COALESCE(
+                    (SELECT CASE t.party_type
+                        WHEN 'Client' THEN (SELECT c.name FROM clients c WHERE c.id = t.party_id)
+                        ELSE (SELECT s.name FROM suppliers s WHERE s.id = t.party_id) END
+                     FROM transactions t WHERE t.id = h.related_id),
+                    (SELECT cl.name FROM customer_sales cs JOIN clients cl ON cl.id = cs.client_id WHERE cs.id = h.related_id),
+                    (SELECT s.name FROM orders o JOIN suppliers s ON s.id = o.supplier_id WHERE o.id = h.related_id),
+                    (SELECT r.customer_name FROM repairs r WHERE r.id = h.related_id)
+                ) AS movement_party,
+                COALESCE(
+                    (SELECT t.transaction_number FROM transactions t WHERE t.id = h.related_id),
+                    (SELECT cs.sale_number FROM customer_sales cs WHERE cs.id = h.related_id),
+                    (SELECT o.order_number FROM orders o WHERE o.id = h.related_id),
+                    (SELECT COALESCE(r.code, r.id) FROM repairs r WHERE r.id = h.related_id)
+                ) AS movement_reference
+         FROM inventory_history h
+         LEFT JOIN inventory_items i ON i.id = h.item_id
+         ORDER BY h.date DESC"
+    ).map_err(|e| e.to_string())?;
+    let movements = stmt
+        .query_map([], |row| {
+            Ok(StockMovement {
+                id: row.get(0)?,
+                item_id: row.get(1)?,
+                item_name: row.get(2).ok(),
+                phone_brand: row.get(3).ok(),
+                item_type: row.get(4).ok(),
+                buying_price: row.get(5).ok(),
+                selling_price: row.get(6).ok(),
+                date: row.get(7)?,
+                event_type: row.get(8)?,
+                quantity_change: row.get(9)?,
+                notes: row.get(10).ok(),
+                related_id: row.get(11).ok(),
+                movement_price: row.get(12).ok(),
+                movement_party: row.get(13).ok(),
+                movement_reference: row.get(14).ok(),
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(|res| res.ok())
+        .collect();
+    Ok(movements)
+}
+
 #[tauri::command]
 pub fn get_history_for_item(item_id: String) -> Result<Vec<InventoryHistoryEvent>, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;

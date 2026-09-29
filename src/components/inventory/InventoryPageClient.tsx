@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,10 @@ import { mapMovementFromDB, type StockMovementDB } from "@/lib/stockMovement";
 import { PhoneBrand, ItemType } from "@/types/inventory";
 import { useTranslation } from "react-i18next";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
+import {
+  OPEN_NEW_ITEM_EVENT,
+  PENDING_NEW_ITEM_KEY,
+} from "@/hooks/useAddItemShortcut";
 import { exportInventoryToCSV } from "@/lib/exportUtils";
 
 import {
@@ -79,6 +83,33 @@ export function InventoryPageInner() {
   const { t, i18n } = useTranslation();
   const { printBarcodeDirect } = usePrintUtils();
   const router = useRouter();
+
+  // Global Ctrl/Cmd+Shift+A shortcut: open the Add Item form when the event
+  // fires while this page is mounted, or consume the pending intent on mount
+  // (when the shortcut triggered a navigation from another page).
+  useEffect(() => {
+    const handleOpenNewItem = () => {
+      try {
+        sessionStorage.removeItem(PENDING_NEW_ITEM_KEY);
+      } catch {
+        // storage unavailable: the event alone is enough
+      }
+      setEditItem(null);
+      setShowForm(true);
+    };
+
+    window.addEventListener(OPEN_NEW_ITEM_EVENT, handleOpenNewItem);
+    try {
+      if (sessionStorage.getItem(PENDING_NEW_ITEM_KEY)) {
+        handleOpenNewItem();
+      }
+    } catch {
+      // ignore
+    }
+
+    return () =>
+      window.removeEventListener(OPEN_NEW_ITEM_EVENT, handleOpenNewItem);
+  }, []);
 
   // Calculate statistics
   const statistics = useMemo(() => {
@@ -384,9 +415,9 @@ export function InventoryPageInner() {
               if (!o) setEditItem(null);
             }}
           >
-            <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
-              <DialogHeader className="pb-4 border-b dark:border-slate-800">
-                <DialogTitle className="text-2xl font-black">
+            <DialogContent className="sm:max-w-[680px] max-h-[90vh] overflow-y-auto rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
+              <DialogHeader className="pb-2 mb-1 border-b dark:border-slate-800">
+                <DialogTitle className="text-xl font-black">
                   {editItem ? t("inventory.editItem") : t("inventory.newItem")}
                 </DialogTitle>
                 <DialogDescription className="font-medium text-muted-foreground">
@@ -397,7 +428,7 @@ export function InventoryPageInner() {
                       "Enter the details for the new inventory item."}
                 </DialogDescription>
               </DialogHeader>
-              <div className="pt-4">
+              <div>
                 <InventoryForm
                   key={editItem ? `edit-${editItem.id}` : "new-inventory-item"}
                   itemToEdit={editItem}

@@ -8,3 +8,4 @@ export * from "./useSupplierFilters";
 export * from "./useAsyncInitialize";
 export * from "./useContextInitializer";
 export * from "./useAddRepairShortcut";
+export * from "./useAddItemShortcut";

@@ -17,6 +17,7 @@ import { ActivationScreen } from "@/components/license/ActivationScreen";
 import { SplashScreen } from "@/components/layout/SplashScreen";
 import { usePathname } from "next/navigation";
 import { useAddRepairShortcut } from "@/hooks/useAddRepairShortcut";
+import { useAddItemShortcut } from "@/hooks/useAddItemShortcut";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -50,6 +51,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   // App-wide shortcut: Ctrl/Cmd+Shift+N opens the Add New Repair dialog
   useAddRepairShortcut();
+  // App-wide shortcut: Ctrl/Cmd+Shift+A opens the Add Item dialog
+  useAddItemShortcut();
   // Routes that open in their own dedicated desktop window should render
   // without the app chrome (sidebar etc.).
   const isStandalone = !!pathname && pathname.startsWith("/clients/ledger");

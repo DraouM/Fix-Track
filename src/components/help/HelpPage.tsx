@@ -20,6 +20,7 @@ import {
   Info,
   ExternalLink,
   LifeBuoy,
+  Keyboard,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -53,7 +54,9 @@ export function HelpPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-black tracking-tight">{t("help.title")}</h1>
+        <h1 className="text-3xl font-black tracking-tight">
+          {t("help.title")}
+        </h1>
         <p className="text-muted-foreground mt-1">{t("help.subtitle")}</p>
       </div>
 
@@ -118,7 +121,9 @@ export function HelpPage() {
                 <p className="text-sm font-medium leading-none">
                   {t("help.contact.phone")}
                 </p>
-                <p className="text-sm text-muted-foreground">+1 (555) 000-0000</p>
+                <p className="text-sm text-muted-foreground">
+                  +1 (555) 000-0000
+                </p>
               </div>
             </div>
             <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
@@ -148,8 +153,12 @@ export function HelpPage() {
                 <Book className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="flex flex-col items-start">
-                <span className="font-medium">{t("help.resources.videoTutorials")}</span>
-                <span className="text-xs text-muted-foreground">Step-by-step documentation & guides</span>
+                <span className="font-medium">
+                  {t("help.resources.videoTutorials")}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Step-by-step documentation & guides
+                </span>
               </div>
             </Button>
             <Button
@@ -161,15 +170,61 @@ export function HelpPage() {
                 <MessageCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               </div>
               <div className="flex flex-col items-start">
-                <span className="font-medium">{t("help.resources.community")}</span>
-                <span className="text-xs text-muted-foreground">View system architecture & guides</span>
+                <span className="font-medium">
+                  {t("help.resources.community")}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  View system architecture & guides
+                </span>
               </div>
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Keyboard Shortcuts */}
+        <Card className="md:col-span-1 border-slate-200 dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Keyboard className="h-5 w-5 text-primary" />
+              {t("help.shortcuts.title")}
+            </CardTitle>
+            <CardDescription>{t("help.shortcuts.description")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[
+              { label: t("help.shortcuts.addRepair"), key: "N" },
+              { label: t("help.shortcuts.addItem"), key: "A" },
+            ].map((s) => (
+              <div
+                key={s.key}
+                className="flex items-center justify-between gap-2"
+              >
+                <span className="text-sm font-medium">{s.label}</span>
+                <div className="flex items-center gap-1" dir="ltr">
+                  {["Ctrl", "Shift", s.key].map((k, i) => (
+                    <React.Fragment key={k}>
+                      {i > 0 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          +
+                        </span>
+                      )}
+                      <kbd className="px-2 py-1 rounded-md bg-muted border border-slate-200 dark:border-slate-700 text-[10px] font-mono font-bold">
+                        {k}
+                      </kbd>
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <Separator className="my-2" />
+            <p className="text-xs text-muted-foreground">
+              {t("help.shortcuts.macHint")}
+            </p>
+          </CardContent>
+        </Card>
+
         {/* FAQ Section */}
         <Card className="md:col-span-1 border-slate-200 dark:border-slate-800">
           <CardHeader>
@@ -201,7 +256,9 @@ export function HelpPage() {
               <span className="text-sm text-muted-foreground">
                 {t("help.systemInfo.version")}
               </span>
-              <Badge variant="outline" className="font-mono">v1.0.0</Badge>
+              <Badge variant="outline" className="font-mono">
+                v1.0.0
+              </Badge>
             </div>
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-sm text-muted-foreground">
@@ -219,9 +276,7 @@ export function HelpPage() {
               <span className="text-sm font-medium">2026</span>
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-muted-foreground">
-                Client ID
-              </span>
+              <span className="text-sm text-muted-foreground">Client ID</span>
               <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
                 FIX-8829-XJ
               </code>

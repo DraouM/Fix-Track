@@ -199,7 +199,7 @@
             "printError": "Please select at least one item to print"
         },
         "form": {
-            "barcode": "Barcode (Scan or Generate)",
+            "barcode": "Barcode",
             "barcodePlaceholder": "Scan barcode or enter manually...",
             "generate": "Generate",
             "productName": "Product Name",
@@ -216,6 +216,7 @@
             "sellingPrice": "Selling Price ({{symbol}})",
             "quantity": "Quantity",
             "alertAt": "Alert At",
+            "margin": "Margin",
             "supplierNotes": "Supplier & Notes",
             "supplierPlaceholder": "e.g. Shenzhen Electronics",
             "create": "Create Item",
@@ -424,6 +425,10 @@
         "fullyPaidMsg": "Fully paid",
         "whatsappTemplate": "Hello {{name}}, your {{device}} repair is currently {{status}}. {{balance}}",
         "nameRequired": "Customer name is required",
+        "namePlaceholder": "Customer full name",
+        "phonePlaceholder": "e.g. +212 600-000000",
+        "adoptPartsTotal": "Adopt parts total:",
+        "paymentMethod": "Payment Method",
         "phoneRequired": "Phone number is required",
         "brandRequired": "Device brand is required",
         "modelRequired": "Device model is required",
@@ -705,6 +710,13 @@
             "version": "Version",
             "status": "System Status",
             "lastUpdated": "Last Updated"
+        },
+        "shortcuts": {
+            "title": "Keyboard Shortcuts",
+            "description": "Move faster without leaving the keyboard",
+            "addRepair": "Add new repair",
+            "addItem": "Add new inventory item",
+            "macHint": "On macOS, use Cmd instead of Ctrl"
         },
         "resources": {
             "title": "Resources",

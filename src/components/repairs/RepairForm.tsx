@@ -22,6 +22,7 @@ import {
   ArrowRightLeft,
   Check,
   Tag,
+  Loader2,
 } from "lucide-react";
 import {
   Repair,
@@ -193,6 +194,7 @@ export default function RepairForm({
   });
 
   const watchedParts = form.watch("usedParts") || [];
+  const watchedEstimated = form.watch("estimatedCost") || 0;
 
   const partsTotal = useMemo(() => {
     return watchedParts.reduce(
@@ -200,6 +202,8 @@ export default function RepairForm({
       0,
     );
   }, [watchedParts]);
+
+  const laborCost = watchedEstimated - partsTotal;
 
   // Sync form when repairToEdit changes (highly important for modals)
   useEffect(() => {
@@ -351,7 +355,7 @@ export default function RepairForm({
       >
         {/* Unified "Service Intake" Header */}
         <div className="lg:col-span-12">
-          <div className="bg-white dark:bg-slate-950 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none overflow-hidden transition-all hover:border-primary/20">
+          <div className="bg-white dark:bg-slate-950 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none overflow-hidden transition-all hover:border-primary/20 animate-in fade-in slide-in-from-bottom-2 fill-mode-backwards duration-500">
             <div className="px-5 py-3.5 border-b border-gray-50 dark:border-slate-800/60 bg-muted/5 dark:bg-slate-900/40 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-primary/10 text-primary">
@@ -433,12 +437,15 @@ export default function RepairForm({
                       <User className="h-3 w-3 text-primary/60" />
                       <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
                         {t("repairs.customerName")}
+                        <span className="text-red-500/80 ms-1">*</span>
                       </FormLabel>
                     </div>
                     <FormControl>
                       <Input
-                        placeholder={t("common.searchPlaceholder")}
+                        placeholder={t("repairs.namePlaceholder")}
                         {...field}
+                        autoFocus={!repairToEdit}
+                        aria-required="true"
                         className="h-10 rounded-2xl bg-gray-50/50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 font-bold focus:ring-primary/20 transition-all text-sm px-3"
                       />
                     </FormControl>
@@ -457,12 +464,16 @@ export default function RepairForm({
                       <Phone className="h-3 w-3 text-primary/60" />
                       <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
                         {t("repairs.customerPhone")}
+                        <span className="text-red-500/80 ms-1">*</span>
                       </FormLabel>
                     </div>
                     <FormControl>
                       <Input
-                        placeholder="+..."
+                        type="tel"
+                        inputMode="tel"
+                        placeholder={t("repairs.phonePlaceholder")}
                         {...field}
+                        aria-required="true"
                         className="h-10 rounded-2xl bg-gray-50/50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 font-bold focus:ring-primary/20 transition-all text-sm px-3"
                       />
                     </FormControl>
@@ -481,11 +492,15 @@ export default function RepairForm({
                       <Smartphone className="h-3 w-3 text-primary/60" />
                       <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
                         {t("inventory.form.brand")}
+                        <span className="text-red-500/80 ms-1">*</span>
                       </FormLabel>
                     </div>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="h-10 rounded-2xl bg-gray-50/50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 font-bold focus:ring-primary/20 transition-all text-sm px-3">
+                        <SelectTrigger
+                          className="h-10 rounded-2xl bg-gray-50/50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 font-bold focus:ring-primary/20 transition-all text-sm px-3"
+                          aria-required="true"
+                        >
                           <SelectValue
                             placeholder={t("inventory.form.brand")}
                           />
@@ -518,12 +533,14 @@ export default function RepairForm({
                       <Tag className="h-3 w-3 text-primary/60" />
                       <FormLabel className="text-[9px] font-black uppercase tracking-widest opacity-60">
                         {t("repairs.model")}
+                        <span className="text-red-500/80 ms-1">*</span>
                       </FormLabel>
                     </div>
                     <FormControl>
                       <Input
                         placeholder={t("repairs.modelPlaceholder")}
                         {...field}
+                        aria-required="true"
                         className="h-10 rounded-2xl bg-gray-50/50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 font-bold focus:ring-primary/20 transition-all text-sm px-3"
                       />
                     </FormControl>
@@ -538,7 +555,10 @@ export default function RepairForm({
         {/* Left Column - Diagnostic & Parts */}
         <div className="lg:col-span-8 space-y-4">
           {/* Diagnosis Section */}
-          <div className="bg-white dark:bg-slate-950 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none overflow-hidden transition-all hover:border-primary/20">
+          <div
+            className="bg-white dark:bg-slate-950 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none overflow-hidden transition-all hover:border-primary/20 animate-in fade-in slide-in-from-bottom-2 fill-mode-backwards duration-500"
+            style={{ animationDelay: "80ms" }}
+          >
             <div className="px-5 py-3.5 border-b border-gray-50 dark:border-slate-800/60 bg-muted/5 dark:bg-slate-900/40 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-orange-500/10 text-orange-500">
@@ -577,25 +597,33 @@ export default function RepairForm({
 
                   return (
                     <FormItem className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
+                      <div
+                        className="flex flex-wrap gap-2"
+                        role="group"
+                        aria-label={t("repairs.diagnosis")}
+                      >
                         {COMMON_ISSUE_KEYS.map((key) => {
                           const translatedIssue = t(`repairs.issues.${key}`);
                           const isSelected =
                             selectedIssues.includes(translatedIssue);
                           return (
-                            <Badge
+                            <button
                               key={key}
-                              variant={isSelected ? "default" : "outline"}
+                              type="button"
+                              aria-pressed={isSelected}
+                              onClick={() => toggleIssue(translatedIssue)}
                               className={cn(
-                                "cursor-pointer transition-all hover:scale-105 active:scale-95 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest select-none",
+                                "cursor-pointer transition-all hover:scale-105 active:scale-95 motion-reduce:transform-none px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest select-none border",
                                 isSelected
-                                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600"
+                                  ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/20 hover:bg-orange-600"
                                   : "bg-gray-50 dark:bg-slate-900 text-slate-500 border-gray-200 dark:border-slate-800 hover:border-orange-500/50 hover:text-orange-500",
                               )}
-                              onClick={() => toggleIssue(translatedIssue)}
                             >
+                              {isSelected && (
+                                <Check className="inline h-2.5 w-2.5 me-1 -mt-0.5" />
+                              )}
                               {translatedIssue}
-                            </Badge>
+                            </button>
                           );
                         })}
                       </div>
@@ -620,7 +648,10 @@ export default function RepairForm({
           </div>
 
           {/* Used Parts Section */}
-          <div className="bg-white dark:bg-slate-950 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none overflow-hidden transition-all hover:border-primary/20">
+          <div
+            className="bg-white dark:bg-slate-950 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none overflow-hidden transition-all hover:border-primary/20 animate-in fade-in slide-in-from-bottom-2 fill-mode-backwards duration-500"
+            style={{ animationDelay: "160ms" }}
+          >
             <div className="px-5 py-3.5 border-b border-gray-50 dark:border-slate-800/60 bg-muted/5 dark:bg-slate-900/40 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
@@ -636,16 +667,16 @@ export default function RepairForm({
                 </div>
               </div>
               <div className="flex items-center gap-2 bg-blue-500/5 px-3 py-1 rounded-full border border-blue-500/10">
+                {fields.length > 0 && (
+                  <span className="text-[8px] font-black uppercase tracking-widest text-blue-500 opacity-60">
+                    {fields.length} {t("repairs.parts")}
+                  </span>
+                )}
                 <span className="text-[8px] font-black uppercase tracking-widest text-blue-500 opacity-60">
                   {t("repairs.subtotal") || "Subtotal"}:
                 </span>
-                <span className="text-sm font-black text-blue-600 dark:text-blue-400">
-                  {t("repairs.price", {
-                    symbol: t("settings.languageCurrency.samplePrice").charAt(
-                      0,
-                    ),
-                    amount: partsTotal.toFixed(2),
-                  }).replace(/[^\d.]/g, "")}
+                <span className="text-sm font-black text-blue-600 dark:text-blue-400 tabular-nums">
+                  {partsTotal.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -656,7 +687,7 @@ export default function RepairForm({
                   {fields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="group relative flex items-center gap-3 p-3 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 transition-all hover:bg-white dark:hover:bg-slate-900 hover:shadow-xl hover:shadow-slate-200/30 dark:hover:shadow-none hover:-translate-y-0.5"
+                      className="group relative flex items-center gap-3 p-3 rounded-2xl bg-gray-50/50 dark:bg-slate-900/50 border border-gray-100 dark:border-slate-800 transition-all hover:bg-white dark:hover:bg-slate-900 hover:shadow-xl hover:shadow-slate-200/30 dark:hover:shadow-none hover:-translate-y-0.5 motion-reduce:transform-none animate-in fade-in slide-in-from-bottom-1 duration-300"
                     >
                       <div className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-sm">
                         <Smartphone className="h-4 w-4 text-primary/40 group-hover:text-primary transition-colors" />
@@ -672,7 +703,7 @@ export default function RepairForm({
                             variant="outline"
                             className="h-4 px-1.5 rounded text-[7px] font-bold uppercase tracking-widest border-primary/20 text-primary bg-primary/5"
                           >
-                            {field.quantity}x
+                            {watchedParts[index]?.quantity ?? 1}x
                           </Badge>
                           <div className="flex items-center gap-1">
                             <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
@@ -691,22 +722,20 @@ export default function RepairForm({
                         </div>
                       </div>
                       <div className="text-right mr-2">
-                        <p className="text-xs font-black text-foreground">
-                          {t("repairs.price", {
-                            symbol: "",
-                            amount: (
-                              form.watch(`usedParts.${index}.quantity`) *
-                              (form.watch(`usedParts.${index}.unitCost`) || 0)
-                            ).toFixed(2),
-                          }).trim()}
+                        <p className="text-xs font-black text-foreground tabular-nums">
+                          {(
+                            (watchedParts[index]?.quantity ?? 0) *
+                            (watchedParts[index]?.unitCost ?? 0)
+                          ).toFixed(2)}
                         </p>
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
+                        aria-label={t("common.delete")}
                         onClick={() => remove(index)}
-                        className="h-8 w-8 rounded-xl text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                        className="h-8 w-8 rounded-xl text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-all"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -758,7 +787,10 @@ export default function RepairForm({
         {/* Right Column - Financials & Status */}
         <div className="lg:col-span-4 space-y-4">
           {/* Costs & Estimated Section */}
-          <div className="bg-white dark:bg-slate-950 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none overflow-hidden transition-all hover:border-primary/20">
+          <div
+            className="bg-white dark:bg-slate-950 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none overflow-hidden transition-all hover:border-primary/20 animate-in fade-in slide-in-from-bottom-2 fill-mode-backwards duration-500"
+            style={{ animationDelay: "240ms" }}
+          >
             <div className="p-5 space-y-4">
               <FormField
                 control={form.control}
@@ -778,6 +810,8 @@ export default function RepairForm({
                         </div>
                         <Input
                           type="number"
+                          step="0.01"
+                          inputMode="decimal"
                           {...field}
                           value={field.value ?? ""}
                           placeholder="0.00"
@@ -788,10 +822,27 @@ export default function RepairForm({
                                 : parseFloat(e.target.value),
                             )
                           }
-                          className="h-12 pl-12 rounded-[1.25rem] bg-gray-50/50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 font-black text-xl focus:ring-primary/20 transition-all shadow-inner"
+                          className="h-12 pl-12 rounded-[1.25rem] bg-gray-50/50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 font-black text-xl focus:ring-primary/20 transition-all shadow-inner tabular-nums"
                         />
                       </div>
                     </FormControl>
+                    {/* Quick action: adopt the parts total as the estimate */}
+                    {partsTotal > 0 && watchedEstimated <= 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          form.setValue("estimatedCost", partsTotal, {
+                            shouldDirty: true,
+                          })
+                        }
+                        className="h-7 px-3 rounded-xl border border-dashed border-primary/20 text-[8px] font-black uppercase tracking-widest text-primary/70 hover:text-primary hover:border-primary/50 transition-all"
+                      >
+                        <Plus className="h-3 w-3 me-1" />
+                        {t("repairs.adoptPartsTotal")} {partsTotal.toFixed(2)}
+                      </Button>
+                    )}
                   </FormItem>
                 )}
               />
@@ -800,11 +851,8 @@ export default function RepairForm({
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">
                     {t("repairs.parts")}
                   </span>
-                  <span className="text-sm font-black text-foreground tracking-tight">
-                    {t("repairs.price", {
-                      symbol: "",
-                      amount: partsTotal.toFixed(2),
-                    }).trim()}
+                  <span className="text-sm font-black text-foreground tracking-tight tabular-nums">
+                    {partsTotal.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center px-1">
@@ -818,20 +866,18 @@ export default function RepairForm({
                     >
                       {Math.max(
                         0,
-                        (((form.watch("estimatedCost") || 0) - partsTotal) /
-                          (form.watch("estimatedCost") || 1)) *
-                          100,
+                        (laborCost / (watchedEstimated || 1)) * 100,
                       ).toFixed(0)}
                       %
                     </Badge>
                   </div>
-                  <span className="text-sm font-black text-primary tracking-tight">
-                    {t("repairs.price", {
-                      symbol: "",
-                      amount: (
-                        (form.watch("estimatedCost") || 0) - partsTotal
-                      ).toFixed(2),
-                    }).trim()}
+                  <span
+                    className={cn(
+                      "text-sm font-black tracking-tight tabular-nums",
+                      laborCost < 0 ? "text-red-500" : "text-primary",
+                    )}
+                  >
+                    {laborCost.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -839,21 +885,21 @@ export default function RepairForm({
           </div>
 
           {/* Payments Sidebar integration */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 fill-mode-backwards duration-500"
+            style={{ animationDelay: "320ms" }}
+          >
             <div className="p-4 space-y-3">
               <div className="p-3 rounded-xl bg-green-50/50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50">
                 <div className="flex justify-between items-baseline">
                   <span className="text-[9px] font-black uppercase tracking-widest text-green-600 dark:text-green-400">
                     {t("repairs.paid")}
                   </span>
-                  <span className="text-lg font-black text-green-700 dark:text-green-300">
-                    {t("repairs.price", {
-                      symbol: "",
-                      amount: (
-                        (currentRepair?.totalPaid || 0) +
-                        (parseFloat(paymentAmount) || 0)
-                      ).toFixed(2),
-                    }).trim()}
+                  <span className="text-lg font-black text-green-700 dark:text-green-300 tabular-nums">
+                    {(
+                      (currentRepair?.totalPaid || 0) +
+                      (parseFloat(paymentAmount) || 0)
+                    ).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -869,17 +915,14 @@ export default function RepairForm({
                         ? t("repairs.balance")
                         : t("repairs.remaining")}
                     </span>
-                    <span className="text-lg font-black text-red-700 dark:text-red-300">
-                      {t("repairs.price", {
-                        symbol: "",
-                        amount: Math.max(
-                          0,
-                          (currentRepair
-                            ? currentRepair.remainingBalance || 0
-                            : form.watch("estimatedCost") || 0) -
-                            (parseFloat(paymentAmount) || 0),
-                        ).toFixed(2),
-                      }).trim()}
+                    <span className="text-lg font-black text-red-700 dark:text-red-300 tabular-nums">
+                      {Math.max(
+                        0,
+                        (currentRepair
+                          ? currentRepair.remainingBalance || 0
+                          : watchedEstimated) -
+                          (parseFloat(paymentAmount) || 0),
+                      ).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -902,14 +945,19 @@ export default function RepairForm({
                     className="h-10 pl-10 rounded-2xl bg-gray-50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 font-bold text-sm focus:ring-primary/20 transition-all shadow-inner"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div
+                  className="grid grid-cols-3 gap-2"
+                  role="group"
+                  aria-label={t("repairs.paymentMethod")}
+                >
                   {paymentMethods.map((m) => (
                     <button
                       key={m.id}
                       type="button"
+                      aria-pressed={paymentMethod === m.id}
                       onClick={() => setPaymentMethod(m.id)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all gap-1 active:scale-95",
+                        "flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all gap-1 active:scale-95 motion-reduce:transform-none",
                         paymentMethod === m.id
                           ? "border-primary bg-primary/10 text-primary shadow-lg shadow-primary/5"
                           : "border-transparent bg-gray-50 dark:bg-slate-900 text-muted-foreground opacity-60 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-slate-800",
@@ -958,11 +1006,8 @@ export default function RepairForm({
                           {new Date(p.date).toLocaleDateString()}
                         </span>
                       </div>
-                      <span className="text-emerald-600 font-black">
-                        {t("repairs.price", {
-                          symbol: "",
-                          amount: p.amount.toFixed(2),
-                        }).trim()}
+                      <span className="text-emerald-600 font-black tabular-nums">
+                        {p.amount.toFixed(2)}
                       </span>
                     </div>
                   ))}
@@ -977,6 +1022,7 @@ export default function RepairForm({
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
                 {t("repairs.processing")}
               </span>
             ) : (

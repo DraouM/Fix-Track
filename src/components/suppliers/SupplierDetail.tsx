@@ -65,6 +65,7 @@ import type { Order as DBOrder } from "@/types/order";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { openEntityWindow } from "@/lib/openWindow";
 
 interface SupplierDetailProps {
   supplierId: string;
@@ -104,7 +105,11 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
   };
 
   const handleBack = () => {
-    router.push("/suppliers");
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/suppliers");
+    }
   };
 
   if (!supplier) {
@@ -216,39 +221,12 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
               </div>
             </div>
           </div>
-
-          {/* Activity & History Tabs Skeleton */}
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div className="px-8 pt-6 border-b border-gray-50 dark:border-slate-800">
-              <div className="flex gap-8">
-                <div className="h-10 w-32 bg-gray-200/30 dark:bg-slate-800/30 rounded animate-pulse" />
-                <div className="h-10 w-36 bg-gray-200/30 dark:bg-slate-800/30 rounded animate-pulse" />
-                <div className="h-10 w-40 bg-gray-200/30 dark:bg-slate-800/30 rounded animate-pulse" />
-              </div>
-            </div>
-            <div className="p-8">
-              <div className="h-96 w-full bg-gray-200/20 dark:bg-slate-800/20 rounded-2xl animate-pulse" />
-            </div>
-          </div>
         </div>
       </div>
     );
   }
 
   const history = supplier.history || [];
-
-  const getHistoryEventBadgeVariant = (type: string) => {
-    switch (type) {
-      case "Payment Made":
-        return "bg-green-50 text-green-600 border-green-100";
-      case "Purchase Order Created":
-        return "bg-blue-50 text-blue-600 border-blue-100";
-      case "Credit Balance Adjusted":
-        return "bg-orange-50 text-orange-600 border-orange-100";
-      default:
-        return "bg-gray-50 text-gray-500 border-gray-100";
-    }
-  };
 
   return (
     <div className="flex flex-col h-full bg-[#fbfcfd] dark:bg-[#0f172a]">
@@ -302,6 +280,20 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Dedicated Financial Ledger Pop-out */}
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const opened = await openEntityWindow("supplier", supplier.id, "ledger");
+                if (!opened) {
+                  router.push(`/suppliers/ledger?id=${supplier.id}`);
+                }
+              }}
+              className="h-12 px-4 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 transition-all shadow-sm dark:border-slate-800 flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              Financial Ledger
+            </Button>
             <Button
               onClick={() => setShowPaymentModal(true)}
               className="h-12 px-3 rounded-2xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all font-black text-[10px] uppercase tracking-widest min-w-[40px]"
@@ -492,7 +484,7 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
             </div>
 
             <TabsContent value="history" className="p-8 mt-0 outline-none">
-              <SupplierHistoryList history={history} isLoading={loadingOrders} /> 
+              <SupplierHistoryList history={history} isLoading={loadingOrders} />
             </TabsContent>
 
             <TabsContent value="orders" className="p-8 mt-0 outline-none">

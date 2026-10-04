@@ -61,6 +61,9 @@ export function useSupplierFilters(suppliers: Supplier[]) {
           .includes(filters.searchTerm.toLowerCase()) ||
         supplier.email
           ?.toLowerCase()
+          .includes(filters.searchTerm.toLowerCase()) ||
+        supplier.phone
+          ?.toLowerCase()
           .includes(filters.searchTerm.toLowerCase());
 
       // Fix: Use status property instead of active

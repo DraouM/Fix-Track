@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   User,
   Mail,
@@ -17,17 +17,23 @@ import {
   XCircle,
   FileText,
   History,
+  Activity,
+  ShoppingCart,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useClientContext } from "@/context/ClientContext";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/clientUtils";
 import { ClientForm } from "./ClientForm";
 import { ClientPaymentModal } from "./ClientPaymentModal";
+import { ClientHistoryList } from "./ClientHistoryList";
+import { ClientTransactionList } from "./ClientTransactionList";
 import { cn } from "@/lib/utils";
-import { openLedgerWindow } from "@/lib/openWindow";
+import { openEntityWindow } from "@/lib/openWindow";
 
 interface ClientDetailProps {
   clientId: string;
@@ -35,11 +41,31 @@ interface ClientDetailProps {
 
 export function ClientDetail({ clientId }: ClientDetailProps) {
   const router = useRouter();
-  const { clients } = useClientContext();
+  const { clients, getClientHistory } = useClientContext();
   const client = clients.find((c) => c.id === clientId);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    if (clientId) {
+      setLoadingHistory(true);
+      getClientHistory(clientId)
+        .catch((err) => console.error("Failed to load client history:", err))
+        .finally(() => setLoadingHistory(false));
+    }
+  }, [clientId, getClientHistory]);
+
+  const history = client?.history || [];
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/clients");
+    }
+  };
 
   if (!client) {
     return (
@@ -109,13 +135,13 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
             <div className="lg:col-span-2 rounded-[2rem] border-none shadow-xl shadow-gray-200/50 overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md dark:border dark:border-slate-800">
               <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100/50 dark:border-emerald-900/20 py-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 px-6">
-                    <div className="p-2 rounded-xl bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-emerald-100/50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
                       <Wallet className="w-4 h-4" />
                     </div>
                     <div className="h-4 w-40 bg-gray-200/30 rounded animate-pulse" />
                   </div>
-                  <div className="h-4 w-28 bg-gray-200/30 rounded animate-pulse px-6" />
+                  <div className="h-4 w-28 bg-gray-200/30 rounded animate-pulse" />
                 </div>
               </div>
               <div className="p-8">
@@ -166,7 +192,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-6 min-w-0 flex-1">
             <Button
-              onClick={() => router.back()}
+              onClick={handleBack}
               variant="outline"
               size="icon"
               className="h-12 w-12 rounded-2xl border-2 font-black bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 transition-all shadow-sm dark:border-slate-800"
@@ -178,7 +204,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
             </div>
             <div className="space-y-2 min-w-0 flex-1">
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-3xl font-black tracking-tight text-foreground truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px] lg:max-w-[300px]">
+                <h1 className="text-3xl font-black tracking-tight text-foreground dark:text-slate-100 truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px] lg:max-w-[300px]">
                   {client.name}
                 </h1>
                 <Badge
@@ -186,7 +212,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
                   className={cn(
                     "rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-widest border shadow-none",
                     client.status === "active"
-                      ? "bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40"
+                      ? "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40"
                       : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700",
                   )}
                 >
@@ -210,7 +236,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
             <Button
               variant="outline"
               onClick={async () => {
-                const opened = await openLedgerWindow(client.id);
+                const opened = await openEntityWindow("client", client.id, "ledger");
                 if (!opened) {
                   router.push(`/clients/ledger?id=${client.id}`);
                 }
@@ -230,7 +256,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
             <Button
               variant="outline"
               onClick={() => setIsEditModalOpen(true)}
-              className="h-12 px-3 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-white dark:hover:bg-slate-900 transition-all shadow-sm min-w-[40px] dark:border-slate-800"
+              className="h-12 px-3 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest hover:bg-white dark:hover:bg-slate-800 transition-all shadow-sm min-w-[40px] dark:border-slate-800"
             >
               <Pencil className="w-4 h-4 mr-2 opacity-40" />
               Edit Credentials
@@ -244,39 +270,39 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
         {/* Info Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Identity Card */}
-          <Card className="lg:col-span-1 rounded-[2rem] border-none dark:border dark:border-slate-800 shadow-xl shadow-gray-200/50 dark:shadow-none overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+          <Card className="lg:col-span-1 rounded-[2rem] border-none shadow-xl shadow-gray-200/50 dark:shadow-none overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md dark:border dark:border-slate-800">
             <CardHeader className="bg-gray-50/50 dark:bg-slate-950/50 border-b border-gray-100 dark:border-slate-800 py-5">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
                   <User className="w-4 h-4" />
                 </div>
                 <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 dark:text-muted-foreground/40">
-                  Profile Identity
+                  Primary Identity
                 </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="pt-8 space-y-6">
               <div className="space-y-1">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/30 ml-1">
-                  Liaison Name
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/40 ml-1">
+                  Full Legal Name
                 </p>
-                <div className="h-12 w-full px-4 rounded-xl bg-gray-50 dark:bg-slate-950/50 border border-gray-100 dark:border-slate-800 flex items-center font-bold text-sm text-foreground">
-                  {client.contactName || "Unspecified"}
+                <div className="h-12 w-full px-4 rounded-xl bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-800 flex items-center font-bold text-sm text-foreground dark:text-slate-200">
+                  {client.name}
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/30 ml-1">
-                  Communication Channels
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/40 ml-1">
+                  Direct Comms
                 </p>
                 <div className="space-y-3">
-                  <div className="h-12 w-full px-4 rounded-xl bg-gray-50 dark:bg-slate-950/50 border border-gray-100 dark:border-slate-800 flex items-center gap-3">
-                    <Mail className="w-4 h-4 opacity-30 dark:opacity-50 text-primary" />
+                  <div className="h-12 w-full px-4 rounded-xl bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-800 flex items-center gap-3">
+                    <Mail className="w-4 h-4 opacity-30 text-primary" />
                     <span className="font-bold text-sm text-foreground/80 dark:text-slate-300 truncate">
                       {client.email || "No email documented"}
                     </span>
                   </div>
-                  <div className="h-12 w-full px-4 rounded-xl bg-gray-50 dark:bg-slate-950/50 border border-gray-100 dark:border-slate-800 flex items-center gap-3">
-                    <Phone className="w-4 h-4 opacity-30 dark:opacity-50 text-primary" />
+                  <div className="h-12 w-full px-4 rounded-xl bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-800 flex items-center gap-3">
+                    <Phone className="w-4 h-4 opacity-30 text-primary" />
                     <span className="font-bold text-sm text-foreground/80 dark:text-slate-300">
                       {client.phone || "No phone documented"}
                     </span>
@@ -284,13 +310,13 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/30 ml-1">
-                  Operational Base
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 dark:text-muted-foreground/40 ml-1">
+                  Billing Location
                 </p>
-                <div className="p-4 rounded-xl bg-gray-50 dark:bg-slate-950/50 border border-gray-100 dark:border-slate-800 min-h-[80px] flex items-start gap-3">
-                  <MapPin className="w-4 h-4 opacity-30 dark:opacity-50 text-primary mt-0.5" />
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-800 min-h-[80px] flex items-start gap-3">
+                  <MapPin className="w-4 h-4 opacity-30 text-primary mt-0.5" />
                   <span className="font-bold text-sm text-foreground/80 dark:text-slate-300 leading-relaxed italic">
-                    {client.address || "Address not specified"}
+                    {client.address || "Billing destination unconfigured"}
                   </span>
                 </div>
               </div>
@@ -298,21 +324,21 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
           </Card>
 
           {/* Financial Dashboard Card */}
-          <Card className="lg:col-span-2 rounded-[2rem] border-none dark:border dark:border-slate-800 shadow-xl shadow-gray-200/50 dark:shadow-none overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
-            <CardHeader className="bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100/50 dark:border-emerald-900/30 py-5">
+          <Card className="lg:col-span-2 rounded-[2rem] border-none shadow-xl shadow-gray-200/50 dark:shadow-none overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md dark:border dark:border-slate-800">
+            <CardHeader className="bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100/50 dark:border-emerald-900/20 py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                  <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
                     <Wallet className="w-4 h-4" />
                   </div>
-                  <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-800/60 dark:text-emerald-400">
-                    Account Standing
+                  <CardTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-800/60 dark:text-emerald-400/60">
+                    Financial Standing
                   </CardTitle>
                 </div>
                 <div className="flex items-center gap-1">
                   <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
-                    Real-time audit
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                    Real-time ledger
                   </span>
                 </div>
               </div>
@@ -329,14 +355,14 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
                         className={cn(
                           "text-5xl font-black tracking-tighter",
                           (client.outstandingBalance || 0) > 0
-                            ? "text-red-500 dark:text-red-400"
+                            ? "text-rose-600 dark:text-rose-400"
                             : "text-emerald-600 dark:text-emerald-400",
                         )}
                       >
                         {formatCurrency(client.outstandingBalance || 0)}
                       </h2>
                     </div>
-                    <p className="text-[10px] font-bold text-muted-foreground dark:text-muted-foreground/40 mt-4 uppercase tracking-widest">
+                    <p className="text-[10px] font-bold text-muted-foreground mt-4 uppercase tracking-widest">
                       Currently pending settlements
                     </p>
                   </div>
@@ -376,6 +402,68 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Activity & History Tabs */}
+        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+          <Tabs defaultValue="history" className="w-full">
+            <div className="px-8 pt-6 border-b border-gray-50 dark:border-slate-800">
+              <TabsList className="bg-transparent gap-8 h-14 p-0">
+                <TabsTrigger
+                  value="history"
+                  className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
+                >
+                  <Activity className="w-3.5 h-3.5 mr-2" />
+                  Activity Timeline
+                </TabsTrigger>
+                <TabsTrigger
+                  value="sales"
+                  className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
+                >
+                  <ShoppingCart className="w-3.5 h-3.5 mr-2" />
+                  Sales History
+                </TabsTrigger>
+                <TabsTrigger
+                  value="analytics"
+                  className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-0 font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 data-[state=active]:text-primary transition-all"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5 mr-2" />
+                  Client Insights
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="history" className="p-8 mt-0 outline-none">
+              <ClientHistoryList history={history} isLoading={loadingHistory} />
+            </TabsContent>
+
+            <TabsContent value="sales" className="p-8 mt-0 outline-none">
+              <ClientTransactionList clientId={clientId} />
+            </TabsContent>
+
+            <TabsContent value="analytics" className="p-8 mt-0 outline-none">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="p-10 border-2 border-dashed border-gray-100 dark:border-slate-800 rounded-[2rem] flex flex-col items-center justify-center text-center">
+                  <TrendingUp className="w-12 h-12 text-primary opacity-10 mb-6" />
+                  <h3 className="text-lg font-black tracking-tight text-foreground/30 dark:text-slate-700 mb-2">
+                    Behavioral Trends
+                  </h3>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest max-w-[200px] mx-auto">
+                    Purchasing frequency and average ticket analytics.
+                  </p>
+                </div>
+                <div className="p-10 border-2 border-dashed border-gray-100 dark:border-slate-800 rounded-[2rem] flex flex-col items-center justify-center text-center">
+                  <LayoutDashboard className="w-12 h-12 text-primary opacity-10 mb-6" />
+                  <h3 className="text-lg font-black tracking-tight text-foreground/30 dark:text-slate-700 mb-2">
+                    Credit Utilization
+                  </h3>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest max-w-[200px] mx-auto">
+                    Repayment consistency and settlement speed analysis.
+                  </p>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
@@ -420,3 +508,5 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
     </div>
   );
 }
+
+export default ClientDetail;

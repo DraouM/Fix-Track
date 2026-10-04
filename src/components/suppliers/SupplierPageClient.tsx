@@ -1,31 +1,27 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import React, { useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Search,
-  Download,
-  Upload,
   Building2,
-  Package,
   DollarSign,
-  TrendingUp,
   User,
   Mail,
   Phone,
-  MapPin,
   Pencil,
   Trash,
   MoreHorizontal,
   CheckCircle2,
   XCircle,
-  AlertCircle,
-  Clock,
   RotateCcw,
   ArrowUpRight,
   RefreshCcw,
   CreditCard,
+  ExternalLink,
+  Eye,
+  FileText,
 } from "lucide-react";
 import type { Supplier } from "@/types/supplier";
 import { formatCurrency, formatDate } from "@/lib/supplierUtils";
@@ -33,9 +29,12 @@ import {
   useSupplierState,
   useSupplierActions,
 } from "@/context/SupplierContext";
+import { useSupplierFilters } from "@/hooks/useSupplierFilters";
 import { useTranslation } from "react-i18next";
 import { SupplierForm } from "./SupplierForm";
 import { SupplierPaymentModal } from "./SupplierPaymentModal";
+import { SupplierPeekDrawer } from "./SupplierPeekDrawer";
+import { openEntityWindow } from "@/lib/openWindow";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,13 +45,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -65,167 +64,137 @@ import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/SettingsContext";
 import { CURRENCY_SYMBOLS } from "@/types/settings";
 
-const StatCard = ({
+/* ── Compact overview stat block (Clients Ledger overview-bar style) ── */
+const OverviewStat = ({
   icon: Icon,
-  title,
+  label,
   value,
-  subtitle,
-  color = "blue",
+  valueClass,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  title: string;
+  label: string;
   value: string | number;
-  subtitle?: string;
-  color?: "blue" | "green" | "orange" | "red" | "purple";
-}) => {
-  const colorClasses = {
-    blue: "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
-    green: "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400",
-    orange: "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400",
-    red: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
-    purple: "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400",
-  };
-
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2.5">
-          <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
-            <Icon className="w-4 h-4" />
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-            {title}
-          </span>
-        </div>
-      </div>
-      <div className="flex items-baseline justify-between">
-        <div className="text-2xl font-black text-foreground dark:text-slate-200">{value}</div>
-        {subtitle && (
-          <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
-            <div
-              className={`h-1 w-1 rounded-full ${colorClasses[color].replace(
-                "text-",
-                "bg-"
-              )}`}
-            ></div>
-            {subtitle}
-          </div>
-        )}
-      </div>
+  valueClass?: string;
+}) => (
+  <div>
+    <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/50 dark:text-muted-foreground/40 mb-0.5">
+      {label}
+    </p>
+    <div className="flex items-center gap-1.5">
+      <Icon className="w-4 h-4 opacity-50" />
+      <span className={cn("text-lg font-black tracking-tight", valueClass)}>
+        {value}
+      </span>
     </div>
-  );
-};
+  </div>
+);
+
+const OverviewDivider = () => (
+  <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 hidden md:block" />
+);
 
 const SupplierPageClient = () => {
   const router = useRouter();
   const { suppliers, loading, error } = useSupplierState();
-  const { deleteSupplier, initialize } = useSupplierActions();
+  const { deleteSupplier, initialize, getSupplierHistory } =
+    useSupplierActions();
   const { settings } = useSettings();
   const { t } = useTranslation();
-  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || '$';
+  const currencySymbol = CURRENCY_SYMBOLS[settings.currency] || "$";
 
-  const [filters, setFilters] = useState({
-    searchTerm: "",
-    active: "All" as boolean | "All",
-  });
+  // ── Shared filtering/sorting hook (same pattern as the clients page) ──
+  const {
+    filteredAndSortedSuppliers,
+    filters,
+    sortConfig,
+    setSearchTerm,
+    setActiveFilter,
+    handleSort,
+    clearFilters,
+  } = useSupplierFilters(suppliers);
 
-  const [sortConfig, setSortConfig] = useState({
-    key: "name" as keyof Supplier | "outstandingBalance" | "status",
-    direction: "asc" as "asc" | "desc",
-  });
+  // ── Balance-range filter (layered on top of the hook results) ──
+  const [balanceFilter, setBalanceFilter] = useState<
+    "all" | "outstanding" | "settled"
+  >("all");
+
+  const displayedSuppliers = useMemo(() => {
+    if (balanceFilter === "all") return filteredAndSortedSuppliers;
+    return filteredAndSortedSuppliers.filter((s) =>
+      balanceFilter === "outstanding"
+        ? (s.outstandingBalance || 0) > 0
+        : (s.outstandingBalance || 0) <= 0,
+    );
+  }, [filteredAndSortedSuppliers, balanceFilter]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
-    null
+    null,
   );
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentSupplier, setPaymentSupplier] = useState<Supplier | null>(null);
 
-  const filteredAndSortedSuppliers = useMemo(() => {
-    let filtered = suppliers.filter((supplier) => {
-      const matchesSearch =
-        !filters.searchTerm ||
-        supplier.name
-          .toLowerCase()
-          .includes(filters.searchTerm.toLowerCase()) ||
-        supplier.contactName
-          ?.toLowerCase()
-          .includes(filters.searchTerm.toLowerCase()) ||
-        supplier.email
-          ?.toLowerCase()
-          .includes(filters.searchTerm.toLowerCase()) ||
-        supplier.phone
-          ?.toLowerCase()
-          .includes(filters.searchTerm.toLowerCase());
+  // ── Peek drawer (fast in-context glance without leaving the list) ──
+  const [peekSupplierId, setPeekSupplierId] = useState<string | null>(null);
+  const [peekLoading, setPeekLoading] = useState(false);
+  const peekSupplier = suppliers.find((s) => s.id === peekSupplierId) || null;
 
-      const matchesActive =
-        filters.active === "All" ||
-        (filters.active === true && supplier.status === "active") ||
-        (filters.active === false && supplier.status === "inactive");
-
-      return matchesSearch && matchesActive;
-    });
-
-    filtered.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      if (sortConfig.key === "outstandingBalance") {
-        aValue = a.outstandingBalance || 0;
-        bValue = b.outstandingBalance || 0;
-      } else if (sortConfig.key === "status") {
-        aValue = a.status;
-        bValue = b.status;
-      } else {
-        aValue = a[sortConfig.key as keyof Supplier];
-        bValue = b[sortConfig.key as keyof Supplier];
+  const loadPeek = useCallback(
+    async (supplierId: string) => {
+      setPeekLoading(true);
+      try {
+        await getSupplierHistory(supplierId);
+      } catch (err) {
+        console.error("Failed to load supplier peek data:", err);
+      } finally {
+        setPeekLoading(false);
       }
+    },
+    [getSupplierHistory],
+  );
 
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortConfig.direction === "asc"
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
+  const openPeek = (id: string) => {
+    setPeekSupplierId(id);
+    loadPeek(id);
+  };
 
-      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
-    });
+  const closePeek = () => setPeekSupplierId(null);
 
-    return filtered;
-  }, [suppliers, filters, sortConfig]);
-
+  // ── Global registry metrics for the overview bar ──
   const metrics = useMemo(() => {
-    const activeCount = filteredAndSortedSuppliers.filter(
-      (s) => s.status === "active"
-    ).length;
-    const totalBalance = filteredAndSortedSuppliers.reduce(
+    const activeCount = suppliers.filter((s) => s.status === "active").length;
+    const totalBalance = suppliers.reduce(
       (sum, s) => sum + (s.outstandingBalance || 0),
-      0
+      0,
     );
-    const suppliersWithBalance = filteredAndSortedSuppliers.filter(
-      (s) => (s.outstandingBalance || 0) > 0
-    ).length;
-
     return {
-      total: filteredAndSortedSuppliers.length,
+      total: suppliers.length,
       active: activeCount,
-      inactive: filteredAndSortedSuppliers.length - activeCount,
+      inactive: suppliers.length - activeCount,
       totalBalance,
-      suppliersWithBalance,
+      suppliersWithBalance: suppliers.filter(
+        (s) => (s.outstandingBalance || 0) > 0,
+      ).length,
     };
-  }, [filteredAndSortedSuppliers]);
+  }, [suppliers]);
 
-  const handleSort = (key: any) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
+  const hasActiveFilters =
+    filters.searchTerm !== "" ||
+    filters.active !== "All" ||
+    balanceFilter !== "all";
+
+  const resetFilters = () => {
+    clearFilters();
+    setBalanceFilter("all");
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to remove this supplier? If the supplier has existing orders or payments, they will be deactivated instead of deleted.")) {
+    if (
+      confirm(
+        "Are you sure you want to remove this supplier? If the supplier has existing orders or payments, they will be deactivated instead of deleted.",
+      )
+    ) {
       try {
         await deleteSupplier(id);
       } catch (error) {
@@ -249,13 +218,16 @@ const SupplierPageClient = () => {
     );
   }
 
+  const headerStyles =
+    "text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 h-16 py-0 border-none select-none";
+
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-5">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <div className="p-2 rounded-xl bg-primary/10 dark:bg-primary/20 text-primary">
               <Building2 className="h-6 w-6" />
             </div>
             <div className="flex items-baseline gap-3">
@@ -276,7 +248,7 @@ const SupplierPageClient = () => {
               <RefreshCcw className="w-4 h-4 mr-2" />
               Sync
             </Button>
-            <Button 
+            <Button
               onClick={() => setShowAddModal(true)}
               className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
             >
@@ -286,37 +258,46 @@ const SupplierPageClient = () => {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={Building2}
-            title="Registry Size"
-            value={metrics.total}
-            subtitle={`${metrics.active} active entities`}
-            color="blue"
-          />
-          <StatCard
-            icon={DollarSign}
-            title="Aggregate Credit"
-            value={formatCurrency(metrics.totalBalance, settings.currency)}
-            subtitle={`${metrics.suppliersWithBalance} outstanding accounts`}
-            color="orange"
-          />
-          <StatCard
-            icon={CheckCircle2}
-            title="Active Partnerships"
-            value={metrics.active}
-            subtitle="Engaged supply lines"
-            color="green"
-          />
-          <StatCard
-            icon={TrendingUp}
-            title="Inactive Accounts"
-            value={metrics.inactive}
-            subtitle="Archived relationships"
-            color="purple"
-          />
-        </div>
+        {/* Compact Overview Statistics Bar */}
+        <Card className="rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+          <CardContent className="px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <OverviewStat
+              icon={Building2}
+              label="Total Suppliers"
+              value={metrics.total}
+              valueClass="text-foreground dark:text-slate-200"
+            />
+            <OverviewDivider />
+            <OverviewStat
+              icon={DollarSign}
+              label="Outstanding Balance"
+              value={formatCurrency(metrics.totalBalance, settings.currency)}
+              valueClass={cn(
+                metrics.totalBalance > 0
+                  ? "text-orange-600 dark:text-orange-400"
+                  : "text-emerald-600 dark:text-emerald-400",
+              )}
+            />
+            <OverviewDivider />
+            <OverviewStat
+              icon={CheckCircle2}
+              label="Active Partnerships"
+              value={metrics.active}
+              valueClass="text-green-600 dark:text-green-400"
+            />
+            <OverviewDivider />
+            <OverviewStat
+              icon={XCircle}
+              label="Inactive"
+              value={metrics.inactive}
+              valueClass="text-muted-foreground/70 dark:text-slate-400"
+            />
+            <span className="ms-auto hidden lg:flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/40 dark:text-muted-foreground/30">
+              <CreditCard className="w-3.5 h-3.5" />
+              {metrics.suppliersWithBalance} accounts with balance
+            </span>
+          </CardContent>
+        </Card>
 
         {/* Filters and Search */}
         <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
@@ -324,7 +305,7 @@ const SupplierPageClient = () => {
             {/* Search */}
             <div className="flex-1 relative w-full">
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
-                Search Entity
+                Search Registry
               </span>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/40 w-4 h-4 pointer-events-none" />
@@ -332,12 +313,7 @@ const SupplierPageClient = () => {
                   type="text"
                   placeholder="Filter suppliers..."
                   value={filters.searchTerm}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      searchTerm: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-950 border-2 border-gray-100 dark:border-slate-800 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium dark:placeholder:text-muted-foreground/20"
                 />
               </div>
@@ -353,14 +329,11 @@ const SupplierPageClient = () => {
                   filters.active === "All"
                     ? "all"
                     : filters.active
-                    ? "active"
-                    : "inactive"
+                      ? "active"
+                      : "inactive"
                 }
                 onValueChange={(v) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    active: v === "all" ? "All" : v === "active",
-                  }))
+                  setActiveFilter(v === "all" ? "All" : v === "active")
                 }
               >
                 <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-sm">
@@ -389,11 +362,48 @@ const SupplierPageClient = () => {
               </Select>
             </div>
 
+            {/* Balance Range Filter */}
+            <div className="w-full md:w-[200px]">
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
+                Balance Range
+              </span>
+              <Select
+                value={balanceFilter}
+                onValueChange={(v) =>
+                  setBalanceFilter(v as "all" | "outstanding" | "settled")
+                }
+              >
+                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-sm">
+                  <SelectValue placeholder="All Balances" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900">
+                  <SelectItem
+                    value="all"
+                    className="font-bold text-xs uppercase py-2.5"
+                  >
+                    All Balances
+                  </SelectItem>
+                  <SelectItem
+                    value="outstanding"
+                    className="font-bold text-xs uppercase py-2.5"
+                  >
+                    Outstanding Only
+                  </SelectItem>
+                  <SelectItem
+                    value="settled"
+                    className="font-bold text-xs uppercase py-2.5"
+                  >
+                    Settled Only
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Clear Filters */}
-            {(filters.searchTerm !== "" || filters.active !== "All") && (
+            {hasActiveFilters && (
               <Button
                 variant="ghost"
-                onClick={() => setFilters({ searchTerm: "", active: "All" })}
+                onClick={resetFilters}
                 className="h-11 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
@@ -404,45 +414,61 @@ const SupplierPageClient = () => {
         </div>
 
         {/* Suppliers Table */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div className="relative overflow-hidden w-full rounded-[2.5rem] bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-xl shadow-gray-200/50 dark:shadow-none">
           <div className="overflow-x-auto">
             <table className="w-full relative">
               <thead className="bg-white/90 dark:bg-slate-900/90 sticky top-0 z-20 backdrop-blur-md border-b-2 border-gray-50 dark:border-slate-800 shadow-sm">
                 <tr>
                   <th
-                    className="px-8 py-0 h-16 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors"
+                    className={cn(
+                      headerStyles,
+                      "px-8 text-left cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors",
+                    )}
                     onClick={() => handleSort("name")}
                   >
                     <div className="flex items-center gap-2">
-                      {t('common.name')}
+                      {t("common.name")}
                       {sortConfig.key === "name" &&
                         (sortConfig.direction === "asc" ? " ↑" : " ↓")}
                     </div>
                   </th>
-                  <th className="px-6 py-0 h-16 text-left text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none">
-                    {t('suppliers.contact')}
+                  <th className={cn(headerStyles, "px-6 text-left")}>
+                    {t("suppliers.contact")}
                   </th>
                   <th
-                    className="px-6 py-0 h-16 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors"
+                    className={cn(
+                      headerStyles,
+                      "px-6 text-right cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors",
+                    )}
                     onClick={() => handleSort("outstandingBalance")}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                       {t('repairs.financialOverview')} ({currencySymbol})
+                    <div className="flex items-center justify-end gap-2">
+                      {t("repairs.financialOverview")} ({currencySymbol})
                       {sortConfig.key === "outstandingBalance" &&
                         (sortConfig.direction === "asc" ? " ↑" : " ↓")}
                     </div>
                   </th>
-                  <th className="px-6 py-0 h-16 text-center text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none">
-                    {t('common.status')}
+                  <th
+                    className={cn(
+                      headerStyles,
+                      "px-6 text-center cursor-pointer hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors",
+                    )}
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      {t("common.status")}
+                      {sortConfig.key === "status" &&
+                        (sortConfig.direction === "asc" ? " ↑" : " ↓")}
+                    </div>
                   </th>
-                  <th className="px-8 py-0 h-16 text-right text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 border-none select-none">
-                    {t('common.actions')}
+                  <th className={cn(headerStyles, "px-8 text-right")}>
+                    {t("common.actions")}
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
-                {filteredAndSortedSuppliers.length > 0 ? (
-                  filteredAndSortedSuppliers.map((supplier, idx) => (
+                {displayedSuppliers.length > 0 ? (
+                  displayedSuppliers.map((supplier, idx) => (
                     <tr
                       key={supplier.id}
                       className="group cursor-default border-b border-gray-50 dark:border-slate-800 hover:bg-muted/30 dark:hover:bg-slate-800/30 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2"
@@ -451,9 +477,7 @@ const SupplierPageClient = () => {
                       <td className="py-6 pl-8">
                         <div
                           className="flex flex-col cursor-pointer group-hover:translate-x-1.5 transition-transform duration-300"
-                          onClick={() =>
-                            router.push(`/suppliers/detail?id=${supplier.id}`)
-                          }
+                          onClick={() => openPeek(supplier.id)}
                         >
                           <div className="flex items-center gap-2.5">
                             <span className="font-black text-sm tracking-tight text-foreground dark:text-slate-200 group-hover:text-primary transition-colors">
@@ -493,19 +517,27 @@ const SupplierPageClient = () => {
                           )}
                         </div>
                       </td>
-                      <td className="text-center py-6">
-                        <div className="flex flex-col items-center gap-1.5">
-                          <div
+                      <td className="text-right py-6">
+                        <div className="flex flex-col items-end gap-1.5">
+                          <button
+                            type="button"
+                            title="Quick view supplier profile"
+                            onClick={() => openPeek(supplier.id)}
                             className={cn(
-                              "px-3 py-1.5 rounded-xl text-[11px] font-black shadow-sm flex items-center gap-2",
+                              "group/balance cursor-pointer px-3 py-1.5 rounded-xl text-[11px] font-black shadow-sm flex items-center gap-2 transition-all hover:ring-2 hover:ring-primary/30",
                               (supplier.outstandingBalance || 0) > 0
                                 ? "bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-100 dark:border-orange-900/40"
-                                : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40"
+                                : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40",
                             )}
                           >
                             <CreditCard className="w-3.5 h-3.5 opacity-60" />
-                            {formatCurrency(supplier.outstandingBalance || 0, settings.currency, false)}
-                          </div>
+                            {formatCurrency(
+                              supplier.outstandingBalance || 0,
+                              settings.currency,
+                              false,
+                            )}
+                            <ExternalLink className="w-3 h-3 opacity-0 group-hover/balance:opacity-60 transition-opacity" />
+                          </button>
                           <span className="text-[9px] uppercase text-muted-foreground/30 font-black tracking-widest mr-1">
                             Aggregate Credit
                           </span>
@@ -519,7 +551,7 @@ const SupplierPageClient = () => {
                               "rounded-lg px-3 py-1 text-[9px] font-black uppercase tracking-[0.15em] shadow-none border transition-all",
                               supplier.status === "active"
                                 ? "bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40 group-hover:bg-green-100 dark:group-hover:bg-green-900/50"
-                                : "bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-700 group-hover:bg-gray-200 dark:group-hover:bg-slate-700"
+                                : "bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 border-gray-200 dark:border-slate-700 group-hover:bg-gray-200 dark:group-hover:bg-slate-700",
                             )}
                           >
                             {supplier.status === "active"
@@ -561,9 +593,41 @@ const SupplierPageClient = () => {
                                 Entity Control
                               </DropdownMenuLabel>
                               <DropdownMenuItem
-                                onClick={() =>
-                                  router.push(`/suppliers/detail?id=${supplier.id}`)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openPeek(supplier.id);
+                                }}
+                                className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
+                              >
+                                <Eye className="mr-3 h-4 w-4 opacity-40 text-primary" />{" "}
+                                View Detail
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const opened = await openEntityWindow(
+                                    "supplier",
+                                    supplier.id,
+                                    "ledger"
+                                  );
+                                  if (!opened) {
+                                    router.push(
+                                      `/suppliers/ledger?id=${supplier.id}`
+                                    );
+                                  }
+                                }}
+                                className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
+                              >
+                                <FileText className="mr-3 h-4 w-4 opacity-40 text-emerald-600 dark:text-emerald-400" />{" "}
+                                Financial Ledger
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(
+                                    `/suppliers/detail?id=${supplier.id}`,
+                                  );
+                                }}
                                 className="rounded-xl font-black text-[10px] uppercase tracking-widest px-3 py-3 cursor-pointer"
                               >
                                 <Building2 className="mr-3 h-4 w-4 opacity-40 text-primary" />{" "}
@@ -618,6 +682,9 @@ const SupplierPageClient = () => {
                         <h3 className="text-sm font-black uppercase tracking-[0.2em] text-muted-foreground/40">
                           No entities matched.
                         </h3>
+                        <p className="text-[10px] font-bold text-muted-foreground/60 mt-3 uppercase tracking-widest">
+                          Adjust search parameters or register a new supplier.
+                        </p>
                       </div>
                     </td>
                   </tr>
@@ -694,9 +761,43 @@ const SupplierPageClient = () => {
             setShowPaymentModal(false);
             setPaymentSupplier(null);
             initialize();
+            // Refresh the peek drawer so the settlement reflects immediately.
+            if (peekSupplierId) loadPeek(peekSupplierId);
           }}
         />
       )}
+
+      {/* Supplier Peek Drawer (clients ledger interaction pattern) */}
+      <SupplierPeekDrawer
+        isOpen={!!peekSupplierId}
+        onClose={closePeek}
+        supplier={peekSupplier}
+        isLoading={peekLoading}
+        onRefresh={() => peekSupplierId && loadPeek(peekSupplierId)}
+        onOpenPayment={() => {
+          if (peekSupplier) {
+            setPaymentSupplier(peekSupplier);
+            setShowPaymentModal(true);
+          }
+        }}
+        onOpenFullPage={() => {
+          if (peekSupplierId) {
+            router.push(`/suppliers/detail?id=${peekSupplierId}`);
+          }
+        }}
+        onOpenLedger={async () => {
+          if (peekSupplierId) {
+            const opened = await openEntityWindow(
+              "supplier",
+              peekSupplierId,
+              "ledger"
+            );
+            if (!opened) {
+              router.push(`/suppliers/ledger?id=${peekSupplierId}`);
+            }
+          }
+        }}
+      />
     </div>
   );
 };

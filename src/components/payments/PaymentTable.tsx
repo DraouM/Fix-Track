@@ -399,7 +399,10 @@ export function PaymentTable({
         </Table>
       </div>
 
-      {paymentsWithSubtotal.length > 0 && (
+      {/* Balance bar: shown whenever there are logs OR a carried-over opening
+          balance, so a new day with no payments still displays the register's
+          opening/closing balance. */}
+      {(paymentsWithSubtotal.length > 0 || previousSubtotal !== 0) && (
         <div className="flex flex-wrap items-center gap-x-8 gap-y-3 px-6 py-4 bg-zinc-50/80 dark:bg-zinc-900/60 border-t-2 border-zinc-200 dark:border-zinc-800">
           {previousSubtotal !== 0 && (
             <div className="flex items-baseline gap-2">

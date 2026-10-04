@@ -11,6 +11,76 @@ export function isTauri(): boolean {
   );
 }
 
+export type EntityWindowType = "client" | "supplier";
+export type EntityWindowMode = "ledger" | "detail";
+
+/**
+ * Opens an entity (client or supplier) ledger or detail view in a dedicated native window.
+ *
+ * @param entityType "client" or "supplier"
+ * @param entityId The entity ID passed to the target page as a query param.
+ * @param mode "ledger" or "detail" (default is "ledger")
+ * @returns `true` if a native Tauri window was created/focused, `false` when
+ *          not running in Tauri (caller should fall back to in-app navigation).
+ */
+export async function openEntityWindow(
+  entityType: EntityWindowType,
+  entityId: string,
+  mode: EntityWindowMode = "ledger"
+): Promise<boolean> {
+  if (!isTauri()) return false;
+
+  const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+  const label = `${entityType}-${mode}-${entityId}`;
+  const routePrefix = entityType === "client" ? "clients" : "suppliers";
+  const url = `/${routePrefix}/${mode}/?id=${encodeURIComponent(entityId)}`;
+
+  // Also check legacy client ledger label for backward compatibility
+  const legacyLabel =
+    entityType === "client" && mode === "ledger" ? `ledger-${entityId}` : null;
+
+  let existing = await WebviewWindow.getByLabel(label);
+  if (!existing && legacyLabel) {
+    existing = await WebviewWindow.getByLabel(legacyLabel);
+  }
+
+  if (existing) {
+    try {
+      await existing.setFocus();
+      return true;
+    } catch (err) {
+      console.error(
+        `Failed to focus existing ${entityType} ${mode} window:`,
+        err
+      );
+    }
+  }
+
+  const title =
+    mode === "ledger"
+      ? entityType === "client"
+        ? "Financial Ledger"
+        : "Operational Ledger"
+      : entityType === "client"
+      ? "Client Profile"
+      : "Supplier Profile";
+
+  const win = new WebviewWindow(label, {
+    url,
+    title,
+    width: 1200,
+    height: 800,
+    resizable: true,
+    focus: true,
+  });
+
+  win.once("tauri://error", (e) => {
+    console.error(`Failed to open ${entityType} ${mode} window:`, e);
+  });
+
+  return true;
+}
+
 /**
  * Opens the client financial ledger in a dedicated native window.
  *
@@ -19,37 +89,7 @@ export function isTauri(): boolean {
  *          not running in Tauri (caller should fall back to in-app navigation).
  */
 export async function openLedgerWindow(clientId: string): Promise<boolean> {
-  if (!isTauri()) return false;
-
-  const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
-  const label = `ledger-${clientId}`;
-  const url = `/clients/ledger/?id=${encodeURIComponent(clientId)}`;
-
-  // Reuse + focus the window if one is already open for this client.
-  const existing = await WebviewWindow.getByLabel(label);
-  if (existing) {
-    try {
-      await existing.setFocus();
-      return true;
-    } catch (err) {
-      console.error("Failed to focus existing ledger window:", err);
-    }
-  }
-
-  const win = new WebviewWindow(label, {
-    url,
-    title: "Financial Ledger",
-    width: 1200,
-    height: 800,
-    resizable: true,
-    focus: true,
-  });
-
-  win.once("tauri://error", (e) => {
-    console.error("Failed to open ledger window:", e);
-  });
-
-  return true;
+  return openEntityWindow("client", clientId, "ledger");
 }
 
 /**

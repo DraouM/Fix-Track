@@ -261,11 +261,12 @@ pub fn add_supplier_payment(
         params![amount, supplier_id],
     ).ok();
 
-    // Log history
+    // Log history — store the payment row id in related_id so the ledger can
+    // resolve it back to the supplier_payments record for inline editing.
     let h_id = uuid::Uuid::new_v4().to_string();
     conn.execute(
-        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![h_id, supplier_id, chrono::Utc::now().to_rfc3339(), "Payment Made", notes.unwrap_or_else(|| "Direct Payment".to_string()), -amount],
+        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![h_id, supplier_id, chrono::Utc::now().to_rfc3339(), "Payment Made", notes.unwrap_or_else(|| "Direct Payment".to_string()), -amount, id],
     ).ok();
 
     Ok(())
@@ -295,11 +296,11 @@ pub fn update_supplier_payment(id: String, amount: f64, method: String) -> Resul
         params![balance_adj, supplier_id],
     ).ok();
 
-    // Log history
+    // Log history — keep related_id pointing to the payment row.
     let h_id = uuid::Uuid::new_v4().to_string();
     conn.execute(
-        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![h_id, supplier_id, chrono::Utc::now().to_rfc3339(), "Payment Updated", format!("Payment adjusted: {} -> {} (Method: {})", old_amount, amount, method), balance_adj],
+        "INSERT INTO supplier_history (id, supplier_id, date, type, notes, amount, related_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![h_id, supplier_id, chrono::Utc::now().to_rfc3339(), "Payment Updated", format!("Payment adjusted: {} -> {} (Method: {})", old_amount, amount, method), balance_adj, id],
     ).ok();
 
     Ok(())

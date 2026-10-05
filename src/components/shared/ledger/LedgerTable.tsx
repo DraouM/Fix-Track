@@ -22,7 +22,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { formatDate, formatCurrencySmart } from "@/lib/formatters";
+import {
+  formatDate,
+  formatCurrencySmart,
+  formatNumber,
+} from "@/lib/formatters";
 import { useSettings } from "@/context/SettingsContext";
 import { Transaction, TransactionWithDetails } from "@/types/transaction";
 import { getTransactionById } from "@/lib/api/transactions";
@@ -75,7 +79,6 @@ export interface LedgerTableProps {
 interface LedgerRowProps {
   mode: "client" | "supplier";
   entry: LedgerEntry;
-  currency: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onViewTransaction: (txId: string) => void;
@@ -86,7 +89,6 @@ interface LedgerRowProps {
 function LedgerRow({
   mode,
   entry,
-  currency,
   isExpanded,
   onToggleExpand,
   onViewTransaction,
@@ -136,7 +138,7 @@ function LedgerRow({
           "group transition-colors cursor-pointer",
           kindConfig.rowBorder,
           "hover:bg-muted/5 dark:hover:bg-slate-800/30",
-          isExpanded && "bg-muted/5 dark:bg-slate-800/20"
+          isExpanded && "bg-muted/5 dark:bg-slate-800/20",
         )}
         onClick={onToggleExpand}
       >
@@ -175,7 +177,7 @@ function LedgerRow({
             variant="outline"
             className={cn(
               "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit",
-              kindConfig.badgeClass
+              kindConfig.badgeClass,
             )}
           >
             {kindConfig.icon}
@@ -187,7 +189,7 @@ function LedgerRow({
         <td className="px-5 py-4 text-right">
           {isPrimary && entry.primary_amount !== undefined ? (
             <span className="font-black text-sm text-rose-600 dark:text-rose-400">
-              +{formatCurrencySmart(entry.primary_amount, currency)}
+              +{formatNumber(entry.primary_amount)}
             </span>
           ) : (
             <span className="text-muted-foreground/30 text-xs">—</span>
@@ -203,12 +205,12 @@ function LedgerRow({
                 isPayment
                   ? "text-emerald-600 dark:text-emerald-400"
                   : entry.paid_amount < 0
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-rose-600 dark:text-rose-400"
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-rose-600 dark:text-rose-400",
               )}
             >
               {entry.paid_amount > 0 ? "-" : "+"}
-              {formatCurrencySmart(Math.abs(entry.paid_amount), currency)}
+              {formatNumber(Math.abs(entry.paid_amount))}
             </span>
           ) : (
             <span className="text-muted-foreground/30 text-xs">—</span>
@@ -222,11 +224,11 @@ function LedgerRow({
               "font-black text-sm tabular-nums",
               balancePositive
                 ? "text-rose-600 dark:text-rose-400"
-                : "text-emerald-600 dark:text-emerald-400"
+                : "text-emerald-600 dark:text-emerald-400",
             )}
           >
             {balancePositive ? "+" : ""}
-            {formatCurrencySmart(entry.running_balance, currency)}
+            {formatNumber(entry.running_balance)}
           </span>
         </td>
 
@@ -240,8 +242,8 @@ function LedgerRow({
                   entry.status.toLowerCase() === "paid"
                   ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
                   : entry.status.toLowerCase() === "pending"
-                  ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400"
-                  : "bg-muted text-muted-foreground"
+                    ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400"
+                    : "bg-muted text-muted-foreground",
               )}
             >
               {entry.status}
@@ -252,7 +254,10 @@ function LedgerRow({
         </td>
 
         {/* Actions */}
-        <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+        <td
+          className="px-5 py-4 text-right"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center justify-end gap-1">
             {isPrimary && entry.transaction_id && (
               <Button
@@ -299,7 +304,12 @@ function LedgerRow({
 
       {/* Expanded Audit Detail */}
       {isExpanded && (
-        <tr className={cn(kindConfig.rowBorder, "bg-muted/5 dark:bg-slate-800/10")}>
+        <tr
+          className={cn(
+            kindConfig.rowBorder,
+            "bg-muted/5 dark:bg-slate-800/10",
+          )}
+        >
           <td colSpan={8} className="px-5 py-0">
             <div className="py-4 pl-4 border-l-2 border-dashed border-muted-foreground/20 dark:border-slate-700 ml-2 space-y-2">
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40 mb-3">
@@ -366,7 +376,8 @@ export function LedgerTable({
 
   // ── Merge & sort all entries ──────────────────────────────────────────────
   const allEntries = useMemo<LedgerEntry[]>(() => {
-    const primaryKind: LedgerEntryKind = mode === "client" ? "sale" : "purchase";
+    const primaryKind: LedgerEntryKind =
+      mode === "client" ? "sale" : "purchase";
 
     const txEntries: LedgerEntry[] = (transactions || []).map((tx) => ({
       id: tx.id,
@@ -384,7 +395,9 @@ export function LedgerTable({
     const historyEntries: LedgerEntry[] = (history || [])
       .filter((ev) => {
         const eventType = (
-          (ev as any).event_type || ev.type || ""
+          (ev as any).event_type ||
+          ev.type ||
+          ""
         ).toLowerCase();
         if (mode === "client") {
           return true; // client history already carries client financial events
@@ -398,7 +411,9 @@ export function LedgerTable({
       })
       .map((ev) => {
         const eventType = (
-          (ev as any).event_type || ev.type || ""
+          (ev as any).event_type ||
+          ev.type ||
+          ""
         ).toLowerCase();
         const isPayment =
           eventType.includes("payment") ||
@@ -410,11 +425,11 @@ export function LedgerTable({
         const kind: LedgerEntryKind = isPayment
           ? "payment"
           : isAdj
-          ? "adjustment"
-          : "payment";
+            ? "adjustment"
+            : "payment";
 
         const methodMatch = ev.notes?.match(
-          /(cash|card|credit card|bank transfer|check|cheque|other)/i
+          /(cash|card|credit card|bank transfer|check|cheque|other)/i,
         );
         const method = methodMatch ? methodMatch[1] : undefined;
 
@@ -430,7 +445,10 @@ export function LedgerTable({
         return {
           id: ev.id,
           date: ev.date,
-          ref: (ev as any).event_type || ev.type || (mode === "client" ? "Payment" : "Settlement"),
+          ref:
+            (ev as any).event_type ||
+            ev.type ||
+            (mode === "client" ? "Payment" : "Settlement"),
           kind,
           paid_amount: absAmount,
           amount_delta: delta,
@@ -443,8 +461,7 @@ export function LedgerTable({
       });
 
     const merged = [...txEntries, ...historyEntries].sort((a, b) => {
-      const timeDiff =
-        new Date(a.date).getTime() - new Date(b.date).getTime();
+      const timeDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
       if (timeDiff !== 0) return timeDiff;
       return KIND_PRIORITY[a.kind] - KIND_PRIORITY[b.kind];
     });
@@ -464,7 +481,7 @@ export function LedgerTable({
       allEntries
         .filter((e) => e.kind === "sale" || e.kind === "purchase")
         .reduce((sum, e) => sum + (e.primary_amount ?? 0), 0),
-    [allEntries]
+    [allEntries],
   );
 
   const totalPaid = useMemo(
@@ -472,18 +489,17 @@ export function LedgerTable({
       allEntries
         .filter((e) => e.kind === "payment")
         .reduce((sum, e) => sum + Math.abs(e.paid_amount ?? 0), 0),
-    [allEntries]
+    [allEntries],
   );
 
-  const outstanding =
-    currentBalance ?? allEntries[0]?.running_balance ?? 0;
+  const outstanding = currentBalance ?? allEntries[0]?.running_balance ?? 0;
 
   // ── Filtered entries ──────────────────────────────────────────────────────
   const filteredEntries = useMemo(() => {
     if (filter === "all") return allEntries;
     if (filter === "primary") {
       return allEntries.filter(
-        (e) => e.kind === "sale" || e.kind === "purchase"
+        (e) => e.kind === "sale" || e.kind === "purchase",
       );
     }
     return allEntries.filter((e) => e.kind === filter);
@@ -499,25 +515,22 @@ export function LedgerTable({
     });
   }, []);
 
-  const handleViewTransaction = useCallback(
-    async (txId: string) => {
-      setViewLoading(txId);
-      try {
-        const fullTx = await getTransactionById(txId);
-        if (fullTx) {
-          setSelectedTransaction(fullTx);
-        } else {
-          toast.error("Transaction details not found");
-        }
-      } catch (err) {
-        console.error("Failed to load transaction:", err);
-        toast.error("Failed to load transaction details");
-      } finally {
-        setViewLoading(null);
+  const handleViewTransaction = useCallback(async (txId: string) => {
+    setViewLoading(txId);
+    try {
+      const fullTx = await getTransactionById(txId);
+      if (fullTx) {
+        setSelectedTransaction(fullTx);
+      } else {
+        toast.error("Transaction details not found");
       }
-    },
-    []
-  );
+    } catch (err) {
+      console.error("Failed to load transaction:", err);
+      toast.error("Failed to load transaction details");
+    } finally {
+      setViewLoading(null);
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -568,7 +581,7 @@ export function LedgerTable({
                 "text-2xl font-black",
                 outstanding > 0
                   ? "text-rose-600 dark:text-rose-400"
-                  : "text-emerald-600 dark:text-emerald-400"
+                  : "text-emerald-600 dark:text-emerald-400",
               )}
             >
               {formatCurrencySmart(outstanding, currency)}
@@ -579,7 +592,7 @@ export function LedgerTable({
               "p-3 rounded-xl",
               outstanding > 0
                 ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
             )}
           >
             {outstanding > 0 ? (
@@ -600,7 +613,7 @@ export function LedgerTable({
               "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
               filter === "all"
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             All Activity
@@ -611,7 +624,7 @@ export function LedgerTable({
               "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
               filter === "primary"
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             {mode === "client" ? "Sales" : "Purchases"}
@@ -622,7 +635,7 @@ export function LedgerTable({
               "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
               filter === "payment"
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             Payments
@@ -633,7 +646,7 @@ export function LedgerTable({
               "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
               filter === "adjustment"
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             Adjustments
@@ -693,7 +706,6 @@ export function LedgerTable({
                     key={entry.id}
                     mode={mode}
                     entry={entry}
-                    currency={currency}
                     isExpanded={expandedRows.has(entry.id)}
                     onToggleExpand={() => toggleRow(entry.id)}
                     onViewTransaction={handleViewTransaction}
@@ -712,6 +724,8 @@ export function LedgerTable({
         isOpen={!!selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
         transaction={selectedTransaction}
+        inlineEdit
+        onEdited={() => onHistoryRefresh?.()}
         onEdit={(tx) => {
           editTransaction(tx);
           setSelectedTransaction(null);

@@ -55,7 +55,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   useAddItemShortcut();
   // Routes that open in their own dedicated desktop window should render
   // without the app chrome (sidebar etc.).
-  const isStandalone = !!pathname && pathname.startsWith("/clients/ledger");
+  const isStandalone =
+    !!pathname &&
+    (pathname.startsWith("/clients/ledger") ||
+      pathname.startsWith("/suppliers/ledger"));
   // const [showSplash, setShowSplash] = useState(true);
 
   if (isLoading) {

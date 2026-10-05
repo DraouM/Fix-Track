@@ -135,6 +135,9 @@
     "inventory": {
         "title": "المخزون",
         "subtitle": "إدارة المخزون والقطع",
+        "totalItems": "إجمالي الأصناف",
+        "stockValue": "قيمة المخزون",
+        "potentialProfit": "الربح المحتمل",
         "addItem": "إضافة صنف",
         "stockLevel": "مستوى المخزون",
         "buyingPrice": "سعر الشراء",

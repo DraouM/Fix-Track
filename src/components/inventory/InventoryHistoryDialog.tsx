@@ -8,7 +8,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type {
   InventoryItem,
   StockMovement,
@@ -109,7 +108,7 @@ export function InventoryHistoryDialog({
       open={open}
       onOpenChange={(isOpen) => !isOpen && onOpenChange(false)}
     >
-      <DialogContent className="sm:max-w-4xl p-0 overflow-hidden rounded-3xl border dark:border-slate-800 shadow-2xl dark:bg-slate-950">
+      <DialogContent className="sm:max-w-6xl w-[95vw] p-0 overflow-hidden rounded-3xl border dark:border-slate-800 shadow-2xl dark:bg-slate-950">
         <div className="bg-primary/5 dark:bg-primary/10 p-4 border-b border-primary/10 dark:border-slate-800">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-3">
@@ -165,182 +164,186 @@ export function InventoryHistoryDialog({
         <div className="p-4">
           {sortedHistory.length > 0 ? (
             <div className="border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden">
-              {/* Table Header */}
-              <div className="flex items-center h-10 bg-muted/10 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 px-3">
-                <div className="w-40 shrink-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  {t("inventory.stockMovement.table.movement")}
-                </div>
-                <div className="w-36 shrink-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  {t("common.date")}
-                </div>
-                <div className="flex-[1.3] min-w-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 pr-2">
-                  {t("inventory.stockMovement.table.party")}
-                </div>
-                <div className="w-16 shrink-0 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  {t("inventory.stockMovement.table.qty")}
-                </div>
-                <div className="w-20 shrink-0 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  {t("inventory.stockMovement.table.qtyLeft")}
-                </div>
-                <div className="w-24 shrink-0 text-right text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 pr-3">
-                  {t("inventory.stockMovement.table.unit")}
-                </div>
-                <div className="w-24 shrink-0 text-right text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 pr-3">
-                  {t("inventory.stockMovement.table.value")}
-                </div>
-                <div className="flex-1 min-w-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                  {t("common.notes")}
+              {/* Both-axes scroll: the table is wider and taller than the dialog */}
+              <div className="max-h-[380px] overflow-auto">
+                <div className="min-w-max">
+                  {/* Table Header */}
+                  <div className="flex items-center h-10 bg-gray-50 dark:bg-slate-800 border-b border-gray-100 dark:border-slate-800 px-3 sticky top-0 z-10">
+                    <div className="w-40 shrink-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                      {t("inventory.stockMovement.table.movement")}
+                    </div>
+                    <div className="w-36 shrink-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                      {t("common.date")}
+                    </div>
+                    <div className="w-44 shrink-0 min-w-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 pr-2">
+                      {t("inventory.stockMovement.table.party")}
+                    </div>
+                    <div className="w-16 shrink-0 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                      {t("inventory.stockMovement.table.qty")}
+                    </div>
+                    <div className="w-20 shrink-0 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                      {t("inventory.stockMovement.table.qtyLeft")}
+                    </div>
+                    <div className="w-24 shrink-0 text-right text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 pr-3">
+                      {t("inventory.stockMovement.table.unit")}
+                    </div>
+                    <div className="w-24 shrink-0 text-right text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 pr-3">
+                      {t("inventory.stockMovement.table.value")}
+                    </div>
+                    <div className="w-56 shrink-0 min-w-0 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                      {t("common.notes")}
+                    </div>
+                  </div>
+
+                  {/* Table Rows */}
+                  <div className="bg-white dark:bg-slate-900">
+                    {sortedHistory.map((event) => {
+                      const isInbound = event.quantityChange > 0;
+                      const unitPrice = getMovementUnitPrice(event);
+                      const value = getMovementValue(event);
+                      const isSupplier =
+                        event.type === "Purchased" || event.type === "Returned";
+                      return (
+                        <div
+                          key={event.id}
+                          className="flex items-center h-14 border-b border-gray-50 dark:border-slate-800/60 last:border-b-0 hover:bg-muted/5 dark:hover:bg-slate-800/30 transition-colors group px-3"
+                        >
+                          {/* Movement type */}
+                          <div className="w-40 shrink-0 flex items-center gap-2 min-w-0">
+                            <div
+                              className={cn(
+                                "w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform",
+                                getEventColor(event.type),
+                              )}
+                            >
+                              {getEventIcon(event.type)}
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-foreground dark:text-slate-200 truncate">
+                              {t(
+                                `inventory.stockMovement.movementTypes.${event.type}`,
+                                { defaultValue: event.type },
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Date */}
+                          <div className="w-36 shrink-0 flex flex-col min-w-0">
+                            <span className="text-[10px] font-black text-foreground dark:text-slate-300 leading-none truncate">
+                              {format(new Date(event.date), "MMM d, yyyy")}
+                            </span>
+                            <span className="text-[8px] font-bold text-muted-foreground dark:text-slate-500 opacity-60 mt-0.5">
+                              {format(new Date(event.date), "p")}
+                            </span>
+                          </div>
+
+                          {/* Counterparty + source document */}
+                          <div className="w-44 shrink-0 min-w-0 pr-2">
+                            {event.movementParty ? (
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {isSupplier ? (
+                                  <Building2 className="w-3 h-3 text-green-600 dark:text-green-400 shrink-0" />
+                                ) : (
+                                  <User className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />
+                                )}
+                                <div className="flex flex-col min-w-0">
+                                  <span className="text-[10px] font-black text-foreground dark:text-slate-200 truncate leading-none">
+                                    {event.movementParty}
+                                  </span>
+                                  <span className="text-[8px] font-bold text-muted-foreground dark:text-slate-500 opacity-60 uppercase tracking-wider mt-0.5 truncate">
+                                    {t(
+                                      isSupplier
+                                        ? "inventory.stockMovement.details.from"
+                                        : "inventory.stockMovement.details.to",
+                                    )}
+                                    {event.movementReference
+                                      ? ` · ${event.movementReference}`
+                                      : ""}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest">
+                                —
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Quantity */}
+                          <div className="w-16 shrink-0 flex justify-center">
+                            <div
+                              className={cn(
+                                "px-1.5 py-0.5 rounded-lg text-[9px] font-black flex items-center gap-1 shadow-sm",
+                                isInbound
+                                  ? "bg-green-500 text-white"
+                                  : "bg-red-500 text-white",
+                              )}
+                            >
+                              {isInbound
+                                ? `+${event.quantityChange}`
+                                : event.quantityChange}
+                            </div>
+                          </div>
+
+                          {/* Quantity left after this movement */}
+                          <div className="w-20 shrink-0 flex justify-center">
+                            <span className="text-[10px] font-black text-foreground dark:text-slate-300 tabular-nums">
+                              {stockLevels.get(event.id) ?? "—"}
+                            </span>
+                          </div>
+
+                          {/* Unit price */}
+                          <div className="w-24 shrink-0 text-right pr-3">
+                            <span
+                              className={cn(
+                                "text-[11px] font-black tracking-tight",
+                                event.movementPrice != null
+                                  ? "text-foreground dark:text-slate-200"
+                                  : "text-muted-foreground/60 dark:text-slate-500",
+                              )}
+                            >
+                              {unitPrice.toFixed(2)}
+                            </span>
+                            {event.movementPrice == null && unitPrice > 0 && (
+                              <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground/40">
+                                {t("inventory.stockMovement.table.current")}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Value */}
+                          <div className="w-24 shrink-0 text-right pr-3">
+                            <span
+                              className={cn(
+                                "text-[11px] font-black tracking-tight",
+                                value > 0 &&
+                                  "text-green-600 dark:text-green-400",
+                                value < 0 && "text-red-600 dark:text-red-400",
+                                value === 0 &&
+                                  "text-muted-foreground dark:text-slate-500 opacity-40",
+                              )}
+                            >
+                              {value > 0 ? "+" : ""}
+                              {value.toFixed(2)}
+                            </span>
+                          </div>
+
+                          {/* Notes */}
+                          <div className="w-56 shrink-0 min-w-0 pl-2">
+                            {event.notes && (
+                              <span
+                                className="block text-[9px] font-medium text-muted-foreground dark:text-slate-400 italic truncate"
+                                title={event.notes}
+                              >
+                                {event.notes}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-
-              {/* Table Rows */}
-              <ScrollArea className="max-h-[340px]">
-                <div className="bg-white dark:bg-slate-900">
-                  {sortedHistory.map((event) => {
-                    const isInbound = event.quantityChange > 0;
-                    const unitPrice = getMovementUnitPrice(event);
-                    const value = getMovementValue(event);
-                    const isSupplier =
-                      event.type === "Purchased" || event.type === "Returned";
-                    return (
-                      <div
-                        key={event.id}
-                        className="flex items-center h-14 border-b border-gray-50 dark:border-slate-800/60 last:border-b-0 hover:bg-muted/5 dark:hover:bg-slate-800/30 transition-colors group px-3"
-                      >
-                        {/* Movement type */}
-                        <div className="w-40 shrink-0 flex items-center gap-2 min-w-0">
-                          <div
-                            className={cn(
-                              "w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform",
-                              getEventColor(event.type),
-                            )}
-                          >
-                            {getEventIcon(event.type)}
-                          </div>
-                          <span className="text-[9px] font-black uppercase tracking-wider text-foreground dark:text-slate-200 truncate">
-                            {t(
-                              `inventory.stockMovement.movementTypes.${event.type}`,
-                              { defaultValue: event.type },
-                            )}
-                          </span>
-                        </div>
-
-                        {/* Date */}
-                        <div className="w-36 shrink-0 flex flex-col min-w-0">
-                          <span className="text-[10px] font-black text-foreground dark:text-slate-300 leading-none truncate">
-                            {format(new Date(event.date), "MMM d, yyyy")}
-                          </span>
-                          <span className="text-[8px] font-bold text-muted-foreground dark:text-slate-500 opacity-60 mt-0.5">
-                            {format(new Date(event.date), "p")}
-                          </span>
-                        </div>
-
-                        {/* Counterparty + source document */}
-                        <div className="flex-[1.3] min-w-0 pr-2">
-                          {event.movementParty ? (
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              {isSupplier ? (
-                                <Building2 className="w-3 h-3 text-green-600 dark:text-green-400 shrink-0" />
-                              ) : (
-                                <User className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />
-                              )}
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-[10px] font-black text-foreground dark:text-slate-200 truncate leading-none">
-                                  {event.movementParty}
-                                </span>
-                                <span className="text-[8px] font-bold text-muted-foreground dark:text-slate-500 opacity-60 uppercase tracking-wider mt-0.5 truncate">
-                                  {t(
-                                    isSupplier
-                                      ? "inventory.stockMovement.details.from"
-                                      : "inventory.stockMovement.details.to",
-                                  )}
-                                  {event.movementReference
-                                    ? ` · ${event.movementReference}`
-                                    : ""}
-                                </span>
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest">
-                              —
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Quantity */}
-                        <div className="w-16 shrink-0 flex justify-center">
-                          <div
-                            className={cn(
-                              "px-1.5 py-0.5 rounded-lg text-[9px] font-black flex items-center gap-1 shadow-sm",
-                              isInbound
-                                ? "bg-green-500 text-white"
-                                : "bg-red-500 text-white",
-                            )}
-                          >
-                            {isInbound
-                              ? `+${event.quantityChange}`
-                              : event.quantityChange}
-                          </div>
-                        </div>
-
-                        {/* Quantity left after this movement */}
-                        <div className="w-20 shrink-0 flex justify-center">
-                          <span className="text-[10px] font-black text-foreground dark:text-slate-300 tabular-nums">
-                            {stockLevels.get(event.id) ?? "—"}
-                          </span>
-                        </div>
-
-                        {/* Unit price */}
-                        <div className="w-24 shrink-0 text-right pr-3">
-                          <span
-                            className={cn(
-                              "text-[11px] font-black tracking-tight",
-                              event.movementPrice != null
-                                ? "text-foreground dark:text-slate-200"
-                                : "text-muted-foreground/60 dark:text-slate-500",
-                            )}
-                          >
-                            {unitPrice.toFixed(2)}
-                          </span>
-                          {event.movementPrice == null && unitPrice > 0 && (
-                            <div className="text-[7px] font-black uppercase tracking-widest text-muted-foreground/40">
-                              {t("inventory.stockMovement.table.current")}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Value */}
-                        <div className="w-24 shrink-0 text-right pr-3">
-                          <span
-                            className={cn(
-                              "text-[11px] font-black tracking-tight",
-                              value > 0 && "text-green-600 dark:text-green-400",
-                              value < 0 && "text-red-600 dark:text-red-400",
-                              value === 0 &&
-                                "text-muted-foreground dark:text-slate-500 opacity-40",
-                            )}
-                          >
-                            {value > 0 ? "+" : ""}
-                            {value.toFixed(2)}
-                          </span>
-                        </div>
-
-                        {/* Notes */}
-                        <div className="flex-1 min-w-0 pl-2">
-                          {event.notes && (
-                            <span
-                              className="block text-[9px] font-medium text-muted-foreground dark:text-slate-400 italic truncate"
-                              title={event.notes}
-                            >
-                              {event.notes}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center opacity-40 py-16">

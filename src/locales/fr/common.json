@@ -135,6 +135,9 @@
     "inventory": {
         "title": "Inventaire",
         "subtitle": "Gestion des stocks et des pièces",
+        "totalItems": "Articles au total",
+        "stockValue": "Valeur du stock",
+        "potentialProfit": "Bénéfice potentiel",
         "addItem": "Ajouter un article",
         "stockLevel": "Niveau de stock",
         "buyingPrice": "Prix d'achat",

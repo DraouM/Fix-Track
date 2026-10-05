@@ -53,6 +53,9 @@ import {
   getLocaleForIntl,
 } from "@/lib/formatters";
 
+// Seconds the delete-confirmation dialog stays open before it auto-cancels.
+const DELETE_CONFIRM_SECONDS = 10;
+
 export function InventoryPageInner() {
   const {
     inventoryItems,
@@ -60,6 +63,7 @@ export function InventoryPageInner() {
     sortConfig,
     handleSort,
     deleteInventoryItem,
+    getItemById,
     searchTerm,
     setSearchTerm,
     selectedBrand,
@@ -78,6 +82,39 @@ export function InventoryPageInner() {
 
   const [historyEvents, setHistoryEvents] = useState<StockMovement[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Delete guard: deleting asks for confirmation first, and the confirmation
+  // window cancels itself once the countdown expires (no action taken).
+  const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
+  const [deleteSecondsLeft, setDeleteSecondsLeft] = useState(
+    DELETE_CONFIRM_SECONDS,
+  );
+
+  useEffect(() => {
+    if (!deleteTarget) return;
+    const expiresAt = Date.now() + DELETE_CONFIRM_SECONDS * 1000;
+    const tick = () =>
+      setDeleteSecondsLeft(
+        Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)),
+      );
+    tick();
+    const interval = setInterval(() => {
+      tick();
+      if (Date.now() >= expiresAt) {
+        clearInterval(interval);
+        setDeleteTarget(null);
+        toast.info("Delete window expired — nothing was deleted");
+      }
+    }, 250);
+    return () => clearInterval(interval);
+  }, [deleteTarget]);
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setDeleteTarget(null);
+    await deleteInventoryItem(id);
+  };
 
   const { settings } = useSettings();
   const { t, i18n } = useTranslation();
@@ -172,7 +209,6 @@ export function InventoryPageInner() {
     icon: Icon,
     title,
     value,
-    subtitle,
     color = "blue",
     trend,
     suffix,
@@ -180,7 +216,6 @@ export function InventoryPageInner() {
     icon: React.ComponentType<{ className?: string }>;
     title: string;
     value: string | number;
-    subtitle?: string;
     color?: "blue" | "green" | "orange" | "red" | "purple";
     trend?: number;
     suffix?: string;
@@ -224,14 +259,6 @@ export function InventoryPageInner() {
           >
             {value}
           </div>
-          {subtitle && (
-            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70 mt-1">
-              <div
-                className={`h-1 w-1 rounded-full ${colorClasses[color].replace("text-", "bg-")}`}
-              ></div>
-              {subtitle}
-            </div>
-          )}
         </div>
       </div>
     );
@@ -324,55 +351,40 @@ export function InventoryPageInner() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Package}
-            title={t("inventory.table.footer", {
-              count: statistics.total,
-              plural: statistics.total !== 1 ? "s" : "",
-            })}
+            title={t("inventory.totalItems")}
             value={statistics.total}
-            subtitle={t("inventory.subtitle")}
             color="blue"
           />
           <StatCard
             icon={AlertTriangle}
             title={t("inventory.lowStock")}
             value={statistics.lowStock}
-            subtitle={t("dashboard.inventory.lowStock", {
-              count: statistics.outOfStock,
-            })}
             color="red"
           />
           <StatCard
             icon={DollarSign}
-            title={t("dashboard.cashier.totalRevenue")}
+            title={t("inventory.stockValue")}
             value={formatNumber(
               statistics.totalValue,
               getLocaleForIntl(i18n.language),
             )}
             suffix={settings.currency}
-            subtitle={t("dashboard.cashier.allRevenue")}
             color="green"
           />
           <StatCard
             icon={TrendingUp}
-            title={t("dashboard.charts.profit")}
+            title={t("inventory.potentialProfit")}
             value={formatNumber(
               statistics.potentialProfit,
               getLocaleForIntl(i18n.language),
             )}
             suffix={settings.currency}
-            subtitle={t("dashboard.charts.revenueTrend")}
             color="purple"
           />
         </div>
 
         {/* Inventory Table */}
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-primary"></div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-              {t("inventory.historyLogs")}
-            </h2>
-          </div>
           {loading ? (
             <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -388,7 +400,10 @@ export function InventoryPageInner() {
                   setShowForm(true);
                 }}
                 onViewHistory={handleViewHistory}
-                onDelete={(id) => deleteInventoryItem(id)}
+                onDelete={(id) => {
+                  const item = getItemById(id);
+                  if (item) setDeleteTarget(item);
+                }}
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
                 onPrint={(item) => {
@@ -449,6 +464,56 @@ export function InventoryPageInner() {
           item={historyItem}
           historyEvents={historyEvents}
         />
+
+        {/* Delete Confirmation (prevents accidental deletion) */}
+        <Dialog
+          open={!!deleteTarget}
+          onOpenChange={(o) => !o && setDeleteTarget(null)}
+        >
+          <DialogContent className="sm:max-w-[440px] rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl dark:bg-slate-900">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-black flex items-center gap-3">
+                <span className="h-10 w-10 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </span>
+                {t("common.delete")} "{deleteTarget?.itemName}"?
+              </DialogTitle>
+              <DialogDescription className="font-medium text-muted-foreground leading-relaxed">
+                {deleteTarget
+                  ? "Items with history are archived instead of erased. You can still go back — this window cancels itself when the timer runs out."
+                  : ""}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <Button
+                variant="outline"
+                className="rounded-xl font-bold uppercase tracking-wider"
+                onClick={() => setDeleteTarget(null)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-black text-muted-foreground tabular-nums w-8 text-right">
+                  {deleteSecondsLeft}s
+                </span>
+                <Button
+                  className="rounded-xl font-bold uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white"
+                  onClick={handleConfirmDelete}
+                >
+                  {t("common.delete")}
+                </Button>
+              </div>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-muted dark:bg-slate-800 overflow-hidden">
+              <div
+                className="h-full bg-red-500 rounded-full transition-all duration-200 ease-linear"
+                style={{
+                  width: `${(deleteSecondsLeft / DELETE_CONFIRM_SECONDS) * 100}%`,
+                }}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

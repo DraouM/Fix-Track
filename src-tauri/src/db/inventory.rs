@@ -72,7 +72,7 @@ pub fn insert_item(item: InventoryItem) -> Result<(), String> {
 #[tauri::command]
 pub fn get_items() -> Result<Vec<InventoryItem>, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
-    let mut stmt = conn.prepare("SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info, barcode FROM inventory_items").map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare("SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info, barcode FROM inventory_items WHERE deleted_at IS NULL").map_err(|e| e.to_string())?;
     let items = stmt
         .query_map([], |row| {
             Ok(InventoryItem {
@@ -139,14 +139,32 @@ pub fn update_item(item: InventoryItem) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn delete_item(item_id: String) -> Result<(), String> {
+pub fn delete_item(id: String) -> Result<String, String> {
     let conn = db::get_connection().map_err(|e| e.to_string())?;
-    conn.execute(
-        "DELETE FROM inventory_items WHERE id = ?1",
-        params![item_id],
-    )
-    .map_err(|e| e.to_string())?;
-    Ok(())
+
+    // Items with stock movement history are soft deleted (archived via
+    // deleted_at) so past documents stay consistent; items without any
+    // history are permanently removed.
+    let history_count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM inventory_history WHERE item_id = ?1",
+            params![id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    if history_count > 0 {
+        conn.execute(
+            "UPDATE inventory_items SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?1 AND deleted_at IS NULL",
+            params![id],
+        )
+        .map_err(|e| e.to_string())?;
+        Ok("archived".to_string())
+    } else {
+        conn.execute("DELETE FROM inventory_items WHERE id = ?1", params![id])
+            .map_err(|e| e.to_string())?;
+        Ok("deleted".to_string())
+    }
 }
 
 #[tauri::command]
@@ -168,7 +186,8 @@ pub fn get_low_stock_items() -> Result<Vec<InventoryItem>, String> {
          FROM inventory_items 
          WHERE quantity_in_stock IS NOT NULL 
          AND low_stock_threshold IS NOT NULL 
-         AND quantity_in_stock <= low_stock_threshold"
+         AND quantity_in_stock <= low_stock_threshold 
+         AND deleted_at IS NULL"
     ).map_err(|e| e.to_string())?;
 
     let items = stmt
@@ -199,7 +218,8 @@ pub fn search_items(query: String) -> Result<Vec<InventoryItem>, String> {
     let mut stmt = conn.prepare(
         "SELECT id, item_name, phone_brand, item_type, buying_price, selling_price, quantity_in_stock, low_stock_threshold, supplier_info, barcode 
          FROM inventory_items 
-         WHERE item_name LIKE ?1 OR phone_brand LIKE ?1 OR item_type LIKE ?1 OR barcode = ?2"
+         WHERE (item_name LIKE ?1 OR phone_brand LIKE ?1 OR item_type LIKE ?1 OR barcode = ?2) 
+         AND deleted_at IS NULL"
     ).map_err(|e| e.to_string())?;
 
     let items = stmt

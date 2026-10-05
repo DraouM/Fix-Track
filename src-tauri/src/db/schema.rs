@@ -22,6 +22,13 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     // Migration: Add barcode column to inventory_items if it doesn't exist
     let _ = conn.execute("ALTER TABLE inventory_items ADD COLUMN barcode TEXT", []);
 
+    // Migration: Soft-delete marker for inventory_items (NULL = active).
+    // Items that have history are archived with deleted_at instead of being removed.
+    let _ = conn.execute(
+        "ALTER TABLE inventory_items ADD COLUMN deleted_at DATETIME",
+        [],
+    );
+
     conn.execute(
         "CREATE TABLE IF NOT EXISTS inventory_history (
             id TEXT PRIMARY KEY,
@@ -542,7 +549,10 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
 
     // Migrations to add related_id to history tables (links history events to transactions)
     let _ = conn.execute("ALTER TABLE client_history ADD COLUMN related_id TEXT", []);
-    let _ = conn.execute("ALTER TABLE supplier_history ADD COLUMN related_id TEXT", []);
+    let _ = conn.execute(
+        "ALTER TABLE supplier_history ADD COLUMN related_id TEXT",
+        [],
+    );
 
     // Migrations to extend expenses so they can be shown as outbound "Charges" in the
     // payments ledger (payment method + optional payee). Ignore errors if present.

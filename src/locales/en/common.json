@@ -149,6 +149,9 @@
     "inventory": {
         "title": "Inventory",
         "subtitle": "Stock & parts management",
+        "totalItems": "Total Items",
+        "stockValue": "Stock Value",
+        "potentialProfit": "Potential Profit",
         "addItem": "Add Item",
         "stockLevel": "Stock Level",
         "buyingPrice": "Buying Price",

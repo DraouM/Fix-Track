@@ -282,8 +282,12 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteInventoryItem = useCallback(
     async (id: string) => {
       try {
-        await invoke("delete_item", { id });
-        toast.success("Item deleted");
+        const result = await invoke<string>("delete_item", { id });
+        toast.success(
+          result === "archived"
+            ? "Item has history and was archived instead of deleted"
+            : "Item deleted",
+        );
         fetchItems();
         // Emit event to notify dashboard
         emit("financial-data-change");

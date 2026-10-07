@@ -18,12 +18,12 @@ import {
   DollarSign,
   MoreVertical,
   Trash2,
-  Activity,
+  // Activity,
   ChevronRight,
   TrendingUp,
   FileText,
-  LayoutDashboard,
-  Box,
+  // LayoutDashboard,
+  // Box,
   Link as LinkIcon,
   Calendar,
   Wallet,
@@ -31,10 +31,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+// ── Activity & History tabs — kept commented out for easy rollback ──
+// import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SupplierHistoryList } from "./SupplierHistoryList";
-import { SupplierTransactionList } from "./SupplierTransactionList";
+// import { SupplierHistoryList } from "./SupplierHistoryList";
+// import { SupplierTransactionList } from "./SupplierTransactionList";
 import {
   Table,
   TableBody,
@@ -60,8 +61,8 @@ import {
 import { useSettings } from "@/context/SettingsContext";
 import { SupplierForm } from "./SupplierForm";
 import { SupplierPaymentModal } from "./SupplierPaymentModal";
-import { getOrdersBySupplier } from "@/lib/api/orders";
-import type { Order as DBOrder } from "@/types/order";
+// import { getOrdersBySupplier } from "@/lib/api/orders";
+// import type { Order as DBOrder } from "@/types/order";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -82,27 +83,28 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [orders, setOrders] = useState<DBOrder[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
+  // ── Activity timeline / orders data — kept commented out for easy rollback ──
+  // const [orders, setOrders] = useState<DBOrder[]>([]);
+  // const [loadingOrders, setLoadingOrders] = useState(true);
 
-  useEffect(() => {
-    if (supplierId) {
-      getSupplierHistory(supplierId);
-      loadOrders();
-    }
-  }, [supplierId, getSupplierHistory]);
+  // useEffect(() => {
+  //   if (supplierId) {
+  //     getSupplierHistory(supplierId);
+  //     loadOrders();
+  //   }
+  // }, [supplierId, getSupplierHistory]);
 
-  const loadOrders = async () => {
-    try {
-      setLoadingOrders(true);
-      const data = await getOrdersBySupplier(supplierId);
-      setOrders(data);
-    } catch (error) {
-      console.error("Failed to load supplier orders:", error);
-    } finally {
-      setLoadingOrders(false);
-    }
-  };
+  // const loadOrders = async () => {
+  //   try {
+  //     setLoadingOrders(true);
+  //     const data = await getOrdersBySupplier(supplierId);
+  //     setOrders(data);
+  //   } catch (error) {
+  //     console.error("Failed to load supplier orders:", error);
+  //   } finally {
+  //     setLoadingOrders(false);
+  //   }
+  // };
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -226,7 +228,8 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
     );
   }
 
-  const history = supplier.history || [];
+  // ── Activity timeline data — kept commented out for easy rollback ──
+  // const history = supplier.history || [];
 
   return (
     <div className="flex flex-col h-full bg-[#fbfcfd] dark:bg-[#0f172a]">
@@ -260,7 +263,7 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                     "rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-widest border shadow-none",
                     supplier.status === "active"
                       ? "bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40"
-                      : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"
+                      : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700",
                   )}
                 >
                   {supplier.status === "active" ? "Operational" : "Inactive"}
@@ -284,7 +287,11 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
             <Button
               variant="outline"
               onClick={async () => {
-                const opened = await openEntityWindow("supplier", supplier.id, "ledger");
+                const opened = await openEntityWindow(
+                  "supplier",
+                  supplier.id,
+                  "ledger",
+                );
                 if (!opened) {
                   router.push(`/suppliers/ledger?id=${supplier.id}`);
                 }
@@ -404,12 +411,12 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
                           "text-5xl font-black tracking-tighter",
                           (supplier.outstandingBalance || 0) > 0
                             ? "text-orange-600 dark:text-orange-500"
-                            : "text-emerald-600 dark:text-emerald-500"
+                            : "text-emerald-600 dark:text-emerald-500",
                         )}
                       >
                         {formatCurrency(
                           supplier.outstandingBalance || 0,
-                          settings.currency
+                          settings.currency,
                         )}
                       </h2>
                     </div>
@@ -454,7 +461,7 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
           </Card>
         </div>
 
-        {/* Activity & History Tabs */}
+        {/* ── Activity & History Tabs — kept commented out for easy rollback ──
         <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
           <Tabs defaultValue="history" className="w-full">
             <div className="px-8 pt-6 border-b border-gray-50 dark:border-slate-800">
@@ -516,6 +523,7 @@ export function SupplierDetail({ supplierId }: SupplierDetailProps) {
             </TabsContent>
           </Tabs>
         </div>
+        ── */}
       </div>
 
       {/* Quick Access Modals */}

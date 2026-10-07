@@ -17,21 +17,22 @@ import {
   XCircle,
   FileText,
   History,
-  Activity,
-  ShoppingCart,
-  LayoutDashboard,
+  // Activity,
+  // ShoppingCart,
+  // LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+// ── Activity & History tabs — kept commented out for easy rollback ──
+// import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useClientContext } from "@/context/ClientContext";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/clientUtils";
 import { ClientForm } from "./ClientForm";
 import { ClientPaymentModal } from "./ClientPaymentModal";
-import { ClientHistoryList } from "./ClientHistoryList";
-import { ClientTransactionList } from "./ClientTransactionList";
+// import { ClientHistoryList } from "./ClientHistoryList";
+// import { ClientTransactionList } from "./ClientTransactionList";
 import { cn } from "@/lib/utils";
 import { openEntityWindow } from "@/lib/openWindow";
 
@@ -46,18 +47,19 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  // ── Activity timeline data — kept commented out for easy rollback ──
+  // const [loadingHistory, setLoadingHistory] = useState(false);
 
-  useEffect(() => {
-    if (clientId) {
-      setLoadingHistory(true);
-      getClientHistory(clientId)
-        .catch((err) => console.error("Failed to load client history:", err))
-        .finally(() => setLoadingHistory(false));
-    }
-  }, [clientId, getClientHistory]);
+  // useEffect(() => {
+  //   if (clientId) {
+  //     setLoadingHistory(true);
+  //     getClientHistory(clientId)
+  //       .catch((err) => console.error("Failed to load client history:", err))
+  //       .finally(() => setLoadingHistory(false));
+  //   }
+  // }, [clientId, getClientHistory]);
 
-  const history = client?.history || [];
+  // const history = client?.history || [];
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -236,7 +238,11 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
             <Button
               variant="outline"
               onClick={async () => {
-                const opened = await openEntityWindow("client", client.id, "ledger");
+                const opened = await openEntityWindow(
+                  "client",
+                  client.id,
+                  "ledger",
+                );
                 if (!opened) {
                   router.push(`/clients/ledger?id=${client.id}`);
                 }
@@ -404,7 +410,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
           </Card>
         </div>
 
-        {/* Activity & History Tabs */}
+        {/* ── Activity & History Tabs — kept commented out for easy rollback ──
         <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
           <Tabs defaultValue="history" className="w-full">
             <div className="px-8 pt-6 border-b border-gray-50 dark:border-slate-800">
@@ -465,6 +471,7 @@ export function ClientDetail({ clientId }: ClientDetailProps) {
             </TabsContent>
           </Tabs>
         </div>
+        ── */}
       </div>
 
       {/* Dialogs */}

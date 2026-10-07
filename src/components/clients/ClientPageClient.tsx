@@ -27,6 +27,7 @@ import { ClientTable } from "./ClientTable";
 import { ClientForm } from "./ClientForm";
 import { ClientPaymentModal } from "./ClientPaymentModal";
 import { LedgerDrawer } from "./LedgerDrawer";
+import { ClientProfileDrawer } from "./ClientProfileDrawer";
 import { getTransactions } from "@/lib/api/transactions";
 import { Transaction } from "@/types/transaction";
 import { openLedgerWindow } from "@/lib/openWindow";
@@ -118,6 +119,11 @@ export default function ClientPageClient() {
     setLedgerPeekId(null);
     setPeekTransactions([]);
   };
+
+  // ── Core profile drawer (clicking a client name slides it in, like the
+  // suppliers' peek drawer pattern) ──
+  const [profilePeekId, setProfilePeekId] = useState<string | null>(null);
+  const profileClient = clients.find((c) => c.id === profilePeekId) || null;
 
   const totalOutstanding = clients.reduce(
     (sum, c) => sum + (c.outstandingBalance || 0),
@@ -472,6 +478,7 @@ export default function ClientPageClient() {
               setIsEditModalOpen(true);
             }}
             onPeekLedger={openPeek}
+            onOpenProfile={(id) => setProfilePeekId(id)}
             onSort={handleSort}
             sortConfig={sortConfig}
           />
@@ -571,6 +578,30 @@ export default function ClientPageClient() {
           }}
           onOpenWindow={() => {
             if (ledgerPeekId) openLedgerWindow(ledgerPeekId);
+          }}
+        />
+
+        <ClientProfileDrawer
+          isOpen={!!profilePeekId}
+          onClose={() => setProfilePeekId(null)}
+          client={profileClient}
+          onOpenLedger={() => {
+            if (!profilePeekId) return;
+            const id = profilePeekId;
+            setProfilePeekId(null);
+            openPeek(id);
+          }}
+          onOpenPayment={() => {
+            if (profilePeekId) {
+              setSelectedClientId(profilePeekId);
+              setIsPaymentModalOpen(true);
+            }
+          }}
+          onEdit={() => {
+            if (profilePeekId) {
+              setSelectedClientId(profilePeekId);
+              setIsEditModalOpen(true);
+            }
           }}
         />
       </div>

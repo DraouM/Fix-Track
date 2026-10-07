@@ -60,6 +60,8 @@
         "filters": "Filters",
         "pickDates": "Pick dates",
         "filterByDate": "Filter by date",
+        "dateFrom": "From",
+        "dateTo": "To",
         "activeFilters": "Active filters",
         "clearAll": "Clear all",
         "showingCount": "Showing {{count}} of {{total}} {{label}}",

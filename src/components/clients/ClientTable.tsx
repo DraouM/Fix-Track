@@ -53,6 +53,9 @@ interface ClientTableProps {
   onRecordPayment: (clientId: string) => void;
   onEditClient: (clientId: string) => void;
   onPeekLedger?: (clientId: string) => void;
+  // Opens the core profile as a slide-over drawer (suppliers peek-drawer pattern).
+  // Falls back to the /clients/detail page when not provided.
+  onOpenProfile?: (clientId: string) => void;
   onSort?: (key: ClientSortKey) => void;
   sortConfig?: ClientSortConfig;
 }
@@ -63,6 +66,7 @@ export function ClientTable({
   onRecordPayment,
   onEditClient,
   onPeekLedger,
+  onOpenProfile,
   onSort,
   sortConfig,
 }: ClientTableProps) {
@@ -184,7 +188,11 @@ export function ClientTable({
               <TableCell className="py-6 pl-8">
                 <div
                   className="flex flex-col cursor-pointer group-hover:translate-x-1.5 transition-transform duration-300"
-                  onClick={() => router.push(`/clients/detail?id=${client.id}`)}
+                  onClick={() =>
+                    onOpenProfile
+                      ? onOpenProfile(client.id)
+                      : router.push(`/clients/detail?id=${client.id}`)
+                  }
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="font-black text-sm tracking-tight text-foreground dark:text-slate-200 group-hover:text-primary transition-colors">

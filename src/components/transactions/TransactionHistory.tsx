@@ -10,20 +10,15 @@ import {
   AlertCircle,
   Eye,
   Printer,
-  Calendar as CalendarIcon,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  DateRangePicker,
-  useDateRange,
-} from "@/components/ui/date-range-picker";
 import { formatCurrency, formatDate } from "@/lib/clientUtils";
 import { getTransactions, getTransactionById } from "@/lib/api/transactions";
 import { getClientById } from "@/lib/api/clients";
-import { isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
+import { startOfDay, endOfDay, format } from "date-fns";
 
 import {
   Transaction,
@@ -41,6 +36,15 @@ import { useTranslation } from "react-i18next";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { useSettings } from "@/context/SettingsContext";
 
+// ── Previous date-filter implementation (DateRangePicker) — kept commented out
+// in case we want to switch back. To roll back: uncomment this import plus the
+// useDateRange hook and picker JSX below, and delete the new From/To state and
+// its dateRange useMemo (it occupies the same `dateRange` name).
+// import {
+//   DateRangePicker,
+//   useDateRange,
+// } from "@/components/ui/date-range-picker";
+
 export function TransactionHistory() {
   const { editTransaction } = useTransactions();
   const { clients } = useClientContext();
@@ -57,10 +61,29 @@ export function TransactionHistory() {
   const { t, i18n } = useTranslation();
   const { printTransactionReceipt } = usePrintUtils();
   const { settings } = useSettings();
-  const { dateRange, setDateRange } = useDateRange({
-    from: new Date(),
-    to: new Date(),
-  });
+
+  // ── Previous implementation (DateRangePicker) — kept for easy rollback ──
+  // const { dateRange, setDateRange } = useDateRange({
+  //   from: new Date(),
+  //   to: new Date(),
+  // });
+
+  // Explicit From/To date range (native date inputs, keyboard friendly).
+  // Defaults to today, matching the previous picker behavior.
+  const [fromDate, setFromDate] = useState(() =>
+    format(new Date(), "yyyy-MM-dd"),
+  );
+  const [toDate, setToDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+
+  // Kept in the same { from, to } shape as the old useDateRange so the
+  // filtering logic below is unchanged.
+  const dateRange = useMemo(
+    () => ({
+      from: fromDate ? new Date(`${fromDate}T00:00:00`) : undefined,
+      to: toDate ? new Date(`${toDate}T23:59:59`) : undefined,
+    }),
+    [fromDate, toDate],
+  );
 
   useEffect(() => {
     loadTransactions();
@@ -173,7 +196,7 @@ export function TransactionHistory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="flex flex-col md:flex-row gap-4 items-center md:items-end justify-between">
         <div className="relative w-full md:w-96">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -183,13 +206,47 @@ export function TransactionHistory() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          {/* ── Previous implementation (DateRangePicker) — kept for easy rollback ──
           <DateRangePicker
             date={dateRange}
             onDateChange={setDateRange}
             placeholder={t("common.filterByDate") || "Filter by date"}
             className="w-full md:w-[240px] rounded-xl h-10 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
           />
+          */}
+          <div className="flex items-end gap-2">
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="tx-date-from"
+                className="text-[9px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-500 ml-1"
+              >
+                {t("common.dateFrom")}
+              </label>
+              <Input
+                id="tx-date-from"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="h-10 w-[150px] rounded-xl text-xs font-bold dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="tx-date-to"
+                className="text-[9px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-500 ml-1"
+              >
+                {t("common.dateTo")}
+              </label>
+              <Input
+                id="tx-date-to"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="h-10 w-[150px] rounded-xl text-xs font-bold dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
+              />
+            </div>
+          </div>
           <div className="flex bg-muted dark:bg-slate-900 p-1 rounded-xl">
             {["All", "Sale", "Purchase"].map((type) => (
               <Button

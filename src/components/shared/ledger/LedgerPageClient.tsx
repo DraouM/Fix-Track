@@ -1,24 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  FileText,
-  User,
-  Building2,
-  RotateCw,
-  DollarSign,
-  X,
-  CreditCard,
-  ShieldCheck,
-  TrendingUp,
-} from "lucide-react";
+import { User, Building2, RotateCw, DollarSign, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { useClientContext } from "@/context/ClientContext";
-import { useSupplierState, useSupplierActions } from "@/context/SupplierContext";
-import { useSettings } from "@/context/SettingsContext";
-import { formatDate, formatCurrencySmart } from "@/lib/formatters";
+import {
+  useSupplierState,
+  useSupplierActions,
+} from "@/context/SupplierContext";
+import { formatDate } from "@/lib/formatters";
 import { LedgerTable } from "./LedgerTable";
 import { ClientPaymentModal } from "@/components/clients/ClientPaymentModal";
 import { SupplierPaymentModal } from "@/components/suppliers/SupplierPaymentModal";
@@ -33,18 +24,18 @@ export interface LedgerPageClientProps {
 }
 
 export function LedgerPageClient({ mode, entityId }: LedgerPageClientProps) {
-  const { settings } = useSettings();
-  const currency = settings?.currency || "USD";
-
   // Client context
   const clientCtx = useClientContext();
   // Supplier context
   const { suppliers } = useSupplierState();
-  const { getSupplierHistory, initialize: refreshSuppliers } = useSupplierActions();
+  const { getSupplierHistory, initialize: refreshSuppliers } =
+    useSupplierActions();
 
   const isClient = mode === "client";
 
-  const client = isClient ? clientCtx.clients.find((c) => c.id === entityId) : null;
+  const client = isClient
+    ? clientCtx.clients.find((c) => c.id === entityId)
+    : null;
   const supplier = !isClient ? suppliers.find((s) => s.id === entityId) : null;
 
   const entityName = isClient ? client?.name : supplier?.name;
@@ -137,7 +128,7 @@ export function LedgerPageClient({ mode, entityId }: LedgerPageClientProps) {
                     "rounded-lg px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest border",
                     entityStatus === "active"
                       ? "bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/40"
-                      : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700"
+                      : "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700",
                   )}
                 >
                   {entityStatus === "active" ? "Operational" : "Inactive"}
@@ -157,7 +148,7 @@ export function LedgerPageClient({ mode, entityId }: LedgerPageClientProps) {
                   Updated:{" "}
                   {formatDate(
                     (isClient ? client?.updatedAt : supplier?.updatedAt) ||
-                      new Date()
+                      new Date(),
                   )}
                 </span>
               </div>
@@ -206,51 +197,6 @@ export function LedgerPageClient({ mode, entityId }: LedgerPageClientProps) {
 
       {/* Main Body */}
       <div className="max-w-7xl mx-auto w-full p-8 space-y-6 flex-1">
-        {/* Dynamic Financial Overview Bar */}
-        <Card className="rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
-          <CardContent className="px-6 py-4 flex flex-wrap items-center gap-x-8 gap-y-3">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 mb-1">
-                Outstanding Balance
-              </p>
-              <span
-                className={cn(
-                  "text-xl font-black tracking-tight",
-                  outstandingBalance > 0
-                    ? "text-rose-600 dark:text-rose-400"
-                    : "text-emerald-600 dark:text-emerald-400"
-                )}
-              >
-                {formatCurrencySmart(outstandingBalance, currency)}
-              </span>
-            </div>
-
-            <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 hidden md:block" />
-
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 mb-1">
-                Account Status
-              </p>
-              <div className="flex items-center gap-1.5 text-foreground font-black text-sm">
-                <ShieldCheck className="w-4 h-4 text-blue-500" />
-                <span>Verified Account</span>
-              </div>
-            </div>
-
-            <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 hidden md:block" />
-
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 mb-1">
-                Live Audit Status
-              </p>
-              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-black text-sm">
-                <CreditCard className="w-4 h-4" />
-                <span>Real-Time Sync</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Ledger Table */}
         <LedgerTable
           mode={mode}

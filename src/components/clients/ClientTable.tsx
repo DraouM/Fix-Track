@@ -14,6 +14,9 @@ import {
   ShieldCheck,
   CreditCard,
   FileText,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUpDown,
 } from "lucide-react";
 import {
   Table,
@@ -42,6 +45,7 @@ import { useTranslation } from "react-i18next";
 import { useSettings } from "@/context/SettingsContext";
 import { CURRENCY_SYMBOLS } from "@/types/settings";
 import { openLedgerWindow } from "@/lib/openWindow";
+import type { ClientSortConfig, ClientSortKey } from "@/hooks/useClientFilters";
 
 interface ClientTableProps {
   clients: Client[];
@@ -49,6 +53,8 @@ interface ClientTableProps {
   onRecordPayment: (clientId: string) => void;
   onEditClient: (clientId: string) => void;
   onPeekLedger?: (clientId: string) => void;
+  onSort?: (key: ClientSortKey) => void;
+  sortConfig?: ClientSortConfig;
 }
 
 export function ClientTable({
@@ -57,6 +63,8 @@ export function ClientTable({
   onRecordPayment,
   onEditClient,
   onPeekLedger,
+  onSort,
+  sortConfig,
 }: ClientTableProps) {
   const router = useRouter();
   const { deleteClient } = useClientContext();
@@ -104,22 +112,62 @@ export function ClientTable({
   const headerStyles =
     "text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 dark:text-muted-foreground/40 h-16 py-0 border-none select-none";
 
+  // Sortable header button, mirroring the repairs data table headers
+  const SortHeader = ({
+    label,
+    sortKey,
+    align,
+  }: {
+    label: string;
+    sortKey: ClientSortKey;
+    align?: "right" | "center";
+  }) => (
+    <button
+      type="button"
+      onClick={() => onSort?.(sortKey)}
+      className={cn(
+        "flex items-center gap-1.5 uppercase hover:text-foreground transition-colors",
+        align === "right" && "ml-auto",
+        align === "center" && "mx-auto",
+      )}
+    >
+      {label}
+      {sortConfig?.key === sortKey ? (
+        sortConfig.direction === "asc" ? (
+          <ArrowUp className="w-3 h-3" />
+        ) : (
+          <ArrowDown className="w-3 h-3" />
+        )
+      ) : (
+        <ChevronsUpDown className="w-3 h-3 opacity-30" />
+      )}
+    </button>
+  );
+
   return (
     <div className="relative overflow-hidden w-full rounded-[2.5rem] bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-xl shadow-gray-200/50 dark:shadow-none">
       <Table>
         <TableHeader className="bg-white/90 dark:bg-slate-900/90 sticky top-0 z-20 backdrop-blur-md border-b-2 border-gray-50 dark:border-slate-800 shadow-sm">
           <TableRow className="hover:bg-transparent border-none">
             <TableHead className={cn(headerStyles, "pl-8")}>
-              {t("common.name")}
+              <SortHeader label={t("common.name")} sortKey="name" />
             </TableHead>
             <TableHead className={headerStyles}>
               {t("suppliers.contact")}
             </TableHead>
             <TableHead className={cn(headerStyles, "text-right")}>
-              {t("repairs.financialOverview")} ({currencySymbol})
+              <SortHeader
+                label={`${t("repairs.financialOverview")} (${currencySymbol})`}
+                sortKey="outstandingBalance"
+                align="right"
+              />
             </TableHead>
             <TableHead className={cn(headerStyles, "text-center")}>
-              {t("common.status")}
+              <SortHeader
+                label={t("common.status")}
+                sortKey="status"
+                align="center"
+              />
             </TableHead>
             <TableHead className={cn(headerStyles, "text-right pr-8")}>
               {t("common.actions")}

@@ -15,7 +15,8 @@ import {
   MoreHorizontal,
   CheckCircle2,
   XCircle,
-  RotateCcw,
+  Filter,
+  X,
   ArrowUpRight,
   RefreshCcw,
   CreditCard,
@@ -24,7 +25,7 @@ import {
   FileText,
 } from "lucide-react";
 import type { Supplier } from "@/types/supplier";
-import { formatCurrency, formatDate } from "@/lib/supplierUtils";
+import { formatCurrency } from "@/lib/supplierUtils";
 import {
   useSupplierState,
   useSupplierActions,
@@ -44,8 +45,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -64,34 +65,55 @@ import { cn } from "@/lib/utils";
 import { useSettings } from "@/context/SettingsContext";
 import { CURRENCY_SYMBOLS } from "@/types/settings";
 
-/* ── Compact overview stat block (Clients Ledger overview-bar style) ── */
-const OverviewStat = ({
+/* ── Compact stat card: icon + value with title underneath (same as clients page) ── */
+const StatCard = ({
   icon: Icon,
-  label,
   value,
   valueClass,
+  color = "blue",
+  title,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  label: string;
   value: string | number;
   valueClass?: string;
-}) => (
-  <div>
-    <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/50 dark:text-muted-foreground/40 mb-0.5">
-      {label}
-    </p>
-    <div className="flex items-center gap-1.5">
-      <Icon className="w-4 h-4 opacity-50" />
-      <span className={cn("text-lg font-black tracking-tight", valueClass)}>
-        {value}
-      </span>
-    </div>
-  </div>
-);
+  color?: "blue" | "green" | "orange" | "red" | "purple" | "gray";
+  title?: string;
+}) => {
+  const colorClasses: Record<string, string> = {
+    blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
+    green:
+      "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
+    orange:
+      "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
+    red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
+    purple:
+      "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+    gray: "bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500",
+  };
 
-const OverviewDivider = () => (
-  <div className="w-px h-8 bg-gray-100 dark:bg-slate-800 hidden md:block" />
-);
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-2">
+      <div className="flex items-center justify-center gap-3">
+        <div className={`p-2.5 rounded-xl ${colorClasses[color]}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <span
+          className={cn(
+            "text-2xl font-black tracking-tight text-foreground",
+            valueClass,
+          )}
+        >
+          {value}
+        </span>
+      </div>
+      {title && (
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+          {title}
+        </span>
+      )}
+    </div>
+  );
+};
 
 const SupplierPageClient = () => {
   const router = useRouter();
@@ -173,16 +195,8 @@ const SupplierPageClient = () => {
       active: activeCount,
       inactive: suppliers.length - activeCount,
       totalBalance,
-      suppliersWithBalance: suppliers.filter(
-        (s) => (s.outstandingBalance || 0) > 0,
-      ).length,
     };
   }, [suppliers]);
-
-  const hasActiveFilters =
-    filters.searchTerm !== "" ||
-    filters.active !== "All" ||
-    balanceFilter !== "all";
 
   const resetFilters = () => {
     clearFilters();
@@ -258,72 +272,70 @@ const SupplierPageClient = () => {
           </div>
         </div>
 
-        {/* Compact Overview Statistics Bar */}
-        <Card className="rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
-          <CardContent className="px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-            <OverviewStat
-              icon={Building2}
-              label="Total Suppliers"
-              value={metrics.total}
-              valueClass="text-foreground dark:text-slate-200"
-            />
-            <OverviewDivider />
-            <OverviewStat
-              icon={DollarSign}
-              label="Outstanding Balance"
-              value={formatCurrency(metrics.totalBalance, settings.currency)}
-              valueClass={cn(
-                metrics.totalBalance > 0
-                  ? "text-orange-600 dark:text-orange-400"
-                  : "text-emerald-600 dark:text-emerald-400",
-              )}
-            />
-            <OverviewDivider />
-            <OverviewStat
-              icon={CheckCircle2}
-              label="Active Partnerships"
-              value={metrics.active}
-              valueClass="text-green-600 dark:text-green-400"
-            />
-            <OverviewDivider />
-            <OverviewStat
-              icon={XCircle}
-              label="Inactive"
-              value={metrics.inactive}
-              valueClass="text-muted-foreground/70 dark:text-slate-400"
-            />
-            <span className="ms-auto hidden lg:flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/40 dark:text-muted-foreground/30">
-              <CreditCard className="w-3.5 h-3.5" />
-              {metrics.suppliersWithBalance} accounts with balance
-            </span>
-          </CardContent>
-        </Card>
+        {/* Summary Cards (icon + value + title) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            icon={Building2}
+            title="Total Suppliers"
+            value={metrics.total}
+            color="blue"
+          />
+          <StatCard
+            icon={DollarSign}
+            title="Outstanding Balance"
+            value={formatCurrency(
+              metrics.totalBalance,
+              settings.currency,
+              false,
+            )}
+            color="orange"
+            valueClass={
+              metrics.totalBalance > 0
+                ? "text-orange-600 dark:text-orange-400"
+                : "text-emerald-600 dark:text-emerald-400"
+            }
+          />
+          <StatCard
+            icon={CheckCircle2}
+            title="Active Partnerships"
+            value={metrics.active}
+            color="green"
+            valueClass="text-green-600 dark:text-green-400"
+          />
+          <StatCard
+            icon={XCircle}
+            title="Inactive"
+            value={metrics.inactive}
+            color="gray"
+            valueClass="text-muted-foreground/70 dark:text-slate-400"
+          />
+        </div>
 
-        {/* Filters and Search */}
-        <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            {/* Search */}
-            <div className="flex-1 relative w-full">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
-                Search Registry
-              </span>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/40 w-4 h-4 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Filter suppliers..."
-                  value={filters.searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-950 border-2 border-gray-100 dark:border-slate-800 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium dark:placeholder:text-muted-foreground/20"
-                />
-              </div>
+        {/* Table with integrated search & filters (same layout as clients page) */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+          {/* Search and Filters */}
+          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center px-6 py-4 border-b dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+            {/* Search Bar */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filter suppliers..."
+                value={filters.searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 rounded-xl h-11 border-gray-200 dark:border-slate-800 focus:ring-primary/20 bg-white dark:bg-slate-950"
+              />
             </div>
 
-            {/* Status Filter */}
-            <div className="w-full md:w-[200px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
-                Partnership Status
-              </span>
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="flex items-center gap-1">
+                <Filter className="h-4 w-4 text-gray-500 dark:text-slate-400" />
+                <span className="text-sm text-gray-600 dark:text-slate-400 hidden sm:block">
+                  {t("common.filters")}
+                </span>
+              </div>
+
+              {/* Status Filter */}
               <Select
                 value={
                   filters.active === "All"
@@ -336,85 +348,135 @@ const SupplierPageClient = () => {
                   setActiveFilter(v === "all" ? "All" : v === "active")
                 }
               >
-                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-sm">
-                  <SelectValue placeholder="All Status" />
+                <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
+                  <SelectValue placeholder={t("common.status")} />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900">
+                <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
                   <SelectItem
                     value="all"
-                    className="font-bold text-xs uppercase py-2.5"
+                    className="font-bold text-xs uppercase tracking-wider"
                   >
-                    All Accounts
+                    {t("common.all")} {t("common.status")}
                   </SelectItem>
                   <SelectItem
                     value="active"
-                    className="font-bold text-xs uppercase py-2.5"
+                    className="font-bold text-xs uppercase tracking-wider"
                   >
-                    Active Only
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      Active
+                    </div>
                   </SelectItem>
                   <SelectItem
                     value="inactive"
-                    className="font-bold text-xs uppercase py-2.5"
+                    className="font-bold text-xs uppercase tracking-wider"
                   >
-                    Inactive Only
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      Inactive
+                    </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
 
-            {/* Balance Range Filter */}
-            <div className="w-full md:w-[200px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
-                Balance Range
-              </span>
+              {/* Balance Filter */}
               <Select
                 value={balanceFilter}
                 onValueChange={(v) =>
                   setBalanceFilter(v as "all" | "outstanding" | "settled")
                 }
               >
-                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-sm">
-                  <SelectValue placeholder="All Balances" />
+                <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
+                  <SelectValue placeholder="Balance" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900">
+                <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
                   <SelectItem
                     value="all"
-                    className="font-bold text-xs uppercase py-2.5"
+                    className="font-bold text-xs uppercase tracking-wider"
                   >
                     All Balances
                   </SelectItem>
                   <SelectItem
                     value="outstanding"
-                    className="font-bold text-xs uppercase py-2.5"
+                    className="font-bold text-xs uppercase tracking-wider"
                   >
-                    Outstanding Only
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      Outstanding
+                    </div>
                   </SelectItem>
                   <SelectItem
                     value="settled"
-                    className="font-bold text-xs uppercase py-2.5"
+                    className="font-bold text-xs uppercase tracking-wider"
                   >
-                    Settled Only
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                      Settled
+                    </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
 
-            {/* Clear Filters */}
-            {hasActiveFilters && (
               <Button
-                variant="ghost"
+                variant="outline"
+                size="icon"
+                className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800"
                 onClick={resetFilters}
-                className="h-11 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
               >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Reset
+                <X className="h-4 w-4" />
               </Button>
-            )}
+            </div>
           </div>
-        </div>
 
-        {/* Suppliers Table */}
-        <div className="relative overflow-hidden w-full rounded-[2.5rem] bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-xl shadow-gray-200/50 dark:shadow-none">
+          {/* Active Filters Display */}
+          {(filters.searchTerm ||
+            filters.active !== "All" ||
+            balanceFilter !== "all") && (
+            <div className="flex flex-wrap gap-2 items-center px-6 py-3 border-b dark:border-slate-800">
+              <span className="text-sm text-gray-600 dark:text-slate-400">
+                {t("common.activeFilters")}:
+              </span>
+              {filters.searchTerm && (
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-100 text-blue-800 text-xs"
+                >
+                  {t("common.search")}: "
+                  {filters.searchTerm.length > 20
+                    ? filters.searchTerm.substring(0, 20) + "..."
+                    : filters.searchTerm}
+                  "
+                </Badge>
+              )}
+              {filters.active !== "All" && (
+                <Badge
+                  variant="secondary"
+                  className="bg-green-100 text-green-800 text-xs"
+                >
+                  {t("common.status")}: {filters.active ? "Active" : "Inactive"}
+                </Badge>
+              )}
+              {balanceFilter !== "all" && (
+                <Badge
+                  variant="secondary"
+                  className="bg-purple-100 text-purple-800 text-xs"
+                >
+                  Balance:{" "}
+                  {balanceFilter === "outstanding" ? "Outstanding" : "Settled"}
+                </Badge>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/50 h-7"
+              >
+                <X className="mr-1 h-3 w-3" />
+                {t("common.clearAll")}
+              </Button>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full relative">
               <thead className="bg-white/90 dark:bg-slate-900/90 sticky top-0 z-20 backdrop-blur-md border-b-2 border-gray-50 dark:border-slate-800 shadow-sm">
@@ -555,7 +617,7 @@ const SupplierPageClient = () => {
                             )}
                           >
                             {supplier.status === "active"
-                              ? "Operational"
+                              ? "Active"
                               : "Inactive"}
                           </Badge>
                         </div>
@@ -608,11 +670,11 @@ const SupplierPageClient = () => {
                                   const opened = await openEntityWindow(
                                     "supplier",
                                     supplier.id,
-                                    "ledger"
+                                    "ledger",
                                   );
                                   if (!opened) {
                                     router.push(
-                                      `/suppliers/ledger?id=${supplier.id}`
+                                      `/suppliers/ledger?id=${supplier.id}`,
                                     );
                                   }
                                 }}
@@ -790,7 +852,7 @@ const SupplierPageClient = () => {
             const opened = await openEntityWindow(
               "supplier",
               peekSupplierId,
-              "ledger"
+              "ledger",
             );
             if (!opened) {
               router.push(`/suppliers/ledger?id=${peekSupplierId}`);

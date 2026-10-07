@@ -4,7 +4,9 @@
   "description": "enables the default permissions",
   "windows": [
     "main",
-    "ledger-*"
+    "ledger-*",
+    "client-*",
+    "supplier-*"
   ],
   "permissions": [
     "core:default",

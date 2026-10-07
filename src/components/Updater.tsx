@@ -32,13 +32,26 @@ export function Updater() {
     return "An error occurred while checking for updates.";
   }
 
-  // Only check when running in Tauri environment
+  // Only check when running in Tauri environment, and only in the main window:
+  // secondary windows (ledger/detail) don't have the updater permission in their
+  // capability scope and would log a "not allowed" error.
   async function checkForUpdates() {
     if (
       typeof window === "undefined" ||
       !("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
     ) {
       setDebugInfo("Not running in Tauri environment");
+      return;
+    }
+
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      if (getCurrentWindow().label !== "main") {
+        setDebugInfo("Updater skipped: not the main window");
+        return;
+      }
+    } catch {
+      setDebugInfo("Updater skipped: window label unavailable");
       return;
     }
 
@@ -140,7 +153,9 @@ export function Updater() {
               className="flex items-center gap-1 rounded border border-yellow-500/40 px-1.5 py-0.5 text-yellow-100 transition hover:bg-yellow-900/60 disabled:opacity-50"
               aria-label="Re-check for updates"
             >
-              <RefreshCw className={`w-3 h-3 ${checking ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-3 h-3 ${checking ? "animate-spin" : ""}`}
+              />
               Retry
             </button>
             <button

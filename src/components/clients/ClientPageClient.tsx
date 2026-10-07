@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Users,
   Search,
@@ -13,8 +13,14 @@ import {
   RotateCcw,
   CheckCircle2,
   AlertCircle,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useClientContext } from "@/context/ClientContext";
 import { useClientFilters } from "@/hooks/useClientFilters";
 import { ClientTable } from "./ClientTable";
@@ -42,6 +48,7 @@ import {
 import { formatCurrency } from "@/lib/clientUtils";
 
 export default function ClientPageClient() {
+  const { t } = useTranslation();
   const { clients, loading, fetchClients, getClientHistory } =
     useClientContext();
   const {
@@ -50,8 +57,28 @@ export default function ClientPageClient() {
     setSearchTerm,
     setActiveFilter,
     activeFilter,
+    balanceFilter,
+    setBalanceFilter,
+    sortConfig,
+    handleSort,
     clearFilters,
   } = useClientFilters(clients);
+
+  // Pagination (client-side, like the repairs table)
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalFiltered = filteredAndSortedClients.length;
+  const pageCount = Math.max(1, Math.ceil(totalFiltered / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const pagedClients = filteredAndSortedClients.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
+  );
+
+  // Back to page 1 whenever the result set changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, activeFilter, balanceFilter]);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -100,18 +127,18 @@ export default function ClientPageClient() {
 
   const StatCard = ({
     icon: Icon,
-    title,
     value,
-    subtitle,
+    valueClass,
     color = "blue",
+    title,
   }: {
     icon: React.ComponentType<{ className?: string }>;
-    title: string;
     value: string | number;
-    subtitle?: string;
-    color?: "blue" | "green" | "orange" | "red" | "purple";
+    valueClass?: string;
+    color?: "blue" | "green" | "orange" | "red" | "purple" | "gray";
+    title?: string;
   }) => {
-    const colorClasses = {
+    const colorClasses: Record<string, string> = {
       blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
       green:
         "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
@@ -120,31 +147,26 @@ export default function ClientPageClient() {
       red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
       purple:
         "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
+      gray: "bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500",
     };
 
     return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
-              <Icon className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-              {title}
-            </span>
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-2">
+        <div className="flex items-center justify-center gap-3">
+          <div className={`p-2.5 rounded-xl ${colorClasses[color]}`}>
+            <Icon className="w-5 h-5" />
           </div>
+          <span
+            className={`text-2xl font-black tracking-tight text-foreground ${valueClass ?? ""}`}
+          >
+            {value}
+          </span>
         </div>
-        <div className="flex items-baseline justify-between">
-          <div className="text-2xl font-black text-foreground">{value}</div>
-          {subtitle && (
-            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70">
-              <div
-                className={`h-1 w-1 rounded-full ${colorClasses[color].replace("text-", "bg-")}`}
-              ></div>
-              {subtitle}
-            </div>
-          )}
-        </div>
+        {title && (
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+            {title}
+          </span>
+        )}
       </div>
     );
   };
@@ -234,21 +256,24 @@ export default function ClientPageClient() {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Summary Cards (icon + value + title) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={Users}
             title="Total Clients"
             value={clients.length}
-            subtitle={`${activeClients} active accounts`}
             color="blue"
           />
           <StatCard
             icon={CreditCard}
             title="Outstanding"
             value={formatCurrency(totalOutstanding)}
-            subtitle="Extended credit"
-            color="red"
+            color="orange"
+            valueClass={
+              totalOutstanding > 0
+                ? "text-orange-600 dark:text-orange-400"
+                : "text-emerald-600 dark:text-emerald-400"
+            }
           />
           <StatCard
             icon={TrendingUp}
@@ -258,43 +283,42 @@ export default function ClientPageClient() {
                 ? formatCurrency(totalOutstanding / clients.length)
                 : formatCurrency(0)
             }
-            subtitle="Per client average"
-            color="green"
+            color="red"
           />
           <StatCard
             icon={CheckCircle2}
             title="Active"
             value={activeClients}
-            subtitle="Regular customers"
-            color="purple"
+            color="green"
+            valueClass="text-green-600 dark:text-green-400"
           />
         </div>
 
-        {/* Filters and Search */}
-        <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            {/* Search */}
-            <div className="flex-1 relative w-full">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
-                Search Directory
-              </span>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/40 w-4 h-4 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Filter clients..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-11 pl-10 pr-4 bg-white dark:bg-slate-950 border-2 border-gray-100 dark:border-slate-800 rounded-xl focus:outline-none focus:border-primary/20 transition-all text-sm font-bold placeholder:font-medium"
-                />
-              </div>
+        {/* Table with integrated search & filters (repairs-style layout) */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+          {/* Search and Filters */}
+          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center px-6 py-4 border-b dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+            {/* Search Bar */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Filter clients..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 rounded-xl h-11 border-gray-200 dark:border-slate-800 focus:ring-primary/20 bg-white dark:bg-slate-950"
+              />
             </div>
 
-            {/* Status Filter */}
-            <div className="w-full md:w-[200px]">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1 mb-1.5 block">
-                Account Status
-              </span>
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="flex items-center gap-1">
+                <Filter className="h-4 w-4 text-gray-500 dark:text-slate-400" />
+                <span className="text-sm text-gray-600 dark:text-slate-400 hidden sm:block">
+                  {t("common.filters")}
+                </span>
+              </div>
+
+              {/* Status Filter */}
               <Select
                 value={
                   activeFilter === "All"
@@ -307,50 +331,137 @@ export default function ClientPageClient() {
                   setActiveFilter(v === "all" ? "All" : v === "active")
                 }
               >
-                <SelectTrigger className="h-11 rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-sm">
-                  <SelectValue placeholder="All Status" />
+                <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
+                  <SelectValue placeholder={t("common.status")} />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-none shadow-2xl dark:bg-slate-900">
+                <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
                   <SelectItem
                     value="all"
-                    className="font-bold text-xs uppercase py-2.5"
+                    className="font-bold text-xs uppercase tracking-wider"
                   >
-                    All Accounts
+                    {t("common.all")} {t("common.status")}
                   </SelectItem>
                   <SelectItem
                     value="active"
-                    className="font-bold text-xs uppercase py-2.5"
+                    className="font-bold text-xs uppercase tracking-wider"
                   >
-                    Active Only
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      Active
+                    </div>
                   </SelectItem>
                   <SelectItem
                     value="inactive"
-                    className="font-bold text-xs uppercase py-2.5"
+                    className="font-bold text-xs uppercase tracking-wider"
                   >
-                    Inactive Only
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      Inactive
+                    </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
 
-            {/* Clear Filters */}
-            {(searchTerm !== "" || activeFilter !== "All") && (
-              <Button
-                variant="ghost"
-                onClick={clearFilters}
-                className="h-11 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+              {/* Balance Filter */}
+              <Select
+                value={balanceFilter}
+                onValueChange={(v) =>
+                  setBalanceFilter(v as "All" | "debt" | "settled")
+                }
               >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Reset
-              </Button>
-            )}
-          </div>
-        </div>
+                <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
+                  <SelectValue placeholder="Balance" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
+                  <SelectItem
+                    value="All"
+                    className="font-bold text-xs uppercase tracking-wider"
+                  >
+                    All Balances
+                  </SelectItem>
+                  <SelectItem
+                    value="debt"
+                    className="font-bold text-xs uppercase tracking-wider"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      With Debt
+                    </div>
+                  </SelectItem>
+                  <SelectItem
+                    value="settled"
+                    className="font-bold text-xs uppercase tracking-wider"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                      Settled
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
-        {/* Clients Table */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800"
+                onClick={clearFilters}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Active Filters Display */}
+          {(searchTerm ||
+            activeFilter !== "All" ||
+            balanceFilter !== "All") && (
+            <div className="flex flex-wrap gap-2 items-center px-6 py-3 border-b dark:border-slate-800">
+              <span className="text-sm text-gray-600 dark:text-slate-400">
+                {t("common.activeFilters")}:
+              </span>
+              {searchTerm && (
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-100 text-blue-800 text-xs"
+                >
+                  {t("common.search")}: "
+                  {searchTerm.length > 20
+                    ? searchTerm.substring(0, 20) + "..."
+                    : searchTerm}
+                  "
+                </Badge>
+              )}
+              {activeFilter !== "All" && (
+                <Badge
+                  variant="secondary"
+                  className="bg-green-100 text-green-800 text-xs"
+                >
+                  {t("common.status")}: {activeFilter ? "Active" : "Inactive"}
+                </Badge>
+              )}
+              {balanceFilter !== "All" && (
+                <Badge
+                  variant="secondary"
+                  className="bg-purple-100 text-purple-800 text-xs"
+                >
+                  Balance: {balanceFilter === "debt" ? "With Debt" : "Settled"}
+                </Badge>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/50 h-7"
+              >
+                <X className="mr-1 h-3 w-3" />
+                {t("common.clearAll")}
+              </Button>
+            </div>
+          )}
+
+          {/* Clients Table */}
           <ClientTable
-            clients={filteredAndSortedClients}
+            clients={pagedClients}
             loading={loading}
             onRecordPayment={(id) => {
               setSelectedClientId(id);
@@ -361,7 +472,75 @@ export default function ClientPageClient() {
               setIsEditModalOpen(true);
             }}
             onPeekLedger={openPeek}
+            onSort={handleSort}
+            sortConfig={sortConfig}
           />
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-6 py-4 bg-muted/5 dark:bg-slate-900/50 border-t dark:border-slate-800">
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+              {t("common.showingCount", {
+                count: pagedClients.length,
+                total: totalFiltered,
+              }) ||
+                `Showing ${pagedClients.length} of ${totalFiltered} client(s)`}
+            </div>
+            <div className="flex items-center space-x-6 lg:space-x-8">
+              <div className="flex items-center space-x-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                  {t("common.rowsPerPage")}
+                </p>
+                <Select
+                  value={`${pageSize}`}
+                  onValueChange={(value) => {
+                    setPageSize(Number(value));
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[70px] rounded-lg border-gray-200 dark:border-slate-800 text-xs font-bold dark:bg-slate-950">
+                    <SelectValue placeholder={pageSize} />
+                  </SelectTrigger>
+                  <SelectContent
+                    side="top"
+                    className="rounded-xl border-none shadow-xl dark:bg-slate-900"
+                  >
+                    {[10, 20, 30, 40, 50].map((size) => (
+                      <SelectItem
+                        key={size}
+                        value={`${size}`}
+                        className="text-xs font-bold"
+                      >
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                {t("common.pageInfo", { current: safePage, total: pageCount })}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-950"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-950"
+                  onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                  disabled={safePage >= pageCount}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <ClientPaymentModal

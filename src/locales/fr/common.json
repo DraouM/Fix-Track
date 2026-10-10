@@ -618,6 +618,25 @@
             "unitCost": "Coût Unitaire",
             "total": "Total",
             "itemsCount": "{{count}} {{label}}"
+        },
+        "itemHistory": {
+            "hint": "Historique",
+            "selectItemFirst": "Sélectionnez d'abord un article dans la liste",
+            "selectPartyFirst": "Sélectionnez d'abord un {{type}}",
+            "subtitleSale": "Historique des ventes pour {{party}}",
+            "subtitlePurchase": "Historique des achats auprès de {{party}}",
+            "totalUnits": "Unités Totales",
+            "totalRevenue": "Valeur Totale",
+            "timesPurchased": "Transactions",
+            "loading": "Chargement de l'historique...",
+            "emptySale": "Aucune vente antérieure de cet article à ce client.",
+            "emptyPurchase": "Aucun achat antérieur de cet article auprès de ce fournisseur.",
+            "transaction": "Transaction",
+            "date": "Date",
+            "qty": "Qté",
+            "unitPrice": "Prix Unitaire",
+            "amount": "Montant",
+            "avgPrice": "Prix unitaire moyen : {{price}}"
         }
     },
     "tasks": {

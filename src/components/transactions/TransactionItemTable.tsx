@@ -31,6 +31,9 @@ interface TransactionItemTableProps {
   onUpdateQuantity: (id: string, delta: number) => void;
   onUpdatePrice: (id: string, price: number) => void;
   onRemoveItem: (id: string) => void;
+  // Row selection (drives the Ctrl+Shift+H product history popup)
+  selectedItemId?: string | null;
+  onSelectRow?: (id: string) => void;
 }
 
 export function TransactionItemTable({
@@ -39,15 +42,28 @@ export function TransactionItemTable({
   onUpdateQuantity,
   onUpdatePrice,
   onRemoveItem,
+  selectedItemId,
+  onSelectRow,
 }: TransactionItemTableProps) {
   const isSale = type === "Sale";
   const { t } = useTranslation();
   const accentColor = isSale ? "text-green-600" : "text-blue-600";
-  const headerBg = isSale ? "bg-green-50/30 dark:bg-green-900/10" : "bg-blue-50/30 dark:bg-blue-900/10";
+  const headerBg = isSale
+    ? "bg-green-50/30 dark:bg-green-900/10"
+    : "bg-blue-50/30 dark:bg-blue-900/10";
   const cardBg = "bg-white dark:bg-slate-900";
 
+  const selectionBg = isSale
+    ? "bg-green-50/60 dark:bg-green-900/15 hover:bg-green-50/60"
+    : "bg-blue-50/60 dark:bg-blue-900/15 hover:bg-blue-50/60";
+
   return (
-    <Card className={cn("border dark:border-slate-800 shadow-sm overflow-hidden", cardBg)}>
+    <Card
+      className={cn(
+        "border dark:border-slate-800 shadow-sm overflow-hidden",
+        cardBg,
+      )}
+    >
       <CardHeader className="pb-3 border-b dark:border-slate-800 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           {isSale ? (
@@ -59,19 +75,30 @@ export function TransactionItemTable({
             ? t("transactions_module.itemTable.title.sale")
             : t("transactions_module.itemTable.title.purchase")}
         </CardTitle>
-        <span
-          className={cn(
-            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border",
-            isSale
-              ? "bg-green-100/50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
-              : "bg-blue-100/50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400"
+        <div className="flex items-center gap-3">
+          {/* Discoverability hint for the product history shortcut */}
+          {items.length > 0 && (
+            <span className="hidden xl:flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/70 dark:text-slate-500">
+              <kbd className="px-1.5 py-0.5 rounded-md border border-muted-foreground/20 dark:border-slate-700 bg-muted/40 dark:bg-slate-800 font-mono text-[9px] normal-case tracking-normal">
+                Ctrl+Shift+H
+              </kbd>
+              {t("transactions_module.itemHistory.hint")}
+            </span>
           )}
-        >
-          {t("transactions_module.itemTable.itemsCount", { 
-            count: items.length, 
-            label: items.length === 1 ? t("common.item") : t("common.items") 
-          })}
-        </span>
+          <span
+            className={cn(
+              "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border",
+              isSale
+                ? "bg-green-100/50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
+                : "bg-blue-100/50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400",
+            )}
+          >
+            {t("transactions_module.itemTable.itemsCount", {
+              count: items.length,
+              label: items.length === 1 ? t("common.item") : t("common.items"),
+            })}
+          </span>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <Table>
@@ -99,7 +126,19 @@ export function TransactionItemTable({
               items.map((item) => (
                 <TableRow
                   key={item.id}
-                  className="group hover:bg-muted/30 dark:hover:bg-slate-800/30 transition-colors border-b dark:border-slate-800"
+                  onClick={() => onSelectRow?.(item.id)}
+                  className={cn(
+                    "group cursor-pointer transition-colors border-b dark:border-slate-800",
+                    selectedItemId === item.id
+                      ? cn(
+                          selectionBg,
+                          "outline outline-1 -outline-offset-1",
+                          isSale
+                            ? "outline-green-600/40 dark:outline-green-500/40"
+                            : "outline-blue-600/40 dark:outline-blue-500/40",
+                        )
+                      : "hover:bg-muted/30 dark:hover:bg-slate-800/30",
+                  )}
                 >
                   <TableCell className="pl-6">
                     <p className="font-semibold text-sm text-foreground dark:text-slate-200">
@@ -150,7 +189,7 @@ export function TransactionItemTable({
                           onChange={(e) =>
                             onUpdatePrice(
                               item.id,
-                              parseFloat(e.target.value) || 0
+                              parseFloat(e.target.value) || 0,
                             )
                           }
                         />

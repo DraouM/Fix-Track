@@ -54,6 +54,8 @@ export function TransactionHistory() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("All");
+  // The filter button toggles the filter row (date range + type) to save space
+  const [showFilters, setShowFilters] = useState(true);
   const [viewLoading, setViewLoading] = useState<string | null>(null);
   const [printLoading, setPrintLoading] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] =
@@ -197,7 +199,7 @@ export function TransactionHistory() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 items-center md:items-end justify-between">
-        <div className="relative w-full md:w-96">
+        <div className="relative w-full md:w-64 lg:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("common.searchPlaceholder")}
@@ -215,68 +217,80 @@ export function TransactionHistory() {
             className="w-full md:w-[240px] rounded-xl h-10 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
           />
           */}
-          <div className="flex items-end gap-2">
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="tx-date-from"
-                className="text-[9px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-500 ml-1"
-              >
-                {t("common.dateFrom")}
-              </label>
-              <Input
-                id="tx-date-from"
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="h-10 w-[150px] rounded-xl text-xs font-bold dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="tx-date-to"
-                className="text-[9px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-500 ml-1"
-              >
-                {t("common.dateTo")}
-              </label>
-              <Input
-                id="tx-date-to"
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="h-10 w-[150px] rounded-xl text-xs font-bold dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
-              />
-            </div>
-          </div>
-          <div className="flex bg-muted dark:bg-slate-900 p-1 rounded-xl">
-            {["All", "Sale", "Purchase"].map((type) => (
-              <Button
-                key={type}
-                variant={typeFilter === type ? "default" : "ghost"}
-                size="sm"
-                className={cn(
-                  "rounded-lg text-xs font-bold uppercase tracking-wider h-8 px-3",
-                  typeFilter === type
-                    ? type === "Sale"
-                      ? "bg-green-600 dark:bg-green-700 hover:bg-green-700"
-                      : type === "Purchase"
-                        ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700"
-                        : ""
-                    : "dark:text-slate-400 dark:hover:bg-slate-800",
-                )}
-                onClick={() => setTypeFilter(type)}
-              >
-                {type === "All"
-                  ? t("common.all")
-                  : t(`transactions_module.${type.toLowerCase()}`)}
-              </Button>
-            ))}
-          </div>
+          {showFilters && (
+            <>
+              <div className="flex items-end gap-2">
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="tx-date-from"
+                    className="text-[9px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-500 ml-1"
+                  >
+                    {t("common.dateFrom")}
+                  </label>
+                  <Input
+                    id="tx-date-from"
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="h-10 w-[150px] rounded-xl text-xs font-bold dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="tx-date-to"
+                    className="text-[9px] font-black uppercase tracking-widest text-muted-foreground dark:text-slate-500 ml-1"
+                  >
+                    {t("common.dateTo")}
+                  </label>
+                  <Input
+                    id="tx-date-to"
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="h-10 w-[150px] rounded-xl text-xs font-bold dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+              <div className="flex bg-muted dark:bg-slate-900 p-1 rounded-xl">
+                {["All", "Sale", "Purchase"].map((type) => (
+                  <Button
+                    key={type}
+                    variant={typeFilter === type ? "default" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "rounded-lg text-xs font-bold uppercase tracking-wider h-8 px-3",
+                      typeFilter === type
+                        ? type === "Sale"
+                          ? "bg-green-600 dark:bg-green-700 hover:bg-green-700"
+                          : type === "Purchase"
+                            ? "bg-blue-600 dark:bg-blue-700 hover:bg-blue-700"
+                            : ""
+                        : "dark:text-slate-400 dark:hover:bg-slate-800",
+                    )}
+                    onClick={() => setTypeFilter(type)}
+                  >
+                    {type === "All"
+                      ? t("common.all")
+                      : t(`transactions_module.${type.toLowerCase()}`)}
+                  </Button>
+                ))}
+              </div>
+            </>
+          )}
           <Button
             variant="outline"
             size="icon"
-            className="rounded-xl h-10 w-10 dark:bg-slate-900 dark:border-slate-800"
+            title={showFilters ? "Hide filters" : "Show filters"}
+            aria-pressed={showFilters}
+            onClick={() => setShowFilters((v) => !v)}
+            className={cn(
+              "rounded-xl h-10 w-10 transition-colors",
+              showFilters
+                ? "bg-primary/10 border-primary/40 text-primary hover:bg-primary/15"
+                : "dark:bg-slate-900 dark:border-slate-800",
+            )}
           >
-            <Filter className="h-4 w-4 dark:text-slate-400" />
+            <Filter className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -369,9 +383,11 @@ export function TransactionHistory() {
                         <span className="font-black text-sm text-foreground dark:text-slate-200">
                           {tx.transaction_number}
                         </span>
+                        {/* ── Raw UUID subtitle — kept commented out for easy rollback ──
                         <span className="text-[10px] font-bold text-muted-foreground dark:text-slate-500 uppercase opacity-60 truncate max-w-[120px]">
                           {tx.id}
                         </span>
+                        */}
                       </div>
                     </td>
                     <td className="px-6 py-4">

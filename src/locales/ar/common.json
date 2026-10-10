@@ -619,6 +619,25 @@
             "unitCost": "تكلفة الوحدة",
             "total": "الإجمالي",
             "itemsCount": "{{count}} {{label}}"
+        },
+        "itemHistory": {
+            "hint": "السجل",
+            "selectItemFirst": "اختر صنفًا من القائمة أولاً",
+            "selectPartyFirst": "اختر {{type}} أولاً",
+            "subtitleSale": "سجل المبيعات لـ {{party}}",
+            "subtitlePurchase": "سجل المشتريات من {{party}}",
+            "totalUnits": "إجمالي الوحدات",
+            "totalRevenue": "القيمة الإجمالية",
+            "timesPurchased": "العمليات",
+            "loading": "جارٍ تحميل السجل...",
+            "emptySale": "لا توجد مبيعات سابقة لهذا الصنف لهذا العميل.",
+            "emptyPurchase": "لا توجد مشتريات سابقة هذا الصنف من هذا المورد.",
+            "transaction": "العملية",
+            "date": "التاريخ",
+            "qty": "الكمية",
+            "unitPrice": "سعر الوحدة",
+            "amount": "المبلغ",
+            "avgPrice": "متوسط سعر الوحدة: {{price}}"
         }
     },
     "tasks": {

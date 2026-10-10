@@ -19,6 +19,7 @@ import { useTransactions } from "@/context/TransactionContext";
 import { TransactionWorkspace } from "./TransactionWorkspace";
 import { TransactionPartySelector } from "./TransactionPartySelector";
 import { TransactionItemTable } from "./TransactionItemTable";
+import { ProductPartyHistoryDialog } from "./ProductPartyHistoryDialog";
 import { TransactionSummary } from "./TransactionSummary";
 import { TransactionScanner } from "./TransactionScanner";
 import { InventoryItem } from "@/types/inventory";
@@ -36,6 +37,7 @@ import { useTranslation } from "react-i18next";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { useSettings } from "@/context/SettingsContext";
 import { useClientContext } from "@/context/ClientContext";
+import { useSupplierState } from "@/context/SupplierContext";
 
 export function TransactionForm() {
   const router = useRouter();
@@ -49,9 +51,13 @@ export function TransactionForm() {
   const { t, i18n } = useTranslation();
   const { printTransactionReceipt } = usePrintUtils();
   const { settings } = useSettings();
-  const { fetchClientById, selectedClient } = useClientContext();
+  const { fetchClientById, selectedClient, clients } = useClientContext();
+  const { suppliers } = useSupplierState();
 
   const [isSaving, setIsSaving] = useState(false);
+  // Product history popup (Ctrl+Shift+H) for the currently selected line item
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   if (!activeWorkspace) return null;
 
@@ -72,6 +78,45 @@ export function TransactionForm() {
       fetchClientById(party_id);
     }
   }, [party_id, party_type, fetchClientById]);
+
+  const selectedItem = items.find((i) => i.id === selectedItemId) || null;
+  const partyName =
+    (party_type === "Client"
+      ? clients.find((c) => c.id === party_id)?.name
+      : suppliers.find((s: any) => s.id === party_id)?.name) || "";
+
+  // Local shortcut: Ctrl/Cmd+Shift+H opens the selected item's sales history
+  // with the currently selected party. Capture phase so it fires from inputs.
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isHistoryShortcut =
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        !e.altKey &&
+        e.key.toLowerCase() === "h";
+      if (!isHistoryShortcut) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!selectedItem) {
+        toast.info(t("transactions_module.itemHistory.selectItemFirst"));
+        return;
+      }
+      if (!party_id) {
+        toast.info(
+          t("transactions_module.itemHistory.selectPartyFirst", {
+            type: t(`transactions_module.party.${party_type.toLowerCase()}`),
+          }),
+        );
+        return;
+      }
+      setHistoryOpen(true);
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [selectedItem, party_id, party_type, t]);
 
   const totalAmount = items.reduce((sum, item) => sum + item.total_price, 0);
 
@@ -144,7 +189,7 @@ export function TransactionForm() {
       toast.error(
         t("transactions_module.form.selectPartyError", {
           type: t(`transactions_module.party.${party_type.toLowerCase()}`),
-        })
+        }),
       );
       return;
     }
@@ -220,27 +265,32 @@ export function TransactionForm() {
           status: complete
             ? t("transactions_module.form.completed")
             : t("transactions_module.form.savedAsDraft"),
-        })
+        }),
       );
 
       setTimeout(async () => {
         // Print receipt if it's a completed Sale
         if (complete && type === "Sale") {
-            const clientToPrint = party_type === 'Client' && selectedClient?.id === party_id ? selectedClient : null;
-            // The client context might be stale or not updated with the latest balance yet, 
-            // but for "Previous Balance" we specifically want the balance BEFORE this transaction.
-            // selectedClient.outstandingBalance holds the current balance from DB.
-            const previousBalance = clientToPrint ? clientToPrint.outstandingBalance : 0;
+          const clientToPrint =
+            party_type === "Client" && selectedClient?.id === party_id
+              ? selectedClient
+              : null;
+          // The client context might be stale or not updated with the latest balance yet,
+          // but for "Previous Balance" we specifically want the balance BEFORE this transaction.
+          // selectedClient.outstandingBalance holds the current balance from DB.
+          const previousBalance = clientToPrint
+            ? clientToPrint.outstandingBalance
+            : 0;
 
-            await printTransactionReceipt(
-                transactionModel,
-                itemModels,
-                paymentModels,
-                clientToPrint,
-                previousBalance,
-                i18n.language,
-                settings.currency as any
-            );
+          await printTransactionReceipt(
+            transactionModel,
+            itemModels,
+            paymentModels,
+            clientToPrint,
+            previousBalance,
+            i18n.language,
+            settings.currency as any,
+          );
         }
         removeWorkspace(id);
       }, 500);
@@ -250,7 +300,7 @@ export function TransactionForm() {
         t("transactions_module.form.error", {
           type: t(`transactions_module.${type.toLowerCase()}`),
           error: String(err),
-        })
+        }),
       );
     } finally {
       setIsSaving(false);
@@ -308,11 +358,11 @@ export function TransactionForm() {
         </div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-6 pt-8">
+      <div className="max-w-[1600px] mx-auto px-6 pt-6">
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
           {/* Left Column: Transaction Details (8/12) */}
-          <div className="xl:col-span-8 space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
+          <div className="xl:col-span-8 space-y-5 animate-in fade-in slide-in-from-left-4 duration-500">
             {/* Context Breadcrumb */}
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400 px-1">
               <LayoutGrid className="h-3 w-3" />
@@ -323,7 +373,7 @@ export function TransactionForm() {
                   "px-2 py-0.5 rounded-md",
                   type === "Sale"
                     ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
-                    : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
+                    : "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
                 )}
               >
                 {t("transactions_module.form.module", {
@@ -340,10 +390,12 @@ export function TransactionForm() {
               onUpdateQuantity={updateQuantity}
               onUpdatePrice={updatePrice}
               onRemoveItem={removeItem}
+              selectedItemId={selectedItemId}
+              onSelectRow={setSelectedItemId}
             />
 
             {/* Internal Notes Card */}
-            <Card className="border dark:border-slate-800 shadow-sm overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+            <Card className="border dark:border-slate-800 shadow-sm overflow-hidden rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
               <CardContent className="p-4 flex gap-4 items-center">
                 <div className="h-10 w-10 rounded-xl bg-muted dark:bg-slate-800 flex items-center justify-center text-muted-foreground dark:text-slate-400 flex-shrink-0">
                   <MoreHorizontal className="h-5 w-5" />
@@ -361,7 +413,7 @@ export function TransactionForm() {
           </div>
 
           {/* Right Column: Sidebar Actions (4/12) */}
-          <div className="xl:col-span-4 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 sticky top-[84px]">
+          <div className="xl:col-span-4 space-y-5 animate-in fade-in slide-in-from-right-4 duration-500 sticky top-[84px]">
             <TransactionPartySelector
               type={party_type}
               selectedId={party_id}
@@ -387,6 +439,20 @@ export function TransactionForm() {
           </div>
         </div>
       </div>
+
+      {/* Product ⇄ party history popup (Ctrl+Shift+H): client sales or supplier purchases */}
+      {selectedItem && (
+        <ProductPartyHistoryDialog
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          txType={type}
+          itemId={selectedItem.item_id}
+          itemName={selectedItem.item_name}
+          partyId={party_id}
+          partyName={partyName}
+          currentTxId={id}
+        />
+      )}
     </div>
   );
 }

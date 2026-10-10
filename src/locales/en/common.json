@@ -638,6 +638,25 @@
             "unitCost": "Unit Cost",
             "total": "Total",
             "itemsCount": "{{count}} {{label}}"
+        },
+        "itemHistory": {
+            "hint": "History",
+            "selectItemFirst": "Select an item in the list first",
+            "selectPartyFirst": "Select a {{type}} first",
+            "subtitleSale": "Sales history for {{party}}",
+            "subtitlePurchase": "Purchase history from {{party}}",
+            "totalUnits": "Total Units",
+            "totalRevenue": "Total Value",
+            "timesPurchased": "Transactions",
+            "loading": "Loading history...",
+            "emptySale": "No previous sales of this product to this client.",
+            "emptyPurchase": "No previous purchases of this item from this supplier.",
+            "transaction": "Transaction",
+            "date": "Date",
+            "qty": "Qty",
+            "unitPrice": "Unit Price",
+            "amount": "Amount",
+            "avgPrice": "Average unit price: {{price}}"
         }
     },
     "tasks": {

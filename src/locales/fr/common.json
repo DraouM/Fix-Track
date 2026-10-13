@@ -57,6 +57,7 @@
         "pendingCount": "{{count}} en attente",
         "completedCount": "{{count}} terminé{{plural}}",
         "filters": "Filtres",
+        "columns": "Colonnes",
         "pickDates": "Choisir des dates",
         "filterByDate": "Filtrer par date",
         "dateFrom": "Du",

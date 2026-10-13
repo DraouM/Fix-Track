@@ -57,6 +57,7 @@
         "pendingCount": "{{count}} في الانتظار",
         "completedCount": "{{count}} مكتمل",
         "filters": "الفلاتر",
+        "columns": "الأعمدة",
         "pickDates": "اختر التواريخ",
         "filterByDate": "تصفية حسب التاريخ",
         "dateFrom": "من",

@@ -58,6 +58,7 @@
         "pendingCount": "{{count}} pending",
         "completedCount": "{{count}} completed",
         "filters": "Filters",
+        "columns": "Columns",
         "pickDates": "Pick dates",
         "filterByDate": "Filter by date",
         "dateFrom": "From",

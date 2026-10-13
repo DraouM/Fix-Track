@@ -35,14 +35,20 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   X,
-  Filter,
   Search,
   ChevronRight,
   ChevronLeft,
   Users,
   UserCheck,
   Star,
+  Columns2,
 } from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
@@ -61,6 +67,7 @@ interface DataTableProps<TData, TValue> {
   searchPlaceholder?: string;
   globalFilter?: boolean;
   technicians?: Technician[];
+  onRowClick?: (row: TData) => void;
   onBulkAssign?: (
     repairIds: string[],
     technicianId: string | null,
@@ -72,6 +79,7 @@ export function RepairDataTable<TData, TValue>({
   data,
   searchPlaceholder,
   technicians = [],
+  onRowClick,
   onBulkAssign,
 }: DataTableProps<TData, TValue>) {
   const { t } = useTranslation();
@@ -135,7 +143,7 @@ export function RepairDataTable<TData, TValue>({
     } else {
       // Remove date filter when no date range is selected
       setColumnFilters((prev) =>
-        prev.filter((filter) => filter.id !== "createdAt")
+        prev.filter((filter) => filter.id !== "createdAt"),
       );
     }
   }, [dateRange]);
@@ -195,7 +203,7 @@ export function RepairDataTable<TData, TValue>({
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={searchPlaceholder || t('common.filter')}
+            placeholder={searchPlaceholder || t("common.filter")}
             value={globalFilter ?? ""}
             onChange={(event) => setGlobalFilter(event.target.value)}
             className="pl-10 rounded-xl h-11 border-gray-200 dark:border-slate-800 focus:ring-primary/20 bg-white dark:bg-slate-950"
@@ -203,43 +211,53 @@ export function RepairDataTable<TData, TValue>({
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-1">
-            <Filter className="h-4 w-4 text-gray-500 dark:text-slate-400" />
-            <span className="text-sm text-gray-600 dark:text-slate-400 hidden sm:block">
-              {t('common.filters')}
-            </span>
-          </div>
-
+        <div className="flex flex-wrap gap-3 items-center justify-end lg:flex-nowrap">
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
-              <SelectValue placeholder={t('repairs.status')} />
+              <SelectValue placeholder={t("repairs.status")} />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
-              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">{t('common.all')} {t('repairs.status')}</SelectItem>
-              <SelectItem value="Pending" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="All"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
+                {t("common.all")} {t("repairs.status")}
+              </SelectItem>
+              <SelectItem
+                value="Pending"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  {t('repairs.pending')}
+                  {t("repairs.pending")}
                 </div>
               </SelectItem>
-              <SelectItem value="In Progress" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="In Progress"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  {t('repairs.inprogress')}
+                  {t("repairs.inprogress")}
                 </div>
               </SelectItem>
-              <SelectItem value="Completed" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="Completed"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  {t('repairs.completed')}
+                  {t("repairs.completed")}
                 </div>
               </SelectItem>
-              <SelectItem value="Delivered" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="Delivered"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  {t('repairs.delivered')}
+                  {t("repairs.delivered")}
                 </div>
               </SelectItem>
             </SelectContent>
@@ -251,32 +269,49 @@ export function RepairDataTable<TData, TValue>({
             onValueChange={setPaymentStatusFilter}
           >
             <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
-              <SelectValue placeholder={t('transactions_module.payment')} />
+              <SelectValue placeholder={t("transactions_module.payment")} />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-none shadow-2xl">
-              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">{t('common.all')} {t('transactions_module.payment')}</SelectItem>
-              <SelectItem value="Unpaid" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="All"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
+                {t("common.all")} {t("transactions_module.payment")}
+              </SelectItem>
+              <SelectItem
+                value="Unpaid"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  {t('repairs.unpaid')}
+                  {t("repairs.unpaid")}
                 </div>
               </SelectItem>
-              <SelectItem value="Partially" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="Partially"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  {t('repairs.partially')}
+                  {t("repairs.partially")}
                 </div>
               </SelectItem>
-              <SelectItem value="Paid" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="Paid"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  {t('repairs.paid')}
+                  {t("repairs.paid")}
                 </div>
               </SelectItem>
-              <SelectItem value="Refunded" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="Refunded"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                  {t('repairs.refunded')}
+                  {t("repairs.refunded")}
                 </div>
               </SelectItem>
             </SelectContent>
@@ -288,10 +323,16 @@ export function RepairDataTable<TData, TValue>({
               <SelectValue placeholder={t("repairs.technician")} />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
-              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="All"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 {t("common.all")} {t("repairs.technician")}
               </SelectItem>
-              <SelectItem value="Unassigned" className="font-bold text-xs uppercase tracking-wider">
+              <SelectItem
+                value="Unassigned"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                   {t("repairs.unassigned")}
@@ -318,81 +359,119 @@ export function RepairDataTable<TData, TValue>({
           </Select>
 
           {/* Remember current technician as "mine" */}
-          {
-            technicianFilter !== "All" &&
-              technicianFilter !== "Unassigned" && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  title={t("repairs.setAsMine")}
-                  className={cn(
-                    "h-11 w-11 rounded-xl",
-                    myTechnicianId === technicianFilter
-                      ? "text-amber-500"
-                      : "text-muted-foreground",
-                  )}
-                  onClick={() => {
-                    try {
-                      localStorage.setItem(MY_TECHNICIAN_KEY, technicianFilter);
-                    } catch {
-                      // ignore
-                    }
-                    setMyTechnicianId(technicianFilter);
-                  }}
-                >
-                  <Star
-                    className={cn(
-                      "h-4 w-4",
-                      myTechnicianId === technicianFilter && "fill-amber-400",
-                    )}
-                  />
-                </Button>
-              )
-          }
+          {technicianFilter !== "All" && technicianFilter !== "Unassigned" && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title={t("repairs.setAsMine")}
+              className={cn(
+                "h-11 w-11 rounded-xl",
+                myTechnicianId === technicianFilter
+                  ? "text-amber-500"
+                  : "text-muted-foreground",
+              )}
+              onClick={() => {
+                try {
+                  localStorage.setItem(MY_TECHNICIAN_KEY, technicianFilter);
+                } catch {
+                  // ignore
+                }
+                setMyTechnicianId(technicianFilter);
+              }}
+            >
+              <Star
+                className={cn(
+                  "h-4 w-4",
+                  myTechnicianId === technicianFilter && "fill-amber-400",
+                )}
+              />
+            </Button>
+          )}
 
           {/* My Repairs quick toggle */}
-          {
-            myTechnicianId && (
-              <Button
-                variant={technicianFilter === myTechnicianId ? "default" : "outline"}
-                size="sm"
-                className="h-11 rounded-xl px-3 text-xs font-black uppercase tracking-wider"
-                onClick={() =>
-                  setTechnicianFilter(
-                    technicianFilter === myTechnicianId ? "All" : myTechnicianId,
-                  )
-                }
-              >
-                <UserCheck className="h-4 w-4 me-1.5" />
-                {t("repairs.myRepairs")}
-              </Button>
-            )
-          }
+          {myTechnicianId && (
+            <Button
+              variant={
+                technicianFilter === myTechnicianId ? "default" : "outline"
+              }
+              size="sm"
+              className="h-11 rounded-xl px-3 text-xs font-black uppercase tracking-wider"
+              onClick={() =>
+                setTechnicianFilter(
+                  technicianFilter === myTechnicianId ? "All" : myTechnicianId,
+                )
+              }
+            >
+              <UserCheck className="h-4 w-4 me-1.5" />
+              {t("repairs.myRepairs")}
+            </Button>
+          )}
 
           {/* Date Range Filter */}
           <DateRangePicker
             date={dateRange}
             onDateChange={setDateRange}
-            placeholder={t('common.pickDates')}
+            placeholder={t("common.pickDates")}
             className="w-[180px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950"
             showPresets={true}
           />
 
-          <Button 
-            variant="outline" 
-            size="icon" 
+          <Button
+            variant="outline"
+            size="icon"
             className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800"
             onClick={() => {
-                setGlobalFilter("");
-                setStatusFilter("All");
-                setPaymentStatusFilter("All");
-                setTechnicianFilter("All");
-                setDateRange(undefined);
+              setGlobalFilter("");
+              setStatusFilter("All");
+              setPaymentStatusFilter("All");
+              setTechnicianFilter("All");
+              setDateRange(undefined);
             }}
           >
             <X className="h-4 w-4" />
           </Button>
+
+          {/* Column visibility */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                title={t("common.columns")}
+                aria-label={t("common.columns")}
+                className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800"
+              >
+                <Columns2 className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="rounded-2xl border-none shadow-2xl p-2 min-w-[180px]"
+            >
+              {table
+                .getAllLeafColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => (
+                  <DropdownMenuItem
+                    key={column.id}
+                    onSelect={(e) => e.preventDefault()}
+                    className="rounded-xl font-bold text-xs uppercase tracking-wider py-2"
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 accent-primary cursor-pointer me-2"
+                      checked={column.getIsVisible()}
+                      onChange={column.getToggleVisibilityHandler()}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    {typeof column.columnDef.header === "string"
+                      ? column.columnDef.header
+                      : column.id}
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -403,13 +482,15 @@ export function RepairDataTable<TData, TValue>({
         technicianFilter !== "All" ||
         dateRange?.from) && (
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-gray-600 dark:text-slate-400">{t('common.activeFilters')}:</span>
+          <span className="text-sm text-gray-600 dark:text-slate-400">
+            {t("common.activeFilters")}:
+          </span>
           {globalFilter && (
             <Badge
               variant="secondary"
               className="bg-blue-100 text-blue-800 text-xs"
             >
-              {t('common.search')}: "
+              {t("common.search")}: "
               {globalFilter.length > 20
                 ? globalFilter.substring(0, 20) + "..."
                 : globalFilter}
@@ -421,7 +502,8 @@ export function RepairDataTable<TData, TValue>({
               variant="secondary"
               className="bg-green-100 text-green-800 text-xs"
             >
-              {t('repairs.status')}: {t('repairs.' + statusFilter.toLowerCase().replace(' ', ''))}
+              {t("repairs.status")}:{" "}
+              {t("repairs." + statusFilter.toLowerCase().replace(" ", ""))}
             </Badge>
           )}
           {paymentStatusFilter !== "All" && (
@@ -429,16 +511,22 @@ export function RepairDataTable<TData, TValue>({
               variant="secondary"
               className="bg-purple-100 text-purple-800 text-xs"
             >
-              {t('transactions_module.payment')}: {t('repairs.' + paymentStatusFilter.toLowerCase().replace(' ', ''))}
+              {t("transactions_module.payment")}:{" "}
+              {t(
+                "repairs." + paymentStatusFilter.toLowerCase().replace(" ", ""),
+              )}
             </Badge>
           )}
           {technicianFilter !== "All" && (
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+            <Badge
+              variant="secondary"
+              className="bg-blue-100 text-blue-800 text-xs"
+            >
               {t("repairs.technician")}:{" "}
               {technicianFilter === "Unassigned"
                 ? t("repairs.unassigned")
-                : technicians.find((tech) => tech.id === technicianFilter)?.name ??
-                  technicianFilter}
+                : (technicians.find((tech) => tech.id === technicianFilter)
+                    ?.name ?? technicianFilter)}
             </Badge>
           )}
           {dateRange?.from && (
@@ -446,7 +534,7 @@ export function RepairDataTable<TData, TValue>({
               variant="secondary"
               className="bg-orange-100 text-orange-800 text-xs"
             >
-              {t('common.date')}: {format(dateRange.from!, "MMM dd")}
+              {t("common.date")}: {format(dateRange.from!, "MMM dd")}
               {dateRange.to && ` - ${format(dateRange.to, "MMM dd")}`}
             </Badge>
           )}
@@ -463,7 +551,7 @@ export function RepairDataTable<TData, TValue>({
             className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/50 h-7"
           >
             <X className="mr-1 h-3 w-3" />
-            {t('common.clearAll')}
+            {t("common.clearAll")}
           </Button>
         </div>
       )}
@@ -540,15 +628,27 @@ export function RepairDataTable<TData, TValue>({
         <Table className="w-full text-left border-collapse">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="bg-muted/10 dark:bg-slate-800/50 border-b dark:border-slate-800 hover:bg-muted/10 dark:hover:bg-slate-800/50">
+              <TableRow
+                key={headerGroup.id}
+                className="bg-muted/10 dark:bg-slate-800/50 border-b dark:border-slate-800 hover:bg-muted/10 dark:hover:bg-slate-800/50"
+              >
                 {headerGroup.headers.map((header) => {
+                  const meta = header.column.columnDef.meta as
+                    | { className?: string }
+                    | undefined;
                   return (
-                    <TableHead key={header.id} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        "px-3 first:pl-5 last:pr-5 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground",
+                        meta?.className,
+                      )}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -562,16 +662,30 @@ export function RepairDataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={
+                    onRowClick ? () => onRowClick(row.original) : undefined
+                  }
                   className="hover:bg-muted/5 dark:hover:bg-slate-800/30 border-b dark:border-slate-800 transition-colors group cursor-pointer"
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-6 py-4">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = cell.column.columnDef.meta as
+                      | { className?: string }
+                      | undefined;
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          "px-3 first:pl-5 last:pr-5",
+                          meta?.className,
+                        )}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : (
@@ -580,7 +694,7 @@ export function RepairDataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  {t('common.noResults')}
+                  {t("common.noResults")}
                 </TableCell>
               </TableRow>
             )}
@@ -591,15 +705,18 @@ export function RepairDataTable<TData, TValue>({
       {/* Pagination */}
       <div className="flex items-center justify-between px-6 py-4 bg-muted/5 dark:bg-slate-900/50 border-t dark:border-slate-800">
         <div className="text-sm font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">
-          {t('common.showingCount', { 
-            count: table.getRowModel().rows.length, 
+          {t("common.showingCount", {
+            count: table.getRowModel().rows.length,
             total: table.getPreFilteredRowModel().rows.length,
-            label: t('repairs.title').toLowerCase()
-          }) || `Showing ${table.getRowModel().rows.length} of ${table.getPreFilteredRowModel().rows.length} repair(s)`}
+            label: t("repairs.title").toLowerCase(),
+          }) ||
+            `Showing ${table.getRowModel().rows.length} of ${table.getPreFilteredRowModel().rows.length} repair(s)`}
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
           <div className="flex items-center space-x-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{t('common.rowsPerPage')}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+              {t("common.rowsPerPage")}
+            </p>
             <Select
               value={`${table.getState().pagination.pageSize}`}
               onValueChange={(value) => {
@@ -611,9 +728,16 @@ export function RepairDataTable<TData, TValue>({
                   placeholder={table.getState().pagination.pageSize}
                 />
               </SelectTrigger>
-              <SelectContent side="top" className="rounded-xl border-none shadow-xl dark:bg-slate-900">
+              <SelectContent
+                side="top"
+                className="rounded-xl border-none shadow-xl dark:bg-slate-900"
+              >
                 {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`} className="text-xs font-bold">
+                  <SelectItem
+                    key={pageSize}
+                    value={`${pageSize}`}
+                    className="text-xs font-bold"
+                  >
                     {pageSize}
                   </SelectItem>
                 ))}
@@ -621,9 +745,9 @@ export function RepairDataTable<TData, TValue>({
             </Select>
           </div>
           <div className="flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-            {t('common.pageInfo', { 
-              current: table.getState().pagination.pageIndex + 1, 
-              total: table.getPageCount() 
+            {t("common.pageInfo", {
+              current: table.getState().pagination.pageIndex + 1,
+              total: table.getPageCount(),
             })}
           </div>
           <div className="flex items-center space-x-2">

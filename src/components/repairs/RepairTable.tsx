@@ -36,12 +36,8 @@ interface RepairTableProps {
 
 export function RepairTable({ onEditRepair }: RepairTableProps) {
   const { t, i18n } = useTranslation();
-  const {
-    repairs,
-    updateRepairStatus,
-    deleteRepair,
-    assignTechniciansBulk,
-  } = useRepairContext();
+  const { repairs, updateRepairStatus, deleteRepair, assignTechniciansBulk } =
+    useRepairContext();
   const { technicians, getTechnicianById } = useTechnicianContext();
   const { settings, getCurrencySymbol } = useSettings();
   const { printSticker, printReceipt, previewReceipt } = usePrintUtils();
@@ -197,6 +193,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
         searchColumn="customerName"
         searchPlaceholder={t("repairs.searchParts")}
         technicians={technicians}
+        onRowClick={(repair) => setSelectedRepair(repair)}
         onBulkAssign={assignTechniciansBulk}
       />
 

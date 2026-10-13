@@ -29,6 +29,7 @@ import {
   XCircle,
   DollarSign,
   MoreVertical,
+  Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
@@ -78,6 +79,15 @@ const getStatusConfig = (status: RepairStatus) => {
         indicator: "bg-gray-500",
       };
   }
+};
+
+// Deterministic avatar hue so each technician keeps a consistent color
+const getTechnicianHue = (id: string): number => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return hash % 360;
 };
 
 interface RepairColumnActions {
@@ -167,6 +177,7 @@ export const createRepairColumns = (
   {
     accessorKey: "deviceModel",
     header: t("repairs.device"),
+    meta: { className: "hidden md:table-cell" },
     cell: ({ row }) => {
       const repair = row.original;
       return (
@@ -184,6 +195,7 @@ export const createRepairColumns = (
   {
     accessorKey: "issueDescription",
     header: t("repairs.issue"),
+    meta: { className: "hidden xl:table-cell" },
     cell: ({ row }) => {
       const issue = row.getValue("issueDescription") as string;
       return (
@@ -212,22 +224,29 @@ export const createRepairColumns = (
       return nameA.localeCompare(nameB);
     },
     cell: ({ row }) => {
-      const name = actions.technicianName?.(row.original.technicianId);
+      const technicianId = row.original.technicianId;
+      const name = actions.technicianName?.(technicianId);
       if (!name) {
         return (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 whitespace-nowrap">
-            {t("repairs.unassigned")}
-          </span>
+          <div
+            title={t("repairs.unassigned")}
+            className="flex items-center justify-center h-7 w-7 rounded-lg border border-dashed border-muted-foreground/30 text-muted-foreground/40 cursor-default"
+          >
+            <Minus className="h-3.5 w-3.5" />
+          </div>
         );
       }
+      const hue = getTechnicianHue(technicianId ?? name);
       return (
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center justify-center h-7 w-7 shrink-0 rounded-lg bg-primary/10 text-primary text-[10px] font-black uppercase">
-            {name.slice(0, 2)}
-          </div>
-          <span className="text-xs font-black text-foreground truncate max-w-[120px]">
-            {name}
-          </span>
+        <div
+          title={name}
+          className="flex items-center justify-center h-7 w-7 shrink-0 rounded-lg text-[10px] font-black uppercase cursor-default"
+          style={{
+            backgroundColor: `hsl(${hue} 71% 45% / 0.18)`,
+            color: `hsl(${hue} 75% 38%)`,
+          }}
+        >
+          {name.slice(0, 2)}
         </div>
       );
     },
@@ -243,65 +262,69 @@ export const createRepairColumns = (
       const statusConfig = getStatusConfig(repair.status);
 
       return (
-        <Select
-          value={repair.status}
-          onValueChange={(newStatus: RepairStatus) => {
-            actions.updateRepairStatus(repair.id, newStatus);
-          }}
-        >
-          <SelectTrigger
-            className={cn(
-              "h-7 min-w-[130px] rounded-lg border-2 transition-all duration-200 px-2 py-0.5",
-              statusConfig.color,
-              statusConfig.hoverColor,
-            )}
+        <div onClick={(e) => e.stopPropagation()}>
+          <Select
+            value={repair.status}
+            onValueChange={(newStatus: RepairStatus) => {
+              actions.updateRepairStatus(repair.id, newStatus);
+            }}
           >
-            <SelectValue>
-              <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    "h-1.5 w-1.5 rounded-full",
-                    statusConfig.indicator,
-                  )}
-                ></div>
-                <span className="text-[10px] font-black uppercase tracking-widest">
-                  {t("repairs." + repair.status.toLowerCase().replace(" ", ""))}
-                </span>
-              </div>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-none shadow-2xl">
-            {(
-              [
-                "Pending",
-                "In Progress",
-                "Completed",
-                "Delivered",
-              ] as RepairStatus[]
-            ).map((status) => {
-              const config = getStatusConfig(status);
-              return (
-                <SelectItem
-                  key={status}
-                  value={status}
-                  className="py-2 transition-colors duration-200 hover:bg-muted"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={cn(
-                        "h-1.5 w-1.5 rounded-full",
-                        config.indicator,
-                      )}
-                    ></div>
-                    <span className="text-[10px] font-black uppercase tracking-widest">
-                      {t("repairs." + status.toLowerCase().replace(" ", ""))}
-                    </span>
-                  </div>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              className={cn(
+                "h-7 min-w-[110px] rounded-lg border-2 transition-all duration-200 px-2 py-0.5",
+                statusConfig.color,
+                statusConfig.hoverColor,
+              )}
+            >
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  <div
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      statusConfig.indicator,
+                    )}
+                  ></div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {t(
+                      "repairs." + repair.status.toLowerCase().replace(" ", ""),
+                    )}
+                  </span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-none shadow-2xl">
+              {(
+                [
+                  "Pending",
+                  "In Progress",
+                  "Completed",
+                  "Delivered",
+                ] as RepairStatus[]
+              ).map((status) => {
+                const config = getStatusConfig(status);
+                return (
+                  <SelectItem
+                    key={status}
+                    value={status}
+                    className="py-2 transition-colors duration-200 hover:bg-muted"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={cn(
+                          "h-1.5 w-1.5 rounded-full",
+                          config.indicator,
+                        )}
+                      ></div>
+                      <span className="text-[10px] font-black uppercase tracking-widest">
+                        {t("repairs." + status.toLowerCase().replace(" ", ""))}
+                      </span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
       );
     },
   },
@@ -400,12 +423,15 @@ export const createRepairColumns = (
     cell: ({ row }) => {
       const date = new Date(row.getValue("createdAt"));
       return (
-        <div className="flex flex-col">
+        <div
+          className="flex flex-col cursor-default"
+          title={`${format(date, "MMM dd, yyyy HH:mm")} · ${formatDistanceToNow(date, { addSuffix: true })}`}
+        >
           <span className="text-xs font-bold text-muted-foreground whitespace-nowrap">
             {format(date, "MMM dd")}
           </span>
           <span className="text-[10px] font-bold text-muted-foreground/50 uppercase">
-            {formatDistanceToNow(date, { addSuffix: true })}
+            {format(date, "HH:mm")}
           </span>
         </div>
       );
@@ -414,10 +440,14 @@ export const createRepairColumns = (
   {
     id: "actions",
     header: t("common.actions"),
+    enableHiding: false,
     cell: ({ row }) => {
       const repair = row.original;
       return (
-        <div className="flex items-center justify-end gap-1">
+        <div
+          className="flex items-center justify-end"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Actions Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -485,15 +515,6 @@ export const createRepairColumns = (
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => actions.onViewRepair(repair)}
-            className="rounded-xl group-hover:bg-white shadow-sm border opacity-0 group-hover:opacity-100 transition-all h-9 w-9"
-          >
-            <Icons.search className="h-4 w-4" />
-          </Button>
         </div>
       );
     },

@@ -120,6 +120,20 @@
             "sticker": "الملصق",
             "width": "العرض",
             "height": "الارتفاع"
+        },
+        "technicians": {
+            "description": "إدارة الفنيين الذين يعملون على الإصلاحات",
+            "add": "إضافة فني",
+            "edit": "تعديل الفني",
+            "name": "الاسم",
+            "phone": "الهاتف",
+            "specialties": "التخصصات",
+            "specialtiesHint": "مثال: شاشة، بطارية، منفذ الشحن (مفصولة بفواصل)",
+            "nameRequired": "اسم الفني مطلوب",
+            "deleteConfirm": "هل أنت متأكد من حذف هذا الفني؟",
+            "softDeleteHint": "يُفضَّل تعطيل الفنيين بدلاً من حذفهم للحفاظ على سجل الإسناد.",
+            "activate": "تفعيل",
+            "deactivate": "تعطيل"
         }
     },
     "app": {
@@ -434,7 +448,16 @@
         "collectionProgress": "المحصّل: {{percent}}%",
         "previewReceipt": "معاينة",
         "printAll": "طباعة الكل (وصل + ملصق)",
-        "showMoreEvents": "+{{count}} أحداث إضافية"
+        "showMoreEvents": "+{{count}} أحداث إضافية",
+        "technician": "الفني",
+        "unassigned": "غير مُسند",
+        "myRepairs": "إصلاحاتي",
+        "setAsMine": "تعيينه كفني خاص بي",
+        "selectedCount": "تم تحديد {{count}}",
+        "assign": "إسناد",
+        "addTechnician": "إضافة فني",
+        "techNameRequired": "اسم الفني مطلوب",
+        "depositRecorded": "تم تسجيل الدفعة كعربون"
     },
     "clients": {
         "title": "العملاء",
@@ -779,6 +802,9 @@
         "recentRepairs": "أحدث الإصلاحات",
         "unassigned": "غير مُسندة",
         "noRepairs": "لا توجد إصلاحات",
-        "empty": "لا يوجد مصلحون بعد"
+        "empty": "لا يوجد مصلحون بعد",
+        "completionRate": "نسبة الإنجاز",
+        "avgTurnaround": "متوسط مدة التنفيذ: {{days}} يوم",
+        "overloaded": "حمل زائد"
     }
 }

@@ -134,6 +134,20 @@
             "dimensions": "Dimensions",
             "size": "Size"
         },
+        "technicians": {
+            "description": "Manage the technicians who work on repairs",
+            "add": "Add Technician",
+            "edit": "Edit Technician",
+            "name": "Name",
+            "phone": "Phone",
+            "specialties": "Specialties",
+            "specialtiesHint": "e.g. screen, battery, charging port (comma separated)",
+            "nameRequired": "Technician name is required",
+            "deleteConfirm": "Are you sure you want to delete this technician?",
+            "softDeleteHint": "Prefer deactivating technicians instead of deleting them to keep assignment history.",
+            "activate": "Activate",
+            "deactivate": "Deactivate"
+        },
         "current": "Current Settings"
     },
     "app": {
@@ -448,7 +462,16 @@
         "collectionProgress": "Collected: {{percent}}%",
         "previewReceipt": "Preview",
         "printAll": "Print all (receipt + sticker)",
-        "showMoreEvents": "+{{count}} more events"
+        "showMoreEvents": "+{{count}} more events",
+        "technician": "Technician",
+        "unassigned": "Unassigned",
+        "myRepairs": "My Repairs",
+        "setAsMine": "Set as my technician",
+        "selectedCount": "{{count}} selected",
+        "assign": "Assign",
+        "addTechnician": "Add Technician",
+        "techNameRequired": "Technician name is required",
+        "depositRecorded": "Payment recorded as deposit"
     },
     "clients": {
         "title": "Clients",
@@ -875,6 +898,9 @@
         "recentRepairs": "Recent repairs",
         "unassigned": "Unassigned",
         "noRepairs": "No repairs yet",
-        "empty": "No technicians yet"
+        "empty": "No technicians yet",
+        "completionRate": "Completion",
+        "avgTurnaround": "Avg. turnaround: {{days}} days",
+        "overloaded": "Overloaded"
     }
 }

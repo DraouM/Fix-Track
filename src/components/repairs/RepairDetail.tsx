@@ -25,14 +25,23 @@ import {
   Tag,
   Banknote,
   Eye,
+  Users,
 } from "lucide-react";
 import { useRepairActions, useRepairContext } from "@/context/RepairContext";
+import { useTechnicianContext } from "@/context/TechnicianContext";
 import { useSettings } from "@/context/SettingsContext";
 import { Repair, RepairStatus, RepairHistory } from "@/types/repair";
 import { usePrintUtils } from "@/hooks/usePrintUtils";
 import { cn } from "@/lib/utils";
 import { formatCurrencySmart } from "@/lib/formatters";
 import { RepairPaymentForm } from "./RepairPaymentForm";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { invoke } from "@tauri-apps/api/core";
 
 interface RepairDetailProps {
@@ -84,8 +93,13 @@ export function RepairDetail({
   onOpenChange,
 }: RepairDetailProps) {
   const { t, i18n } = useTranslation();
-  const { updateRepairStatus, fetchRepairById } = useRepairActions();
+  const {
+    updateRepairStatus,
+    fetchRepairById,
+    assignTechnician,
+  } = useRepairActions();
   const { getItemById, repairs } = useRepairContext();
+  const { activeTechnicians, getTechnicianById } = useTechnicianContext();
   const { settings } = useSettings();
   const { printReceipt, printSticker, printRepairSequence, previewReceipt } =
     usePrintUtils();
@@ -750,6 +764,53 @@ export function RepairDetail({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Technician Assignment */}
+              <div className="space-y-2.5 pt-4 border-t border-gray-50 dark:border-slate-800">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                  <Users className="h-3 w-3" />
+                  {t("repairs.technician")}
+                </p>
+                <Select
+                  value={currentRepair.technicianId ?? "__none"}
+                  onValueChange={(value: string) => {
+                    assignTechnician(
+                      currentRepair.id,
+                      value === "__none" ? null : value,
+                    );
+                  }}
+                >
+                  <SelectTrigger className="h-10 rounded-xl border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-xs font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
+                    <SelectItem
+                      value="__none"
+                      className="font-bold text-xs uppercase tracking-wider"
+                    >
+                      {t("repairs.unassigned")}
+                    </SelectItem>
+                    {activeTechnicians.map((tech) => (
+                      <SelectItem
+                        key={tech.id}
+                        value={tech.id}
+                        className="font-bold text-xs"
+                      >
+                        {tech.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {currentRepair.technicianId &&
+                  !activeTechnicians.some(
+                    (tech) => tech.id === currentRepair.technicianId,
+                  ) && (
+                    <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wider">
+                      {t("technicians.inactive")}: 
+                      {getTechnicianById(currentRepair.technicianId)?.name}
+                    </p>
+                  )}
               </div>
 
               {/* Financial Summary */}

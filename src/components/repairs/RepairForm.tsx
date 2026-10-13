@@ -33,6 +33,7 @@ import {
 } from "@/types/repair";
 import { useRepairContext } from "@/context/RepairContext";
 import { useTechnicianContext } from "@/context/TechnicianContext";
+import { parseSpecialties } from "@/types/technician";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -233,6 +234,32 @@ export default function RepairForm({
   }, [watchedParts]);
 
   const laborCost = watchedEstimated - partsTotal;
+
+  // Smart technician suggestion: rank technicians whose specialties match
+  // the currently typed issue description first
+  const watchedIssue = (form.watch("issueDescription") || "").toLowerCase();
+  const { techniciansSorted, matchedTechnicianIds } = useMemo(() => {
+    if (!watchedIssue) {
+      return {
+        techniciansSorted: activeTechnicians,
+        matchedTechnicianIds: new Set<string>(),
+      };
+    }
+    const matched = new Set<string>();
+    const scored = activeTechnicians.map((tech) => {
+      const isMatch = parseSpecialties(tech.specialties).some((skill) =>
+        watchedIssue.includes(skill.toLowerCase()),
+      );
+      if (isMatch) matched.add(tech.id);
+      return { tech, score: isMatch ? 1 : 0 };
+    });
+    return {
+      techniciansSorted: scored
+        .sort((a, b) => b.score - a.score)
+        .map((entry) => entry.tech),
+      matchedTechnicianIds: matched,
+    };
+  }, [activeTechnicians, watchedIssue]);
 
   // Sync form when repairToEdit changes (highly important for modals)
   useEffect(() => {
@@ -474,13 +501,18 @@ export default function RepairForm({
                         >
                           {t("repairs.unassigned")}
                         </SelectItem>
-                        {activeTechnicians.map((tech) => (
+                        {techniciansSorted.map((tech) => (
                           <SelectItem
                             key={tech.id}
                             value={tech.id}
                             className="rounded-xl font-bold uppercase text-[9px] tracking-widest py-3"
                           >
-                            {tech.name}
+                            <span className="flex items-center gap-2">
+                              {tech.name}
+                              {matchedTechnicianIds.has(tech.id) && (
+                                <Wrench className="h-3 w-3 text-orange-500" />
+                              )}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>

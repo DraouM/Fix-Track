@@ -148,6 +148,7 @@ export function RepairsPageInner() {
           createdAt: raw.created_at,
           updatedAt: raw.updated_at,
           code: raw.code,
+          technicianId: raw.technician_id ?? null,
           // Recalculate totals if needed
           totalPaid: mappedPayments.reduce(
             (sum: number, p: any) => sum + (p.amount || 0),

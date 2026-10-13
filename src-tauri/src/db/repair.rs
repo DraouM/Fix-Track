@@ -320,6 +320,70 @@ pub fn assign_technician(repair_id: String, technician_id: Option<String>) -> Re
     Ok(())
 }
 
+/// Assign (or unassign) a technician for many repairs in one call.
+/// Each repair gets its own `note` history entry, like assign_technician.
+#[tauri::command]
+pub fn assign_technicians_bulk(
+    repair_ids: Vec<String>,
+    technician_id: Option<String>,
+) -> Result<usize, String> {
+    let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
+
+    // Validate the technician exists (when assigning)
+    if technician_id.is_some() {
+        let exists: bool = conn
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM technicians WHERE id = ?1)",
+                params![technician_id.clone()],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())?;
+        if !exists {
+            return Err("Technician not found".to_string());
+        }
+    }
+
+    // Resolve technician name once for the history notes
+    let details = if technician_id.is_some() {
+        let name: String = conn
+            .query_row(
+                "SELECT name FROM technicians WHERE id = ?1",
+                params![technician_id.clone()],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|_| "Unknown".to_string());
+        format!("Assigned to: {}", name)
+    } else {
+        "Unassigned".to_string()
+    };
+
+    use chrono::Utc;
+    use uuid::Uuid;
+    let mut updated = 0usize;
+    for repair_id in repair_ids {
+        updated += conn
+            .execute(
+                "UPDATE repairs SET technician_id = ?2, updated_at = datetime('now') WHERE id = ?1",
+                params![repair_id.clone(), technician_id.clone()],
+            )
+            .map_err(|e| e.to_string())?;
+        conn.execute(
+            "INSERT INTO repair_history (id, repair_id, date, event_type, details, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                Uuid::new_v4().to_string(),
+                repair_id,
+                Utc::now().to_rfc3339(),
+                "note",
+                details.clone(),
+                Option::<String>::None,
+            ],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    Ok(updated)
+}
+
 /// Delete repair (cascade will clear children)
 #[tauri::command]
 pub fn delete_repair(id: String) -> Result<(), String> {

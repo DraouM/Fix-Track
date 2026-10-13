@@ -27,10 +27,11 @@ use db::order::{
 };
 use db::payment::get_all_payments;
 use db::repair::{
-    add_payment, add_used_part, assign_technician, delete_repair, delete_repair_payment,
-    delete_used_part, get_all_repair_payments, get_history_for_repair, get_payments_for_repair,
-    get_repair_by_id, get_repairs, get_used_parts_for_repair, insert_repair, insert_repair_history,
-    update_repair, update_repair_payment, update_repair_status,
+    add_payment, add_used_part, assign_technician, assign_technicians_bulk, delete_repair,
+    delete_repair_payment, delete_used_part, get_all_repair_payments, get_history_for_repair,
+    get_payments_for_repair, get_repair_by_id, get_repairs, get_used_parts_for_repair,
+    insert_repair, insert_repair_history, update_repair, update_repair_payment,
+    update_repair_status,
 };
 use db::sale::{
     add_sale_item, add_sale_payment, complete_sale, create_sale, get_sale_by_id, get_sales,
@@ -106,6 +107,7 @@ fn main() {
             insert_repair_history,
             get_history_for_repair,
             assign_technician,
+            assign_technicians_bulk,
             // TECHNICIANS
             get_technicians,
             insert_technician,

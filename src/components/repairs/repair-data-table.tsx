@@ -34,11 +34,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Filter, Search, ChevronRight, ChevronLeft } from "lucide-react";
+import {
+  X,
+  Filter,
+  Search,
+  ChevronRight,
+  ChevronLeft,
+  Users,
+  UserCheck,
+  Star,
+} from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import type { Technician } from "@/types/technician";
+
+// Sentinel used by Radix Select (empty string values are not allowed)
+const UNASSIGNED_SENTINEL = "__unassigned";
+const MY_TECHNICIAN_KEY = "fixary.myTechnician";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -46,12 +60,19 @@ interface DataTableProps<TData, TValue> {
   searchColumn?: string;
   searchPlaceholder?: string;
   globalFilter?: boolean;
+  technicians?: Technician[];
+  onBulkAssign?: (
+    repairIds: string[],
+    technicianId: string | null,
+  ) => Promise<void>;
 }
 
 export function RepairDataTable<TData, TValue>({
   columns,
   data,
   searchPlaceholder,
+  technicians = [],
+  onBulkAssign,
 }: DataTableProps<TData, TValue>) {
   const { t } = useTranslation();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -64,6 +85,19 @@ export function RepairDataTable<TData, TValue>({
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("All");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [technicianFilter, setTechnicianFilter] = useState<string>("All");
+  const [myTechnicianId, setMyTechnicianId] = useState<string | null>(null);
+  const [bulkTarget, setBulkTarget] = useState<string>(UNASSIGNED_SENTINEL);
+  const [isBulkApplying, setIsBulkApplying] = useState(false);
+
+  // Load the remembered "my technician" id once
+  useEffect(() => {
+    try {
+      setMyTechnicianId(localStorage.getItem(MY_TECHNICIAN_KEY));
+    } catch {
+      // localStorage unavailable
+    }
+  }, []);
 
   // Trigger re-filter when status filters change
   useEffect(() => {
@@ -81,8 +115,12 @@ export function RepairDataTable<TData, TValue>({
       });
     }
 
+    if (technicianFilter !== "All") {
+      newColumnFilters.push({ id: "technicianId", value: technicianFilter });
+    }
+
     setColumnFilters(newColumnFilters);
-  }, [statusFilter, paymentStatusFilter]);
+  }, [statusFilter, paymentStatusFilter, technicianFilter]);
 
   // Add this effect to handle date filtering
   useEffect(() => {
@@ -146,6 +184,8 @@ export function RepairDataTable<TData, TValue>({
       },
     },
   });
+
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
 
   return (
     <div className="w-full space-y-4">
@@ -242,6 +282,94 @@ export function RepairDataTable<TData, TValue>({
             </SelectContent>
           </Select>
 
+          {/* Technician Filter */}
+          <Select value={technicianFilter} onValueChange={setTechnicianFilter}>
+            <SelectTrigger className="w-[170px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
+              <SelectValue placeholder={t("repairs.technician")} />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
+              <SelectItem value="All" className="font-bold text-xs uppercase tracking-wider">
+                {t("common.all")} {t("repairs.technician")}
+              </SelectItem>
+              <SelectItem value="Unassigned" className="font-bold text-xs uppercase tracking-wider">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  {t("repairs.unassigned")}
+                </div>
+              </SelectItem>
+              {technicians.map((tech) => (
+                <SelectItem
+                  key={tech.id}
+                  value={tech.id}
+                  className="font-bold text-xs uppercase tracking-wider"
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        "w-2 h-2 rounded-full",
+                        tech.active ? "bg-green-500" : "bg-gray-400",
+                      )}
+                    ></div>
+                    {tech.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Remember current technician as "mine" */}
+          {
+            technicianFilter !== "All" &&
+              technicianFilter !== "Unassigned" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  title={t("repairs.setAsMine")}
+                  className={cn(
+                    "h-11 w-11 rounded-xl",
+                    myTechnicianId === technicianFilter
+                      ? "text-amber-500"
+                      : "text-muted-foreground",
+                  )}
+                  onClick={() => {
+                    try {
+                      localStorage.setItem(MY_TECHNICIAN_KEY, technicianFilter);
+                    } catch {
+                      // ignore
+                    }
+                    setMyTechnicianId(technicianFilter);
+                  }}
+                >
+                  <Star
+                    className={cn(
+                      "h-4 w-4",
+                      myTechnicianId === technicianFilter && "fill-amber-400",
+                    )}
+                  />
+                </Button>
+              )
+          }
+
+          {/* My Repairs quick toggle */}
+          {
+            myTechnicianId && (
+              <Button
+                variant={technicianFilter === myTechnicianId ? "default" : "outline"}
+                size="sm"
+                className="h-11 rounded-xl px-3 text-xs font-black uppercase tracking-wider"
+                onClick={() =>
+                  setTechnicianFilter(
+                    technicianFilter === myTechnicianId ? "All" : myTechnicianId,
+                  )
+                }
+              >
+                <UserCheck className="h-4 w-4 me-1.5" />
+                {t("repairs.myRepairs")}
+              </Button>
+            )
+          }
+
           {/* Date Range Filter */}
           <DateRangePicker
             date={dateRange}
@@ -259,6 +387,7 @@ export function RepairDataTable<TData, TValue>({
                 setGlobalFilter("");
                 setStatusFilter("All");
                 setPaymentStatusFilter("All");
+                setTechnicianFilter("All");
                 setDateRange(undefined);
             }}
           >
@@ -271,6 +400,7 @@ export function RepairDataTable<TData, TValue>({
       {(globalFilter ||
         statusFilter !== "All" ||
         paymentStatusFilter !== "All" ||
+        technicianFilter !== "All" ||
         dateRange?.from) && (
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-sm text-gray-600 dark:text-slate-400">{t('common.activeFilters')}:</span>
@@ -302,6 +432,15 @@ export function RepairDataTable<TData, TValue>({
               {t('transactions_module.payment')}: {t('repairs.' + paymentStatusFilter.toLowerCase().replace(' ', ''))}
             </Badge>
           )}
+          {technicianFilter !== "All" && (
+            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+              {t("repairs.technician")}:{" "}
+              {technicianFilter === "Unassigned"
+                ? t("repairs.unassigned")
+                : technicians.find((tech) => tech.id === technicianFilter)?.name ??
+                  technicianFilter}
+            </Badge>
+          )}
           {dateRange?.from && (
             <Badge
               variant="secondary"
@@ -318,12 +457,80 @@ export function RepairDataTable<TData, TValue>({
               setGlobalFilter("");
               setStatusFilter("All");
               setPaymentStatusFilter("All");
+              setTechnicianFilter("All");
               setDateRange(undefined);
             }}
             className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/50 h-7"
           >
             <X className="mr-1 h-3 w-3" />
             {t('common.clearAll')}
+          </Button>
+        </div>
+      )}
+
+      {/* Bulk Assignment Bar */}
+      {onBulkAssign && selectedRows.length > 0 && (
+        <div className="mx-6 flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl bg-primary/5 dark:bg-blue-900/10 border border-primary/10 dark:border-blue-900/20">
+          <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-primary">
+            <Users className="h-4 w-4" />
+            {t("repairs.selectedCount", { count: selectedRows.length })}
+          </span>
+          <Select value={bulkTarget} onValueChange={setBulkTarget}>
+            <SelectTrigger className="w-[180px] h-10 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
+              <SelectItem
+                value={UNASSIGNED_SENTINEL}
+                className="font-bold text-xs uppercase tracking-wider"
+              >
+                {t("repairs.unassigned")}
+              </SelectItem>
+              {technicians
+                .filter((tech) => tech.active)
+                .map((tech) => (
+                  <SelectItem
+                    key={tech.id}
+                    value={tech.id}
+                    className="font-bold text-xs uppercase tracking-wider"
+                  >
+                    {tech.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            className="h-10 rounded-xl px-4 text-xs font-black uppercase tracking-wider"
+            disabled={isBulkApplying}
+            onClick={async () => {
+              setIsBulkApplying(true);
+              try {
+                const ids = selectedRows.map((row) =>
+                  String((row.original as any).id),
+                );
+                await onBulkAssign(
+                  ids,
+                  bulkTarget === UNASSIGNED_SENTINEL ? null : bulkTarget,
+                );
+                setRowSelection({});
+              } catch (error) {
+                console.error("Bulk assign failed:", error);
+              } finally {
+                setIsBulkApplying(false);
+              }
+            }}
+          >
+            {t("repairs.assign")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-10 rounded-xl text-xs font-bold uppercase tracking-wider"
+            onClick={() => setRowSelection({})}
+          >
+            <X className="h-3.5 w-3.5 me-1" />
+            {t("common.cancel")}
           </Button>
         </div>
       )}

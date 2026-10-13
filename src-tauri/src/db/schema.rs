@@ -99,12 +99,15 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             phone TEXT,
+            specialties TEXT,
             active INTEGER NOT NULL DEFAULT 1, -- 1 for active, 0 for inactive
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )",
         [],
     )?;
+    // Forgiving migration for databases created before the specialties column
+    let _ = conn.execute("ALTER TABLE technicians ADD COLUMN specialties TEXT", []);
 
     // Repair payments (supports multiple/partial payments)
     conn.execute(

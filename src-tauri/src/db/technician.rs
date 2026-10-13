@@ -8,9 +8,10 @@ fn map_technician_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Technician> {
         id: row.get(0)?,
         name: row.get(1)?,
         phone: row.get(2).ok(),
-        active: row.get::<_, bool>(3).unwrap_or(true),
-        created_at: row.get(4)?,
-        updated_at: row.get(5)?,
+        specialties: row.get(3).ok(),
+        active: row.get::<_, bool>(4).unwrap_or(true),
+        created_at: row.get(5)?,
+        updated_at: row.get(6)?,
     })
 }
 
@@ -20,7 +21,7 @@ pub fn get_technicians() -> Result<Vec<Technician>, String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare(
-            "SELECT id, name, phone, active, created_at, updated_at
+            "SELECT id, name, phone, specialties, active, created_at, updated_at
              FROM technicians
              ORDER BY active DESC, name COLLATE NOCASE ASC",
         )
@@ -38,12 +39,13 @@ pub fn get_technicians() -> Result<Vec<Technician>, String> {
 pub fn insert_technician(technician: Technician) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     conn.execute(
-        "INSERT INTO technicians (id, name, phone, active, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, datetime('now'), datetime('now'))",
+        "INSERT INTO technicians (id, name, phone, specialties, active, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, datetime('now'), datetime('now'))",
         params![
             technician.id,
             technician.name,
             technician.phone,
+            technician.specialties,
             technician.active,
         ],
     )
@@ -56,12 +58,13 @@ pub fn insert_technician(technician: Technician) -> Result<(), String> {
 pub fn update_technician(technician: Technician) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     conn.execute(
-        "UPDATE technicians SET name = ?2, phone = ?3, active = ?4, updated_at = datetime('now')
+        "UPDATE technicians SET name = ?2, phone = ?3, specialties = ?4, active = ?5, updated_at = datetime('now')
          WHERE id = ?1",
         params![
             technician.id,
             technician.name,
             technician.phone,
+            technician.specialties,
             technician.active,
         ],
     )

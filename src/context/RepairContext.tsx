@@ -66,6 +66,10 @@ interface RepairActions {
     repairId: string,
     technicianId: string | null,
   ) => Promise<void>;
+  assignTechniciansBulk: (
+    repairIds: string[],
+    technicianId: string | null,
+  ) => Promise<void>;
   addPayment: (repairId: string, payment: PaymentInput) => Promise<void>;
   addUsedPart: (repairId: string, part: UsedPartInput) => Promise<void>;
   deleteUsedPart: (repairId: string, recordId: string) => Promise<void>;
@@ -460,6 +464,40 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     [clearError],
   );
 
+  // ✅ Bulk assign (or unassign) a technician for many repairs
+  const assignTechniciansBulk = useCallback(
+    async (repairIds: string[], technicianId: string | null) => {
+      if (repairIds.length === 0) return;
+      clearError();
+      await withAsync(
+        () =>
+          invoke("assign_technicians_bulk", {
+            repairIds,
+            technicianId,
+          }),
+        {
+          onSuccess: () => {
+            toast.success(
+              technicianId
+                ? `${repairIds.length} repair(s) assigned`
+                : `${repairIds.length} repair(s) unassigned`,
+            );
+            const idSet = new Set(repairIds);
+            setRepairs((prev) =>
+              prev.map((r) =>
+                idSet.has(r.id)
+                  ? { ...r, technicianId: technicianId ?? null }
+                  : r,
+              ),
+            );
+          },
+          onError: (msg) => setError(msg),
+        },
+      );
+    },
+    [clearError],
+  );
+
   // Payment status is now automatically determined by the backend based on payments
 
   // ✅ Add payment
@@ -638,6 +676,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       deleteRepair,
       updateRepairStatus,
       assignTechnician,
+      assignTechniciansBulk,
       addPayment,
       addUsedPart,
       getRepairHistory,
@@ -659,6 +698,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       deleteRepair,
       updateRepairStatus,
       assignTechnician,
+      assignTechniciansBulk,
       addPayment,
       addUsedPart,
       getRepairHistory,
@@ -736,6 +776,7 @@ export function useRepairActions(): RepairActions {
     deleteRepair,
     updateRepairStatus,
     assignTechnician,
+    assignTechniciansBulk,
     addPayment,
     addUsedPart,
     getRepairHistory,
@@ -757,6 +798,7 @@ export function useRepairActions(): RepairActions {
     deleteRepair,
     updateRepairStatus,
     assignTechnician,
+    assignTechniciansBulk,
     addPayment,
     addUsedPart,
     getRepairHistory,

@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useRepairContext } from "@/context/RepairContext";
+import { useTechnicianContext } from "@/context/TechnicianContext";
 import { useSettings } from "@/context/SettingsContext";
 import {
   formatCurrency as formatCurrencyCentralized,
@@ -35,7 +36,13 @@ interface RepairTableProps {
 
 export function RepairTable({ onEditRepair }: RepairTableProps) {
   const { t, i18n } = useTranslation();
-  const { repairs, updateRepairStatus, deleteRepair } = useRepairContext();
+  const {
+    repairs,
+    updateRepairStatus,
+    deleteRepair,
+    assignTechniciansBulk,
+  } = useRepairContext();
+  const { technicians, getTechnicianById } = useTechnicianContext();
   const { settings, getCurrencySymbol } = useSettings();
   const { printSticker, printReceipt, previewReceipt } = usePrintUtils();
 
@@ -158,6 +165,8 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       onPrintSticker: handlePrintSticker,
       onPrintReceipt: handlePrintReceipt,
       onPreviewReceipt: handlePreviewReceipt,
+      technicianName: (id?: string | null) =>
+        getTechnicianById(id)?.name ?? undefined,
     }),
     [
       onEditRepair,
@@ -169,6 +178,7 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
       handlePrintSticker,
       handlePrintReceipt,
       handlePreviewReceipt,
+      getTechnicianById,
     ],
   );
 
@@ -186,6 +196,8 @@ export function RepairTable({ onEditRepair }: RepairTableProps) {
         data={repairs}
         searchColumn="customerName"
         searchPlaceholder={t("repairs.searchParts")}
+        technicians={technicians}
+        onBulkAssign={assignTechniciansBulk}
       />
 
       {/* -------------------- Detail Modal -------------------- */}

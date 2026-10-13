@@ -120,6 +120,20 @@
             "sticker": "Étiquette",
             "width": "Largeur",
             "height": "Hauteur"
+        },
+        "technicians": {
+            "description": "Gérez les réparateurs qui travaillent sur les réparations",
+            "add": "Ajouter un réparateur",
+            "edit": "Modifier le réparateur",
+            "name": "Nom",
+            "phone": "Téléphone",
+            "specialties": "Spécialités",
+            "specialtiesHint": "ex. écran, batterie, connecteur de charge (séparées par des virgules)",
+            "nameRequired": "Le nom du réparateur est requis",
+            "deleteConfirm": "Voulez-vous vraiment supprimer ce réparateur ?",
+            "softDeleteHint": "Préférez désactiver les réparateurs plutôt que les supprimer pour conserver l'historique des attributions.",
+            "activate": "Activer",
+            "deactivate": "Désactiver"
         }
     },
     "app": {
@@ -434,7 +448,16 @@
         "collectionProgress": "Encaissé : {{percent}}%",
         "previewReceipt": "Aperçu",
         "printAll": "Tout imprimer (reçu + étiquette)",
-        "showMoreEvents": "+{{count}} événements supplémentaires"
+        "showMoreEvents": "+{{count}} événements supplémentaires",
+        "technician": "Réparateur",
+        "unassigned": "Non attribuée",
+        "myRepairs": "Mes réparations",
+        "setAsMine": "Définir comme mon réparateur",
+        "selectedCount": "{{count}} sélectionnée(s)",
+        "assign": "Attribuer",
+        "addTechnician": "Ajouter un réparateur",
+        "techNameRequired": "Le nom du réparateur est requis",
+        "depositRecorded": "Paiement enregistré comme acompte"
     },
     "clients": {
         "title": "Clients",
@@ -778,6 +801,9 @@
         "recentRepairs": "Réparations récentes",
         "unassigned": "Non attribuées",
         "noRepairs": "Aucune réparation",
-        "empty": "Aucun réparateur pour le moment"
+        "empty": "Aucun réparateur pour le moment",
+        "completionRate": "Aboutissement",
+        "avgTurnaround": "Délai moyen : {{days}} jours",
+        "overloaded": "Surcharge"
     }
 }

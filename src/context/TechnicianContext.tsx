@@ -28,6 +28,7 @@ interface TechnicianActions {
   createTechnician: (data: {
     name: string;
     phone?: string | null;
+    specialties?: string | null;
   }) => Promise<Technician | undefined>;
   updateTechnician: (technician: Technician) => Promise<void>;
   deleteTechnician: (id: string) => Promise<void>;
@@ -92,13 +93,14 @@ export const TechnicianProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [fetchTechnicians, initialized]);
 
   const createTechnician = useCallback(
-    async (data: { name: string; phone?: string | null }) => {
+    async (data: { name: string; phone?: string | null; specialties?: string | null }) => {
       setLoading(true);
       clearError();
       const technician: TechnicianDb = {
         id: uuidv4(),
         name: data.name,
         phone: data.phone ?? null,
+        specialties: data.specialties ?? null,
         active: true,
         created_at: "",
         updated_at: "",
@@ -129,6 +131,7 @@ export const TechnicianProvider: React.FC<{ children: React.ReactNode }> = ({
         id: technician.id,
         name: technician.name,
         phone: technician.phone ?? null,
+        specialties: technician.specialties ?? null,
         active: technician.active,
         created_at: technician.createdAt,
         updated_at: technician.updatedAt,

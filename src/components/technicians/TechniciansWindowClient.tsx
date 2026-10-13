@@ -16,6 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Repair, RepairStatus } from "@/types/repair";
 import type { Technician } from "@/types/technician";
+import { parseSpecialties } from "@/types/technician";
+
+// Active workload above this threshold highlights the technician as overloaded
+const OVERLOAD_THRESHOLD = 8;
 
 const getStatusDot = (status: RepairStatus) => {
   switch (status) {
@@ -89,7 +93,38 @@ function TechnicianCard({
         sum + (r.payments || []).reduce((s, p) => s + (p.amount || 0), 0),
       0,
     );
-    return { total, active, delivered, collected };
+    // Completion: repairs that reached Completed or Delivered over total
+    const doneCount = repairs.filter(
+      (r) => r.status === "Completed" || r.status === "Delivered",
+    ).length;
+    const completionRate = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+    // Average turnaround (days) for finished repairs
+    const finished = repairs.filter(
+      (r) => r.status === "Completed" || r.status === "Delivered",
+    );
+    const avgTurnaroundDays =
+      finished.length > 0
+        ? finished.reduce(
+            (sum, r) =>
+              sum +
+              Math.max(
+                0,
+                (new Date(r.updatedAt).getTime() -
+                  new Date(r.createdAt).getTime()) /
+                  86400000,
+              ),
+            0,
+          ) / finished.length
+        : null;
+    return {
+      total,
+      active,
+      delivered,
+      collected,
+      completionRate,
+      avgTurnaroundDays,
+      overloaded: active >= OVERLOAD_THRESHOLD,
+    };
   }, [repairs]);
 
   const recentRepairs = useMemo(
@@ -102,6 +137,8 @@ function TechnicianCard({
         .slice(0, 5),
     [repairs],
   );
+
+  const skills = parseSpecialties(technician.specialties);
 
   return (
     <div
@@ -133,6 +170,18 @@ function TechnicianCard({
                 {technician.phone}
               </span>
             )}
+            {skills.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap mt-1">
+                {skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <Badge
@@ -159,11 +208,15 @@ function TechnicianCard({
         <TechnicianStat
           label={t("technicians.activeRepairs")}
           value={String(stats.active)}
-          className="text-blue-600 dark:text-blue-400"
+          className={
+            stats.overloaded
+              ? "text-red-600 dark:text-red-400"
+              : "text-blue-600 dark:text-blue-400"
+          }
         />
         <TechnicianStat
-          label={t("technicians.delivered")}
-          value={String(stats.delivered)}
+          label={t("technicians.completionRate")}
+          value={`${stats.completionRate}%`}
           className="text-purple-600 dark:text-purple-400"
         />
         <TechnicianStat
@@ -171,6 +224,22 @@ function TechnicianCard({
           value={formatMoney(stats.collected)}
           className="text-green-600 dark:text-green-400"
         />
+      </div>
+      <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground/70 -mt-2">
+        <span>
+          {stats.avgTurnaroundDays !== null &&
+            t("technicians.avgTurnaround", {
+              days: stats.avgTurnaroundDays.toFixed(1),
+            })}
+        </span>
+        {stats.overloaded && (
+          <span className="text-red-500 font-black uppercase tracking-wider">
+            {t("technicians.overloaded")}
+          </span>
+        )}
+        <span className="tabular-nums">
+          {t("technicians.delivered")}: {stats.delivered}
+        </span>
       </div>
 
       {/* Recent repairs */}

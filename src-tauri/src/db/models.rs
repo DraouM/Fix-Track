@@ -66,6 +66,8 @@ pub struct Technician {
     pub id: String,
     pub name: String,
     pub phone: Option<String>,
+    #[serde(default)]
+    pub specialties: Option<String>,
     pub active: bool,
     #[serde(default)]
     pub created_at: String,

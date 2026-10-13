@@ -99,12 +99,40 @@ interface RepairColumnActions {
   onPrintReceipt: (repair: Repair) => void;
   // Add preview receipt function
   onPreviewReceipt: (repair: Repair) => void;
+  // Technician display name lookup (undefined when unassigned)
+  technicianName?: (id?: string | null) => string | undefined;
 }
 
 export const createRepairColumns = (
   actions: RepairColumnActions,
   t: any,
 ): ColumnDef<Repair>[] => [
+  // Selection checkbox column (enables bulk actions)
+  {
+    id: "select",
+    header: ({ table }) => (
+      <input
+        type="checkbox"
+        className="h-4 w-4 rounded border-gray-300 accent-primary cursor-pointer"
+        checked={table.getIsAllPageRowsSelected()}
+        onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <input
+        type="checkbox"
+        className="h-4 w-4 rounded border-gray-300 accent-primary cursor-pointer"
+        checked={row.getIsSelected()}
+        onChange={(e) => row.toggleSelected(!!e.target.checked)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 40,
+  },
   // {  the code of the repairs id
   //   accessorKey: "code",
   //   header: t("repairs.orderDetail")?.split(" ")[0] || "Order #",
@@ -165,6 +193,40 @@ export const createRepairColumns = (
             title={issue}
           >
             {issue}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "technicianId",
+    header: t("repairs.technician"),
+    filterFn: (row, id, value) => {
+      if (value === "All") return true;
+      if (value === "Unassigned") return !row.original.technicianId;
+      return row.original.technicianId === value;
+    },
+    sortingFn: (rowA, rowB) => {
+      const nameA = actions.technicianName?.(rowA.original.technicianId) ?? "";
+      const nameB = actions.technicianName?.(rowB.original.technicianId) ?? "";
+      return nameA.localeCompare(nameB);
+    },
+    cell: ({ row }) => {
+      const name = actions.technicianName?.(row.original.technicianId);
+      if (!name) {
+        return (
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 whitespace-nowrap">
+            {t("repairs.unassigned")}
+          </span>
+        );
+      }
+      return (
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center justify-center h-7 w-7 shrink-0 rounded-lg bg-primary/10 text-primary text-[10px] font-black uppercase">
+            {name.slice(0, 2)}
+          </div>
+          <span className="text-xs font-black text-foreground truncate max-w-[120px]">
+            {name}
           </span>
         </div>
       );

@@ -38,6 +38,7 @@ export interface Repair {
   createdAt: string;
   updatedAt: string;
   code?: string;
+  technicianId?: string | null;
 }
 
 export interface RepairDb {
@@ -61,6 +62,7 @@ export interface RepairDb {
   created_at: string;
   updated_at: string;
   code?: string;
+  technician_id?: string | null;
 }
 
 // --- PAYMENTS ---
@@ -153,6 +155,7 @@ export const repairSchema = z.object({
     "Delivered",
   ]),
   paymentStatus: z.enum(["Unpaid", "Paid", "Partially", "Refunded"]),
+  technicianId: z.string().optional().nullable(),
   usedParts: z.array(usedPartFormSchema).optional().default([]),
 });
 

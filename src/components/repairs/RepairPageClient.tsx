@@ -2,6 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useCallback, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Icons } from "@/components/icons";
-import { Wrench, DollarSign, Download, Upload } from "lucide-react";
+import { Wrench, DollarSign, Download, Upload, Users } from "lucide-react";
+import { openTechniciansWindow } from "@/lib/openWindow";
 
 import RepairForm from "@/components/repairs/RepairForm";
 import { RepairTable } from "@/components/repairs/RepairTable";
@@ -29,6 +31,7 @@ import {
 
 export function RepairsPageInner() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { repairs } = useRepairContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [repairToEdit, setRepairToEdit] = useState<Repair | null>(null);
@@ -170,6 +173,15 @@ export function RepairsPageInner() {
     }
   }, []);
 
+  // ✅ Open technicians details in a dedicated window (native in Tauri,
+  // in-app navigation as web fallback)
+  const handleOpenTechniciansWindow = useCallback(async () => {
+    const opened = await openTechniciansWindow();
+    if (!opened) {
+      router.push("/technicians");
+    }
+  }, [router]);
+
   // ✅ Close dialog cleanup
   const handleDialogOpenChange = useCallback((isOpen: boolean) => {
     setIsFormOpen(isOpen);
@@ -210,6 +222,14 @@ export function RepairsPageInner() {
             </div>
           </div>
           <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={handleOpenTechniciansWindow}
+              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              {t("technicians.title")}
+            </Button>
             <Button
               variant="outline"
               onClick={() => setIsFinanceOpen(true)}

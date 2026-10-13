@@ -766,5 +766,18 @@
         "closingBalance": "Solde final",
         "openingSubtotalNote": "Solde avant les opérations de la période",
         "closingSubtotalNote": "Solde après les opérations de la période"
+    },
+    "technicians": {
+        "title": "Réparateurs",
+        "active": "Actif",
+        "inactive": "Inactif",
+        "totalRepairs": "Réparations",
+        "activeRepairs": "En cours",
+        "delivered": "Livrées",
+        "collected": "Encaissé",
+        "recentRepairs": "Réparations récentes",
+        "unassigned": "Non attribuées",
+        "noRepairs": "Aucune réparation",
+        "empty": "Aucun réparateur pour le moment"
     }
 }

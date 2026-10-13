@@ -41,6 +41,7 @@ interface RepairState {
   searchTerm: string;
   statusFilter: RepairStatus | "All";
   paymentStatusFilter: PaymentStatus | "All";
+  technicianFilter: string | "Unassigned" | "All";
   sortConfig: RepairSortConfig;
 }
 
@@ -50,6 +51,7 @@ interface RepairActions {
   setSearchTerm: (term: string) => void;
   setStatusFilter: (status: RepairStatus | "All") => void;
   setPaymentStatusFilter: (paymentStatus: PaymentStatus | "All") => void;
+  setTechnicianFilter: (technicianId: string | "Unassigned" | "All") => void;
   handleSort: (key: RepairSortConfig["key"]) => void;
   clearFilters: () => void;
   fetchRepairs: () => Promise<void>;
@@ -60,6 +62,10 @@ interface RepairActions {
   updateRepair: (id: string, data: Partial<Repair>) => Promise<void>;
   deleteRepair: (id: string) => Promise<void>;
   updateRepairStatus: (id: string, status: RepairStatus) => void;
+  assignTechnician: (
+    repairId: string,
+    technicianId: string | null,
+  ) => Promise<void>;
   addPayment: (repairId: string, payment: PaymentInput) => Promise<void>;
   addUsedPart: (repairId: string, part: UsedPartInput) => Promise<void>;
   deleteUsedPart: (repairId: string, recordId: string) => Promise<void>;
@@ -111,6 +117,7 @@ function mapRepairFromDB(dbRepair: RepairDb): Repair {
     createdAt: dbRepair.created_at,
     updatedAt: dbRepair.updated_at,
     code: dbRepair.code,
+    technicianId: dbRepair.technician_id ?? null,
   };
 }
 
@@ -153,6 +160,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
     setSearchTerm,
     setStatusFilter,
     setPaymentStatusFilter,
+    setTechnicianFilter,
     handleSort,
     clearFilters,
   } = useRepairFilters(repairs);
@@ -335,6 +343,10 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         estimated_cost: data.estimatedCost ?? existingRepair.estimatedCost,
         status: data.status ?? existingRepair.status,
         payment_status: data.paymentStatus ?? existingRepair.paymentStatus,
+        technician_id:
+          data.technicianId !== undefined
+            ? data.technicianId
+            : (existingRepair.technicianId ?? null),
         created_at: existingRepair.createdAt,
         updated_at: new Date().toISOString(),
       };
@@ -409,6 +421,41 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       );
       setLoading(false);
+    },
+    [clearError],
+  );
+
+  // ✅ Assign (or unassign) the technician for a repair
+  const assignTechnician = useCallback(
+    async (repairId: string, technicianId: string | null) => {
+      clearError();
+      await withAsync(
+        () =>
+          invoke("assign_technician", {
+            repairId,
+            technicianId,
+          }),
+        {
+          onSuccess: () => {
+            toast.success(
+              technicianId ? "Technician assigned" : "Technician unassigned",
+            );
+            setRepairs((prev) =>
+              prev.map((r) =>
+                r.id === repairId
+                  ? { ...r, technicianId: technicianId ?? null }
+                  : r,
+              ),
+            );
+            setSelectedRepair((prev) =>
+              prev && prev.id === repairId
+                ? { ...prev, technicianId: technicianId ?? null }
+                : prev,
+            );
+          },
+          onError: (msg) => setError(msg),
+        },
+      );
     },
     [clearError],
   );
@@ -554,6 +601,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       searchTerm: filters.searchTerm,
       statusFilter: filters.status,
       paymentStatusFilter: filters.paymentStatus,
+      technicianFilter: filters.technicianId,
       sortConfig,
     }),
     [
@@ -569,6 +617,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       filters.searchTerm,
       filters.status,
       filters.paymentStatus,
+      filters.technicianId,
       sortConfig,
     ],
   );
@@ -579,6 +628,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       setSearchTerm,
       setStatusFilter,
       setPaymentStatusFilter,
+      setTechnicianFilter,
       handleSort,
       clearFilters,
       fetchRepairs,
@@ -587,6 +637,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       updateRepair,
       deleteRepair,
       updateRepairStatus,
+      assignTechnician,
       addPayment,
       addUsedPart,
       getRepairHistory,
@@ -598,6 +649,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       setSearchTerm,
       setStatusFilter,
       setPaymentStatusFilter,
+      setTechnicianFilter,
       handleSort,
       clearFilters,
       fetchRepairs,
@@ -606,6 +658,7 @@ export const RepairProvider: React.FC<{ children: React.ReactNode }> = ({
       updateRepair,
       deleteRepair,
       updateRepairStatus,
+      assignTechnician,
       addPayment,
       addUsedPart,
       getRepairHistory,
@@ -646,6 +699,7 @@ export function useRepairState(): RepairState {
     searchTerm,
     statusFilter,
     paymentStatusFilter,
+    technicianFilter,
     sortConfig,
   } = useRepairContext();
   return {
@@ -661,6 +715,7 @@ export function useRepairState(): RepairState {
     searchTerm,
     statusFilter,
     paymentStatusFilter,
+    technicianFilter,
     sortConfig,
   };
 }
@@ -671,6 +726,7 @@ export function useRepairActions(): RepairActions {
     setSearchTerm,
     setStatusFilter,
     setPaymentStatusFilter,
+    setTechnicianFilter,
     handleSort,
     clearFilters,
     fetchRepairs,
@@ -679,6 +735,7 @@ export function useRepairActions(): RepairActions {
     updateRepair,
     deleteRepair,
     updateRepairStatus,
+    assignTechnician,
     addPayment,
     addUsedPart,
     getRepairHistory,
@@ -690,6 +747,7 @@ export function useRepairActions(): RepairActions {
     setSearchTerm,
     setStatusFilter,
     setPaymentStatusFilter,
+    setTechnicianFilter,
     handleSort,
     clearFilters,
     fetchRepairs,
@@ -698,6 +756,7 @@ export function useRepairActions(): RepairActions {
     updateRepair,
     deleteRepair,
     updateRepairStatus,
+    assignTechnician,
     addPayment,
     addUsedPart,
     getRepairHistory,

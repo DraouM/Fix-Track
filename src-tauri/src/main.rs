@@ -27,10 +27,10 @@ use db::order::{
 };
 use db::payment::get_all_payments;
 use db::repair::{
-    add_payment, add_used_part, delete_repair, delete_repair_payment, delete_used_part,
-    get_all_repair_payments, get_history_for_repair, get_payments_for_repair, get_repair_by_id,
-    get_repairs, get_used_parts_for_repair, insert_repair, insert_repair_history, update_repair,
-    update_repair_payment, update_repair_status,
+    add_payment, add_used_part, assign_technician, delete_repair, delete_repair_payment,
+    delete_used_part, get_all_repair_payments, get_history_for_repair, get_payments_for_repair,
+    get_repair_by_id, get_repairs, get_used_parts_for_repair, insert_repair, insert_repair_history,
+    update_repair, update_repair_payment, update_repair_status,
 };
 use db::sale::{
     add_sale_item, add_sale_payment, complete_sale, create_sale, get_sale_by_id, get_sales,
@@ -45,6 +45,10 @@ use db::supplier::{
     add_supplier_payment, adjust_supplier_credit, delete_supplier, delete_supplier_payment,
     get_supplier_by_id, get_supplier_history, get_suppliers, insert_supplier,
     insert_supplier_history, update_supplier, update_supplier_payment,
+};
+use db::technician::{
+    delete_technician, get_technicians, insert_technician, unassign_technician_repairs,
+    update_technician,
 };
 use db::transaction::{
     add_transaction_item, add_transaction_payment, complete_transaction, create_transaction,
@@ -101,6 +105,13 @@ fn main() {
             get_used_parts_for_repair,
             insert_repair_history,
             get_history_for_repair,
+            assign_technician,
+            // TECHNICIANS
+            get_technicians,
+            insert_technician,
+            update_technician,
+            delete_technician,
+            unassign_technician_repairs,
             // PAYMENT
             get_all_payments,
             // MONEY TRANSFERS

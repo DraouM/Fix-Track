@@ -1,9 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import type {
-  Repair,
-  RepairStatus,
-  PaymentStatus,
-} from "@/types/repair";
+import type { Repair, RepairStatus, PaymentStatus } from "@/types/repair";
 import { DateRange } from "react-day-picker";
 
 // ✅ Types - Adjusted to match context structure
@@ -21,6 +17,8 @@ export interface RepairFilterConfig {
   status: RepairStatus | "All";
   paymentStatus: PaymentStatus | "All";
   dateRange: DateRange | undefined;
+  /** Technician id, "Unassigned", or "All" */
+  technicianId: string | "Unassigned" | "All";
 }
 
 // ✅ Hook - Refactored for context integration
@@ -31,6 +29,7 @@ export function useRepairFilters(repairs: Repair[]) {
     status: "All",
     paymentStatus: "All",
     dateRange: undefined,
+    technicianId: "All",
   });
 
   const [sortConfig, setSortConfig] = useState<RepairSortConfig>({
@@ -105,6 +104,12 @@ export function useRepairFilters(repairs: Repair[]) {
         filters.paymentStatus === "All" ||
         r.paymentStatus === filters.paymentStatus;
 
+      const matchesTechnician =
+        filters.technicianId === "All" ||
+        (filters.technicianId === "Unassigned"
+          ? !r.technicianId
+          : r.technicianId === filters.technicianId);
+
       // Enhanced date filtering with proper null safety
       let repairDate: Date;
       try {
@@ -122,6 +127,7 @@ export function useRepairFilters(repairs: Repair[]) {
         matchesSearch &&
         matchesStatus &&
         matchesPaymentStatus &&
+        matchesTechnician &&
         matchesDateRange
       );
     });
@@ -189,12 +195,19 @@ export function useRepairFilters(repairs: Repair[]) {
     (paymentStatus: PaymentStatus | "All") => {
       setFilters((prev) => ({ ...prev, paymentStatus }));
     },
-    []
+    [],
   );
 
   const setDateRange = useCallback((range: DateRange | undefined) => {
     setFilters((prev) => ({ ...prev, dateRange: range }));
   }, []);
+
+  const setTechnicianFilter = useCallback(
+    (technicianId: string | "Unassigned" | "All") => {
+      setFilters((prev) => ({ ...prev, technicianId }));
+    },
+    [],
+  );
 
   const clearFilters = useCallback(() => {
     setFilters({
@@ -202,6 +215,7 @@ export function useRepairFilters(repairs: Repair[]) {
       status: "All",
       paymentStatus: "All",
       dateRange: undefined,
+      technicianId: "All",
     });
     setSortConfig({ key: "createdAt", direction: "descending" });
   }, []);
@@ -211,24 +225,30 @@ export function useRepairFilters(repairs: Repair[]) {
     const total = repairs.length;
     const filtered = filteredAndSortedRepairs.length;
 
-    const byStatus = repairs.reduce((acc, r) => {
-      acc[r.status] = (acc[r.status] || 0) + 1;
-      return acc;
-    }, {} as Record<RepairStatus, number>);
+    const byStatus = repairs.reduce(
+      (acc, r) => {
+        acc[r.status] = (acc[r.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<RepairStatus, number>,
+    );
 
-    const byPaymentStatus = repairs.reduce((acc, r) => {
-      acc[r.paymentStatus] = (acc[r.paymentStatus] || 0) + 1;
-      return acc;
-    }, {} as Record<PaymentStatus, number>);
+    const byPaymentStatus = repairs.reduce(
+      (acc, r) => {
+        acc[r.paymentStatus] = (acc[r.paymentStatus] || 0) + 1;
+        return acc;
+      },
+      {} as Record<PaymentStatus, number>,
+    );
 
     const totalRevenue = repairsWithCalculations.reduce(
       (sum, r) => sum + (r._calculated?.amountPaid || 0),
-      0
+      0,
     );
 
     const pendingRevenue = repairsWithCalculations.reduce(
       (sum, r) => sum + (r._calculated?.remainingBalance || 0),
-      0
+      0,
     );
 
     const completedCount =
@@ -245,7 +265,7 @@ export function useRepairFilters(repairs: Repair[]) {
       averageRepairTime:
         repairsWithCalculations.reduce(
           (sum, r) => sum + (r._calculated?.duration || 0),
-          0
+          0,
         ) / Math.max(1, completedCount),
     };
   }, [repairs, filteredAndSortedRepairs, repairsWithCalculations]);
@@ -255,6 +275,7 @@ export function useRepairFilters(repairs: Repair[]) {
       filters.searchTerm !== "" ||
       filters.status !== "All" ||
       filters.paymentStatus !== "All" ||
+      filters.technicianId !== "All" ||
       !!filters.dateRange?.from
     );
   }, [filters]);
@@ -274,6 +295,7 @@ export function useRepairFilters(repairs: Repair[]) {
     setSearchTerm,
     setStatusFilter,
     setPaymentStatusFilter,
+    setTechnicianFilter,
     setDateRange,
     handleSort,
     clearFilters,

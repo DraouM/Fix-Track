@@ -1,15 +1,16 @@
+pub mod client;
+pub mod expense;
 pub mod inventory;
 pub mod models;
-pub mod repair;
-pub mod schema;
-pub mod supplier;
 pub mod order;
-pub mod client;
-pub mod sale;
-pub mod expense;
-pub mod session;
-pub mod transaction;
 pub mod payment;
+pub mod repair;
+pub mod sale;
+pub mod schema;
+pub mod session;
+pub mod supplier;
+pub mod technician;
+pub mod transaction;
 pub mod transfer;
 
 use rusqlite::{Connection, Result};

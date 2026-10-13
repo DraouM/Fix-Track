@@ -26,7 +26,7 @@ export type EntityWindowMode = "ledger" | "detail";
 export async function openEntityWindow(
   entityType: EntityWindowType,
   entityId: string,
-  mode: EntityWindowMode = "ledger"
+  mode: EntityWindowMode = "ledger",
 ): Promise<boolean> {
   if (!isTauri()) return false;
 
@@ -51,7 +51,7 @@ export async function openEntityWindow(
     } catch (err) {
       console.error(
         `Failed to focus existing ${entityType} ${mode} window:`,
-        err
+        err,
       );
     }
   }
@@ -62,8 +62,8 @@ export async function openEntityWindow(
         ? "Financial Ledger"
         : "Operational Ledger"
       : entityType === "client"
-      ? "Client Profile"
-      : "Supplier Profile";
+        ? "Client Profile"
+        : "Supplier Profile";
 
   const win = new WebviewWindow(label, {
     url,
@@ -90,6 +90,45 @@ export async function openEntityWindow(
  */
 export async function openLedgerWindow(clientId: string): Promise<boolean> {
   return openEntityWindow("client", clientId, "ledger");
+}
+
+/**
+ * Opens the technicians overview (per-technician details) in a dedicated
+ * native window.
+ *
+ * @returns `true` if a native Tauri window was created/focused, `false` when
+ *          not running in Tauri (caller should fall back to in-app navigation).
+ */
+export async function openTechniciansWindow(): Promise<boolean> {
+  if (!isTauri()) return false;
+
+  const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+  const label = "technicians-overview";
+
+  const existing = await WebviewWindow.getByLabel(label);
+  if (existing) {
+    try {
+      await existing.setFocus();
+      return true;
+    } catch (err) {
+      console.error("Failed to focus existing technicians window:", err);
+    }
+  }
+
+  const win = new WebviewWindow(label, {
+    url: "/technicians/",
+    title: "Technicians",
+    width: 1150,
+    height: 780,
+    resizable: true,
+    focus: true,
+  });
+
+  win.once("tauri://error", (e) => {
+    console.error("Failed to open technicians window:", e);
+  });
+
+  return true;
 }
 
 /**

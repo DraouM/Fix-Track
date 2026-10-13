@@ -767,5 +767,18 @@
         "closingBalance": "رصيد الختام",
         "openingSubtotalNote": "الرصيد قبل سجلات الفترة",
         "closingSubtotalNote": "الرصيد بعد سجلات الفترة"
+    },
+    "technicians": {
+        "title": "المصلحون",
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "totalRepairs": "إصلاحات",
+        "activeRepairs": "جارية",
+        "delivered": "مُسلّمة",
+        "collected": "المحصّل",
+        "recentRepairs": "أحدث الإصلاحات",
+        "unassigned": "غير مُسندة",
+        "noRepairs": "لا توجد إصلاحات",
+        "empty": "لا يوجد مصلحون بعد"
     }
 }

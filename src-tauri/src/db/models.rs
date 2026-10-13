@@ -16,7 +16,9 @@ pub struct Repair {
     pub created_at: String,
     pub updated_at: String,
     pub code: Option<String>,
-    
+    #[serde(default)]
+    pub technician_id: Option<String>,
+
     // Virtual fields for full details
     #[serde(default)]
     pub used_parts: Vec<RepairUsedPart>,
@@ -56,6 +58,19 @@ pub struct RepairHistory {
     pub event_type: String,
     pub details: String,
     pub changed_by: Option<String>,
+}
+
+/// TECHNICIANS (repair technicians / réparateurs)
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Technician {
+    pub id: String,
+    pub name: String,
+    pub phone: Option<String>,
+    pub active: bool,
+    #[serde(default)]
+    pub created_at: String,
+    #[serde(default)]
+    pub updated_at: String,
 }
 
 /// ORDERS
@@ -239,7 +254,7 @@ pub struct Expense {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MoneyTransfer {
     pub id: String,
-    pub from_account: String,   // e.g. "Cash Register", "Bank", "Mobile Wallet"
+    pub from_account: String, // e.g. "Cash Register", "Bank", "Mobile Wallet"
     pub to_account: String,
     pub amount: f64,
     pub date: String,
@@ -384,5 +399,5 @@ pub struct UnifiedPayment {
     pub received_by: Option<String>,
     pub notes: Option<String>,
     pub source_number: Option<String>, // e.g. Repair Code, Sale Number
-    pub party_name: Option<String>, // e.g. Client Name, Supplier Name
+    pub party_name: Option<String>,    // e.g. Client Name, Supplier Name
 }

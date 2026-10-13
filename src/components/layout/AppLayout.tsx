@@ -58,7 +58,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isStandalone =
     !!pathname &&
     (pathname.startsWith("/clients/ledger") ||
-      pathname.startsWith("/suppliers/ledger"));
+      pathname.startsWith("/suppliers/ledger") ||
+      pathname.startsWith("/technicians"));
   // const [showSplash, setShowSplash] = useState(true);
 
   if (isLoading) {

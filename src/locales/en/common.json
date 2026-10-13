@@ -863,5 +863,18 @@
         "closingBalance": "Closing Balance",
         "openingSubtotalNote": "Balance Before Period Logs",
         "closingSubtotalNote": "Balance After Period Logs"
+    },
+    "technicians": {
+        "title": "Technicians",
+        "active": "Active",
+        "inactive": "Inactive",
+        "totalRepairs": "Repairs",
+        "activeRepairs": "Active",
+        "delivered": "Delivered",
+        "collected": "Collected",
+        "recentRepairs": "Recent repairs",
+        "unassigned": "Unassigned",
+        "noRepairs": "No repairs yet",
+        "empty": "No technicians yet"
     }
 }

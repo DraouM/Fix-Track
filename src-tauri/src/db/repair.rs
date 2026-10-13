@@ -36,8 +36,8 @@ pub fn insert_repair(mut repair: Repair) -> Result<(), String> {
     repair.code = Some(new_code.clone());
 
     conn.execute(
-        "INSERT INTO repairs (id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, datetime('now'), datetime('now'), ?10)",
+        "INSERT INTO repairs (id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code, technician_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, datetime('now'), datetime('now'), ?10, ?11)",
         params![
             repair.id,
             repair.customer_name,
@@ -49,6 +49,7 @@ pub fn insert_repair(mut repair: Repair) -> Result<(), String> {
             repair.status,
             repair.payment_status,
             new_code,
+            repair.technician_id,
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -60,7 +61,7 @@ pub fn insert_repair(mut repair: Repair) -> Result<(), String> {
 pub fn get_repairs() -> Result<Vec<Repair>, String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     let mut stmt = conn
-        .prepare("SELECT id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code FROM repairs ORDER BY created_at DESC")
+        .prepare("SELECT id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code, technician_id FROM repairs ORDER BY created_at DESC")
         .map_err(|e| e.to_string())?;
     let items = stmt
         .query_map([], |row| {
@@ -76,7 +77,8 @@ pub fn get_repairs() -> Result<Vec<Repair>, String> {
                 payment_status: row.get(8)?,
                 created_at: row.get(9)?,
                 updated_at: row.get(10)?,
-                code: row.get(11).ok(), // Optional
+                code: row.get(11).ok(),          // Optional
+                technician_id: row.get(12).ok(), // Optional
                 used_parts: Vec::new(),
                 payments: Vec::new(),
                 history: Vec::new(),
@@ -95,7 +97,7 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
 
     // 1. Get the base repair
     let mut stmt = conn
-        .prepare("SELECT id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code FROM repairs WHERE id = ?1")
+        .prepare("SELECT id, customer_name, customer_phone, device_brand, device_model, issue_description, estimated_cost, status, payment_status, created_at, updated_at, code, technician_id FROM repairs WHERE id = ?1")
         .map_err(|e| e.to_string())?;
 
     let mut rows = stmt.query(params![repair_id]).map_err(|e| e.to_string())?;
@@ -186,6 +188,7 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
             created_at: row.get(9).map_err(|e| e.to_string())?,
             updated_at: row.get(10).map_err(|e| e.to_string())?,
             code: row.get(11).ok(),
+            technician_id: row.get(12).ok(),
         }))
     } else {
         Ok(None)
@@ -197,7 +200,7 @@ pub fn get_repair_by_id(repair_id: String) -> Result<Option<Repair>, String> {
 pub fn update_repair(repair: Repair) -> Result<(), String> {
     let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
     conn.execute(
-        "UPDATE repairs SET customer_name = ?2, customer_phone = ?3, device_brand = ?4, device_model = ?5, issue_description = ?6, estimated_cost = ?7, status = ?8, payment_status = ?9, updated_at = datetime('now') WHERE id = ?1",
+        "UPDATE repairs SET customer_name = ?2, customer_phone = ?3, device_brand = ?4, device_model = ?5, issue_description = ?6, estimated_cost = ?7, status = ?8, payment_status = ?9, technician_id = ?10, updated_at = datetime('now') WHERE id = ?1",
         params![
             repair.id,
             repair.customer_name,
@@ -208,6 +211,7 @@ pub fn update_repair(repair: Repair) -> Result<(), String> {
             repair.estimated_cost,
             repair.status,
             repair.payment_status,
+            repair.technician_id,
         ],
     )
     .map_err(|e| e.to_string())?;
@@ -255,6 +259,66 @@ pub fn update_repair_status(id: String, new_status: String) -> Result<(), String
 }
 
 // Note: update_payment_status function removed as payment status is now automatically calculated by add_payment
+
+/// Assign (or unassign) the technician for a repair and log the change
+/// as a `note` history event (the event_type CHECK constraint cannot be
+/// extended without a table rebuild, so we reuse 'note').
+#[tauri::command]
+pub fn assign_technician(repair_id: String, technician_id: Option<String>) -> Result<(), String> {
+    let conn = crate::db::get_connection().map_err(|e| e.to_string())?;
+
+    // Validate the technician exists (when assigning).
+    // NOTE: params! requires owned values ('static), so clone instead of as_deref.
+    if technician_id.is_some() {
+        let exists: bool = conn
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM technicians WHERE id = ?1)",
+                params![technician_id.clone()],
+                |row| row.get(0),
+            )
+            .map_err(|e| e.to_string())?;
+        if !exists {
+            return Err("Technician not found".to_string());
+        }
+    }
+
+    conn.execute(
+        "UPDATE repairs SET technician_id = ?2, updated_at = datetime('now') WHERE id = ?1",
+        params![repair_id, technician_id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    // Resolve technician name for the history note
+    let details = if technician_id.is_some() {
+        let name: String = conn
+            .query_row(
+                "SELECT name FROM technicians WHERE id = ?1",
+                params![technician_id.clone()],
+                |row| row.get(0),
+            )
+            .unwrap_or_else(|_| "Unknown".to_string());
+        format!("Assigned to: {}", name)
+    } else {
+        "Unassigned".to_string()
+    };
+
+    use chrono::Utc;
+    use uuid::Uuid;
+    conn.execute(
+        "INSERT INTO repair_history (id, repair_id, date, event_type, details, changed_by) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![
+            Uuid::new_v4().to_string(),
+            repair_id,
+            Utc::now().to_rfc3339(),
+            "note",
+            details,
+            Option::<String>::None,
+        ],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
 
 /// Delete repair (cascade will clear children)
 #[tauri::command]

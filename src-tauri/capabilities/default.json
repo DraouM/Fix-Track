@@ -6,7 +6,8 @@
     "main",
     "ledger-*",
     "client-*",
-    "supplier-*"
+    "supplier-*",
+    "technicians-*"
   ],
   "permissions": [
     "core:default",

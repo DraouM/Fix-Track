@@ -72,6 +72,9 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     // We try to add it, ignoring error if it exists (simplest migration for SQLite without dedicated migration tool)
     let _ = conn.execute("ALTER TABLE repairs ADD COLUMN code TEXT", []);
 
+    // Migration: Add technician_id column if it doesn't exist (assigned réparateur)
+    let _ = conn.execute("ALTER TABLE repairs ADD COLUMN technician_id TEXT", []);
+
     // Indexes for repairs table (performance optimization)
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_repairs_status ON repairs(status)",
@@ -83,6 +86,23 @@ pub fn init_all_tables(conn: &Connection) -> Result<()> {
     )?;
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_repairs_customer ON repairs(customer_name)",
+        [],
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_repairs_technician ON repairs(technician_id)",
+        [],
+    )?;
+
+    // Technicians (repair technicians / réparateurs)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS technicians (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            phone TEXT,
+            active INTEGER NOT NULL DEFAULT 1, -- 1 for active, 0 for inactive
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )",
         [],
     )?;
 

@@ -23,6 +23,7 @@ import {
   Check,
   Tag,
   Loader2,
+  UserPlus,
 } from "lucide-react";
 import {
   Repair,
@@ -31,6 +32,7 @@ import {
   UsedPartForm,
 } from "@/types/repair";
 import { useRepairContext } from "@/context/RepairContext";
+import { useTechnicianContext } from "@/context/TechnicianContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +56,12 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { InventoryPartSelector } from "./InventoryPartSelector";
 import { InventoryItem, PHONE_BRANDS } from "@/types/inventory";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const paymentMethods = [
   {
@@ -109,7 +117,18 @@ interface FormData {
   issueDescription: string;
   estimatedCost?: number;
   repairStatus: RepairStatus;
+  technicianId: string; // "" = unassigned
   usedParts: UsedPartForm[];
+}
+
+const LAST_TECHNICIAN_KEY = "fixary.lastTechnician";
+
+function readLastTechnician(): string {
+  try {
+    return localStorage.getItem(LAST_TECHNICIAN_KEY) || "";
+  } catch {
+    return "";
+  }
 }
 
 export default function RepairForm({
@@ -126,6 +145,13 @@ export default function RepairForm({
     fetchRepairById,
     repairs,
   } = useRepairContext();
+  const { activeTechnicians, createTechnician, getTechnicianById } =
+    useTechnicianContext();
+
+  const [isAddTechnicianOpen, setIsAddTechnicianOpen] = useState(false);
+  const [newTechName, setNewTechName] = useState("");
+  const [newTechPhone, setNewTechPhone] = useState("");
+  const [isAddingTech, setIsAddingTech] = useState(false);
 
   const currentRepair = useMemo(() => {
     if (!repairToEdit) return null;
@@ -145,6 +171,7 @@ export default function RepairForm({
     issueDescription: z.string(),
     estimatedCost: z.number().optional(),
     repairStatus: z.enum(["Pending", "In Progress", "Completed", "Delivered"]),
+    technicianId: z.string(),
     usedParts: z.array(
       z.object({
         recordId: z.string().optional(),
@@ -167,6 +194,7 @@ export default function RepairForm({
           issueDescription: repairToEdit.issueDescription,
           estimatedCost: repairToEdit.estimatedCost || undefined,
           repairStatus: repairToEdit.status,
+          technicianId: repairToEdit.technicianId || "",
           usedParts:
             repairToEdit.usedParts?.map((p) => ({
               recordId: p.id,
@@ -184,6 +212,7 @@ export default function RepairForm({
           issueDescription: "",
           estimatedCost: undefined,
           repairStatus: "Pending",
+          technicianId: readLastTechnician(),
           usedParts: [],
         },
   });
@@ -216,6 +245,7 @@ export default function RepairForm({
         issueDescription: repairToEdit.issueDescription,
         estimatedCost: repairToEdit.estimatedCost || undefined,
         repairStatus: repairToEdit.status,
+        technicianId: repairToEdit.technicianId || "",
         usedParts:
           repairToEdit.usedParts?.map((p) => ({
             recordId: p.id,
@@ -240,6 +270,7 @@ export default function RepairForm({
           issueDescription: values.issueDescription,
           estimatedCost: Number(values.estimatedCost),
           status: values.repairStatus,
+          technicianId: values.technicianId || null,
         });
 
         // Parts diff
@@ -282,6 +313,7 @@ export default function RepairForm({
           estimated_cost: Number(values.estimatedCost),
           status: values.repairStatus,
           payment_status: "Unpaid",
+          technician_id: values.technicianId || null,
           used_parts: [],
           payments: [],
           history: [],
@@ -318,6 +350,36 @@ export default function RepairForm({
       toast.error(t("repairs.saveError"));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateTechnician = async () => {
+    const name = newTechName.trim();
+    if (!name) {
+      toast.error(t("repairs.techNameRequired"));
+      return;
+    }
+    setIsAddingTech(true);
+    try {
+      const created = await createTechnician({
+        name,
+        phone: newTechPhone.trim() || null,
+      });
+      if (created) {
+        form.setValue("technicianId", created.id);
+        try {
+          localStorage.setItem(LAST_TECHNICIAN_KEY, created.id);
+        } catch {
+          // storage unavailable
+        }
+      }
+      setNewTechName("");
+      setNewTechPhone("");
+      setIsAddTechnicianOpen(false);
+    } catch {
+      // error already toasted by context
+    } finally {
+      setIsAddingTech(false);
     }
   };
 
@@ -374,56 +436,118 @@ export default function RepairForm({
                   </p>
                 </div>
               </div>
-              <FormField
-                control={form.control}
-                name="repairStatus"
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="w-[140px] h-9 rounded-full bg-primary/5 border-primary/20 hover:border-primary/40 text-primary font-black uppercase text-[8px] tracking-widest px-4 transition-all focus:ring-0">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={cn(
-                              "h-1.5 w-1.5 rounded-full animate-pulse",
-                              field.value === "Pending" && "bg-orange-500",
-                              field.value === "In Progress" && "bg-blue-500",
-                              field.value === "Completed" && "bg-emerald-500",
-                              field.value === "Delivered" && "bg-slate-500",
-                            )}
-                          />
-                          <SelectValue placeholder={t("repairs.status")} />
-                        </div>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900 min-w-[160px]">
-                      <SelectItem
-                        value="Pending"
-                        className="rounded-xl font-black uppercase text-[9px] tracking-widest py-3"
-                      >
-                        {t("repairs.pending")}
-                      </SelectItem>
-                      <SelectItem
-                        value="In Progress"
-                        className="rounded-xl font-black uppercase text-[9px] tracking-widest py-3"
-                      >
-                        {t("repairs.inprogress")}
-                      </SelectItem>
-                      <SelectItem
-                        value="Completed"
-                        className="rounded-xl font-black uppercase text-[9px] tracking-widest py-3"
-                      >
-                        {t("repairs.completed")}
-                      </SelectItem>
-                      <SelectItem
-                        value="Delivered"
-                        className="rounded-xl font-black uppercase text-[9px] tracking-widest py-3"
-                      >
-                        {t("repairs.delivered")}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              <div className="flex items-center gap-2">
+                <FormField
+                  control={form.control}
+                  name="technicianId"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || "__none"}
+                      onValueChange={(v) => {
+                        const next = v === "__none" ? "" : v;
+                        field.onChange(next);
+                        try {
+                          if (next)
+                            localStorage.setItem(LAST_TECHNICIAN_KEY, next);
+                        } catch {
+                          // storage unavailable
+                        }
+                      }}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-[170px] h-9 rounded-full bg-orange-500/5 border-orange-500/20 hover:border-orange-500/40 text-orange-600 dark:text-orange-400 font-black uppercase text-[8px] tracking-widest px-4 transition-all focus:ring-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <User className="h-3 w-3 shrink-0" />
+                            <span className="truncate">
+                              {field.value
+                                ? (getTechnicianById(field.value)?.name ??
+                                  t("repairs.technician"))
+                                : t("repairs.unassigned")}
+                            </span>
+                          </div>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900 min-w-[180px]">
+                        <SelectItem
+                          value="__none"
+                          className="rounded-xl font-black uppercase text-[9px] tracking-widest py-3"
+                        >
+                          {t("repairs.unassigned")}
+                        </SelectItem>
+                        {activeTechnicians.map((tech) => (
+                          <SelectItem
+                            key={tech.id}
+                            value={tech.id}
+                            className="rounded-xl font-bold uppercase text-[9px] tracking-widest py-3"
+                          >
+                            {tech.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full text-muted-foreground hover:text-primary shrink-0"
+                  onClick={() => setIsAddTechnicianOpen(true)}
+                  aria-label={t("repairs.addTechnician")}
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+                <FormField
+                  control={form.control}
+                  name="repairStatus"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-[140px] h-9 rounded-full bg-primary/5 border-primary/20 hover:border-primary/40 text-primary font-black uppercase text-[8px] tracking-widest px-4 transition-all focus:ring-0">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={cn(
+                                "h-1.5 w-1.5 rounded-full animate-pulse",
+                                field.value === "Pending" && "bg-orange-500",
+                                field.value === "In Progress" && "bg-blue-500",
+                                field.value === "Completed" && "bg-emerald-500",
+                                field.value === "Delivered" && "bg-slate-500",
+                              )}
+                            />
+                            <SelectValue placeholder={t("repairs.status")} />
+                          </div>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900 min-w-[160px]">
+                        <SelectItem
+                          value="Pending"
+                          className="rounded-xl font-black uppercase text-[9px] tracking-widest py-3"
+                        >
+                          {t("repairs.pending")}
+                        </SelectItem>
+                        <SelectItem
+                          value="In Progress"
+                          className="rounded-xl font-black uppercase text-[9px] tracking-widest py-3"
+                        >
+                          {t("repairs.inprogress")}
+                        </SelectItem>
+                        <SelectItem
+                          value="Completed"
+                          className="rounded-xl font-black uppercase text-[9px] tracking-widest py-3"
+                        >
+                          {t("repairs.completed")}
+                        </SelectItem>
+                        <SelectItem
+                          value="Delivered"
+                          className="rounded-xl font-black uppercase text-[9px] tracking-widest py-3"
+                        >
+                          {t("repairs.delivered")}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
             </div>
 
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1036,6 +1160,44 @@ export default function RepairForm({
           </Button>
         </div>
       </form>
+
+      {/* Quick add technician dialog */}
+      <Dialog open={isAddTechnicianOpen} onOpenChange={setIsAddTechnicianOpen}>
+        <DialogContent className="sm:max-w-[380px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-black uppercase tracking-widest">
+              {t("repairs.addTechnician")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <Input
+              value={newTechName}
+              onChange={(e) => setNewTechName(e.target.value)}
+              placeholder={t("repairs.techNamePlaceholder")}
+              autoFocus
+              className="h-10 rounded-xl"
+            />
+            <Input
+              value={newTechPhone}
+              onChange={(e) => setNewTechPhone(e.target.value)}
+              placeholder={t("repairs.techPhonePlaceholder")}
+              className="h-10 rounded-xl"
+            />
+            <Button
+              type="button"
+              onClick={handleCreateTechnician}
+              disabled={isAddingTech || !newTechName.trim()}
+              className="w-full h-10 rounded-xl font-black uppercase text-[10px] tracking-widest"
+            >
+              {isAddingTech ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                t("repairs.save")
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 }

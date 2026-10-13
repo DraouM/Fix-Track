@@ -93,7 +93,11 @@ export const TechnicianProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [fetchTechnicians, initialized]);
 
   const createTechnician = useCallback(
-    async (data: { name: string; phone?: string | null; specialties?: string | null }) => {
+    async (data: {
+      name: string;
+      phone?: string | null;
+      specialties?: string | null;
+    }) => {
       setLoading(true);
       clearError();
       const technician: TechnicianDb = {

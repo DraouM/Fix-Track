@@ -47,12 +47,8 @@ const EMPTY_FORM: TechnicianFormState = {
 
 export function TechniciansCard() {
   const { t } = useTranslation();
-  const {
-    technicians,
-    createTechnician,
-    updateTechnician,
-    deleteTechnician,
-  } = useTechnicianContext();
+  const { technicians, createTechnician, updateTechnician, deleteTechnician } =
+    useTechnicianContext();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Technician | null>(null);

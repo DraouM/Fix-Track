@@ -35,9 +35,7 @@ export function mapTechnicianFromDB(db: TechnicianDb): Technician {
 }
 
 /** Parse the comma-separated specialties string into trimmed tags */
-export function parseSpecialties(
-  specialties?: string | null,
-): string[] {
+export function parseSpecialties(specialties?: string | null): string[] {
   if (!specialties) return [];
   return specialties
     .split(",")

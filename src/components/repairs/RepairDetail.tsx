@@ -93,11 +93,8 @@ export function RepairDetail({
   onOpenChange,
 }: RepairDetailProps) {
   const { t, i18n } = useTranslation();
-  const {
-    updateRepairStatus,
-    fetchRepairById,
-    assignTechnician,
-  } = useRepairActions();
+  const { updateRepairStatus, fetchRepairById, assignTechnician } =
+    useRepairActions();
   const { getItemById, repairs } = useRepairContext();
   const { activeTechnicians, getTechnicianById } = useTechnicianContext();
   const { settings } = useSettings();

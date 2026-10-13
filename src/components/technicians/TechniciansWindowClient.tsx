@@ -97,7 +97,8 @@ function TechnicianCard({
     const doneCount = repairs.filter(
       (r) => r.status === "Completed" || r.status === "Delivered",
     ).length;
-    const completionRate = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+    const completionRate =
+      total > 0 ? Math.round((doneCount / total) * 100) : 0;
     // Average turnaround (days) for finished repairs
     const finished = repairs.filter(
       (r) => r.status === "Completed" || r.status === "Delivered",

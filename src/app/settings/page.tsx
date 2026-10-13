@@ -82,8 +82,8 @@ export default function SettingsPage() {
             <CardContent className="pt-6">
               <h3 className="font-semibold mb-2">About Settings</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                All settings are automatically saved to your browser's local storage
-                and will persist across sessions.
+                All settings are automatically saved to your browser's local
+                storage and will persist across sessions.
               </p>
               <div className="space-y-2 text-xs text-muted-foreground">
                 <div className="flex items-start gap-2">
@@ -105,15 +105,21 @@ export default function SettingsPage() {
           {/* Current Settings Summary */}
           <Card className="bg-muted/30">
             <CardContent className="pt-6">
-              <h3 className="font-semibold mb-3 text-sm">Current Configuration</h3>
+              <h3 className="font-semibold mb-3 text-sm">
+                Current Configuration
+              </h3>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Theme:</span>
-                  <span className="font-medium capitalize">{settings.theme}</span>
+                  <span className="font-medium capitalize">
+                    {settings.theme}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Language:</span>
-                  <span className="font-medium uppercase">{settings.language}</span>
+                  <span className="font-medium uppercase">
+                    {settings.language}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Currency:</span>

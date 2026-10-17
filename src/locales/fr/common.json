@@ -64,6 +64,7 @@
         "dateTo": "Au",
         "activeFilters": "Filtres actifs",
         "clearAll": "Tout effacer",
+        "clear": "Effacer",
         "showingCount": "Affichage de {{count}} sur {{total}} {{label}}",
         "rowsPerPage": "Lignes par page",
         "pageInfo": "Page {{current}} sur {{total}}",
@@ -71,7 +72,10 @@
         "printSticker": "Imprimer l'étiquette",
         "selected": "Sélectionné",
         "call": "Appeler",
-        "today": "Aujourd'hui"
+        "today": "Aujourd'hui",
+        "count": "Nombre",
+        "next": "Suivant",
+        "previous": "Précédent"
     },
     "status": {
         "active": "Actif",
@@ -161,6 +165,12 @@
         "lowStock": "Stock faible",
         "outOfStock": "Rupture de stock",
         "inStock": "En stock",
+        "filters": {
+            "inStock": "Stock sain",
+            "lowStock": "Stock faible",
+            "outOfStock": "Rupture de stock",
+            "allItems": "Tous les articles"
+        },
         "historyLogs": "Historique de l'inventaire",
         "editItem": "Modifier l'article",
         "newItem": "Nouvel article",

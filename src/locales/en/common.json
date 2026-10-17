@@ -65,6 +65,7 @@
         "dateTo": "To",
         "activeFilters": "Active filters",
         "clearAll": "Clear all",
+        "clear": "Clear",
         "showingCount": "Showing {{count}} of {{total}} {{label}}",
         "rowsPerPage": "Rows per page",
         "pageInfo": "Page {{current}} of {{total}}",
@@ -72,7 +73,10 @@
         "printSticker": "Print Sticker",
         "selected": "Selected",
         "call": "Call",
-        "today": "Today"
+        "today": "Today",
+        "count": "Count",
+        "next": "Next",
+        "previous": "Previous"
     },
     "status": {
         "active": "Active",
@@ -175,6 +179,12 @@
         "lowStock": "Low Stock",
         "outOfStock": "Out of Stock",
         "inStock": "In Stock",
+        "filters": {
+            "inStock": "Healthy Stock",
+            "lowStock": "Low Stock",
+            "outOfStock": "Out of Stock",
+            "allItems": "All Items"
+        },
         "historyLogs": "Inventory History Logs",
         "editItem": "Edit Item",
         "newItem": "New Item",
@@ -229,7 +239,7 @@
             "searchBrand": "Search brand...",
             "noBrand": "No brand found.",
             "category": "Category",
-            "selectType": "Select type",
+            "selectCategory": "Select category",
             "searchType": "Search type...",
             "noType": "No type found.",
             "costPrice": "Cost Price ({{symbol}})",

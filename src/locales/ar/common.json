@@ -64,6 +64,7 @@
         "dateTo": "إلى",
         "activeFilters": "الفلاتر النشطة",
         "clearAll": "مسح الكل",
+        "clear": "مسح",
         "showingCount": "عرض {{count}} من أصل {{total}} {{label}}",
         "rowsPerPage": "صفوف لكل صفحة",
         "pageInfo": "صفحة {{current}} من {{total}}",
@@ -71,7 +72,10 @@
         "printSticker": "طباعة الملصق",
         "selected": "محدد",
         "call": "اتصال",
-        "today": "اليوم"
+        "today": "اليوم",
+        "count": "العدد",
+        "next": "التالي",
+        "previous": "السابق"
     },
     "status": {
         "active": "نشط",
@@ -161,6 +165,12 @@
         "lowStock": "مخزون منخفض",
         "outOfStock": "نفد من المخزون",
         "inStock": "متوفر",
+        "filters": {
+            "inStock": "مخزون سليم",
+            "lowStock": "مخزون منخفض",
+            "outOfStock": "نفد من المخزون",
+            "allItems": "كل الأصناف"
+        },
         "historyLogs": "سجلات تاريخ المخزون",
         "editItem": "تعديل الصنف",
         "newItem": "صنف جديد",

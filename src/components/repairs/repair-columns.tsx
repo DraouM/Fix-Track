@@ -30,6 +30,7 @@ import {
   DollarSign,
   MoreVertical,
   Minus,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
@@ -117,31 +118,150 @@ export const createRepairColumns = (
   actions: RepairColumnActions,
   t: any,
 ): ColumnDef<Repair>[] => [
-  // Selection checkbox column (enables bulk actions)
+  // Combined Technician & Selection column (interactive circular avatar with smart badge & ring overlay)
   {
-    id: "select",
-    header: ({ table }) => (
-      <input
-        type="checkbox"
-        className="h-4 w-4 rounded border-gray-300 accent-primary cursor-pointer"
-        checked={table.getIsAllPageRowsSelected()}
-        onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <input
-        type="checkbox"
-        className="h-4 w-4 rounded border-gray-300 accent-primary cursor-pointer"
-        checked={row.getIsSelected()}
-        onChange={(e) => row.toggleSelected(!!e.target.checked)}
-        onClick={(e) => e.stopPropagation()}
-        aria-label="Select row"
-      />
-    ),
+    id: "technicianId",
+    accessorKey: "technicianId",
+    header: ({ table }) => {
+      const isAllSelected = table.getIsAllPageRowsSelected();
+      const isSomeSelected = table.getIsSomePageRowsSelected();
+      return (
+        <div className="flex items-center justify-center">
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={
+              isAllSelected ? true : isSomeSelected ? "mixed" : false
+            }
+            aria-label={t("common.selectAll") || "Select all"}
+            onClick={(e) => {
+              e.stopPropagation();
+              table.toggleAllPageRowsSelected(!isAllSelected);
+            }}
+            className={cn(
+              "group/hdr relative h-6 w-6 rounded-full flex items-center justify-center transition-all duration-200 border-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              isAllSelected
+                ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/25"
+                : isSomeSelected
+                  ? "border-primary/70 bg-primary/10 text-primary"
+                  : "border-muted-foreground/30 hover:border-primary/60 hover:bg-muted/30 text-transparent hover:text-muted-foreground/40",
+            )}
+            title={t("common.selectAll") || "Select all"}
+          >
+            {isAllSelected ? (
+              <Check className="h-3 w-3 stroke-[3]" />
+            ) : isSomeSelected ? (
+              <Minus className="h-3 w-3 stroke-[3]" />
+            ) : (
+              <Check className="h-2.5 w-2.5 opacity-0 group-hover/hdr:opacity-40 transition-opacity stroke-[3]" />
+            )}
+          </button>
+        </div>
+      );
+    },
+    filterFn: (row, id, value) => {
+      if (value === "All") return true;
+      if (value === "Unassigned") return !row.original.technicianId;
+      return row.original.technicianId === value;
+    },
+    sortingFn: (rowA, rowB) => {
+      const nameA = actions.technicianName?.(rowA.original.technicianId) ?? "";
+      const nameB = actions.technicianName?.(rowB.original.technicianId) ?? "";
+      return nameA.localeCompare(nameB);
+    },
+    cell: ({ row }) => {
+      const isSelected = row.getIsSelected();
+      const technicianId = row.original.technicianId;
+      const name = actions.technicianName?.(technicianId);
+      const initials = name ? name.trim().slice(0, 2).toUpperCase() : null;
+      const hue =
+        technicianId || name ? getTechnicianHue(technicianId ?? name!) : 0;
+
+      const titleText = name
+        ? `${name} · ${
+            isSelected
+              ? t("common.selected") || "Selected (Click to deselect)"
+              : t("common.select") || "Click to select"
+          }`
+        : `${t("repairs.unassigned")} · ${
+            isSelected
+              ? t("common.selected") || "Selected (Click to deselect)"
+              : t("common.select") || "Click to select"
+          }`;
+
+      return (
+        <div
+          className="flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={isSelected}
+            aria-label={
+              name
+                ? `${isSelected ? "Deselect" : "Select"} repair assigned to ${name}`
+                : `${isSelected ? "Deselect" : "Select"} unassigned repair`
+            }
+            onClick={() => row.toggleSelected(!isSelected)}
+            title={titleText}
+            className={cn(
+              "relative group flex items-center justify-center h-8 w-8 rounded-full transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              isSelected
+                ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105"
+                : "hover:scale-105",
+            )}
+          >
+            {/* Circular Avatar */}
+            {initials ? (
+              <div
+                className={cn(
+                  "flex items-center justify-center h-7 w-7 rounded-full text-[10px] font-black uppercase transition-all duration-200 select-none",
+                  isSelected ? "shadow-inner" : "",
+                )}
+                style={{
+                  backgroundColor: isSelected
+                    ? `hsl(${hue} 71% 45% / 0.28)`
+                    : `hsl(${hue} 71% 45% / 0.18)`,
+                  color: `hsl(${hue} 75% 38%)`,
+                }}
+              >
+                {initials}
+              </div>
+            ) : (
+              <div
+                className={cn(
+                  "flex items-center justify-center h-7 w-7 rounded-full border border-dashed transition-all duration-200",
+                  isSelected
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-muted-foreground/30 text-muted-foreground/40 group-hover:border-primary/50 group-hover:text-primary/70",
+                )}
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </div>
+            )}
+
+            {/* Smart Check Badge overlay */}
+            {isSelected ? (
+              <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md animate-in zoom-in-75 duration-150">
+                <Check className="h-2.5 w-2.5 stroke-[3.5]" />
+              </div>
+            ) : (
+              <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-primary/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                <Check className="h-2 w-2 stroke-[3]" />
+              </div>
+            )}
+          </button>
+        </div>
+      );
+    },
     enableSorting: false,
     enableHiding: false,
-    size: 40,
+    size: 52,
+    meta: {
+      className:
+        "w-14 first:px-3 text-center border-r border-border/50 dark:border-slate-800 bg-muted/[0.04] dark:bg-slate-900/30",
+    },
   },
   // {  the code of the repairs id
   //   accessorKey: "code",
@@ -158,6 +278,9 @@ export const createRepairColumns = (
   {
     accessorKey: "customerName",
     header: t("repairs.customerName"),
+    meta: {
+      className: "pl-5",
+    },
     cell: ({ row }) => {
       const repair = row.original;
       return (
@@ -206,47 +329,6 @@ export const createRepairColumns = (
           >
             {issue}
           </span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "technicianId",
-    header: t("repairs.technician"),
-    filterFn: (row, id, value) => {
-      if (value === "All") return true;
-      if (value === "Unassigned") return !row.original.technicianId;
-      return row.original.technicianId === value;
-    },
-    sortingFn: (rowA, rowB) => {
-      const nameA = actions.technicianName?.(rowA.original.technicianId) ?? "";
-      const nameB = actions.technicianName?.(rowB.original.technicianId) ?? "";
-      return nameA.localeCompare(nameB);
-    },
-    cell: ({ row }) => {
-      const technicianId = row.original.technicianId;
-      const name = actions.technicianName?.(technicianId);
-      if (!name) {
-        return (
-          <div
-            title={t("repairs.unassigned")}
-            className="flex items-center justify-center h-7 w-7 rounded-lg border border-dashed border-muted-foreground/30 text-muted-foreground/40 cursor-default"
-          >
-            <Minus className="h-3.5 w-3.5" />
-          </div>
-        );
-      }
-      const hue = getTechnicianHue(technicianId ?? name);
-      return (
-        <div
-          title={name}
-          className="flex items-center justify-center h-7 w-7 shrink-0 rounded-lg text-[10px] font-black uppercase cursor-default"
-          style={{
-            backgroundColor: `hsl(${hue} 71% 45% / 0.18)`,
-            color: `hsl(${hue} 75% 38%)`,
-          }}
-        >
-          {name.slice(0, 2)}
         </div>
       );
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ColumnDef,
@@ -49,6 +49,8 @@ import {
   UserCheck,
   Star,
   Columns2,
+  DollarSign,
+  RotateCcw,
 } from "lucide-react";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
@@ -195,81 +197,311 @@ export function RepairDataTable<TData, TValue>({
 
   const selectedRows = table.getFilteredSelectedRowModel().rows;
 
+  // Status counts for Tier 1 tabs
+  const statusCounts = useMemo(() => {
+    const counts = {
+      All: data.length,
+      Pending: 0,
+      "In Progress": 0,
+      Completed: 0,
+      Delivered: 0,
+      myRepairs: 0,
+    };
+    for (const item of data as any[]) {
+      const s = item.status;
+      if (s === "Pending") counts.Pending++;
+      else if (s === "In Progress") counts["In Progress"]++;
+      else if (s === "Completed") counts.Completed++;
+      else if (s === "Delivered") counts.Delivered++;
+
+      if (myTechnicianId && item.technicianId === myTechnicianId) {
+        counts.myRepairs++;
+      }
+    }
+    return counts;
+  }, [data, myTechnicianId]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (globalFilter) count++;
+    if (statusFilter !== "All") count++;
+    if (paymentStatusFilter !== "All") count++;
+    if (technicianFilter !== "All") count++;
+    if (dateRange?.from) count++;
+    return count;
+  }, [
+    globalFilter,
+    statusFilter,
+    paymentStatusFilter,
+    technicianFilter,
+    dateRange,
+  ]);
+
+  const handleResetFilters = useCallback(() => {
+    setGlobalFilter("");
+    setStatusFilter("All");
+    setPaymentStatusFilter("All");
+    setTechnicianFilter("All");
+    setDateRange(undefined);
+  }, []);
+
+  const statusTabs = useMemo(
+    () => [
+      { value: "All", label: t("common.all"), dot: null },
+      { value: "Pending", label: t("repairs.pending"), dot: "bg-yellow-500" },
+      {
+        value: "In Progress",
+        label: t("repairs.inprogress"),
+        dot: "bg-orange-500",
+      },
+      {
+        value: "Completed",
+        label: t("repairs.completed"),
+        dot: "bg-green-500",
+      },
+      {
+        value: "Delivered",
+        label: t("repairs.delivered"),
+        dot: "bg-blue-500",
+      },
+    ],
+    [t],
+  );
+
   return (
     <div className="w-full space-y-4">
-      {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center px-6 py-4 border-b dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+      {/* Tier 1: Status Pipeline Tabs & Workload Navigation */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 px-6 py-3 border-b dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur-sm">
+        {/* Status Pipeline Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          {statusTabs.map((tab) => {
+            const isActive = statusFilter === tab.value;
+            const count =
+              statusCounts[tab.value as keyof typeof statusCounts] ?? 0;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setStatusFilter(tab.value)}
+                className={cn(
+                  "flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-150 shrink-0 cursor-pointer select-none",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 scale-[1.02]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50 dark:hover:bg-slate-800/60",
+                )}
+              >
+                {tab.dot && (
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full shrink-0",
+                      isActive ? "bg-white" : tab.dot,
+                    )}
+                  />
+                )}
+                <span>{tab.label}</span>
+                <span
+                  className={cn(
+                    "px-1.5 py-0.5 rounded-md text-[10px] font-black shrink-0",
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-muted dark:bg-slate-800 text-muted-foreground",
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* My Repairs Quick Toggle */}
+        {myTechnicianId && (
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={() =>
+                setTechnicianFilter(
+                  technicianFilter === myTechnicianId ? "All" : myTechnicianId,
+                )
+              }
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-150 border cursor-pointer select-none",
+                technicianFilter === myTechnicianId
+                  ? "bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-500/20"
+                  : "border-border/60 dark:border-slate-800 bg-background hover:bg-muted/40 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Star
+                className={cn(
+                  "h-3.5 w-3.5",
+                  technicianFilter === myTechnicianId
+                    ? "fill-white text-white"
+                    : "fill-amber-400 text-amber-500",
+                )}
+              />
+              <span>{t("repairs.myRepairs")}</span>
+              <span
+                className={cn(
+                  "px-1.5 py-0.5 rounded-md text-[10px] font-black",
+                  technicianFilter === myTechnicianId
+                    ? "bg-white/20 text-white"
+                    : "bg-muted dark:bg-slate-800 text-muted-foreground",
+                )}
+              >
+                {statusCounts.myRepairs}
+              </span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Tier 2: Search, Deep Filters & Utilities */}
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between px-6 py-3 border-b dark:border-slate-800 bg-white/40 dark:bg-slate-900/40">
         {/* Search Bar */}
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative flex-1 min-w-[220px] max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
           <Input
             placeholder={searchPlaceholder || t("common.filter")}
             value={globalFilter ?? ""}
             onChange={(event) => setGlobalFilter(event.target.value)}
-            className="pl-10 rounded-xl h-11 border-gray-200 dark:border-slate-800 focus:ring-primary/20 bg-white dark:bg-slate-950"
+            className="pl-10 pr-9 rounded-xl h-10 border-gray-200 dark:border-slate-800 focus:ring-primary/20 bg-white dark:bg-slate-950 text-xs font-medium"
           />
+          {globalFilter && (
+            <button
+              type="button"
+              onClick={() => setGlobalFilter("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 items-center justify-end lg:flex-nowrap">
-          {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
-              <SelectValue placeholder={t("repairs.status")} />
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
-              <SelectItem
-                value="All"
-                className="font-bold text-xs uppercase tracking-wider"
+        {/* Filters & Tools Cluster */}
+        <div className="flex flex-wrap items-center gap-2.5 justify-start lg:justify-end">
+          {/* Technician Filter */}
+          <div className="flex items-center gap-1">
+            <Select
+              value={technicianFilter}
+              onValueChange={setTechnicianFilter}
+            >
+              <SelectTrigger
+                className={cn(
+                  "w-auto min-w-[150px] h-10 rounded-xl border font-bold text-xs uppercase tracking-wider px-3",
+                  technicianFilter !== "All"
+                    ? "border-primary/50 bg-primary/5 text-primary"
+                    : "border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950",
+                )}
               >
-                {t("common.all")} {t("repairs.status")}
-              </SelectItem>
-              <SelectItem
-                value="Pending"
-                className="font-bold text-xs uppercase tracking-wider"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  {t("repairs.pending")}
+                <div className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                  <SelectValue placeholder={t("repairs.technician")} />
                 </div>
-              </SelectItem>
-              <SelectItem
-                value="In Progress"
-                className="font-bold text-xs uppercase tracking-wider"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  {t("repairs.inprogress")}
-                </div>
-              </SelectItem>
-              <SelectItem
-                value="Completed"
-                className="font-bold text-xs uppercase tracking-wider"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  {t("repairs.completed")}
-                </div>
-              </SelectItem>
-              <SelectItem
-                value="Delivered"
-                className="font-bold text-xs uppercase tracking-wider"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  {t("repairs.delivered")}
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
+                <SelectItem
+                  value="All"
+                  className="font-bold text-xs uppercase tracking-wider"
+                >
+                  {t("common.all")} {t("repairs.technician")}
+                </SelectItem>
+                <SelectItem
+                  value="Unassigned"
+                  className="font-bold text-xs uppercase tracking-wider"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    {t("repairs.unassigned")}
+                  </div>
+                </SelectItem>
+                {technicians.map((tech) => (
+                  <SelectItem
+                    key={tech.id}
+                    value={tech.id}
+                    className="font-bold text-xs uppercase tracking-wider"
+                  >
+                    <div className="flex items-center justify-between gap-3 w-full">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={cn(
+                            "w-2 h-2 rounded-full",
+                            tech.active ? "bg-green-500" : "bg-gray-400",
+                          )}
+                        ></div>
+                        {tech.name}
+                      </div>
+                      {myTechnicianId === tech.id && (
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-500 shrink-0" />
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Favorite / Star My Tech button (cleanly attached to tech select) */}
+            {technicianFilter !== "All" &&
+              technicianFilter !== "Unassigned" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  title={
+                    myTechnicianId === technicianFilter
+                      ? t("repairs.myRepairs")
+                      : t("repairs.setAsMine")
+                  }
+                  className={cn(
+                    "h-10 w-10 rounded-xl border-gray-200 dark:border-slate-800",
+                    myTechnicianId === technicianFilter &&
+                      "border-amber-300 bg-amber-50 dark:bg-amber-950/20",
+                  )}
+                  onClick={() => {
+                    const next =
+                      myTechnicianId === technicianFilter
+                        ? null
+                        : technicianFilter;
+                    try {
+                      if (next) {
+                        localStorage.setItem(MY_TECHNICIAN_KEY, next);
+                      } else {
+                        localStorage.removeItem(MY_TECHNICIAN_KEY);
+                      }
+                    } catch {
+                      // ignore
+                    }
+                    setMyTechnicianId(next);
+                  }}
+                >
+                  <Star
+                    className={cn(
+                      "h-4 w-4",
+                      myTechnicianId === technicianFilter
+                        ? "fill-amber-400 text-amber-500"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                </Button>
+              )}
+          </div>
 
           {/* Payment Status Filter */}
           <Select
             value={paymentStatusFilter}
             onValueChange={setPaymentStatusFilter}
           >
-            <SelectTrigger className="w-[150px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
-              <SelectValue placeholder={t("transactions_module.payment")} />
+            <SelectTrigger
+              className={cn(
+                "w-auto min-w-[140px] h-10 rounded-xl border font-bold text-xs uppercase tracking-wider px-3",
+                paymentStatusFilter !== "All"
+                  ? "border-primary/50 bg-primary/5 text-primary"
+                  : "border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950",
+              )}
+            >
+              <div className="flex items-center gap-1.5">
+                <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue placeholder={t("transactions_module.payment")} />
+              </div>
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-none shadow-2xl">
               <SelectItem
@@ -317,122 +549,35 @@ export function RepairDataTable<TData, TValue>({
             </SelectContent>
           </Select>
 
-          {/* Technician Filter */}
-          <Select value={technicianFilter} onValueChange={setTechnicianFilter}>
-            <SelectTrigger className="w-[170px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider">
-              <SelectValue placeholder={t("repairs.technician")} />
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
-              <SelectItem
-                value="All"
-                className="font-bold text-xs uppercase tracking-wider"
-              >
-                {t("common.all")} {t("repairs.technician")}
-              </SelectItem>
-              <SelectItem
-                value="Unassigned"
-                className="font-bold text-xs uppercase tracking-wider"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                  {t("repairs.unassigned")}
-                </div>
-              </SelectItem>
-              {technicians.map((tech) => (
-                <SelectItem
-                  key={tech.id}
-                  value={tech.id}
-                  className="font-bold text-xs uppercase tracking-wider"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={cn(
-                        "w-2 h-2 rounded-full",
-                        tech.active ? "bg-green-500" : "bg-gray-400",
-                      )}
-                    ></div>
-                    {tech.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Remember current technician as "mine" */}
-          {technicianFilter !== "All" && technicianFilter !== "Unassigned" && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              title={t("repairs.setAsMine")}
-              className={cn(
-                "h-11 w-11 rounded-xl",
-                myTechnicianId === technicianFilter
-                  ? "text-amber-500"
-                  : "text-muted-foreground",
-              )}
-              onClick={() => {
-                try {
-                  localStorage.setItem(MY_TECHNICIAN_KEY, technicianFilter);
-                } catch {
-                  // ignore
-                }
-                setMyTechnicianId(technicianFilter);
-              }}
-            >
-              <Star
-                className={cn(
-                  "h-4 w-4",
-                  myTechnicianId === technicianFilter && "fill-amber-400",
-                )}
-              />
-            </Button>
-          )}
-
-          {/* My Repairs quick toggle */}
-          {myTechnicianId && (
-            <Button
-              variant={
-                technicianFilter === myTechnicianId ? "default" : "outline"
-              }
-              size="sm"
-              className="h-11 rounded-xl px-3 text-xs font-black uppercase tracking-wider"
-              onClick={() =>
-                setTechnicianFilter(
-                  technicianFilter === myTechnicianId ? "All" : myTechnicianId,
-                )
-              }
-            >
-              <UserCheck className="h-4 w-4 me-1.5" />
-              {t("repairs.myRepairs")}
-            </Button>
-          )}
-
-          {/* Date Range Filter */}
+          {/* Date Range Picker */}
           <DateRangePicker
             date={dateRange}
             onDateChange={setDateRange}
             placeholder={t("common.pickDates")}
-            className="w-[180px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950"
+            className="w-[170px] h-10 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950"
             showPresets={true}
           />
 
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800"
-            onClick={() => {
-              setGlobalFilter("");
-              setStatusFilter("All");
-              setPaymentStatusFilter("All");
-              setTechnicianFilter("All");
-              setDateRange(undefined);
-            }}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="h-6 w-px bg-border/60 dark:bg-slate-800 mx-0.5 hidden sm:block" />
 
-          {/* Column visibility */}
+          {/* Clear Active Filters Button */}
+          {activeFilterCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetFilters}
+              className="h-10 px-3 rounded-xl border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 text-xs font-bold uppercase tracking-wider gap-1.5"
+              title={t("common.clearAll")}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>{t("common.clear")}</span>
+              <span className="h-4 w-4 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            </Button>
+          )}
+
+          {/* Column Visibility */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -440,9 +585,9 @@ export function RepairDataTable<TData, TValue>({
                 size="icon"
                 title={t("common.columns")}
                 aria-label={t("common.columns")}
-                className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800"
+                className="rounded-xl h-10 w-10 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800"
               >
-                <Columns2 className="h-4 w-4" />
+                <Columns2 className="h-4 w-4 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -475,84 +620,96 @@ export function RepairDataTable<TData, TValue>({
         </div>
       </div>
 
-      {/* Active Filters Display */}
+      {/* Active Secondary Filters Display */}
       {(globalFilter ||
-        statusFilter !== "All" ||
         paymentStatusFilter !== "All" ||
         technicianFilter !== "All" ||
         dateRange?.from) && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-gray-600 dark:text-slate-400">
+        <div className="flex flex-wrap gap-2 items-center px-6 pt-1">
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             {t("common.activeFilters")}:
           </span>
           {globalFilter && (
             <Badge
               variant="secondary"
-              className="bg-blue-100 text-blue-800 text-xs"
+              className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs gap-1.5 pr-1.5"
             >
-              {t("common.search")}: "
-              {globalFilter.length > 20
-                ? globalFilter.substring(0, 20) + "..."
-                : globalFilter}
-              "
-            </Badge>
-          )}
-          {statusFilter !== "All" && (
-            <Badge
-              variant="secondary"
-              className="bg-green-100 text-green-800 text-xs"
-            >
-              {t("repairs.status")}:{" "}
-              {t("repairs." + statusFilter.toLowerCase().replace(" ", ""))}
+              <span>
+                {t("common.search")}: "
+                {globalFilter.length > 20
+                  ? globalFilter.substring(0, 20) + "..."
+                  : globalFilter}
+                "
+              </span>
+              <button
+                type="button"
+                onClick={() => setGlobalFilter("")}
+                className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded p-0.5 cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           )}
           {paymentStatusFilter !== "All" && (
             <Badge
               variant="secondary"
-              className="bg-purple-100 text-purple-800 text-xs"
+              className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 text-xs gap-1.5 pr-1.5"
             >
-              {t("transactions_module.payment")}:{" "}
-              {t(
-                "repairs." + paymentStatusFilter.toLowerCase().replace(" ", ""),
-              )}
+              <span>
+                {t("transactions_module.payment")}:{" "}
+                {t(
+                  "repairs." +
+                    paymentStatusFilter.toLowerCase().replace(" ", ""),
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPaymentStatusFilter("All")}
+                className="hover:bg-purple-200 dark:hover:bg-purple-800 rounded p-0.5 cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           )}
           {technicianFilter !== "All" && (
             <Badge
               variant="secondary"
-              className="bg-blue-100 text-blue-800 text-xs"
+              className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs gap-1.5 pr-1.5"
             >
-              {t("repairs.technician")}:{" "}
-              {technicianFilter === "Unassigned"
-                ? t("repairs.unassigned")
-                : (technicians.find((tech) => tech.id === technicianFilter)
-                    ?.name ?? technicianFilter)}
+              <span>
+                {t("repairs.technician")}:{" "}
+                {technicianFilter === "Unassigned"
+                  ? t("repairs.unassigned")
+                  : (technicians.find((tech) => tech.id === technicianFilter)
+                      ?.name ?? technicianFilter)}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTechnicianFilter("All")}
+                className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded p-0.5 cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           )}
           {dateRange?.from && (
             <Badge
               variant="secondary"
-              className="bg-orange-100 text-orange-800 text-xs"
+              className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 text-xs gap-1.5 pr-1.5"
             >
-              {t("common.date")}: {format(dateRange.from!, "MMM dd")}
-              {dateRange.to && ` - ${format(dateRange.to, "MMM dd")}`}
+              <span>
+                {t("common.date")}: {format(dateRange.from!, "MMM dd")}
+                {dateRange.to && ` - ${format(dateRange.to, "MMM dd")}`}
+              </span>
+              <button
+                type="button"
+                onClick={() => setDateRange(undefined)}
+                className="hover:bg-orange-200 dark:hover:bg-orange-800 rounded p-0.5 cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+              </button>
             </Badge>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setGlobalFilter("");
-              setStatusFilter("All");
-              setPaymentStatusFilter("All");
-              setTechnicianFilter("All");
-              setDateRange(undefined);
-            }}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/50 h-7"
-          >
-            <X className="mr-1 h-3 w-3" />
-            {t("common.clearAll")}
-          </Button>
         </div>
       )}
 

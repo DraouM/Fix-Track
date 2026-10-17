@@ -14,9 +14,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Icons } from "@/components/icons";
-import { Wrench, DollarSign, Download, Upload, Users } from "lucide-react";
+import {
+  Wrench,
+  DollarSign,
+  Download,
+  Upload,
+  Users,
+  ChevronRight,
+} from "lucide-react";
 import { openTechniciansWindow } from "@/lib/openWindow";
+import { useSettings } from "@/context/SettingsContext";
+import {
+  formatCurrency as formatCurrencyCentralized,
+  getLocaleForIntl,
+} from "@/lib/formatters";
 
 import RepairForm from "@/components/repairs/RepairForm";
 import { RepairTable } from "@/components/repairs/RepairTable";
@@ -28,6 +39,7 @@ import {
   OPEN_NEW_REPAIR_EVENT,
   PENDING_NEW_REPAIR_KEY,
 } from "@/hooks/useAddRepairShortcut";
+import { Icons } from "../icons";
 
 export function RepairsPageInner() {
   const { t } = useTranslation();
@@ -192,68 +204,64 @@ export function RepairsPageInner() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <Wrench className="h-6 w-6" />
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Unified Desktop Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/70 dark:bg-slate-900/60 backdrop-blur-md p-4 sm:px-6 sm:py-3.5 rounded-3xl border border-gray-200/70 dark:border-slate-800 shadow-sm">
+          {/* Left: Title & Live Financial Pulse Pill */}
+          <div className="flex items-center gap-3.5 flex-wrap">
+            <div className="p-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-xs">
+              <Wrench className="h-5 w-5" />
             </div>
             <div className="flex items-baseline gap-3 flex-wrap">
-              <h1 className="text-2xl font-black tracking-tight text-foreground">
+              <h1 className="text-xl font-black tracking-tight text-foreground">
                 {t("repairs.title")}
               </h1>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">
-                  <span className="text-xs font-black">{statistics.total}</span>
-                  <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
-                    {t("repairs.totalRepairs")}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-100 dark:border-orange-800/50">
-                  <span className="text-xs font-black">
-                    {statistics.inProgress}
-                  </span>
-                  <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
-                    {t("repairs.inprogress")}
-                  </span>
-                </div>
-              </div>
+
+              {/* Financial Summary Pill */}
+              <button
+                type="button"
+                onClick={() => setIsFinanceOpen(true)}
+                className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/50 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/50 transition-all text-xs font-bold cursor-pointer"
+                title={t("repairs.viewFinancialSummary")}
+              >
+                <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{t("repairs.viewFinancialSummary")}</span>
+                <ChevronRight className="h-3 w-3 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+              </button>
             </div>
           </div>
-          <div className="flex gap-3">
+
+          {/* Right: Actions Group */}
+          <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto justify-end">
             <Button
               variant="outline"
               onClick={handleOpenTechniciansWindow}
-              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
+              className="h-10 px-3.5 rounded-xl border font-bold text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
-              <Users className="w-4 h-4 mr-2" />
+              <Users className="w-3.5 h-3.5 mr-2" />
               {t("technicians.title")}
             </Button>
             <Button
               variant="outline"
-              onClick={() => setIsFinanceOpen(true)}
-              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
+              className="h-10 px-3.5 rounded-xl border font-bold text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
             >
-              <DollarSign className="w-4 h-4 mr-2" />
-              {t("repairs.viewFinancialSummary")}
-            </Button>
-            <Button
-              variant="outline"
-              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
-            >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-3.5 h-3.5 mr-2" />
               {t("common.export")}
             </Button>
+
+            {/* Primary Action: + Add Repair */}
             <Dialog open={isFormOpen} onOpenChange={handleDialogOpenChange}>
               <DialogTrigger asChild>
                 <Button
                   onClick={openAddForm}
-                  className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
+                  className="h-10 px-4 sm:px-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/25 text-xs font-black uppercase tracking-wider gap-2 cursor-pointer transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  <Icons.plusCircle className="mr-2 h-4 w-4" />
-                  {t("repairs.addRepair")}
+                  <Icons.plusCircle className="h-4 w-4 stroke-[2.5]" />
+                  <span>{t("repairs.addRepair")}</span>
+                  <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-black/15 text-[9px] font-mono font-bold tracking-normal opacity-80">
+                    ⇧N
+                  </kbd>
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[950px] max-h-[90vh] overflow-y-auto rounded-3xl border-none dark:border dark:border-slate-800 shadow-2xl dark:bg-slate-900">

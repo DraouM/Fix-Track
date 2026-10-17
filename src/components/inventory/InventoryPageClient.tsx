@@ -44,6 +44,7 @@ import {
   Loader2,
   ArrowRight,
   ArrowLeftRight,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib";
 import { useSettings } from "@/context/SettingsContext";
@@ -205,182 +206,161 @@ export function InventoryPageInner() {
       maximumFractionDigits: 2,
     }).format(value);
 
-  const StatCard = ({
-    icon: Icon,
-    title,
-    value,
-    color = "blue",
-    trend,
-    suffix,
-  }: {
-    icon: React.ComponentType<{ className?: string }>;
-    title: string;
-    value: string | number;
-    color?: "blue" | "green" | "orange" | "red" | "purple";
-    trend?: number;
-    suffix?: string;
-  }) => {
-    const colorClasses = {
-      blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-      green:
-        "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-      orange:
-        "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
-      red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-      purple:
-        "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
-    };
-
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
-              <Icon className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-              {title}{" "}
-              {suffix && <span className="opacity-50 ml-1">({suffix})</span>}
-            </span>
-          </div>
-          {typeof trend === "number" && (
-            <div
-              className={`flex items-center gap-1 text-[10px] font-black ${trend >= 0 ? "text-green-600" : "text-red-600"}`}
-            >
-              <TrendingUp className={`w-3 h-3 ${trend < 0 && "rotate-180"}`} />
-              {Math.abs(trend)}%
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col">
-          <div
-            className="text-2xl font-black text-foreground truncate"
-            title={String(value)}
-          >
-            {value}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <Package className="h-6 w-6" />
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Unified Command Header & Integrated Metrics */}
+        <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-md p-4 sm:p-6 rounded-3xl border border-gray-200/70 dark:border-slate-800 shadow-sm space-y-5">
+          {/* Top Row: Title, Stock Movement Link & Actions */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* Title & Quick Navigation */}
+            <div className="flex items-center gap-3.5 flex-wrap">
+              <div className="p-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-xs">
+                <Package className="h-5 w-5" />
+              </div>
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <h1 className="text-xl font-black tracking-tight text-foreground">
+                  {t("inventory.title")}
+                </h1>
+
+                {/* Stock Movement Quick Link Pill */}
+                <button
+                  type="button"
+                  onClick={() => router.push("/inventory/stock-movement")}
+                  className="group inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-xs font-bold text-muted-foreground hover:text-foreground transition-all cursor-pointer border border-transparent hover:border-gray-200 dark:hover:border-slate-700"
+                  title={t("inventory.stockMovement.title")}
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-primary" />
+                  <span>{t("inventory.stockMovement.title")}</span>
+                  <ChevronRight className="w-3 h-3 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                </button>
+              </div>
             </div>
-            <div className="flex items-baseline gap-3 flex-wrap">
-              <h1 className="text-2xl font-black tracking-tight text-foreground">
-                {t("inventory.title")}
-              </h1>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">
-                  <span className="text-xs font-black">{statistics.total}</span>
-                  <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
-                    {t("common.items")}
+
+            {/* Actions Group */}
+            <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto justify-end">
+              <Button
+                variant="outline"
+                disabled={isExporting}
+                onClick={async () => {
+                  setIsExporting(true);
+                  setTimeout(() => {
+                    try {
+                      exportInventoryToCSV(filteredAndSortedItems);
+                    } finally {
+                      setIsExporting(false);
+                    }
+                  }, 800);
+                }}
+                className="h-10 px-3.5 rounded-xl border font-bold text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
+              >
+                {isExporting ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin text-primary" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 mr-2" />
+                )}
+                {isExporting ? t("common.loading") : t("common.export")}
+              </Button>
+              <Button
+                variant="outline"
+                className="h-10 px-3.5 rounded-xl border font-bold text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
+              >
+                <Upload className="w-3.5 h-3.5 mr-2" />
+                {t("common.import")}
+              </Button>
+              <Button
+                onClick={() => {
+                  setEditItem(null);
+                  setShowForm(true);
+                }}
+                className="h-10 px-4 sm:px-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/25 text-xs font-black uppercase tracking-wider gap-2 cursor-pointer transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Icons.plusCircle className="h-4 w-4 stroke-[2.5]" />
+                <span>{t("inventory.addItem")}</span>
+                <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-black/15 text-[9px] font-mono font-bold tracking-normal opacity-80">
+                  ⇧A
+                </kbd>
+              </Button>
+            </div>
+          </div>
+
+          {/* Bottom Row: Connected High-Density Metrics Strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-gray-100 dark:border-slate-800/80">
+            {/* Metric 1: Total SKUs */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/70 dark:border-blue-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                <Package className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70 truncate">
+                  {t("inventory.totalItems")}
+                </span>
+                <span className="text-lg font-black text-foreground truncate">
+                  {statistics.total}
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 2: Stock Health Alerts */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700/80 dark:text-amber-400/80 truncate">
+                  {t("inventory.lowStock")} & {t("inventory.table.stockLabels.empty")}
+                </span>
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-lg font-black text-amber-700 dark:text-amber-400">
+                    {statistics.lowStock}
                   </span>
-                </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-800/50">
-                  <span className="text-xs font-black">
-                    {statistics.outOfStock}
-                  </span>
-                  <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
-                    {t("inventory.table.stockLabels.empty")}
-                  </span>
+                  {statistics.outOfStock > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-[10px] font-black uppercase">
+                      {statistics.outOfStock} {t("inventory.table.stockLabels.empty")}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/inventory/stock-movement")}
-              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
-            >
-              <ArrowLeftRight className="w-4 h-4 mr-2" />
-              {t("inventory.stockMovement.title")}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={isExporting}
-              onClick={async () => {
-                setIsExporting(true);
-                // Artificial delay for premium UX feel
-                setTimeout(() => {
-                  try {
-                    exportInventoryToCSV(filteredAndSortedItems);
-                  } finally {
-                    setIsExporting(false);
-                  }
-                }, 800);
-              }}
-              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
-            >
-              {isExporting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin text-primary" />
-              ) : (
-                <Download className="w-4 h-4 mr-2" />
-              )}
-              {isExporting ? t("common.loading") : t("common.export")}
-            </Button>
-            <Button
-              variant="outline"
-              className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {t("common.import")}
-            </Button>
-            <Button
-              onClick={() => {
-                setEditItem(null);
-                setShowForm(true);
-              }}
-              className="h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-xs font-black uppercase tracking-widest"
-            >
-              <Icons.plusCircle className="mr-2 h-4 w-4" />
-              {t("inventory.addItem")}
-            </Button>
-          </div>
-        </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={Package}
-            title={t("inventory.totalItems")}
-            value={statistics.total}
-            color="blue"
-          />
-          <StatCard
-            icon={AlertTriangle}
-            title={t("inventory.lowStock")}
-            value={statistics.lowStock}
-            color="red"
-          />
-          <StatCard
-            icon={DollarSign}
-            title={t("inventory.stockValue")}
-            value={formatNumber(
-              statistics.totalValue,
-              getLocaleForIntl(i18n.language),
-            )}
-            suffix={settings.currency}
-            color="green"
-          />
-          <StatCard
-            icon={TrendingUp}
-            title={t("inventory.potentialProfit")}
-            value={formatNumber(
-              statistics.potentialProfit,
-              getLocaleForIntl(i18n.language),
-            )}
-            suffix={settings.currency}
-            color="purple"
-          />
+            {/* Metric 3: Total Stock Valuation */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <DollarSign className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700/80 dark:text-emerald-400/80 truncate">
+                  {t("inventory.stockValue")}
+                </span>
+                <span className="text-lg font-black text-emerald-700 dark:text-emerald-400 truncate">
+                  {formatNumber(
+                    statistics.totalValue,
+                    getLocaleForIntl(i18n.language),
+                  )}{" "}
+                  <span className="text-xs font-bold opacity-75">{settings.currency}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 4: Potential Profit */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-700/80 dark:text-purple-400/80 truncate">
+                  {t("inventory.potentialProfit")}
+                </span>
+                <span className="text-lg font-black text-purple-700 dark:text-purple-400 truncate">
+                  {formatNumber(
+                    statistics.potentialProfit,
+                    getLocaleForIntl(i18n.language),
+                  )}{" "}
+                  <span className="text-xs font-bold opacity-75">{settings.currency}</span>
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Inventory Table */}
@@ -390,34 +370,32 @@ export function InventoryPageInner() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-              <VirtualizedTable
-                items={filteredAndSortedItems}
-                sortConfig={sortConfig}
-                onSort={handleSort}
-                onEdit={(item) => {
-                  setEditItem(item);
-                  setShowForm(true);
-                }}
-                onViewHistory={handleViewHistory}
-                onDelete={(id) => {
-                  const item = getItemById(id);
-                  if (item) setDeleteTarget(item);
-                }}
-                selectedIds={selectedIds}
-                onSelectionChange={setSelectedIds}
-                onPrint={(item) => {
-                  printBarcodeDirect(item);
-                }}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                selectedBrand={selectedBrand}
-                setSelectedBrand={setSelectedBrand}
-                selectedType={selectedType}
-                setSelectedType={setSelectedType}
-                clearFilters={clearFilters}
-              />
-            </div>
+            <VirtualizedTable
+              items={filteredAndSortedItems}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+              onEdit={(item) => {
+                setEditItem(item);
+                setShowForm(true);
+              }}
+              onViewHistory={handleViewHistory}
+              onDelete={(id) => {
+                const item = getItemById(id);
+                if (item) setDeleteTarget(item);
+              }}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+              onPrint={(item) => {
+                printBarcodeDirect(item);
+              }}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              selectedBrand={selectedBrand}
+              setSelectedBrand={setSelectedBrand}
+              selectedType={selectedType}
+              setSelectedType={setSelectedType}
+              clearFilters={clearFilters}
+            />
           )}
         </div>
 

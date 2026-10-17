@@ -27,10 +27,10 @@ function LayoutContent({ children }: AppLayoutProps) {
   const { state } = useSidebar();
 
   return (
-    <SidebarInset>
+    <SidebarInset className="min-w-0">
       <main
         className={cn(
-          "flex-1 transition-all duration-300",
+          "flex-1 min-w-0 transition-all duration-300",
           state === "expanded" ? "ms-0 ps-64" : "ms-0 ps-0",
         )}
       >

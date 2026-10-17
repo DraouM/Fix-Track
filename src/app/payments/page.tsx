@@ -3,7 +3,23 @@
 import { useState, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
-import { Wallet, Search, Filter, ArrowLeft, DollarSign, AlertCircle, Calendar as CalendarIcon, X, Plus, ArrowDownRight, ArrowUpRight, ArrowLeftRight, Landmark, Banknote, Smartphone, Lock } from "lucide-react";
+import {
+  Wallet,
+  Search,
+  ArrowLeft,
+  DollarSign,
+  AlertCircle,
+  Calendar as CalendarIcon,
+  X,
+  Plus,
+  ArrowDownRight,
+  ArrowUpRight,
+  ArrowLeftRight,
+  Landmark,
+  Banknote,
+  Smartphone,
+  Lock,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -77,11 +93,13 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<UnifiedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | "payments" | "charges" | "transfers">("all");
+  const [typeFilter, setTypeFilter] = useState<
+    "all" | "payments" | "charges" | "transfers"
+  >("all");
   const [selectedAccount, setSelectedAccount] = useState<string>("all");
   const [chargeOpen, setChargeOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
-  
+
   // Default toToday
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfDay(new Date()),
@@ -121,7 +139,10 @@ export default function PaymentsPage() {
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
       // 0. Account filter
-      if (selectedAccount !== "all" && !isPaymentInAccount(p, selectedAccount)) {
+      if (
+        selectedAccount !== "all" &&
+        !isPaymentInAccount(p, selectedAccount)
+      ) {
         return false;
       }
 
@@ -134,7 +155,7 @@ export default function PaymentsPage() {
 
       // 2. Search filter
       const searchLower = search.toLowerCase();
-      const matchesSearch = 
+      const matchesSearch =
         p.source_number?.toLowerCase().includes(searchLower) ||
         p.party_name?.toLowerCase().includes(searchLower) ||
         p.method.toLowerCase().includes(searchLower) ||
@@ -146,8 +167,10 @@ export default function PaymentsPage() {
       if (dateRange?.from) {
         const paymentDate = new Date(p.date);
         const start = startOfDay(dateRange.from);
-        const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
-        
+        const end = dateRange.to
+          ? endOfDay(dateRange.to)
+          : endOfDay(dateRange.from);
+
         return isWithinInterval(paymentDate, { start, end });
       }
 
@@ -188,7 +211,10 @@ export default function PaymentsPage() {
       // Strictly before the selected start date
       if (paymentDate >= startDate) continue;
 
-      if (selectedAccount !== "all" && !isPaymentInAccount(p, selectedAccount)) {
+      if (
+        selectedAccount !== "all" &&
+        !isPaymentInAccount(p, selectedAccount)
+      ) {
         continue;
       }
 
@@ -210,117 +236,152 @@ export default function PaymentsPage() {
     return total;
   }, [payments, dateRange, selectedAccount]);
 
-  const StatCard = ({
-    icon: Icon,
-    title,
-    value,
-    subtitle,
-    color = "blue",
-    suffix,
-  }: {
-    icon: React.ComponentType<{ className?: string }>;
-    title: string;
-    value: string | number;
-    subtitle?: string;
-    color?: "blue" | "green" | "orange" | "red" | "purple";
-    suffix?: string;
-  }) => {
-    const colorClasses = {
-      blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-      green: "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-      orange: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
-      red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-      purple: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
-    };
-
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
-              <Icon className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                {title} {suffix && <span className="opacity-50 ml-1">({suffix})</span>}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col">
-          <div className="text-2xl font-black text-foreground truncate" title={String(value)}>{value}</div>
-          {subtitle && (
-            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70 mt-1">
-              <div className={`h-1 w-1 rounded-full ${colorClasses[color].replace('text-', 'bg-')}`}></div>
-              {subtitle}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8">
-      <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <Wallet className="h-6 w-6" />
-            </div>
-            <div className="flex items-baseline gap-3 flex-wrap">
-              <h1 className="text-2xl font-black tracking-tight text-foreground">
-                {t("payments.title")}
-              </h1>
-              <div className="flex items-center gap-2">
-                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">
-                    <span className="text-xs font-black">{filteredPayments.length}</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
-                      {dateRange?.from && format(dateRange.from, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') 
-                        ? t("common.today") : t("common.total")}
-                    </span>
-                 </div>
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+        {/* Unified Command Header & Integrated Metrics */}
+        <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-md p-4 sm:p-6 rounded-3xl border border-gray-200/70 dark:border-slate-800 shadow-sm space-y-5">
+          {/* Top Row: Title & Actions */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* Title & Live Count Pill */}
+            <div className="flex items-center gap-3.5 flex-wrap">
+              <div className="p-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-xs">
+                <Wallet className="h-5 w-5" />
+              </div>
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <h1 className="text-xl font-black tracking-tight text-foreground">
+                  {t("payments.title")}
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-black text-muted-foreground">
+                  {filteredPayments.length}
+                  <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
+                    {dateRange?.from &&
+                    format(dateRange.from, "yyyy-MM-dd") ===
+                      format(new Date(), "yyyy-MM-dd")
+                      ? t("common.today")
+                      : t("common.total")}
+                  </span>
+                </span>
               </div>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-3 items-center">
-            {/* Date Picker */}
-            <DateRangePicker
-              date={dateRange}
-              onDateChange={setDateRange}
-              placeholder={t('common.pickDates')}
-              className="w-[240px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider"
-              showPresets={true}
-            />
 
-            <Button onClick={() => setChargeOpen(true)} className="h-11 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-wider shadow-sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              {t("payments.newCharge")}
-            </Button>
+            {/* Actions Group */}
+            <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto justify-end">
+              <DateRangePicker
+                date={dateRange}
+                onDateChange={setDateRange}
+                placeholder={t("common.pickDates")}
+                className="w-[200px] h-10 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs uppercase tracking-wider"
+                showPresets={true}
+              />
 
-            <Button onClick={() => setTransferOpen(true)} className="h-11 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider shadow-sm">
-              <ArrowLeftRight className="h-4 w-4 mr-1.5" />
-              {t("payments.newTransfer", "New Transfer")}
-            </Button>
-
-            <Button onClick={fetchPayments} variant="outline" className="h-11 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-wider hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800">
-              <Filter className="h-4 w-4 mr-2" />
-              {t("common.filter")}
-            </Button>
-            
-            {(dateRange || search) && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800"
-                onClick={() => {
-                    setSearch("");
-                    setDateRange(undefined);
-                }}
+              <Button
+                onClick={() => setChargeOpen(true)}
+                className="h-10 px-4 sm:px-5 rounded-xl bg-red-600 hover:bg-red-500 text-white shadow-md shadow-red-600/25 text-xs font-black uppercase tracking-wider gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
               >
-                <X className="h-4 w-4" />
+                <Plus className="h-4 w-4 stroke-[2.5]" />
+                <span>{t("payments.newCharge")}</span>
               </Button>
-            )}
+
+              <Button
+                onClick={() => setTransferOpen(true)}
+                className="h-10 px-4 sm:px-5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/25 text-xs font-black uppercase tracking-wider gap-2 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <ArrowLeftRight className="h-4 w-4 stroke-[2.5]" />
+                <span>{t("payments.newTransfer", "New Transfer")}</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Bottom Row: Connected High-Density Metrics Strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-gray-100 dark:border-slate-800/80">
+            {/* Metric 1: Money In */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/70 dark:border-emerald-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <ArrowUpRight className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700/80 dark:text-emerald-400/80 truncate">
+                  {selectedAccount !== "all"
+                    ? `${t("payments.moneyIn")} · ${selectedAccount}`
+                    : t("payments.moneyIn")}
+                </span>
+                <div className="flex items-baseline gap-1 min-w-0">
+                  <span className="text-lg font-black text-foreground truncate">
+                    {formatNumber(moneyIn, getLocaleForIntl(i18n.language))}
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-700/60 dark:text-emerald-400/60 shrink-0">
+                    {settings.currency}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Metric 2: Charges Out */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100/70 dark:border-rose-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+                <ArrowDownRight className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-rose-700/80 dark:text-rose-400/80 truncate">
+                  {selectedAccount !== "all"
+                    ? `${t("payments.chargesOut")} · ${selectedAccount}`
+                    : t("payments.chargesOut")}
+                </span>
+                <div className="flex items-baseline gap-1 min-w-0">
+                  <span className="text-lg font-black text-foreground truncate">
+                    {formatNumber(chargesOut, getLocaleForIntl(i18n.language))}
+                  </span>
+                  <span className="text-[10px] font-bold text-rose-700/60 dark:text-rose-400/60 shrink-0">
+                    {settings.currency}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Metric 3: Net / Account Balance */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/70 dark:border-blue-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                <DollarSign className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-700/80 dark:text-blue-400/80 truncate">
+                  {selectedAccount !== "all"
+                    ? t("payments.accountBalance", "Account Balance")
+                    : t("payments.netTotal")}
+                </span>
+                <div className="flex items-baseline gap-1 min-w-0">
+                  <span className="text-lg font-black text-foreground truncate">
+                    {formatNumber(net, getLocaleForIntl(i18n.language))}
+                  </span>
+                  <span className="text-[10px] font-bold text-blue-700/60 dark:text-blue-400/60 shrink-0">
+                    {settings.currency}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Metric 4: Transactions Count */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100/70 dark:border-violet-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0">
+                <AlertCircle className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-violet-700/80 dark:text-violet-400/80 truncate">
+                  {t("common.count")}
+                </span>
+                <div className="flex items-baseline gap-1 min-w-0">
+                  <span className="text-lg font-black text-foreground truncate">
+                    {filteredPayments.length}
+                  </span>
+                  <span className="text-[10px] font-bold text-violet-700/60 dark:text-violet-400/60 shrink-0 uppercase tracking-wider">
+                    {selectedAccount !== "all"
+                      ? selectedAccount
+                      : t("common.items")}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -341,15 +402,21 @@ export default function PaymentsPage() {
               }`}
             >
               <span>{t("payments.allAccounts", "All Accounts")}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
-                selectedAccount === "all" ? "bg-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
-              }`}>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+                  selectedAccount === "all"
+                    ? "bg-white/20 text-white"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
+                }`}
+              >
                 {payments.length}
               </span>
             </button>
 
             {availableAccounts.map((acc) => {
-              const count = payments.filter((p) => isPaymentInAccount(p, acc)).length;
+              const count = payments.filter((p) =>
+                isPaymentInAccount(p, acc),
+              ).length;
               const isSelected = selectedAccount === acc;
               return (
                 <button
@@ -362,9 +429,13 @@ export default function PaymentsPage() {
                   }`}
                 >
                   <span>{acc}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
-                    isSelected ? "bg-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
-                  }`}>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-md font-bold ${
+                      isSelected
+                        ? "bg-white/20 text-white"
+                        : "bg-zinc-100 dark:bg-zinc-800 text-muted-foreground"
+                    }`}
+                  >
                     {count}
                   </span>
                 </button>
@@ -386,70 +457,39 @@ export default function PaymentsPage() {
           )}
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={ArrowUpRight}
-            title={selectedAccount !== "all" ? `${t("payments.moneyIn")} (${selectedAccount})` : t("payments.moneyIn")}
-            value={formatNumber(moneyIn, getLocaleForIntl(i18n.language))}
-            suffix={settings.currency}
-            subtitle={dateRange?.from ? `${format(dateRange.from, 'MMM dd')} - ${format(dateRange.to || dateRange.from, 'MMM dd')}` : t("payments.subtitle")}
-            color="green"
-          />
-          <StatCard
-            icon={ArrowDownRight}
-            title={selectedAccount !== "all" ? `${t("payments.chargesOut")} (${selectedAccount})` : t("payments.chargesOut")}
-            value={formatNumber(chargesOut, getLocaleForIntl(i18n.language))}
-            suffix={settings.currency}
-            subtitle={selectedAccount !== "all" ? selectedAccount : t("payments.chargesSubtitle")}
-            color="red"
-          />
-          <StatCard
-            icon={DollarSign}
-            title={selectedAccount !== "all" ? t("payments.accountBalance", "Account Balance") : t("payments.netTotal")}
-            value={formatNumber(net, getLocaleForIntl(i18n.language))}
-            suffix={settings.currency}
-            subtitle={selectedAccount !== "all" ? selectedAccount : t("payments.netSubtitle")}
-            color="blue"
-          />
-          <StatCard
-            icon={AlertCircle}
-            title={t("common.count")}
-            value={filteredPayments.length}
-            subtitle={selectedAccount !== "all" ? selectedAccount : t("common.items")}
-            color="purple"
-          />
-        </div>
-
         {/* Payments Table */}
         <div className="space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="h-2 w-2 rounded-full bg-primary"></div>
-              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t("payments.historyLogs") || "Payment Logs"}</h2>
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+                {t("payments.historyLogs") || "Payment Logs"}
+              </h2>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-1">
-                {(["all", "payments", "charges", "transfers"] as const).map((tf) => (
-                  <button
-                    key={tf}
-                    onClick={() => setTypeFilter(tf)}
-                    className={`px-3 h-7 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
-                      typeFilter === tf
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-gray-50 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    {tf === "all"
-                      ? t("payments.filterAll")
-                      : tf === "payments"
-                      ? t("payments.filterPayments")
-                      : tf === "charges"
-                      ? t("payments.filterCharges")
-                      : t("payments.filterTransfers", "Transfers")}
-                  </button>
-                ))}
+                {(["all", "payments", "charges", "transfers"] as const).map(
+                  (tf) => (
+                    <button
+                      key={tf}
+                      onClick={() => setTypeFilter(tf)}
+                      className={`px-3 h-7 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+                        typeFilter === tf
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-gray-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      {tf === "all"
+                        ? t("payments.filterAll")
+                        : tf === "payments"
+                          ? t("payments.filterPayments")
+                          : tf === "charges"
+                            ? t("payments.filterCharges")
+                            : t("payments.filterTransfers", "Transfers")}
+                    </button>
+                  ),
+                )}
               </div>
 
               <div className="relative flex-1 lg:w-72">
@@ -465,10 +505,10 @@ export default function PaymentsPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-            <PaymentTable 
-              payments={filteredPayments} 
-              loading={loading} 
-              onUpdate={fetchPayments} 
+            <PaymentTable
+              payments={filteredPayments}
+              loading={loading}
+              onUpdate={fetchPayments}
               selectedAccount={selectedAccount}
               previousSubtotal={previousSubtotal}
             />

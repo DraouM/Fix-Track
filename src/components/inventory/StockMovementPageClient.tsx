@@ -119,146 +119,126 @@ export default function StockMovementPageClient() {
     };
   }, [movements]);
 
-  const StatCard = ({
-    icon: Icon,
-    title,
-    value,
-    subtitle,
-    color = "blue",
-    suffix,
-  }: {
-    icon: React.ComponentType<{ className?: string }>;
-    title: string;
-    value: string | number;
-    subtitle?: string;
-    color?: "blue" | "green" | "orange" | "red" | "purple";
-    suffix?: string;
-  }) => {
-    const colorClasses = {
-      blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-      green:
-        "bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400",
-      orange:
-        "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
-      red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-      purple:
-        "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
-    };
-
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-4 shadow-sm hover:shadow-md transition-all">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${colorClasses[color]}`}>
-              <Icon className="w-4 h-4" />
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-              {title}{" "}
-              {suffix && <span className="opacity-50 ml-1">({suffix})</span>}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col">
-          <div
-            className="text-2xl font-black text-foreground truncate"
-            title={String(value)}
-          >
-            {value}
-          </div>
-          {subtitle && (
-            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 opacity-70 mt-1">
-              <div
-                className={`h-1 w-1 rounded-full ${colorClasses[color].replace("text-", "bg-")}`}
-              ></div>
-              {subtitle}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+  // Per movement-type counts for the Tier 1 filter tabs (full ledger)
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: movements.length };
+    for (const m of movements) {
+      counts[m.type] = (counts[m.type] ?? 0) + 1;
+    }
+    return counts;
+  }, [movements]);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => router.push("/inventory")}
-              className="h-10 w-10 rounded-xl border-2 shrink-0 hover:bg-gray-50 dark:hover:bg-slate-800 dark:border-slate-800"
-              title={t("inventory.stockMovement.back")}
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <ArrowLeftRight className="h-6 w-6" />
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Unified Command Header & Integrated Metrics */}
+        <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-md p-4 sm:p-6 rounded-3xl border border-gray-200/70 dark:border-slate-800 shadow-sm space-y-5">
+          {/* Top Row: Title & Navigation */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3.5 flex-wrap">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => router.push("/inventory")}
+                className="h-10 w-10 rounded-xl border shrink-0 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800"
+                title={t("inventory.stockMovement.back")}
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div className="p-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-xs">
+                <ArrowLeftRight className="h-5 w-5" />
+              </div>
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <h1 className="text-xl font-black tracking-tight text-foreground">
+                  {t("inventory.stockMovement.title")}
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent">
+                  <span className="text-xs font-black text-primary">
+                    {statistics.total}
+                  </span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {t("inventory.stockMovement.movements")}
+                  </span>
+                </span>
+              </div>
             </div>
-            <div className="flex items-baseline gap-3 flex-wrap">
-              <h1 className="text-2xl font-black tracking-tight text-foreground">
-                {t("inventory.stockMovement.title")}
-              </h1>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50">
-                <span className="text-xs font-black">{statistics.total}</span>
-                <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+              {t("inventory.stockMovement.subtitle")}
+            </p>
+          </div>
+
+          {/* Bottom Row: Connected High-Density Metrics Strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-gray-100 dark:border-slate-800/80">
+            {/* Metric 1: Total Movements */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/70 dark:border-blue-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                <Activity className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70 truncate">
                   {t("inventory.stockMovement.movements")}
+                </span>
+                <span className="text-lg font-black text-foreground truncate">
+                  {statistics.total}
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 2: Inbound */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/70 dark:border-emerald-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <ArrowDownLeft className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70 truncate">
+                  {t("inventory.stockMovement.inbound")}
+                </span>
+                <span className="text-lg font-black text-emerald-700 dark:text-emerald-400 truncate">
+                  +{statistics.inbound}
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 3: Outbound */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100/70 dark:border-rose-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+                <ArrowUpRight className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70 truncate">
+                  {t("inventory.stockMovement.outbound")}
+                </span>
+                <span className="text-lg font-black text-rose-700 dark:text-rose-400 truncate">
+                  -{statistics.outbound}
+                </span>
+              </div>
+            </div>
+
+            {/* Metric 4: Net Value */}
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100/70 dark:border-purple-900/30 transition-all">
+              <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+                <Scale className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/70 truncate">
+                  {t("inventory.stockMovement.netValue")}
+                </span>
+                <span className="text-lg font-black text-purple-700 dark:text-purple-400 truncate">
+                  {formatNumber(
+                    statistics.netValue,
+                    getLocaleForIntl(i18n.language),
+                  )}{" "}
+                  <span className="text-xs font-bold opacity-75">
+                    {settings.currency}
+                  </span>
                 </span>
               </div>
             </div>
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-            {t("inventory.stockMovement.subtitle")}
-          </p>
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={Activity}
-            title={t("inventory.stockMovement.movements")}
-            value={statistics.total}
-            subtitle={t("inventory.stockMovement.allTime")}
-            color="blue"
-          />
-          <StatCard
-            icon={ArrowDownLeft}
-            title={t("inventory.stockMovement.inbound")}
-            value={statistics.inbound}
-            subtitle={t("inventory.stockMovement.inboundDesc")}
-            color="green"
-          />
-          <StatCard
-            icon={ArrowUpRight}
-            title={t("inventory.stockMovement.outbound")}
-            value={statistics.outbound}
-            subtitle={t("inventory.stockMovement.outboundDesc")}
-            color="red"
-          />
-          <StatCard
-            icon={Scale}
-            title={t("inventory.stockMovement.netValue")}
-            value={formatNumber(
-              statistics.netValue,
-              getLocaleForIntl(i18n.language),
-            )}
-            suffix={settings.currency}
-            subtitle={t("inventory.stockMovement.netChange", {
-              count: statistics.netChange,
-            })}
-            color="purple"
-          />
         </div>
 
         {/* Movements Table */}
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-primary"></div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-              {t("inventory.stockMovement.ledgerTitle")}
-            </h2>
-          </div>
           {loading ? (
             <div className="flex items-center justify-center h-64 bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -284,6 +264,7 @@ export default function StockMovementPageClient() {
                 setMaxPrice={setMaxPrice}
                 hasActiveFilters={hasActiveFilters}
                 clearFilters={clearFilters}
+                typeCounts={typeCounts}
                 onViewHistory={handleViewHistory}
                 stockLevels={stockLevels}
               />

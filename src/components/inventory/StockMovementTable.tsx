@@ -3,7 +3,6 @@
 import React, { useRef, useState, memo } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { StockMovement, HistoryEventType } from "@/types/inventory";
-import { HISTORY_EVENT_TYPES } from "@/types/inventory";
 import type {
   MovementSortConfig,
   MovementSortKey,
@@ -36,7 +35,8 @@ import {
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Search,
-  Filter,
+  X,
+  DollarSign,
   RotateCcw,
   ChevronDown,
   ArrowUpDown,
@@ -70,6 +70,8 @@ interface StockMovementTableProps {
   setMaxPrice: (value: string) => void;
   hasActiveFilters: boolean;
   clearFilters: () => void;
+  // Per movement-type counts (full ledger) for the Tier 1 tabs
+  typeCounts: Record<string, number>;
   // Opens the detailed history of the item behind the movement
   onViewHistory?: (movement: StockMovement) => void;
   // Running stock level after each movement (movement id → qty left)
@@ -79,50 +81,103 @@ interface StockMovementTableProps {
 const ROW_HEIGHT = 60;
 const HEADER_HEIGHT = 44;
 
+/* Shared column template — header and rows must use the exact same grid so
+   every title sits perfectly above its cell content, scrollbar or not. */
+const TABLE_GRID =
+  "grid min-w-[64rem] grid-cols-[10.5rem_minmax(0,2.2fr)_minmax(0,1.5fr)_5.5rem_5.5rem_6rem_6.5rem_8.5rem_3rem] items-center";
+
+/* ---------- Movement Type Filter Tabs (Tier 1) ---------- */
+const TYPE_TABS = [
+  {
+    value: "All",
+    solid: "bg-primary text-primary-foreground shadow-primary/20",
+    dot: "bg-primary",
+  },
+  {
+    value: "Purchased",
+    solid: "bg-emerald-500 text-white shadow-emerald-500/20",
+    dot: "bg-emerald-500",
+  },
+  {
+    value: "Sold",
+    solid: "bg-blue-500 text-white shadow-blue-500/20",
+    dot: "bg-blue-500",
+  },
+  {
+    value: "Used in Repair",
+    solid: "bg-orange-500 text-white shadow-orange-500/20",
+    dot: "bg-orange-500",
+  },
+  {
+    value: "Returned",
+    solid: "bg-purple-500 text-white shadow-purple-500/20",
+    dot: "bg-purple-500",
+  },
+  {
+    value: "Manual Correction",
+    solid: "bg-slate-500 text-white shadow-slate-500/20",
+    dot: "bg-slate-500",
+  },
+  {
+    value: "Adjustment",
+    solid: "bg-teal-500 text-white shadow-teal-500/20",
+    dot: "bg-teal-500",
+  },
+] as const;
+
 /* ---------- Sortable Header ---------- */
 const MovementSortableHeader = ({
   columnKey,
   children,
   sortConfig,
   onSort,
-  className,
+  align = "left",
 }: {
   columnKey: MovementSortKey;
   children: React.ReactNode;
   sortConfig: MovementSortConfig;
   onSort: (key: MovementSortKey) => void;
-  className?: string;
-}) => (
-  <Button
-    variant="ghost"
-    onClick={() => onSort(columnKey)}
-    className={cn(
-      "h-auto p-0 text-[10px] font-black uppercase tracking-widest hover:bg-transparent hover:text-primary dark:hover:text-primary transition-colors",
-      sortConfig?.key === columnKey
-        ? "text-primary"
-        : "text-muted-foreground/60 dark:text-slate-400/60",
-      className,
-    )}
-  >
-    <div className="flex items-center gap-1.5">
-      {children}
-      <div
-        className={cn(
-          "transition-transform duration-200",
-          sortConfig?.key === columnKey &&
-            sortConfig.direction === "descending" &&
-            "rotate-180",
-        )}
-      >
-        {sortConfig?.key === columnKey ? (
-          <ChevronDown className="h-3 w-3" />
-        ) : (
-          <ArrowUpDown className="h-3 w-3 opacity-20" />
-        )}
-      </div>
-    </div>
-  </Button>
-);
+  align?: "left" | "center" | "right";
+}) => {
+  const active = sortConfig?.key === columnKey;
+  const icon = (
+    <span
+      className={cn(
+        "shrink-0 transition-transform duration-200",
+        active && sortConfig?.direction === "descending" && "rotate-180",
+      )}
+    >
+      {active ? (
+        <ChevronDown className="h-3 w-3" />
+      ) : (
+        <ArrowUpDown className="h-3 w-3 opacity-30" />
+      )}
+    </span>
+  );
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(columnKey)}
+      className={cn(
+        "relative inline-flex items-center gap-1.5 h-full cursor-pointer",
+        "text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-colors hover:text-primary",
+        active
+          ? "text-primary"
+          : "text-muted-foreground/60 dark:text-slate-400/60",
+      )}
+    >
+      {align === "right" && icon}
+      <span>{children}</span>
+      {align === "left" && icon}
+      {align === "center" && (
+        <span className="absolute left-full ml-1 top-1/2 -translate-y-1/2">
+          {icon}
+        </span>
+      )}
+    </button>
+  );
+};
 
 /* ---------- Row Component ---------- */
 const MovementRow = memo(function MovementRow({
@@ -148,14 +203,17 @@ const MovementRow = memo(function MovementRow({
   return (
     <div
       role="row"
-      className="absolute top-0 left-0 w-full flex items-center border-b border-gray-100 dark:border-slate-800 hover:bg-muted/5 dark:hover:bg-slate-800/30 transition-all duration-200 group"
+      className={cn(
+        "absolute top-0 left-0 w-full border-b border-gray-100 dark:border-slate-800 hover:bg-muted/5 dark:hover:bg-slate-800/30 transition-all duration-200 group",
+        TABLE_GRID,
+      )}
       style={{
         height: `${virtualRow.size}px`,
         transform: `translateY(${virtualRow.start}px)`,
       }}
     >
       {/* Movement Type (icon + color coding reused from InventoryHistoryDialog) */}
-      <div className="w-52 pl-4 pr-2 shrink-0">
+      <div className="pl-4 pr-2 min-w-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div
             className={cn(
@@ -165,7 +223,7 @@ const MovementRow = memo(function MovementRow({
           >
             {getEventIcon(movement.type)}
           </div>
-          <span className="text-[10px] font-black uppercase tracking-wider text-foreground dark:text-slate-200 truncate">
+          <span className="text-[10px] font-black uppercase tracking-wider leading-tight text-foreground dark:text-slate-200 line-clamp-2">
             {t(`inventory.stockMovement.movementTypes.${movement.type}`, {
               defaultValue: movement.type,
             })}
@@ -174,7 +232,7 @@ const MovementRow = memo(function MovementRow({
       </div>
 
       {/* Item */}
-      <div className="flex-[2] pr-2 min-w-0">
+      <div className="pr-2 min-w-0">
         <div className="flex flex-col min-w-0">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -212,7 +270,7 @@ const MovementRow = memo(function MovementRow({
       </div>
 
       {/* Counterparty: supplier for purchases, buyer/customer for sales & repairs */}
-      <div className="flex-[1.4] pr-2 min-w-0">
+      <div className="pr-2 min-w-0">
         {movement.movementParty ? (
           <div className="flex items-center gap-2 min-w-0">
             <div
@@ -251,7 +309,7 @@ const MovementRow = memo(function MovementRow({
       </div>
 
       {/* Quantity change bubble */}
-      <div className="w-24 shrink-0 flex justify-center">
+      <div className="flex justify-center min-w-0">
         <div
           className={cn(
             "px-2 py-0.5 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-sm",
@@ -263,14 +321,14 @@ const MovementRow = memo(function MovementRow({
       </div>
 
       {/* Quantity left after this movement */}
-      <div className="w-20 shrink-0 flex justify-center">
+      <div className="flex justify-center min-w-0">
         <span className="text-[11px] font-black text-foreground dark:text-slate-300 tabular-nums">
           {stockLevels?.get(movement.id) ?? "—"}
         </span>
       </div>
 
       {/* Unit price at the time of the movement */}
-      <div className="flex-1 text-right pr-6 min-w-0">
+      <div className="text-right pr-4 min-w-0">
         <div className="flex flex-col items-end">
           <span
             className={cn(
@@ -291,7 +349,7 @@ const MovementRow = memo(function MovementRow({
       </div>
 
       {/* Movement value */}
-      <div className="flex-1 text-right pr-6 min-w-0">
+      <div className="text-right pr-4 min-w-0">
         <span
           className={cn(
             "text-xs font-black tracking-tight",
@@ -307,7 +365,7 @@ const MovementRow = memo(function MovementRow({
       </div>
 
       {/* Date */}
-      <div className="w-44 shrink-0 pr-2">
+      <div className="pr-2 min-w-0">
         <div className="flex flex-col items-start">
           <span className="text-[11px] font-black text-foreground dark:text-slate-300 leading-none">
             {format(new Date(movement.date), "MMM d, yyyy")}
@@ -319,14 +377,14 @@ const MovementRow = memo(function MovementRow({
       </div>
 
       {/* Actions: full item history */}
-      <div className="w-14 shrink-0 flex justify-center pr-2">
+      <div className="flex justify-center min-w-0">
         {onViewHistory && (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-xl text-muted-foreground/50 hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all"
+                className="h-8 w-8 rounded-xl text-muted-foreground/50 hover:text-primary hover:bg-primary/10 opacity-50 group-hover:opacity-100 focus-visible:opacity-100 transition-all"
                 onClick={() => onViewHistory(movement)}
               >
                 <History className="h-4 w-4" />
@@ -365,11 +423,22 @@ export const StockMovementTable = memo(function StockMovementTable({
   setMaxPrice,
   hasActiveFilters,
   clearFilters,
+  typeCounts,
   onViewHistory,
   stockLevels,
 }: StockMovementTableProps) {
   const { t } = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
+
+  // Number of currently active filters (shown on the Clear button badge)
+  const activeFilterCount = [
+    searchTerm !== "",
+    selectedType !== "All",
+    dateRange !== undefined &&
+      (dateRange.from !== undefined || dateRange.to !== undefined),
+    minPrice !== "",
+    maxPrice !== "",
+  ].filter(Boolean).length;
 
   const rowVirtualizer = useVirtualizer({
     count: movements.length,
@@ -381,115 +450,125 @@ export const StockMovementTable = memo(function StockMovementTable({
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-full">
       <TooltipProvider>
-        {/* Search and Filters Bar */}
-        <div className="flex flex-col gap-4 px-6 py-4 border-b dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
-          <div className="flex flex-wrap gap-3 items-center">
-            {/* Item Name Search */}
-            <div className="relative flex-1 min-w-[220px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
-              <Input
-                placeholder={t("inventory.stockMovement.filters.searchItem")}
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="pl-10 rounded-xl h-11 border-gray-200 dark:border-slate-800 focus:ring-primary/20 bg-white dark:bg-slate-950 font-bold text-sm"
-              />
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-slate-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hidden sm:block">
-                {t("common.filters")}
-              </span>
-            </div>
-
-            {/* Movement Type Filter */}
-            <Select
-              value={selectedType}
-              onValueChange={(value) =>
-                setSelectedType(value as HistoryEventType | "All")
-              }
-            >
-              <SelectTrigger className="w-full md:w-[170px] h-11 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-black text-[10px] uppercase tracking-wider">
-                <SelectValue placeholder={t("common.type")} />
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
-                <SelectItem
-                  value="All"
-                  className="font-black text-[10px] uppercase tracking-widest py-3"
+        {/* Tier 1: Movement Type Tabs */}
+        <div className="flex items-center gap-1.5 px-6 py-3 border-b border-gray-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur-sm overflow-x-auto no-scrollbar">
+          {TYPE_TABS.map((tab) => {
+            const isActive = selectedType === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() =>
+                  setSelectedType(tab.value as HistoryEventType | "All")
+                }
+                className={cn(
+                  "flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-150 shrink-0 cursor-pointer select-none",
+                  isActive
+                    ? cn("shadow-sm scale-[1.02]", tab.solid)
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50 dark:hover:bg-slate-800/60",
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-2 w-2 rounded-full shrink-0",
+                    isActive ? "bg-white" : tab.dot,
+                  )}
+                />
+                <span>
+                  {tab.value === "All"
+                    ? t("common.all")
+                    : t(`inventory.stockMovement.movementTypes.${tab.value}`, {
+                        defaultValue: tab.value,
+                      })}
+                </span>
+                <span
+                  className={cn(
+                    "px-1.5 py-0.5 rounded-md text-[10px] font-black shrink-0",
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-muted dark:bg-slate-800 text-muted-foreground",
+                  )}
                 >
-                  {t("inventory.stockMovement.filters.allTypes")}
-                </SelectItem>
-                {HISTORY_EVENT_TYPES.map((type) => (
-                  <SelectItem
-                    key={type}
-                    value={type}
-                    className="font-black text-[10px] uppercase tracking-widest py-3"
-                  >
-                    {t(`inventory.stockMovement.movementTypes.${type}`, {
-                      defaultValue: type,
-                    })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  {typeCounts[tab.value] ?? 0}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
+        {/* Tier 2: Search, Deep Filters & Utilities */}
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between px-6 py-3 border-b dark:border-slate-800 bg-white/40 dark:bg-slate-900/40">
+          {/* Item Name Search */}
+          <div className="relative flex-1 min-w-[220px] max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
+            <Input
+              placeholder={t("inventory.stockMovement.filters.searchItem")}
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="pl-10 pr-9 rounded-xl h-10 border-gray-200 dark:border-slate-800 focus:ring-primary/20 bg-white dark:bg-slate-950 text-xs font-medium"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Filters & Tools Cluster */}
+          <div className="flex flex-wrap items-center gap-2.5 justify-start lg:justify-end">
             {/* Date Range Picker */}
             <DateRangePicker
               date={dateRange}
               onDateChange={setDateRange}
               placeholder={t("inventory.stockMovement.filters.pickDates")}
-              className="h-11 rounded-xl border-2 border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-black text-[10px] uppercase tracking-wider"
+              className="w-[170px] h-10 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950"
+              showPresets={true}
             />
 
-            {/* Clear Filters */}
-            {hasActiveFilters && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-xl h-11 w-11 bg-white dark:bg-slate-950 border-gray-200 dark:border-slate-800 text-muted-foreground hover:text-red-500 transition-colors"
-                onClick={clearFilters}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-
-          {/* Price / Cost range row */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-              {t("inventory.stockMovement.filters.priceRange")}
-            </span>
+            {/* Price / Cost Range */}
             <Select
               value={priceField}
               onValueChange={(value) =>
                 setPriceField(value as MovementPriceField)
               }
             >
-              <SelectTrigger className="w-[120px] h-9 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-black text-[9px] uppercase tracking-wider">
-                <SelectValue />
+              <SelectTrigger
+                className={cn(
+                  "w-auto min-w-[140px] h-10 rounded-xl border font-bold text-xs uppercase tracking-wider px-3",
+                  "border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950",
+                )}
+              >
+                <div className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                  <SelectValue />
+                </div>
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl dark:bg-slate-900">
                 <SelectItem
                   value="unitPrice"
-                  className="font-black text-[9px] uppercase tracking-widest py-2.5"
+                  className="font-bold text-xs uppercase tracking-wider py-2.5"
                 >
                   {t("inventory.stockMovement.table.unit")}
                 </SelectItem>
                 <SelectItem
                   value="buyingPrice"
-                  className="font-black text-[9px] uppercase tracking-widest py-2.5"
+                  className="font-bold text-xs uppercase tracking-wider py-2.5"
                 >
                   {t("inventory.table.cost")}
                 </SelectItem>
                 <SelectItem
                   value="sellingPrice"
-                  className="font-black text-[9px] uppercase tracking-widest py-2.5"
+                  className="font-bold text-xs uppercase tracking-wider py-2.5"
                 >
                   {t("inventory.table.price")}
                 </SelectItem>
                 <SelectItem
                   value="value"
-                  className="font-black text-[9px] uppercase tracking-widest py-2.5"
+                  className="font-bold text-xs uppercase tracking-wider py-2.5"
                 >
                   {t("inventory.stockMovement.table.value")}
                 </SelectItem>
@@ -499,9 +578,10 @@ export const StockMovementTable = memo(function StockMovementTable({
               type="number"
               inputMode="decimal"
               placeholder={t("inventory.stockMovement.filters.min")}
+              title={t("inventory.stockMovement.filters.equalHint")}
               value={minPrice}
               onChange={(event) => setMinPrice(event.target.value)}
-              className="w-[110px] h-9 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs px-3"
+              className="w-[92px] h-10 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs px-3"
             />
             <span className="text-[10px] font-black text-muted-foreground/40">
               &ndash;
@@ -512,21 +592,48 @@ export const StockMovementTable = memo(function StockMovementTable({
               placeholder={t("inventory.stockMovement.filters.max")}
               value={maxPrice}
               onChange={(event) => setMaxPrice(event.target.value)}
-              className="w-[110px] h-9 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs px-3"
+              className="w-[92px] h-10 rounded-xl border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 font-bold text-xs px-3"
             />
-            <span className="text-[9px] font-bold text-muted-foreground/50 opacity-70">
-              {t("inventory.stockMovement.filters.equalHint")}
-            </span>
+
+            <div className="h-6 w-px bg-border/60 dark:bg-slate-800 mx-0.5 hidden sm:block" />
+
+            {/* Clear Active Filters Button */}
+            {(hasActiveFilters || activeFilterCount > 0) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="h-10 px-3 rounded-xl border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 text-xs font-bold uppercase tracking-wider gap-1.5"
+                title={t("common.clearAll") || "Reset all filters"}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">
+                  {t("common.clear") || t("common.reset") || "Reset"}
+                </span>
+                <span className="h-4 w-4 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center">
+                  {activeFilterCount || 1}
+                </span>
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Header */}
+        {/* Rows — the sticky header lives inside the same scroller as the
+            rows, so both share one content box (scrollbar included) and the
+            column titles can never drift out of alignment. */}
         <div
-          className="bg-muted/10 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 z-10 shrink-0"
-          style={{ height: HEADER_HEIGHT }}
+          ref={parentRef}
+          className="overflow-auto relative bg-[#fdfdfd] dark:bg-slate-950/20"
+          style={{ height: "calc(100vh - 480px)", minHeight: "350px" }}
         >
-          <div className="flex w-full h-full items-center">
-            <div className="w-52 pl-4 shrink-0">
+          <div
+            className={cn(
+              TABLE_GRID,
+              "sticky top-0 z-10 border-b border-gray-100 dark:border-slate-800 bg-gray-50/95 dark:bg-slate-900/95 backdrop-blur-sm",
+            )}
+            style={{ height: HEADER_HEIGHT }}
+          >
+            <div className="pl-4 pr-2 flex items-center h-full min-w-0">
               <MovementSortableHeader
                 columnKey="type"
                 sortConfig={sortConfig}
@@ -535,7 +642,7 @@ export const StockMovementTable = memo(function StockMovementTable({
                 {t("inventory.stockMovement.table.movement")}
               </MovementSortableHeader>
             </div>
-            <div className="flex-[2] pr-2 min-w-0">
+            <div className="pr-2 flex items-center h-full min-w-0">
               <MovementSortableHeader
                 columnKey="itemName"
                 sortConfig={sortConfig}
@@ -544,7 +651,7 @@ export const StockMovementTable = memo(function StockMovementTable({
                 {t("inventory.table.product")}
               </MovementSortableHeader>
             </div>
-            <div className="flex-[1.4] pr-2 min-w-0">
+            <div className="pr-2 flex items-center h-full min-w-0">
               <MovementSortableHeader
                 columnKey="movementParty"
                 sortConfig={sortConfig}
@@ -553,37 +660,42 @@ export const StockMovementTable = memo(function StockMovementTable({
                 {t("inventory.stockMovement.table.party")}
               </MovementSortableHeader>
             </div>
-            <div className="w-24 shrink-0 flex justify-center">
+            <div className="flex items-center justify-center h-full min-w-0">
               <MovementSortableHeader
                 columnKey="quantityChange"
                 sortConfig={sortConfig}
                 onSort={onSort}
+                align="center"
               >
                 {t("inventory.stockMovement.table.qty")}
               </MovementSortableHeader>
             </div>
-            <div className="w-20 shrink-0 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-              {t("inventory.stockMovement.table.qtyLeft")}
+            <div className="flex items-center justify-center h-full min-w-0">
+              <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap text-muted-foreground/60 dark:text-slate-400/60">
+                {t("inventory.stockMovement.table.qtyLeft")}
+              </span>
             </div>
-            <div className="flex-1 text-right pr-6">
+            <div className="flex items-center justify-end pr-4 h-full min-w-0">
               <MovementSortableHeader
                 columnKey="unitPrice"
                 sortConfig={sortConfig}
                 onSort={onSort}
+                align="right"
               >
                 {t("inventory.stockMovement.table.unit")}
               </MovementSortableHeader>
             </div>
-            <div className="flex-1 text-right pr-6">
+            <div className="flex items-center justify-end pr-4 h-full min-w-0">
               <MovementSortableHeader
                 columnKey="value"
                 sortConfig={sortConfig}
                 onSort={onSort}
+                align="right"
               >
                 {t("inventory.stockMovement.table.value")}
               </MovementSortableHeader>
             </div>
-            <div className="w-44 shrink-0 pr-2">
+            <div className="pr-2 flex items-center h-full min-w-0">
               <MovementSortableHeader
                 columnKey="date"
                 sortConfig={sortConfig}
@@ -592,17 +704,11 @@ export const StockMovementTable = memo(function StockMovementTable({
                 {t("common.date")}
               </MovementSortableHeader>
             </div>
-            <div className="w-14 shrink-0" />
+            <div />
           </div>
-        </div>
 
-        {/* Rows */}
-        <div
-          ref={parentRef}
-          className="overflow-auto relative bg-[#fdfdfd] dark:bg-slate-950/20"
-          style={{ height: "calc(100vh - 480px)", minHeight: "350px" }}
-        >
           <div
+            className="min-w-[64rem]"
             style={{
               height: `${rowVirtualizer.getTotalSize()}px`,
               width: "100%",
